@@ -201,7 +201,7 @@ test('a reviewed cost report can be saved, browsed and exported with its immutab
   await expect(save).toBeEnabled();
   await save.click();
   await expect(page.locator('table').filter({hasText:'Gespeicherte Prognoseversionen'})).toContainText('v1');
-  await expect(page.getByText('Reviewed synthetic checkpoint one')).toBeVisible();
+  await expect(page.locator('table').filter({hasText:'Gespeicherte Prognoseversionen'}).getByText('Reviewed synthetic checkpoint one')).toBeVisible();
   await page.getByRole('button',{name:'Prüfstand öffnen'}).click();
   await expect(page.getByText('Gespeicherter Prüfstand v1',{exact:false})).toBeVisible();
   const downloaded=page.waitForEvent('download');

@@ -103,7 +103,7 @@ Diese Zahlen gehören zu unterschiedlichen Quellständen und teilweise überlapp
 | **DP-05-03** Professionelle Angebotsbearbeitung ermöglichen | **T** | [Workflow-UI][workflow-ui], [frozen-party PDF-Tests][document-tests] und [echter Ablauf][live-renovation] erlauben Positionen, Ausgabe, Vorschau, Annahme und PDF. | Professionelle Layout-/Textbaustein-/Positionsbearbeitung und alle praxisüblichen Angebotsvarianten sind nicht vollständig umgesetzt. |
 | **DP-05-04** Auftrag aus angenommener Version erzeugen | **K** | [CreateOrder][commercial], [Order-Kommando][commercial-api], [Parallel-/Snapshottests][commercial-api-tests] und [Live-Abfolge][live-renovation] erzeugen einen Auftrag aus genau der angenommenen Version. | Externe Vertragsabnahme und Sonderfälle außerhalb des festgelegten Zustandsmodells bleiben separat. |
 | **DP-05-05** Nachträge und Leistungsänderungen führen | **K** | [ChangeOrder][commercial], [Annahme-Kommando][commercial-api] und [Rechnungsgrenztests][commercial-tests] frieren Nachträge ein und beziehen akzeptierte Änderungen in abrechenbare Mengen ein. | Komplette Änderungsverhandlung, Signatur und kundenseitige Nachtragsbedienung sind nicht als End-to-End-Ablauf belegt. |
-| **DP-05-06** Soll, Ist und Prognose vergleichen | **K** | [Quellengebundene Nachkalkulation][cost-docs], [Core/API][cost-api] und [Bedienung][ui-nine] verbinden angenommene Vertragsquellen mit freigegebener Zeit, bewerteten Lagerbewegungen und explizit zugeordneten Eingangsbelegen. Drei echte Fälle im [Checkpoint 9][checkpoint-nine] prüfen 380 EUR Istkosten, 480 EUR Prognose, 520 EUR Überschuss und den originalgetreuen JSON-Bericht. | Bewertungen/Restprognose werden nicht dauerhaft als eigene Forecast-Versionen oder betriebsweit reservierte Kostenstellenzuordnung gebucht. Ohne belegte Vollständigkeit bleibt Ist/Prognose unbekannt; externe Fachabnahme fehlt. |
+| **DP-05-06** Soll, Ist und Prognose vergleichen | **K** | [Quellengebundene Nachkalkulation][cost-docs], [Core/API][cost-api] und [Bedienung][ui-nine] verbinden angenommene Vertragsquellen mit freigegebener Zeit, bewerteten Lagerbewegungen und explizit zugeordneten Eingangsbelegen. Drei echte Fälle im [Checkpoint 9][checkpoint-nine] prüfen 380 EUR Istkosten, 480 EUR Prognose, 520 EUR Überschuss und den originalgetreuen JSON-Bericht. [Checkpoint 10][checkpoint-ten] ergänzt [unveränderliche, verkettete Prognoseversionen][forecast-model], Digest-/Berechtigungs-/Mandantenprüfungen in [echten API-Tests][cost-api-tests] und [Desktop-/Tablet-/Mobil-Bedienung][cost-browser]. | Bewertungen und Restprognosen können dauerhaft als gesonderte unveränderliche Forecast-Versionen gehalten werden, **aber** weder als buchhalterische Buchungen noch als betriebsweit reservierte Kostenstellenzuordnung. Ohne belegte Vollständigkeit bleiben Ist/Prognose unbekannt; externe Fachabnahme fehlt. |
 | **DP-05-07** Kaufmännischen Referenzablauf absichern | **T** | [CommercialApiTests][commercial-api-tests], [LedgerTests][ledger-tests] und [echter Sanierungsbrowserlauf][live-renovation] prüfen wichtige kommerzielle Ketten und Fehlerfälle. | Kein realer, vollständig fachlich abgenommener Betriebsfall mit sämtlichen Planungs-, Material-, Abnahme- und Zahlungsvarianten. |
 
 ### DP-06 – Planung, Personal, Baustellenarbeit und Offline (P1)
@@ -227,6 +227,10 @@ Bei einer Änderung wird die betreffende Zeile mit dem neuen Quell-/Testbeleg un
 [discovery-live]: ../docs/evidence/live-discovery-checkpoint7.json
 [discovery-ui-docs]: ../docs/discovery-ui.md
 [backend-seven]: ../docs/evidence/checkpoint7.json
+[checkpoint-ten]: ../docs/checkpoint10.md
+[forecast-model]: ../src/FirstBlick.Core/Business/CostForecast.cs
+[cost-browser]: ../web/tests/browser/cost-analysis.spec.ts
+[finance-links]: ../src/FirstBlick.Api/FinancialSources.cs
 [cost-docs]: ../docs/cost-analysis.md
 [cost-model]: ../src/FirstBlick.Core/Business/CostAnalysis.cs
 [cost-api]: ../src/FirstBlick.Api/CostEndpoints.cs

@@ -6,7 +6,8 @@ FirstBlick connects customers, buildings, projects and field work with quotation
 
 ## Project documentation
 
-* [Checkpoint 9](docs/checkpoint9.md) — current finance/UI implementation, exact local verification and remaining roadmap work.
+* [Checkpoint 10](docs/checkpoint10.md) — bounded financial source reads and versioned, audited cost forecasts, with API and browser regression coverage.
+* [Checkpoint 9](docs/checkpoint9.md) — preceding finance/UI implementation, exact verification and remaining roadmap work.
 * [Roadmap](docs/ROADMAP.md) — complete target scope and acceptance criteria.
 * [Roadmap evidence matrix](docs/roadmap-evidence.md) — all 100 original tasks, concrete source/test links and remaining acceptance work. A verified technical core is not a completed business acceptance.
 * [Architecture decisions](docs/ARCHITECTURE.md) — server, identity, tenant, data and offline contracts.
@@ -14,7 +15,7 @@ FirstBlick connects customers, buildings, projects and field work with quotation
 * [Background processing](docs/jobs.md) — leases, crash recovery, delivery uncertainty and provider configuration.
 * [Technical methods](docs/technical-methods.md) — independent arithmetic, reference cases and applicability limits.
 * [Measurement quantity transfer](docs/quantity-links.md) — reviewed quote quantities, retained partial-invoice evidence, material demands and purchase drafts.
-* [Source-based cost analysis](docs/cost-analysis.md) — contract/change sources, labor, stock and supplier valuations; missing costs remain unknown.
+* [Source-based cost analysis](docs/cost-analysis.md) — contract/change sources, labor, stock and supplier valuations, plus immutable, manually reviewed forecast versions; missing costs remain unknown.
 * [Cumulative invoice rounding](docs/invoice-rounding.md) — actual previous cents, retained original positions, corrections and calculation evidence.
 * [Collections](docs/collections.md) — reviewed balances, manual reminder steps, disputes and auditable contact history.
 * [Operational observations](docs/observability.md) — tenant-authorized queue/document snapshots and bounded process instruments.
@@ -78,7 +79,7 @@ Integration tests create and remove isolated `firstblick_test_*` databases and t
 
 Completed real browser captures are retained separately for [renovation through invoicing](docs/evidence/live-workflow-checkpoint4.json), [personal customer-portal sharing and acceptance](docs/evidence/live-portal-checkpoint5.json), and [durable offline field work](docs/evidence/live-offline-checkpoint7.json). Each uses synthetic accounts and data at desktop, tablet and mobile viewport sizes. The offline run uses the production Angular service worker, closes and reopens the entire browser process, requires personal sign-in again and checks that queued time/diary changes reach the real API exactly once. It simulates a workday; it does not claim eight hours of elapsed testing or physical-device acceptance.
 
-The implementation includes explicit commands for frozen quotes, accepted orders, changes, billing, payments and returns, purchasing, stock, planning, forms and maintenance. New quantities require a reviewed preview; historic prices, parties and source evidence remain frozen. Personal accounts and current permissions govern the portal and offline queue. The canonical migration drill preserves historical business data and document bytes while keeping imported accounts and outbound work quarantined.
+The implementation includes explicit commands for frozen quotes, accepted orders, changes, billing, payments and returns, purchasing, stock, planning, forms and maintenance. A source-based project cost report can be explicitly retained as a versioned immutable forecast; read-only previews remain transient and do not post financial transactions. New quantities require a reviewed preview; historic prices, parties and source evidence remain frozen. Personal accounts and current permissions govern the portal and offline queue. The canonical migration drill preserves historical business data and document bytes while keeping imported accounts and outbound work quarantined.
 
 Remaining roadmap acceptance, the real D1/R2 source export and its independently reviewed mapping, external-provider formats, representative production volume and normative technical evidence are tracked separately. No actual production cutover, financial/engineering certification, provider contract or missing licensed dataset is inferred from a green build or synthetic drill.
 

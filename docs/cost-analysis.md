@@ -56,7 +56,7 @@ Prozentwerte werden auf sechs Nachkommastellen gerundet. Marge und Zuschlag verw
 
 Dieser Aufruf schreibt keine Rechnung, Zahlungszuordnung, Lohnabrechnung oder verteilte Kostenbuchung. Die vom Anwender gewählte Verteilung eines Eingangsbelegs wird nur im zurückgegebenen Bericht festgehalten; sie reserviert keinen Betrag gegenüber Berichten anderer Projekte. Eine betriebsweite verbindliche Kostenstellenverteilung benötigt einen eigenen gebuchten Verteilungsvorgang mit kumulativer Prüfung. Der aktuelle Bericht darf dafür nicht als Ersatz verwendet werden.
 
-Die Betrachtung umfasst aktuelle, nicht archivierte Projektquellen und hat pro Quellart sowie Eingabeliste eine Grenze von 5.000 Datensätzen. Sie ist kein historischer Bericht zu einem beliebigen Stichtag. Der vollständige Bericht kann mit seinem Digest für die jeweilige Bewertung aufbewahrt werden; der Endpoint legt selbst keinen dauerhaften Berichtssnapshot an. Steuerliche Behandlung, Gemeinkostenschema, Lohnkostenbasis und fachliche Abnahme des Betriebs werden durch diese technische Berechnung nicht bestätigt.
+Die Betrachtung umfasst aktuelle, nicht archivierte Projektquellen und hat pro Quellart sowie Eingabeliste eine Grenze von 5.000 Datensätzen. Sie ist kein historischer Bericht zu einem beliebigen Stichtag. Die rein lesende Vorschau legt keinen dauerhaften Berichtssnapshot an. Über den separaten, ausdrücklich bestätigten Prognosebefehl kann der vollständig berechnete und mit Digest belegte Stand als unveränderliche Version gespeichert werden. Steuerliche Behandlung, Gemeinkostenschema, Lohnkostenbasis und fachliche Abnahme des Betriebs werden durch diese technische Berechnung nicht bestätigt.
 
 ## Nachweise
 
