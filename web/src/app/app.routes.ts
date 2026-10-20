@@ -19,6 +19,7 @@ export const routes: Routes = [
   { path: 'portal', canActivate: [authenticated], loadComponent: () => import('./pages/portal.component').then(m => m.PortalComponent) },
   { path: 'documents', canActivate: [authenticated], loadComponent: () => import('./pages/documents.component').then(m => m.DocumentsComponent) },
   { path: 'integrations', canActivate: [authenticated], loadComponent: () => import('./pages/integrations.component').then(m => m.IntegrationsComponent) },
+  { path: 'trade-imports', canActivate: [authenticated], loadComponent: () => import('./pages/trade-imports.component').then(m => m.TradeImportsComponent) },
   { path: 'discovery', canActivate: [authenticated], loadComponent: () => import('./pages/discovery.component').then(m => m.DiscoveryComponent) },
   { path: 'quantity-links', canActivate: [authenticated], loadComponent: () => import('./pages/quantity-links.component').then(m => m.QuantityLinksComponent) },
   { path: 'cost-analysis', canActivate: [authenticated], loadComponent: () => import('./pages/cost-analysis.component').then(m => m.CostAnalysisComponent) },

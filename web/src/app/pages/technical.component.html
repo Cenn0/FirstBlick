@@ -2,11 +2,11 @@
 @if (!allowed()) {
   <section class="panel empty-state"><h2>Zugriff eingeschränkt</h2><p>Für diese Werkzeuge benötigen Sie das technische Modul und die entsprechende Berechtigung.</p></section>
 } @else {
-  <div class="alert information"><strong>Rechenhilfe mit klaren Grenzen.</strong> Keine normativen Wärme-, Feuchte- oder Standsicherheitsnachweise. Kennwerte, Klima und Anwendungsgrenzen müssen fachlich geprüft werden.</div>
-  <nav class="section-tabs" aria-label="Rechenverfahren">@for (key of modes; track key) {<button type="button" [attr.aria-pressed]="mode() === key" [class.active]="mode() === key" (click)="chooseMode(key)">{{methods[key].title}}</button>}</nav>
+  <div class="alert information"><strong>Rechenhilfe mit klaren Grenzen.</strong> Diese Ergebnisse sind keine normativen Wärme-, Feuchte- oder Standsicherheitsnachweise. Kennwerte, Klima und Anwendungsgrenzen müssen fachlich geprüft werden.</div>
+  <div class="section-tabs" role="tablist" aria-label="Rechenverfahren">@for (key of modes; track key) {<button type="button" role="tab" [id]="'calculation-tab-'+key" [attr.aria-controls]="'calculation-panel-'+key" [attr.aria-selected]="mode() === key" [attr.tabindex]="mode() === key ? 0 : -1" [class.active]="mode() === key" (keydown)="tabKey($event,key)" (click)="chooseMode(key)">{{methods[key].title}}</button>}</div>
   @if (error()) {<div class="alert error" role="alert">{{error()}}</div>}
   @if (notice()) {<div class="alert information" role="status">{{notice()}}</div>}
-  <div class="technical-grid">
+  <div class="technical-grid" role="tabpanel" [id]="'calculation-panel-'+mode()" [attr.aria-labelledby]="'calculation-tab-'+mode()">
     <section class="panel"><form #calculationForm="ngForm" (ngSubmit)="calculate()"><fieldset [disabled]="busy()"><legend>{{methods[mode()].title}}</legend>
       @if (mode() === 'roof') {<p>Eine rechteckige Dachfläche. Für ein Satteldach jede Dachseite einzeln berechnen.</p>}
       @if (mode() === 'tapered') {<p>Rechteckiger, horizontal projizierter Grundriss. Die kleinste senkrechte Dicke liegt am Ursprung (0,0). Positive Gradienten steigen von dort an.</p><div class="alert warning">Keine Plattenauswahl, Verlegeplanung, Entwässerungsprüfung oder Verschnittberechnung.</div>}
@@ -27,7 +27,7 @@
         <button type="button" class="button secondary" [disabled]="layers.length >= 60" (click)="addLayer()">+ Schicht ergänzen</button>
       }
       @if (mode() === 'monthly') {<h3>Vollständige Klimareihe</h3><p>Alle 48 Klimawerte ausdrücklich eingeben. Fehlende Monate werden nicht ergänzt.</p><div class="climate-grid">@for (month of months; track month.month) {<section class="climate-card"><h4>{{monthNames[month.month - 1]}}</h4>@for (field of climateFields; track field.key) {<div class="form-field"><label [for]="'climate-'+month.month+'-'+field.key">{{field.label}} – {{monthNames[month.month - 1]}}</label><input [id]="'climate-'+month.month+'-'+field.key" [name]="'climate-'+month.month+'-'+field.key" type="number" step="any" required [min]="field.min" [max]="field.max" [ngModel]="climateValue(month,field.key)" (ngModelChange)="changeClimate(month,field.key,$event)"></div>}</section>}</div>}
-      <div class="detail-actions"><button class="button primary" [disabled]="busy() || calculationForm.invalid">{{busy() ? 'Vorgang läuft …' : 'Berechnen'}}</button></div>
+      <div class="detail-actions"><button class="button primary" [disabled]="busy() || calculationForm.invalid">{{busy() ? 'Vorgang läuft …' : mode()==='roof' ? 'Dachfläche berechnen' : mode()==='thermal' ? 'Aufbau berechnen' : 'Berechnen'}}</button></div>
     </fieldset></form></section>
     <section class="panel result-panel" aria-live="polite"><p class="eyebrow">ERGEBNIS</p>
       @if (result(); as value) {

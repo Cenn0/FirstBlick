@@ -1,4 +1,4 @@
-<header class="page-heading"><div><p class="eyebrow">DATEN GEPRÜFT WEITERGEBEN</p><h1>Import & Export</h1><p>Bankumsätze prüfen und Arbeitsstände als nachvollziehbares Datenpaket herunterladen.</p></div></header>
+<header class="page-heading"><div><p class="eyebrow">DATEN GEPRÜFT WEITERGEBEN</p><h1>Import & Export</h1><p>Bankumsätze prüfen und Arbeitsstände als nachvollziehbares Datenpaket herunterladen.</p></div>@if(auth.can('catalog-items.write')||auth.can('supplier-invoices.read')){<a class="button secondary" routerLink="/trade-imports">GAEB & E-Rechnungen</a>}</header>
 @if(!allowed()){<div class="alert warning">Für Datenimporte oder Exporte fehlt Ihrem Zugang die Berechtigung.</div>}@else{
 <nav class="section-tabs" aria-label="Datenübertragung">@if(canImport()){<button type="button" [class.active]="tab()==='bank'" (click)="chooseTab('bank')">Bankumsätze importieren</button>}@if(exports().length){<button type="button" [class.active]="tab()==='exports'" (click)="chooseTab('exports')">Daten exportieren</button>}</nav>
 @if(error()){<div class="alert error" role="alert">{{error()}}</div>}@if(notice()){<div class="alert success" role="status">{{notice()}}</div>}

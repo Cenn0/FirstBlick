@@ -28,6 +28,12 @@ export class TechnicalComponent {
   private current(generation: number, access: string): boolean { return generation === this.generation && access === this.auth.accessSignature(); }
   private reset(): void { this.generation++; this.busy.set(false); this.error.set(''); this.notice.set(''); this.result.set(null); this.saved.set(null); this.values = {}; this.source = ''; this.layers = [emptyLayer()]; this.months = emptyClimates(); this.projects.set([]); this.projectTotal.set(0); this.projectPage = 1; this.projectId = ''; this.projectSearch = ''; this.title = ''; }
   chooseMode(mode: TechnicalMode): void { if (this.mode() === mode) return; this.mode.set(mode); this.reset(); }
+  tabKey(event: KeyboardEvent, current: TechnicalMode): void {
+    const index = this.modes.indexOf(current), next = event.key === 'Home' ? 0 : event.key === 'End' ? this.modes.length - 1 : event.key === 'ArrowRight' ? (index + 1) % this.modes.length : event.key === 'ArrowLeft' ? (index + this.modes.length - 1) % this.modes.length : -1;
+    if (next < 0) return;
+    event.preventDefault(); const list = (event.currentTarget as HTMLElement).parentElement;
+    this.chooseMode(this.modes[next]); list?.querySelector<HTMLButtonElement>(`#calculation-tab-${this.modes[next]}`)?.focus();
+  }
   edited(): void { this.generation++; this.busy.set(false); this.result.set(null); this.saved.set(null); this.notice.set(''); this.error.set(''); }
   attachmentEdited(): void { this.generation++; this.saved.set(null); this.notice.set(''); }
   addLayer(): void { if (this.layers.length < 60) { this.layers.push(emptyLayer()); this.edited(); } }
@@ -91,7 +97,7 @@ export class TechnicalComponent {
       const response = asObject(await this.api.command<unknown>(`technical-results/${record.id}/pdf`, {}, record.revision));
       if (!this.current(generation, access)) return;
       if (typeof response['id'] !== 'string' || !/^[a-f0-9-]{36}$/i.test(response['id']) || response['sourceId'] !== record.id || response['sourceDigest'] !== record.digest || response['sourceKind'] !== 'technical-results' || response['projectId'] !== record.projectId || response['state'] !== 'Ready' || response['contentType'] !== 'application/pdf' || !isDigest(response['sha256'])) throw new Error('Der erzeugte Bericht ist nicht eindeutig an die gespeicherte Berechnung gebunden.');
-      const blob = await this.api.download(`documents/${response['id']}/content`);
+      const blob = await this.api.download(`documents/${response['id']}/download`);
       if (!this.current(generation, access)) return;
       if (blob.size !== response['size'] || blob.size <= 0 || blob.size > 25 * 1024 * 1024 || await blob.slice(0, 5).text() !== '%PDF-' || await sha256Blob(blob) !== response['sha256']) throw new Error('Größe, PDF-Kennung oder Prüfsumme des Berichts stimmt nicht.');
       if (this.current(generation, access)) downloadBlob(blob, `FirstBlick-Berechnung-${record.id}.pdf`);
