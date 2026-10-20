@@ -115,8 +115,9 @@ public sealed class CostApiTests(PostgresApiFixture fixture) : IClassFixture<Pos
             RecordedCostsCoverage = "Checked all recorded cost sources"
         };
         var firstReport = await Report(client, analysis, input);
-        using var firstResponse = await Send(client, HttpMethod.Post, versions,
-            new { input, expectedReportDigest = firstReport.Digest, reason = "First reviewed project forecast" }, key: "forecast-first-" + Guid.NewGuid().ToString("N"));
+        var firstKey = "forecast-first-" + Guid.NewGuid().ToString("N");
+        var firstCommand = new { input, expectedReportDigest = firstReport.Digest, reason = "First reviewed project forecast" };
+        using var firstResponse = await Send(client, HttpMethod.Post, versions, firstCommand, key: firstKey);
         Assert.Equal(HttpStatusCode.OK, firstResponse.StatusCode);
         var first = AppJson.Read<CostForecast>(await firstResponse.Content.ReadAsStringAsync()); first.Validate();
         Assert.Equal(1, first.Version); Assert.Null(first.PreviousForecastId);
@@ -124,6 +125,10 @@ public sealed class CostApiTests(PostgresApiFixture fixture) : IClassFixture<Pos
         Assert.Equal(480m, first.Report.ForecastCost);
         Assert.Equal(520m, first.Report.ForecastMargin);
         var originalDigest = first.Digest;
+        using var replay = await Send(client, HttpMethod.Post, versions, firstCommand, key: firstKey);
+        Assert.Equal(HttpStatusCode.OK, replay.StatusCode);
+        Assert.Equal("true", replay.Headers.GetValues("Idempotency-Replayed").Single());
+        Assert.Equal(first.Id, AppJson.Read<CostForecast>(await replay.Content.ReadAsStringAsync()).Id);
 
         // Source revisions remain frozen in the previous snapshot even after a new forecast is saved.
         var input2 = input with { TimeCosts = [new(g.Time.Id, 42m, "Reviewed new EUR 42 rate")] };
@@ -149,7 +154,7 @@ public sealed class CostApiTests(PostgresApiFixture fixture) : IClassFixture<Pos
         Assert.Equal(originalDigest, historical.Digest);
         Assert.Equal(firstReport.Digest, historical.Report.Digest);
         Assert.Equal(480m, historical.Report.ForecastCost);
-        Assert.Equal(HttpStatusCode.NotFound,
+        Assert.Equal(HttpStatusCode.MethodNotAllowed,
             (await Send(client, HttpMethod.Put, $"/api/v1/cost-forecasts/{first.Id}", first, first.Revision)).StatusCode);
     }
 

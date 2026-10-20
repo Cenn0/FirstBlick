@@ -86,7 +86,7 @@ export class CostAnalysisComponent{
  }
  downloadForecast():void{
    const saved=this.openedForecast();if(!saved||!this.allowed()||this.busy())return;
-   downloadBlob(new Blob([JSON.stringify({schema:'firstblick.cost-forecast/1.0.0',...saved},null,2)+'\\n'],{type:'application/json;charset=utf-8'}),
+   downloadBlob(new Blob([JSON.stringify({schema:'firstblick.cost-forecast/1.0.0',...saved},null,2)+'\n'],{type:'application/json;charset=utf-8'}),
      `FirstBlick-Prognose-${saved.orderId}-v${saved.version}.json`);
  }
  download():void{const value=this.capture();if(!value||!this.allowed()||this.dirty()||this.busy())return;downloadBlob(new Blob([JSON.stringify({schema:'firstblick.cost-analysis/1.0.0',...value},null,2)+'\n'],{type:'application/json;charset=utf-8'}),`FirstBlick-Nachkalkulation-v1-${value.report.orderId}.json`);}
