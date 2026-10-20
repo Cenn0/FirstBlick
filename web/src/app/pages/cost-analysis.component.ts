@@ -11,18 +11,22 @@ import {CostAnalysisInput,CostCapture,CostSource,CostForecast,CostForecastSummar
 interface TimeInput{selected:boolean;hourlyCost:string;evidence:string}
 interface SupplierInput{selected:boolean;treatment:SupplierTreatment|'';projectNet:string;evidence:string}
 interface ZeroInput{selected:boolean;evidence:string}
+interface SupplierCostAllocation{id:string;revision:number;supplierInvoiceId:string;projectId:string;netAmount:string;reason:string;reversesAllocationId:string|null}
+interface SupplierCostAllocationList{items:SupplierCostAllocation[];active:string[];allocatedNet:string;availableNet:string}
 const uuid=/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 @Component({imports:[FormsModule,RouterLink],templateUrl:'./cost-analysis.component.html'})
 export class CostAnalysisComponent{
  readonly auth=inject(AuthService);private readonly api=inject(ApiService);private readonly route=inject(ActivatedRoute);
  readonly allowed=computed(()=>['ManagingDirector','Office'].includes(this.auth.tenant()?.role||'')&&this.auth.can('orders.read')&&!this.auth.recoveryHold());
  readonly orders=signal<Entity[]>([]);readonly supplierOptions=signal<Entity[]>([]);readonly capture=signal<CostCapture|null>(null);readonly forecasts=signal<CostForecastSummary[]>([]);readonly openedForecast=signal<CostForecast|null>(null);readonly forecastError=signal('');forecastReason='';readonly busy=signal(false);readonly loading=signal(false);readonly error=signal('');readonly dirty=signal(false);readonly extraSuppliers=signal<Entity[]>([]);
+ readonly allocationJournal=signal<SupplierCostAllocation[]>([]);readonly allocationActive=signal<string[]>([]);readonly allocationAvailable=signal<string|null>(null);
+ allocationSupplierId='';allocationNet='';allocationReason='';allocationReverseReason='';
  readonly kinds=[{key:'time-entries',title:'Arbeitszeiten'},{key:'stock-movements',title:'Materialverbrauch & Rückgaben'},{key:'supplier-invoices',title:'Eingangsbelege & Fremdleistungen'}];
  orderId='';supplierId='';timeInputs:Record<string,TimeInput>={};supplierInputs:Record<string,SupplierInput>={};zeroInputs:Record<string,ZeroInput>={};sourcePage:Record<string,number>={};recordedCostsCoverage='';forecastEnabled=false;remainingForecastCost='';forecastEvidence='';
  private generation=0;private orderLookup=0;private supplierLookup=0;private initial=true;
  constructor(){inject(DestroyRef).onDestroy(()=>{this.generation++;});effect(()=>{this.auth.accessSignature();untracked(()=>{this.generation++;this.reset();if(this.allowed())void this.loadOrders();});});}
  private current(generation:number,access:string):boolean{return generation===this.generation&&access===this.auth.accessSignature();}
- private reset():void{this.forecasts.set([]);this.openedForecast.set(null);this.forecastError.set('');this.forecastReason='';this.orders.set([]);this.supplierOptions.set([]);this.extraSuppliers.set([]);this.orderId='';this.supplierId='';this.capture.set(null);this.timeInputs={};this.supplierInputs={};this.zeroInputs={};this.sourcePage={};this.recordedCostsCoverage='';this.forecastEnabled=false;this.remainingForecastCost='';this.forecastEvidence='';this.dirty.set(false);this.error.set('');this.busy.set(false);this.loading.set(false);}
+ private reset():void{this.allocationJournal.set([]);this.allocationActive.set([]);this.allocationAvailable.set(null);this.allocationSupplierId='';this.allocationNet='';this.allocationReason='';this.allocationReverseReason='';this.forecasts.set([]);this.openedForecast.set(null);this.forecastError.set('');this.forecastReason='';this.orders.set([]);this.supplierOptions.set([]);this.extraSuppliers.set([]);this.orderId='';this.supplierId='';this.capture.set(null);this.timeInputs={};this.supplierInputs={};this.zeroInputs={};this.sourcePage={};this.recordedCostsCoverage='';this.forecastEnabled=false;this.remainingForecastCost='';this.forecastEvidence='';this.dirty.set(false);this.error.set('');this.busy.set(false);this.loading.set(false);}
  name(item:Entity|undefined):string{return String(item?.['title']||item?.['name']||item?.['number']||'Vorgang');}
  money(value:string|null):string{return value===null?'Noch ungeklärt':moneyDisplay(value);}
  percent(value:string|null):string{if(value===null)return 'Noch ungeklärt';const formatted=decimalDisplay(value,0,6);return formatted===null?'Wert nicht verfügbar':formatted+' %';}
@@ -43,7 +47,7 @@ export class CostAnalysisComponent{
  async loadOrders(search=''):Promise<void>{if(!this.allowed())return;const initial=this.initial;this.initial=false;const version=++this.orderLookup,generation=this.generation,access=this.auth.accessSignature();this.loading.set(true);try{const result=await this.api.get<Page>(`orders?${new URLSearchParams({search,pageSize:'100'})}`);if(!this.current(generation,access)||version!==this.orderLookup)return;const selected=this.orders().find(order=>order.id===this.orderId);this.orders.set(selected&&!result.items.some(order=>order.id===selected.id)?[selected,...result.items]:result.items);if(initial){const selected=this.route.snapshot.queryParamMap.get('orderId');if(selected)await this.chooseOrder(selected);}}
  catch(error){if(this.current(generation,access))this.reject(error);}finally{if(this.current(generation,access)&&version===this.orderLookup)this.loading.set(false);}}
  async lookupSuppliers(search=''):Promise<void>{if(!this.allowed())return;const version=++this.supplierLookup,generation=this.generation,access=this.auth.accessSignature();try{const result=await this.api.get<Page>(`supplier-invoices?${new URLSearchParams({search,status:'Approved',pageSize:'100'})}`);if(this.current(generation,access)&&version===this.supplierLookup)this.supplierOptions.set(result.items);}catch(error){if(this.current(generation,access)&&version===this.supplierLookup)this.reject(error);}}
- async chooseOrder(id:string):Promise<void>{const generation=++this.generation,access=this.auth.accessSignature();this.orderId=id;this.capture.set(null);this.forecasts.set([]);this.openedForecast.set(null);this.forecastError.set('');this.forecastReason='';this.extraSuppliers.set([]);this.supplierOptions.set([]);this.supplierId='';this.timeInputs={};this.supplierInputs={};this.zeroInputs={};this.sourcePage={};this.recordedCostsCoverage='';this.forecastEnabled=false;this.remainingForecastCost='';this.forecastEvidence='';this.dirty.set(false);this.error.set('');this.loading.set(false);if(!id||!this.allowed())return;if(!uuid.test(id)){this.error.set('Bitte einen gültigen Auftrag auswählen.');return;}this.busy.set(true);try{const result=await this.api.command<CostCapture>(`orders/${id}/cost-analysis`,emptyCostInput());if(!this.current(generation,access))return;this.accept(result);void this.loadForecasts(id,generation,access);if(!this.orders().some(order=>order.id===id)){const order=await this.api.get<Entity>(`orders/${id}`);if(!this.current(generation,access))return;this.orders.update(items=>[order,...items]);}void this.lookupSuppliers();}catch(error){if(this.current(generation,access))this.reject(error);}finally{if(this.current(generation,access))this.busy.set(false);}}
+ async chooseOrder(id:string):Promise<void>{const generation=++this.generation,access=this.auth.accessSignature();this.orderId=id;this.allocationJournal.set([]);this.allocationActive.set([]);this.allocationAvailable.set(null);this.allocationSupplierId='';this.allocationNet='';this.allocationReason='';this.allocationReverseReason='';this.capture.set(null);this.forecasts.set([]);this.openedForecast.set(null);this.forecastError.set('');this.forecastReason='';this.extraSuppliers.set([]);this.supplierOptions.set([]);this.supplierId='';this.timeInputs={};this.supplierInputs={};this.zeroInputs={};this.sourcePage={};this.recordedCostsCoverage='';this.forecastEnabled=false;this.remainingForecastCost='';this.forecastEvidence='';this.dirty.set(false);this.error.set('');this.loading.set(false);if(!id||!this.allowed())return;if(!uuid.test(id)){this.error.set('Bitte einen gültigen Auftrag auswählen.');return;}this.busy.set(true);try{const result=await this.api.command<CostCapture>(`orders/${id}/cost-analysis`,emptyCostInput());if(!this.current(generation,access))return;this.accept(result);void this.loadForecasts(id,generation,access);if(!this.orders().some(order=>order.id===id)){const order=await this.api.get<Entity>(`orders/${id}`);if(!this.current(generation,access))return;this.orders.update(items=>[order,...items]);}void this.lookupSuppliers();}catch(error){if(this.current(generation,access))this.reject(error);}finally{if(this.current(generation,access))this.busy.set(false);}}
  refresh():void{if(this.dirty()&&!confirm('Die eingegebenen Kostenansätze verwerfen und die aktuellen Projektquellen neu einlesen?'))return;void this.chooseOrder(this.orderId);}
  private accept(value:CostCapture):void{if(value.report.orderId!==this.orderId)throw new Error('Der Bericht gehört nicht zum ausgewählten Auftrag. Bitte erneut einlesen.');this.capture.set(value);this.extraSuppliers.update(items=>items.filter(item=>value.report.sources.some(source=>source.kind==='supplier-invoices'&&source.id===item.id)));for(const source of value.report.sources){if(source.kind==='time-entries')this.timeInputs[source.id]??={selected:false,hourlyCost:'',evidence:''};if(source.kind==='supplier-invoices')this.supplierInputs[source.id]??={selected:false,treatment:'',projectNet:'',evidence:''};if(source.kind==='stock-movements')this.zeroInputs[source.id]??={selected:false,evidence:''};}this.dirty.set(false);}
  isAdditionalSupplier(id:string):boolean{return this.extraSuppliers().some(item=>item.id===id);}
@@ -58,6 +62,68 @@ export class CostAnalysisComponent{
    }catch(error){if(this.current(generation,access)&&this.orderId===id){if(error instanceof ApiError&&(error.status===401||error.status===403))this.reject(error);
      else this.forecastError.set(errorMessage(error));}}
  }
+
+ async allocationSourceChanged(id:string):Promise<void>{
+   this.allocationSupplierId=id;this.allocationJournal.set([]);this.allocationActive.set([]);this.allocationAvailable.set(null);
+   if(!uuid.test(id)||!this.allowed())return;
+   const generation=this.generation,access=this.auth.accessSignature();
+   try{const view=await this.api.get<SupplierCostAllocationList>(`supplier-invoices/${id}/cost-allocations`);
+      if(this.current(generation,access)&&this.allocationSupplierId===id){this.allocationJournal.set(view.items);this.allocationActive.set(view.active);this.allocationAvailable.set(view.availableNet);}}
+   catch(error){if(this.current(generation,access)&&this.allocationSupplierId===id)this.reject(error);}
+ }
+ activeAllocations():SupplierCostAllocation[]{return this.allocationJournal().filter(item=>this.allocationActive().includes(item.id));}
+ async postAllocation():Promise<void>{
+   const capture=this.capture(),invoiceId=this.allocationSupplierId,projectId=capture?.report.projectId;
+   if(!this.allowed()||this.busy()||this.dirty()||!uuid.test(invoiceId)||!projectId||!uuid.test(projectId))return;
+   const generation=this.generation,access=this.auth.accessSignature(),orderId=this.orderId;
+   this.busy.set(true);this.error.set('');
+   try{
+     const invoice=await this.api.get<Entity>(`supplier-invoices/${invoiceId}`);
+     if(!this.current(generation,access)||this.orderId!==orderId)return;
+     const digest=invoice['approvedDigest'];
+     if(invoice['status']!=='Approved'||typeof digest!=='string'||digest.length!==64)
+       throw new Error('Der Eingangsbeleg ist noch nicht freigegeben oder besitzt keinen überprüfbaren Belegstand.');
+     const amount=decimalInput(this.allocationNet),reason=this.allocationReason.trim();
+     if(!reason)throw new Error('Bitte die Grundlage des Projektanteils benennen.');
+     const posted=await this.api.command<SupplierCostAllocation>(`supplier-invoices/${invoiceId}/cost-allocations`,
+       {projectId,netAmount:amount,reason,expectedSourceDigest:digest});
+     if(!this.current(generation,access)||this.orderId!==orderId)return;
+     if(posted.supplierInvoiceId!==invoiceId||posted.projectId!==projectId)
+       throw new Error('Die Bestätigung der Kostenbuchung gehört zu einem anderen Projekt.');
+     this.allocationNet='';this.allocationReason='';
+     await this.allocationSourceChanged(invoiceId);
+     if(this.current(generation,access)&&this.orderId===orderId)await this.recalculateAfterAllocation();
+   }catch(error){if(this.current(generation,access))this.reject(error);}
+   finally{if(this.current(generation,access))this.busy.set(false);}
+ }
+ async reverseAllocation(entry:SupplierCostAllocation):Promise<void>{
+   if(!this.allowed()||this.busy()||this.dirty()||!this.allocationActive().includes(entry.id)
+     ||entry.projectId!==this.capture()?.report.projectId)return;
+   const reason=this.allocationReverseReason.trim();if(!reason){this.error.set('Bitte die Stornierungsbegründung eingeben.');return;}
+   const generation=this.generation,access=this.auth.accessSignature(),invoiceId=this.allocationSupplierId,orderId=this.orderId;
+   this.busy.set(true);this.error.set('');
+   try{
+     await this.api.command<SupplierCostAllocation>(`supplier-cost-allocations/${entry.id}/reverse`,{reason},entry.revision);
+     if(!this.current(generation,access)||this.orderId!==orderId)return;
+     this.allocationReverseReason='';
+     await this.allocationSourceChanged(invoiceId);
+     if(this.current(generation,access)&&this.orderId===orderId)await this.recalculateAfterAllocation();
+   }catch(error){if(this.current(generation,access))this.reject(error);}
+   finally{if(this.current(generation,access))this.busy.set(false);}
+ }
+ private async recalculateAfterAllocation():Promise<void>{
+   if(!this.capture()||!this.allowed()||!uuid.test(this.orderId))return;
+   const generation=this.generation,access=this.auth.accessSignature(),id=this.orderId;
+   // Keep the user's reviewed source inputs; committed allocations are merged by the server.
+   // A stale manual supplier estimate cannot be silently used after an allocation.
+   const inputs=this.capture()!.report.reviewedInputs;
+   const value=await this.api.command<CostCapture>(`orders/${id}/cost-analysis`,{
+     ...inputs,supplierCosts:inputs.supplierCosts.filter(item=>!this.allocationJournal()
+       .some(entry=>this.allocationActive().includes(entry.id)&&entry.supplierInvoiceId===item.supplierInvoiceId))
+   });
+   if(this.current(generation,access)&&this.orderId===id)this.accept(value);
+ }
+
  async saveForecast():Promise<void>{
    const value=this.capture(),reason=this.forecastReason.trim();
    if(!value||!this.allowed()||this.dirty()||this.busy()||!uuid.test(this.orderId)||!reason)return;
