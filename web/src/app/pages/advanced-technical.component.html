@@ -1,0 +1,196 @@
+<section class="panel advanced-panel">
+  <div class="page-heading">
+    <div>
+      <p class="eyebrow">VERTIEFTE FACHWERKZEUGE</p>
+      <h2>Monatsbilanz und herstellerbezogene Gefälleplanung</h2>
+      <p>Eigene Daten, vollständige Herkunft und explizite Anwendungsgrenzen. Keine automatisch übernommenen Klimareihen oder Herstellerartikel.</p>
+    </div>
+  </div>
+  @if (!allowed()) {
+    <div class="alert warning">Für erweiterte Berechnungen ist die Berechtigung `technical-results.write` erforderlich.</div>
+  } @else {
+    <div class="section-tabs" role="tablist" aria-label="Erweitertes Verfahren">
+      @for (key of modes; track key) {
+        <button type="button" role="tab" [id]="'advanced-tab-'+key" [attr.aria-controls]="'advanced-panel-'+key"
+          [attr.aria-selected]="mode()===key" [attr.tabindex]="mode()===key ? 0 : -1"
+          [class.active]="mode()===key" (keydown)="tabKey($event,key)" (click)="changeMode(key)">{{methods[key].name}}</button>
+      }
+    </div>
+    @if (error()) {<div class="alert error" role="alert">{{error()}}</div>}
+    @if (notice()) {<div class="alert information" role="status">{{notice()}}</div>}
+    <div [id]="'advanced-panel-'+mode()" role="tabpanel" [attr.aria-labelledby]="'advanced-tab-'+mode()">
+      <div class="alert warning">
+        @if (mode()==='boards') {
+          Ein beschränkter Verlege- und Bestellvorschlag für ein rechteckiges Dach mit <strong>einer durchgehenden Tiefkante</strong>.
+          Die Herstellereigenschaften sind ungeprüfte, vom Benutzer eingetragene Werte. Keine Entwässerungs-, Brandschutz-, Windsog- oder Ausführungsfreigabe.
+        } @else {
+          Die Berechnung führt das <strong>stationäre Monats-Diffusionsverfahren nach ISO 13788:2012</strong> aus.
+          Sie bestätigt ausdrücklich <strong>nicht</strong> die Zulässigkeit der Konstruktion nach DIN 4108-3,
+          Luftdichtheit, Feuchteschäden oder die Eignung der angegebenen Materialwerte.
+        }
+      </div>
+      <form #advancedForm="ngForm" (ngSubmit)="calculate()">
+        <fieldset [disabled]="busy()">
+          @if (mode()==='boards') {
+            <h3>Dachfeld und Entwässerungsrichtung</h3>
+            <div class="form-grid">
+              <div class="form-field"><label for="ab-length">Rechteckige Dachlänge (m)</label><input id="ab-length" name="ab-length" type="number" step="any" min=".01" max="1000" required [(ngModel)]="roofLengthM" (ngModelChange)="edited()"></div>
+              <div class="form-field"><label for="ab-width">Dachbreite (m)</label><input id="ab-width" name="ab-width" type="number" step="any" min=".01" max="1000" required [(ngModel)]="roofWidthM" (ngModelChange)="edited()"></div>
+              <div class="form-field"><label for="ab-thin">Dicke an der Tiefkante (m)</label><input id="ab-thin" name="ab-thin" type="number" min=".01" max="2" step="any" required [(ngModel)]="lowEdgeThicknessM" (ngModelChange)="edited()"></div>
+              <div class="form-field"><label for="ab-slope">Konstantes Gefälle (%)</label><input id="ab-slope" name="ab-slope" type="number" min=".01" max="10" step="any" required [(ngModel)]="slopePercent" (ngModelChange)="edited()"></div>
+              <div class="form-field"><label for="ab-axis">Steigende Achse ab Tiefkante</label><select id="ab-axis" name="ab-axis" [(ngModel)]="flowAxis" (ngModelChange)="edited()"><option value="AlongLength">Entlang der Dachlänge (x)</option><option value="AlongWidth">Entlang der Dachbreite (y)</option></select></div>
+              <div class="form-field"><label for="ab-low">Position der Tiefkante</label><select id="ab-low" name="ab-low" [(ngModel)]="lowEdgeAtCoordinateZero" (ngModelChange)="edited()"><option [ngValue]="true">Bei x/y = 0</option><option [ngValue]="false">Am entgegengesetzten Feldrand</option></select></div>
+              <div class="form-field full-width"><label for="ab-source">Quelle der Abmessungen</label><input id="ab-source" name="ab-source" required maxlength="500" [(ngModel)]="measuredRoofSource" (ngModelChange)="edited()" placeholder="Aufmaß, Planstand, Maßkette, Datum"></div>
+              <div class="form-field full-width"><label for="ab-drain">Fachlich geprüfte Entwässerungsvorgabe</label><textarea id="ab-drain" name="ab-drain" rows="2" required maxlength="1000" [(ngModel)]="drainageDesignReview" (ngModelChange)="edited()" placeholder="Anordnung der Tiefkante, zugehöriger externer Plan und Prüfer"></textarea></div>
+            </div>
+            <h3>Herstellerkatalog und Produktreihe</h3>
+            <div class="form-grid">
+              <div class="form-field"><label for="ab-manufacturer">Hersteller</label><input id="ab-manufacturer" name="ab-manufacturer" required maxlength="200" [(ngModel)]="manufacturer" (ngModelChange)="edited()"></div>
+              <div class="form-field"><label for="ab-range">Produktreihe</label><input id="ab-range" name="ab-range" required maxlength="200" [(ngModel)]="productRange" (ngModelChange)="edited()"></div>
+              <div class="form-field"><label for="ab-revision">Katalogrevision / Datum</label><input id="ab-revision" name="ab-revision" required maxlength="200" [(ngModel)]="catalogRevision" (ngModelChange)="edited()"></div>
+              <div class="form-field"><label for="ab-catalog-source">Original-Katalogquelle</label><input id="ab-catalog-source" name="ab-catalog-source" required maxlength="1000" [(ngModel)]="catalogSource" (ngModelChange)="edited()"></div>
+              <div class="form-field"><label for="ab-run">Plattenlänge in Gefällerichtung (m)</label><input id="ab-run" name="ab-run" type="number" step="any" min=".2" max="3" required [(ngModel)]="boardRunM" (ngModelChange)="edited()"></div>
+              <div class="form-field"><label for="ab-cross">Plattenbreite quer dazu (m)</label><input id="ab-cross" name="ab-cross" type="number" step="any" min=".2" max="3" required [(ngModel)]="boardCrossM" (ngModelChange)="edited()"></div>
+            </div>
+            <h3>Tatsächlich verfügbare Hersteller-SKUs</h3>
+            <p>Je benötigter Gefällestufe die Artikelnummer und Nennkanten eintragen. Es findet <strong>kein Ersatz</strong> durch andere Dicken statt. Preise sind optional; leere Preise bleiben unbekannt.</p>
+            @for (board of boards; track $index; let i = $index) {
+              <section class="line-row">
+                <div class="line-heading"><h4>Plattenartikel {{i+1}}</h4><button type="button" class="text-button danger-text" [disabled]="boards.length<=1" (click)="removeBoard(i)">Entfernen</button></div>
+                <div class="form-grid">
+                  <div class="form-field"><label [for]="'ab-sku-'+i">Artikelnummer</label><input [id]="'ab-sku-'+i" [name]="'ab-sku-'+i" required maxlength="100" [(ngModel)]="board.sku" (ngModelChange)="edited()"></div>
+                  <div class="form-field"><label [for]="'ab-boardlow-'+i">Dünne Kante (m)</label><input [id]="'ab-boardlow-'+i" [name]="'ab-boardlow-'+i" type="number" step="any" min=".01" max="2" required [(ngModel)]="board.thinEdgeM" (ngModelChange)="edited()"></div>
+                  <div class="form-field"><label [for]="'ab-boardhigh-'+i">Dicke Kante (m)</label><input [id]="'ab-boardhigh-'+i" [name]="'ab-boardhigh-'+i" type="number" step="any" min=".01" max="2" required [(ngModel)]="board.thickEdgeM" (ngModelChange)="edited()"></div>
+                  <div class="form-field"><label [for]="'ab-units-'+i">Stück je Packung</label><input [id]="'ab-units-'+i" [name]="'ab-units-'+i" type="number" step="1" min="1" max="200" required [(ngModel)]="board.unitsPerPack" (ngModelChange)="edited()"></div>
+                  <div class="form-field"><label [for]="'ab-price-'+i">Preis je Platte (€), falls belegt</label><input [id]="'ab-price-'+i" [name]="'ab-price-'+i" type="text" inputmode="decimal" maxlength="12" [(ngModel)]="board.price" (ngModelChange)="edited()" placeholder="Leer = unbekannt"></div>
+                </div>
+              </section>
+            }
+            <button type="button" class="button secondary" [disabled]="boards.length>=500" (click)="addBoard()">+ Weiteren Herstellerartikel erfassen</button>
+          } @else {
+            <h3>ISO-13788-Randbedingungen und Anwendungsannahmen</h3>
+            <div class="form-grid">
+              <div class="form-field"><label for="am-year">Klimakalenderjahr</label><input id="am-year" name="am-year" type="number" min="1900" max="3000" step="1" required [(ngModel)]="climateCalendarYear" (ngModelChange)="edited()"></div>
+              <div class="form-field"><label for="am-trial">Versuchsmonat für Bilanzbeginn</label><input id="am-trial" name="am-trial" type="number" min="1" max="12" step="1" required [(ngModel)]="trialMonth" (ngModelChange)="edited()"></div>
+              <div class="form-field"><label for="am-flow">Wärmestromrichtung</label><select id="am-flow" name="am-flow" [(ngModel)]="heatFlow" (ngModelChange)="edited()"><option value="Upward">Aufwärts</option><option value="Horizontal">Horizontal</option><option value="Downward">Abwärts</option></select></div>
+              <div class="form-field"><label for="am-exterior">Außenrandbedingung</label><select id="am-exterior" name="am-exterior" [(ngModel)]="exteriorBoundary" (ngModelChange)="edited()"><option value="OutsideAir">Außenluft</option><option value="WellVentilatedCavity">Stark belüftete Außenschicht</option></select></div>
+              <div class="form-field"><label for="am-treatment">Thermische Außentemperatur</label><select id="am-treatment" name="am-treatment" [(ngModel)]="climateTreatment" (ngModelChange)="edited()"><option value="WallAir">Außenluftwerte</option><option value="RoofMinusTwoKelvin">Dach: außen minus 2 K</option><option value="SuppliedEquivalentRoofTemperature">Explizit je Monat erfasster Dachwert</option></select></div>
+              <div class="form-field"><label for="am-slices">Wärmeschichten zur Kontrolle feiner unterteilen</label><select id="am-slices" name="am-slices" [(ngModel)]="subdivideThermalLayers" (ngModelChange)="edited()"><option [ngValue]="false">Nein</option><option [ngValue]="true">Ja</option></select></div>
+              <div class="form-field full-width"><label for="am-source">Nachvollziehbare Klimadatenquelle</label><input id="am-source" name="am-source" required maxlength="1000" [(ngModel)]="climateSource" (ngModelChange)="edited()"></div>
+              <div class="form-field full-width"><label for="am-construction">Bauteil- und Verfahrensprüfung</label><textarea id="am-construction" name="am-construction" rows="2" required maxlength="2000" [(ngModel)]="constructionReview" (ngModelChange)="edited()" placeholder="Konstruktion, Nachweis der Verfahrensgrenzen, Prüfperson"></textarea></div>
+            </div>
+            <h4>Alle sechs Bedingungen müssen fachlich bestätigt sein</h4>
+            <div class="form-grid">
+              @for (flag of applicabilityFlags; track flag.key) {
+                <label class="form-field"><input type="checkbox" [name]="'am-check-'+flag.key" [(ngModel)]="applicability[flag.key]" (ngModelChange)="edited()"> {{flag.title}}</label>
+              }
+            </div>
+            <h3>Schichten von innen nach außen</h3>
+            @for (layer of layers; track $index; let i=$index) {
+              <section class="line-row">
+                <div class="line-heading"><h4>Schicht {{i+1}}</h4><button type="button" class="text-button danger-text" [disabled]="layers.length<=1" (click)="removeLayer(i)">Entfernen</button></div>
+                <div class="form-grid">
+                  <div class="form-field"><label [for]="'am-name-'+i">Schichtbezeichnung</label><input [id]="'am-name-'+i" [name]="'am-name-'+i" required maxlength="200" [(ngModel)]="layer.name" (ngModelChange)="edited()"></div>
+                  <div class="form-field"><label [for]="'am-kind-'+i">Bauteilart</label><select [id]="'am-kind-'+i" [name]="'am-kind-'+i" [(ngModel)]="layer.kind" (ngModelChange)="edited()"><option value="HomogeneousLayer">Homogen</option><option value="Membrane">Schicht/Membran</option><option value="UnventilatedAirLayer">Unbelüftete Luftschicht</option></select></div>
+                  <div class="form-field"><label [for]="'am-r-'+i">Wärmewiderstand R (m²K/W)</label><input [id]="'am-r-'+i" [name]="'am-r-'+i" type="number" min="0" max="50" step="any" required [(ngModel)]="layer.resistanceM2KW" (ngModelChange)="edited()"></div>
+                  <div class="form-field"><label [for]="'am-sd-'+i">Diffusionsäquivalente Luftschichtdicke sd (m)</label><input [id]="'am-sd-'+i" [name]="'am-sd-'+i" type="number" min=".000001" max="1000000" step="any" required [(ngModel)]="layer.sdM" (ngModelChange)="edited()"></div>
+                  <div class="form-field full-width"><label [for]="'am-refs-'+i">Quelle der Bemessungswerte</label><input [id]="'am-refs-'+i" [name]="'am-refs-'+i" required maxlength="1000" [(ngModel)]="layer.designValueSource" (ngModelChange)="edited()"></div>
+                </div>
+              </section>
+            }
+            <button type="button" class="button secondary" [disabled]="layers.length>=60" (click)="addLayer()">+ Schicht hinzufügen</button>
+            <h3>Monatsklima – zwölf unabhängige Datensätze</h3>
+            <p>Die Klimaperiode wird durch die tatsächlichen Monate mit 28–31 Tagen integriert; fehlende Werte werden nicht geschätzt.</p>
+            <div class="climate-grid">
+              @for (month of months; track month.month) {
+                <section class="climate-card">
+                  <h4>{{monthsLabels[month.month-1]}}</h4>
+                  <div class="form-field"><label [for]="'am-it-'+month.month">Innen (°C)</label><input [id]="'am-it-'+month.month" [name]="'am-it-'+month.month" type="number" min="-50" max="80" step="any" required [(ngModel)]="month.insideTemperatureC" (ngModelChange)="edited()"></div>
+                  <div class="form-field"><label [for]="'am-et-'+month.month">Außenluft (°C)</label><input [id]="'am-et-'+month.month" [name]="'am-et-'+month.month" type="number" min="-50" max="80" step="any" required [(ngModel)]="month.outsideAirTemperatureC" (ngModelChange)="edited()"></div>
+                  <div class="form-field"><label [for]="'am-irh-'+month.month">RH innen (%)</label><input [id]="'am-irh-'+month.month" [name]="'am-irh-'+month.month" type="number" min="0" max="100" step="any" required [(ngModel)]="month.insideRelativeHumidityPercent" (ngModelChange)="edited()"></div>
+                  <div class="form-field"><label [for]="'am-erh-'+month.month">RH außen (%)</label><input [id]="'am-erh-'+month.month" [name]="'am-erh-'+month.month" type="number" min="0" max="100" step="any" required [(ngModel)]="month.outsideRelativeHumidityPercent" (ngModelChange)="edited()"></div>
+                  @if (needsEquivalent()) {<div class="form-field"><label [for]="'am-equiv-'+month.month">Dach-Ersatztemperatur (°C)</label><input [id]="'am-equiv-'+month.month" [name]="'am-equiv-'+month.month" type="number" min="-50" max="80" step="any" required [(ngModel)]="month.equivalentOutsideTemperatureC" (ngModelChange)="edited()"></div>}
+                </section>
+              }
+            </div>
+            @if (mode()==='drying') {
+              <h3>Zusätzlicher Austrocknungsversuch</h3>
+              <p>Die Methode startet gemäß ISO-13788-Abschnitt-7-Vergleich mit <strong>1 kg/m²</strong> zusätzlichem Wasser in der Mitte einer homogenen Schicht. Das ist nicht die gemessene Baufeuchte.</p>
+              <div class="form-grid">
+                <div class="form-field"><label for="am-wet">Betroffene Schicht</label><select id="am-wet" name="am-wet" required [(ngModel)]="wettedLayerIndex" (ngModelChange)="edited()"><option [ngValue]="null">Bitte auswählen</option>@for (layer of layers; track $index; let i=$index){<option [ngValue]="i">{{i+1}} – {{layer.name || 'Noch ohne Namen'}}</option>}</select></div>
+                <div class="form-field"><label for="am-start">Austrocknungs-Startmonat</label><input id="am-start" name="am-start" type="number" min="1" max="12" step="1" required [(ngModel)]="startingMonth" (ngModelChange)="edited()"></div>
+                <div class="form-field full-width"><label for="am-assess">Prüfung der Anfangsbedingungen</label><textarea id="am-assess" name="am-assess" required rows="2" maxlength="2000" [(ngModel)]="initialAssessmentReview" (ngModelChange)="edited()"></textarea></div>
+              </div>
+            }
+          }
+          <div class="detail-actions"><button type="submit" class="button primary" [disabled]="busy() || advancedForm.invalid">{{busy() ? 'Prüfung läuft …' : 'Rechenlauf mit diesen Angaben starten'}}</button></div>
+        </fieldset>
+      </form>
+      @if (result(); as value) {
+        <section class="panel result-panel" aria-live="polite">
+          <h3>Rechenlauf und Herkunft</h3>
+          <p>Verfahren: <code>{{value.provenance.methodId}}</code>; Revision {{value.provenance.methodVersion}}</p>
+          <p>SHA-256 der normalisierten Eingaben: <code class="digest">{{value.provenance.inputSha256}}</code></p>
+          @if (mode()==='boards') {
+            <dl class="result-list">
+              <div><dt>Belegte Fläche</dt><dd>{{number(value['roofAreaM2'])}} m²</dd></div>
+              <div><dt>Platten im Feld</dt><dd>{{value['installedBoards']}}</dd></div>
+              <div><dt>Einbauvolumen</dt><dd>{{number(value['installedVolumeM3'])}} m³</dd></div>
+              <div><dt>Zuschnittverschnitt</dt><dd>{{number(value['cutWasteVolumeM3'])}} m³</dd></div>
+              <div><dt>Preis aller Verpackungseinheiten</dt><dd>{{value['totalEstimatedPackCostEur'] == null ? 'Nicht vollständig bekannt' : number(value['totalEstimatedPackCostEur']) + ' €'}}</dd></div>
+            </dl>
+            <h4>Bestellvorschlag nach SKU</h4>
+            <div class="table-scroll"><table><thead><tr><th>SKU</th><th>Verbaut</th><th>Gesamt zu bestellen</th><th>Packungen</th><th>Zuschnitte</th><th>Kosten</th></tr></thead>
+              <tbody>@for (row of responseEntries(value,'orders'); track row['sku']) {<tr><td>{{row['sku']}}</td><td>{{row['usedBoards']}}</td><td>{{row['boardsOrdered']}}</td><td>{{row['packsToOrder']}}</td><td>{{row['boardsRequiringCut']}}</td><td>{{row['estimatedPackCostEur'] == null ? 'Unbekannt' : row['estimatedPackCostEur'] + ' €'}}</td></tr>}</tbody></table></div>
+            <details><summary>Positionsplan (Koordinaten und Zuschnitte)</summary><div class="table-scroll"><table><thead><tr><th>Zeile/Spalte</th><th>SKU</th><th>x / y (m)</th><th>Länge / Breite (m)</th><th>Dicken (m)</th><th>Zuschnitt</th></tr></thead>
+              <tbody>@for (cell of responseEntries(value,'placements'); track $index) {<tr><td>{{cell['row']}}/{{cell['column']}}</td><td>{{cell['sku']}}</td><td>{{number(cell['x'])}}/{{number(cell['y'])}}</td><td>{{number(cell['lengthM'])}}/{{number(cell['widthM'])}}</td><td>{{number(cell['thinEdgeM'])}}/{{number(cell['thickEdgeM'])}}</td><td>{{cell['requiresCut'] ? 'Ja' : 'Nein'}}</td></tr>}</tbody></table></div></details>
+          } @else {
+            <dl class="result-list">
+              @if (mode()==='balance') {
+                <div><dt>Über das Jahr kondensiert</dt><dd>{{number(value['totalCondensedKgM2'],8)}} kg/m²</dd></div>
+                <div><dt>Über das Jahr verdunstet</dt><dd>{{number(value['totalEvaporatedKgM2'],8)}} kg/m²</dd></div>
+                <div><dt>Jahresrestmenge</dt><dd>{{number(value['residualCondensateKgM2'],8)}} kg/m²</dd></div>
+                <div><dt>Bilanzklasse</dt><dd>{{value['classification']}}</dd></div>
+              } @else {
+                <div><dt>Verfahrensstart</dt><dd>1 kg/m² Zusatzfeuchte</dd></div>
+                <div><dt>Austrocknung vollständig nach</dt><dd>{{value['dryingTimeMonths'] === null ? 'Nicht innerhalb 120 Monaten' : value['dryingTimeMonths'] + ' Monaten'}}</dd></div>
+                <div><dt>Restmenge</dt><dd>{{number(value['residualMassKgM2'],8)}} kg/m²</dd></div>
+              }
+            </dl>
+            <h4>Monatliche Kondensation und Verdunstung</h4>
+            <div class="table-scroll"><table><thead><tr><th>Monat</th><th>Kondensat (kg/m²)</th><th>Verdunstung (kg/m²)</th><th>Rest (kg/m²)</th><th>Massenbilanzfehler</th></tr></thead><tbody>
+              @for (m of responseEntries(value,'months'); track $index) {<tr><td>{{monthsLabels[+m['month']-1]}}</td><td>{{number(m['condensedKgM2'],8)}}</td><td>{{number(m['evaporatedKgM2'],8)}}</td><td>{{number(m['endStoredMassKgM2'],8)}}</td><td>{{number(m['massConservationErrorKgM2'],10)}}</td></tr>}
+            </tbody></table></div>
+            <div class="alert warning">Normative Rechenmethode ≠ nationale Bauteilzulassung. Grenzflächenhöchstwerte, Schadensrisiko und nationale Verfahrensgrenzen gesondert prüfen.</div>
+          }
+          <details><summary>Fachliche Grenzen und dokumentierte Eingaben</summary>@for (limit of value.provenance.limitations; track $index) {<p>{{limit}}</p>}<pre>{{value.input | json}}</pre></details>
+          <div class="detail-actions"><button type="button" class="button secondary" [disabled]="busy()" (click)="exportJson()">Vollständige Evidenz als JSON</button></div>
+        </section>
+      }
+      @if (result()) {
+        <section class="panel persistence-panel">
+          <h3>Berechnung einem Projekt zuordnen</h3>
+          <p>Die Speicherung rechnet den vollständigen Datensatz serverseitig erneut und bindet ihn an Mandant, Projekt, Person und SHA-Digest.</p>
+          <fieldset [disabled]="busy()">
+            <div class="form-grid">
+              <div class="form-field"><label for="adv-project-search">Projekt suchen</label><input id="adv-project-search" name="adv-project-search" maxlength="200" [(ngModel)]="projectSearch"></div>
+              <div class="form-field"><button type="button" class="button secondary" (click)="searchProjects()">Projekte suchen</button></div>
+            </div>
+            @if (projects().length) {
+              <div class="form-field"><label for="adv-project">Projekt auswählen</label><select id="adv-project" [(ngModel)]="projectId" (ngModelChange)="attachmentEdited()"><option value="">Bitte auswählen</option>@for (project of projects(); track project.id){<option [value]="project.id">{{project['name']}}</option>}</select></div>
+            }
+            @if (totalProjects() > 25) {
+              <div class="detail-actions"><button type="button" class="button secondary" [disabled]="projectPage<=1" (click)="searchProjects(projectPage-1)">Vorherige Seite</button>
+                <span>Seite {{projectPage}}</span><button type="button" class="button secondary" [disabled]="projectPage*25>=totalProjects()" (click)="searchProjects(projectPage+1)">Nächste Seite</button></div>
+            }
+            <div class="form-field"><label for="adv-title">Berichtstitel</label><input id="adv-title" maxlength="240" [(ngModel)]="reportTitle" (ngModelChange)="attachmentEdited()"></div>
+            <div class="detail-actions"><button type="button" class="button primary" [disabled]="!projectId || !reportTitle.trim() || !!saved()" (click)="save()">Nachprüfung und Ablage im Projekt</button>
+              @if (saved()) {<button type="button" class="button secondary" (click)="pdf()">Prüfsummenverifizierten PDF-Bericht laden</button>}
+            </div>
+          </fieldset>
+          @if (saved(); as record) {<p role="status">Gespeichert: Revision {{record.revision}} – Digest <code class="digest">{{record.digest}}</code></p><a routerLink="/technical-results">Berechnungsverlauf öffnen →</a>}
+        </section>
+      }
+    </div>
+  }
+</section>
