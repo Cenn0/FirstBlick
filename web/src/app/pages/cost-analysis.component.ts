@@ -7,7 +7,7 @@ import {ApiError,errorMessage} from '../core/transport';
 import {decimalInput} from '../core/decimal-input';
 import {decimalDisplay,moneyDisplay} from '../core/decimal-format';
 import {downloadBlob} from '../core/integrations.models';
-import {CostAnalysisInput,CostCapture,CostSource,SupplierTreatment,costMissingLabel,emptyCostInput} from '../core/cost.models';
+import {CostAnalysisInput,CostCapture,CostSource,CostForecast,CostForecastSummary,SupplierTreatment,costMissingLabel,emptyCostInput} from '../core/cost.models';
 interface TimeInput{selected:boolean;hourlyCost:string;evidence:string}
 interface SupplierInput{selected:boolean;treatment:SupplierTreatment|'';projectNet:string;evidence:string}
 interface ZeroInput{selected:boolean;evidence:string}
@@ -16,13 +16,13 @@ const uuid=/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 export class CostAnalysisComponent{
  readonly auth=inject(AuthService);private readonly api=inject(ApiService);private readonly route=inject(ActivatedRoute);
  readonly allowed=computed(()=>['ManagingDirector','Office'].includes(this.auth.tenant()?.role||'')&&this.auth.can('orders.read')&&!this.auth.recoveryHold());
- readonly orders=signal<Entity[]>([]);readonly supplierOptions=signal<Entity[]>([]);readonly capture=signal<CostCapture|null>(null);readonly busy=signal(false);readonly loading=signal(false);readonly error=signal('');readonly dirty=signal(false);readonly extraSuppliers=signal<Entity[]>([]);
+ readonly orders=signal<Entity[]>([]);readonly supplierOptions=signal<Entity[]>([]);readonly capture=signal<CostCapture|null>(null);readonly forecasts=signal<CostForecastSummary[]>([]);readonly openedForecast=signal<CostForecast|null>(null);readonly forecastError=signal('');forecastReason='';readonly busy=signal(false);readonly loading=signal(false);readonly error=signal('');readonly dirty=signal(false);readonly extraSuppliers=signal<Entity[]>([]);
  readonly kinds=[{key:'time-entries',title:'Arbeitszeiten'},{key:'stock-movements',title:'Materialverbrauch & Rückgaben'},{key:'supplier-invoices',title:'Eingangsbelege & Fremdleistungen'}];
  orderId='';supplierId='';timeInputs:Record<string,TimeInput>={};supplierInputs:Record<string,SupplierInput>={};zeroInputs:Record<string,ZeroInput>={};sourcePage:Record<string,number>={};recordedCostsCoverage='';forecastEnabled=false;remainingForecastCost='';forecastEvidence='';
  private generation=0;private orderLookup=0;private supplierLookup=0;private initial=true;
  constructor(){inject(DestroyRef).onDestroy(()=>{this.generation++;});effect(()=>{this.auth.accessSignature();untracked(()=>{this.generation++;this.reset();if(this.allowed())void this.loadOrders();});});}
  private current(generation:number,access:string):boolean{return generation===this.generation&&access===this.auth.accessSignature();}
- private reset():void{this.orders.set([]);this.supplierOptions.set([]);this.extraSuppliers.set([]);this.orderId='';this.supplierId='';this.capture.set(null);this.timeInputs={};this.supplierInputs={};this.zeroInputs={};this.sourcePage={};this.recordedCostsCoverage='';this.forecastEnabled=false;this.remainingForecastCost='';this.forecastEvidence='';this.dirty.set(false);this.error.set('');this.busy.set(false);this.loading.set(false);}
+ private reset():void{this.forecasts.set([]);this.openedForecast.set(null);this.forecastError.set('');this.forecastReason='';this.orders.set([]);this.supplierOptions.set([]);this.extraSuppliers.set([]);this.orderId='';this.supplierId='';this.capture.set(null);this.timeInputs={};this.supplierInputs={};this.zeroInputs={};this.sourcePage={};this.recordedCostsCoverage='';this.forecastEnabled=false;this.remainingForecastCost='';this.forecastEvidence='';this.dirty.set(false);this.error.set('');this.busy.set(false);this.loading.set(false);}
  name(item:Entity|undefined):string{return String(item?.['title']||item?.['name']||item?.['number']||'Vorgang');}
  money(value:string|null):string{return value===null?'Noch ungeklärt':moneyDisplay(value);}
  percent(value:string|null):string{if(value===null)return 'Noch ungeklärt';const formatted=decimalDisplay(value,0,6);return formatted===null?'Wert nicht verfügbar':formatted+' %';}
@@ -43,7 +43,7 @@ export class CostAnalysisComponent{
  async loadOrders(search=''):Promise<void>{if(!this.allowed())return;const initial=this.initial;this.initial=false;const version=++this.orderLookup,generation=this.generation,access=this.auth.accessSignature();this.loading.set(true);try{const result=await this.api.get<Page>(`orders?${new URLSearchParams({search,pageSize:'100'})}`);if(!this.current(generation,access)||version!==this.orderLookup)return;const selected=this.orders().find(order=>order.id===this.orderId);this.orders.set(selected&&!result.items.some(order=>order.id===selected.id)?[selected,...result.items]:result.items);if(initial){const selected=this.route.snapshot.queryParamMap.get('orderId');if(selected)await this.chooseOrder(selected);}}
  catch(error){if(this.current(generation,access))this.reject(error);}finally{if(this.current(generation,access)&&version===this.orderLookup)this.loading.set(false);}}
  async lookupSuppliers(search=''):Promise<void>{if(!this.allowed())return;const version=++this.supplierLookup,generation=this.generation,access=this.auth.accessSignature();try{const result=await this.api.get<Page>(`supplier-invoices?${new URLSearchParams({search,status:'Approved',pageSize:'100'})}`);if(this.current(generation,access)&&version===this.supplierLookup)this.supplierOptions.set(result.items);}catch(error){if(this.current(generation,access)&&version===this.supplierLookup)this.reject(error);}}
- async chooseOrder(id:string):Promise<void>{const generation=++this.generation,access=this.auth.accessSignature();this.orderId=id;this.capture.set(null);this.extraSuppliers.set([]);this.supplierOptions.set([]);this.supplierId='';this.timeInputs={};this.supplierInputs={};this.zeroInputs={};this.sourcePage={};this.recordedCostsCoverage='';this.forecastEnabled=false;this.remainingForecastCost='';this.forecastEvidence='';this.dirty.set(false);this.error.set('');this.loading.set(false);if(!id||!this.allowed())return;if(!uuid.test(id)){this.error.set('Bitte einen gültigen Auftrag auswählen.');return;}this.busy.set(true);try{const result=await this.api.command<CostCapture>(`orders/${id}/cost-analysis`,emptyCostInput());if(!this.current(generation,access))return;this.accept(result);if(!this.orders().some(order=>order.id===id)){const order=await this.api.get<Entity>(`orders/${id}`);if(!this.current(generation,access))return;this.orders.update(items=>[order,...items]);}void this.lookupSuppliers();}catch(error){if(this.current(generation,access))this.reject(error);}finally{if(this.current(generation,access))this.busy.set(false);}}
+ async chooseOrder(id:string):Promise<void>{const generation=++this.generation,access=this.auth.accessSignature();this.orderId=id;this.capture.set(null);this.forecasts.set([]);this.openedForecast.set(null);this.forecastError.set('');this.forecastReason='';this.extraSuppliers.set([]);this.supplierOptions.set([]);this.supplierId='';this.timeInputs={};this.supplierInputs={};this.zeroInputs={};this.sourcePage={};this.recordedCostsCoverage='';this.forecastEnabled=false;this.remainingForecastCost='';this.forecastEvidence='';this.dirty.set(false);this.error.set('');this.loading.set(false);if(!id||!this.allowed())return;if(!uuid.test(id)){this.error.set('Bitte einen gültigen Auftrag auswählen.');return;}this.busy.set(true);try{const result=await this.api.command<CostCapture>(`orders/${id}/cost-analysis`,emptyCostInput());if(!this.current(generation,access))return;this.accept(result);void this.loadForecasts(id,generation,access);if(!this.orders().some(order=>order.id===id)){const order=await this.api.get<Entity>(`orders/${id}`);if(!this.current(generation,access))return;this.orders.update(items=>[order,...items]);}void this.lookupSuppliers();}catch(error){if(this.current(generation,access))this.reject(error);}finally{if(this.current(generation,access))this.busy.set(false);}}
  refresh():void{if(this.dirty()&&!confirm('Die eingegebenen Kostenansätze verwerfen und die aktuellen Projektquellen neu einlesen?'))return;void this.chooseOrder(this.orderId);}
  private accept(value:CostCapture):void{if(value.report.orderId!==this.orderId)throw new Error('Der Bericht gehört nicht zum ausgewählten Auftrag. Bitte erneut einlesen.');this.capture.set(value);this.extraSuppliers.update(items=>items.filter(item=>value.report.sources.some(source=>source.kind==='supplier-invoices'&&source.id===item.id)));for(const source of value.report.sources){if(source.kind==='time-entries')this.timeInputs[source.id]??={selected:false,hourlyCost:'',evidence:''};if(source.kind==='supplier-invoices')this.supplierInputs[source.id]??={selected:false,treatment:'',projectNet:'',evidence:''};if(source.kind==='stock-movements')this.zeroInputs[source.id]??={selected:false,evidence:''};}this.dirty.set(false);}
  isAdditionalSupplier(id:string):boolean{return this.extraSuppliers().some(item=>item.id===id);}
@@ -52,5 +52,42 @@ export class CostAnalysisComponent{
  private text(value:string,label:string):string{const trimmed=value.trim();if(!trimmed)throw new Error('Bitte '+label+' benennen.');return trimmed;}
  private input():CostAnalysisInput{return {timeCosts:Object.entries(this.timeInputs).filter(([,value])=>value.selected).map(([timeEntryId,value])=>({timeEntryId,hourlyCost:decimalInput(value.hourlyCost),evidence:this.text(value.evidence,'die Quelle des Stundensatzes')})),supplierCosts:Object.entries(this.supplierInputs).filter(([,value])=>value.selected).map(([supplierInvoiceId,value])=>{if(!value.treatment)throw new Error('Bitte die Behandlung jedes ausgewählten Eingangsbelegs ausdrücklich auswählen.');return {supplierInvoiceId,treatment:value.treatment,projectNet:decimalInput(value.projectNet),evidence:this.text(value.evidence,'die Grundlage der Belegzuordnung')};}),zeroStockCosts:Object.entries(this.zeroInputs).filter(([,value])=>value.selected).map(([stockMovementId,value])=>({stockMovementId,evidence:this.text(value.evidence,'den Nachweis für den kostenlosen Materialansatz')})),remainingForecastCost:this.forecastEnabled?decimalInput(this.remainingForecastCost):null,forecastEvidence:this.forecastEnabled?this.text(this.forecastEvidence,'die Grundlage der Restkostenschätzung'):'',recordedCostsCoverage:this.recordedCostsCoverage.trim()};}
  async calculate():Promise<void>{if(!this.allowed()||!this.capture()||this.busy()||!uuid.test(this.orderId))return;const generation=this.generation,access=this.auth.accessSignature();this.busy.set(true);this.error.set('');try{const body=this.input(),value=await this.api.command<CostCapture>(`orders/${this.orderId}/cost-analysis`,body);if(this.current(generation,access))this.accept(value);}catch(error){if(this.current(generation,access))this.reject(error);}finally{if(this.current(generation,access))this.busy.set(false);}}
+ private async loadForecasts(id:string,generation:number,access:string):Promise<void>{
+   try{const data=await this.api.get<{items:CostForecastSummary[];total:number}>(`orders/${id}/cost-forecasts`);
+     if(this.current(generation,access)&&this.orderId===id){this.forecasts.set(data.items);this.forecastError.set('');}
+   }catch(error){if(this.current(generation,access)&&this.orderId===id){if(error instanceof ApiError&&(error.status===401||error.status===403))this.reject(error);
+     else this.forecastError.set(errorMessage(error));}}
+ }
+ async saveForecast():Promise<void>{
+   const value=this.capture(),reason=this.forecastReason.trim();
+   if(!value||!this.allowed()||this.dirty()||this.busy()||!uuid.test(this.orderId)||!reason)return;
+   const id=this.orderId,generation=this.generation,access=this.auth.accessSignature();
+   this.busy.set(true);this.error.set('');this.forecastError.set('');
+   try{
+     const saved=await this.api.command<CostForecast>(`orders/${id}/cost-forecasts`,{input:value.report.reviewedInputs,expectedReportDigest:value.report.digest,reason});
+     if(!this.current(generation,access)||this.orderId!==id)return;
+     if(saved.orderId!==id)throw new Error('Der gespeicherte Forecast gehört zu einem anderen Auftrag.');
+     this.openedForecast.set(saved);this.forecastReason='';await this.loadForecasts(id,generation,access);
+   }catch(error){if(this.current(generation,access))this.reject(error);}
+   finally{if(this.current(generation,access))this.busy.set(false);}
+ }
+ async openForecast(id:string):Promise<void>{
+   if(!this.allowed()||this.busy()||!uuid.test(id)||!this.orderId)return;
+   const orderId=this.orderId,generation=this.generation,access=this.auth.accessSignature();
+   this.busy.set(true);this.forecastError.set('');
+   try{const saved=await this.api.get<CostForecast>(`cost-forecasts/${id}`);
+     if(!this.current(generation,access)||this.orderId!==orderId)return;
+     if(saved.orderId!==orderId)throw new Error('Die historische Prognose gehört nicht zum ausgewählten Auftrag.');
+     this.openedForecast.set(saved);
+   }catch(error){if(this.current(generation,access)){
+     if(error instanceof ApiError&&(error.status===401||error.status===403))this.reject(error);
+     else this.forecastError.set(errorMessage(error));}}
+   finally{if(this.current(generation,access))this.busy.set(false);}
+ }
+ downloadForecast():void{
+   const saved=this.openedForecast();if(!saved||!this.allowed()||this.busy())return;
+   downloadBlob(new Blob([JSON.stringify({schema:'firstblick.cost-forecast/1.0.0',...saved},null,2)+'\\n'],{type:'application/json;charset=utf-8'}),
+     `FirstBlick-Prognose-${saved.orderId}-v${saved.version}.json`);
+ }
  download():void{const value=this.capture();if(!value||!this.allowed()||this.dirty()||this.busy())return;downloadBlob(new Blob([JSON.stringify({schema:'firstblick.cost-analysis/1.0.0',...value},null,2)+'\n'],{type:'application/json;charset=utf-8'}),`FirstBlick-Nachkalkulation-v1-${value.report.orderId}.json`);}
 }

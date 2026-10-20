@@ -28,6 +28,33 @@
 </section>}
 <section class="panel"><p class="eyebrow">VOLLSTÄNDIGKEIT UND PROGNOSE</p><h2>Den geprüften Umfang beschreiben</h2><div class="form-field"><label for="cost-coverage">Abgleich der erfassten Kosten</label><textarea id="cost-coverage" name="coverage" [(ngModel)]="recordedCostsCoverage" (ngModelChange)="changed()" maxlength="2000" rows="3" placeholder="Welche erfassten Quellen wurden bis zu welchem Stand abgeglichen?"></textarea></div><p class="small muted">Ohne beschriebenen Abgleich bleiben vollständige Istkosten ungeklärt. Ihre Angabe bestätigt keine unbekannten Kosten außerhalb der erfassten Projektquellen.</p><label class="checkbox-field"><input type="checkbox" name="forecastEnabled" [(ngModel)]="forecastEnabled" (ngModelChange)="changed()"><span>Restkosten ausdrücklich schätzen</span></label>@if(forecastEnabled){<div class="form-grid"><div class="form-field"><label for="cost-remaining">Geschätzte verbleibende Kosten (€)</label><input id="cost-remaining" name="remainingCost" [type]="'number'" [(ngModel)]="remainingForecastCost" (ngModelChange)="changed()" required min="0" max="1000000000000" step="0.01"></div><div class="form-field full-width"><label for="cost-forecast-evidence">Grundlage der Restkostenschätzung</label><textarea id="cost-forecast-evidence" name="forecastEvidence" [(ngModel)]="forecastEvidence" (ngModelChange)="changed()" required maxlength="2000" rows="3" placeholder="Verbleibende Arbeit und Kostenansätze; auch ein Ansatz von 0 € benötigt eine Begründung"></textarea></div></div>}</section>
 </fieldset><div class="detail-actions"><button class="button primary" [disabled]="busy()||costForm.invalid">Bericht mit diesen Ansätzen berechnen</button><button type="button" class="button secondary" [disabled]="busy()||dirty()" (click)="download()">Aktuellen Bericht als JSON</button></div></form>
-<details class="panel"><summary>Herkunft, Grenzen und Aufbewahrung des Berichts</summary><p>Verfahren {{capture.report.methodVersion}}. Der Bericht bewahrt Vertragsquellen, Quellrevisionen, dokumentierte Ansätze, offene Prüfschritte und seinen Inhaltsdigest. Ein JSON-Download enthält genau diesen zurückgegebenen Stand.</p><code class="evidence-code">{{capture.report.digest}}</code><p>Die Zuordnung eines Eingangsbelegs gilt für diese Auswertung. Sie reserviert keinen Betrag gegenüber Auswertungen anderer Projekte und ersetzt keine gebuchte Kostenstellenverteilung.</p><p class="small muted">Aktuelle Projektquellen, höchstens 5.000 je Kategorie. Der Server speichert keinen dauerhaften Berichtssnapshot. Lohnkostenbasis, Gemeinkosten, Steuern und eine fachliche Abnahme werden durch diese Berechnung nicht festgelegt. Ungeklärte Werte bleiben auch im Download gekennzeichnet.</p></details>
+<details class="panel"><summary>Herkunft, Grenzen und Aufbewahrung des Berichts</summary><p>Verfahren {{capture.report.methodVersion}}. Der Bericht bewahrt Vertragsquellen, Quellrevisionen, dokumentierte Ansätze, offene Prüfschritte und seinen Inhaltsdigest. Ein JSON-Download enthält genau diesen zurückgegebenen Stand.</p><code class="evidence-code">{{capture.report.digest}}</code><p>Die Zuordnung eines Eingangsbelegs gilt für diese Auswertung. Sie reserviert keinen Betrag gegenüber Auswertungen anderer Projekte und ersetzt keine gebuchte Kostenstellenverteilung.</p><p class="small muted">Aktuelle Projektquellen, höchstens 5.000 je Kategorie. Eine bewusst gespeicherte, versionierte Prognose wird unveränderlich in der Projektakte aufbewahrt. Ungespeicherte Vorschauen bleiben flüchtig. Lohnkostenbasis, Gemeinkosten, Steuern und eine fachliche Abnahme werden durch diese Berechnung nicht festgelegt. Ungeklärte Werte bleiben auch im Download gekennzeichnet.</p></details>
+
+<section class="panel" aria-labelledby="cost-history-title">
+<div class="panel-heading"><div><p class="eyebrow">PRÜFSTAND UND HISTORIE</p><h2 id="cost-history-title">Prognosen versioniert speichern</h2></div></div>
+<p>Eine gespeicherte Prognose hält die geprüften Eingaben, Quellrevisionen, den Berechnungsdigest und die offenen Prüfschritte unveränderlich fest. Der Server gleicht vor jeder Speicherung die aktuellen Projektquellen erneut ab. Sie ersetzt keine Finanzbuchung.</p>
+<div class="form-field"><label for="cost-forecast-reason">Begründung für die neue Prognoseversion</label>
+<textarea id="cost-forecast-reason" name="costForecastReason" [(ngModel)]="forecastReason" maxlength="2000" rows="3" placeholder="Kostenstand, besondere Annahmen und Anlass dieser Version"></textarea></div>
+<div class="detail-actions"><button type="button" class="button primary" (click)="saveForecast()" [disabled]="busy()||dirty()||!forecastReason.trim()">Geprüften Stand dauerhaft speichern</button></div>
+@if(dirty()){<p class="small warning-text">Die Eingaben wurden verändert. Vor dem Speichern bitte den Bericht erneut berechnen.</p>}
+@if(forecastError()){<div class="alert warning" role="alert">{{forecastError()}}</div>}
+@if(forecasts().length){
+<div class="table-wrap"><table><caption>Gespeicherte Prognoseversionen für diesen Auftrag</caption><thead><tr><th>Version</th><th>Zeit und Begründung</th><th>Istkosten</th><th>Prognose</th><th>Überschuss</th><th>Aktion</th></tr></thead>
+<tbody>@for(item of forecasts();track item.id){<tr>
+<td data-label="Version">v{{item.version}}</td><td data-label="Zeit und Begründung">{{date(item.capturedAt)}}<span class="document-date">{{item.reason}}</span></td>
+<td data-label="Istkosten">{{money(item.actualCost)}}</td><td data-label="Prognose">{{money(item.forecastCost)}}</td><td data-label="Überschuss">{{money(item.forecastMargin)}}</td>
+<td data-label="Aktion"><button type="button" class="text-button" (click)="openForecast(item.id)" [disabled]="busy()">Prüfstand öffnen</button></td>
+</tr>}</tbody></table></div>
+}@else{<p class="small muted">Für diesen Auftrag wurde noch keine Prognose dauerhaft gespeichert.</p>}
+@if(openedForecast();as historical){
+<details class="workflow-detail" open><summary>Gespeicherter Prüfstand v{{historical.version}} · {{date(historical.capturedAt)}}</summary>
+<p>{{historical.reason}}</p>
+<div class="totals"><span>Festgehaltene Istkosten<strong>{{money(historical.report.actualCost)}}</strong></span><span>Festgehaltene Gesamtkosten<strong>{{money(historical.report.forecastCost)}}</strong></span><span>Festgehaltener Überschuss<strong>{{money(historical.report.forecastMargin)}}</strong></span></div>
+<p class="small muted">{{historical.report.missing.length}} offene Prüfhinweise zum Zeitpunkt der Speicherung · Version {{historical.version}} · Methode {{historical.report.methodVersion}}</p>
+<code class="evidence-code">{{historical.report.digest}}</code>
+<button type="button" class="button secondary" (click)="downloadForecast()" [disabled]="busy()">Diese Version als JSON herunterladen</button>
+</details>}
+</section>
+
 }
 }

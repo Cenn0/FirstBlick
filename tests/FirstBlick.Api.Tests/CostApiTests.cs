@@ -101,6 +101,122 @@ public sealed class CostApiTests(PostgresApiFixture fixture) : IClassFixture<Pos
         Assert.False((await fixture.Read<MaintenanceContract>(g.User.TenantId, contract.Id)).Archived);
     }
 
+
+    [PostgresApiFact]
+    public async Task Retained_forecasts_have_monotonic_versions_frozen_sources_and_idempotent_creation()
+    {
+        var g = await Setup(); var client = await fixture.Login(g.User);
+        var analysis = $"/api/v1/orders/{g.Order.Id}/cost-analysis";
+        var versions = $"/api/v1/orders/{g.Order.Id}/cost-forecasts";
+        var input = Empty() with
+        {
+            TimeCosts = [new(g.Time.Id, 40m, "Reviewed synthetic EUR 40 rate")],
+            RemainingForecastCost = 100m, ForecastEvidence = "Reviewed unfinished work",
+            RecordedCostsCoverage = "Checked all recorded cost sources"
+        };
+        var firstReport = await Report(client, analysis, input);
+        using var firstResponse = await Send(client, HttpMethod.Post, versions,
+            new { input, expectedReportDigest = firstReport.Digest, reason = "First reviewed project forecast" }, key: "forecast-first-" + Guid.NewGuid().ToString("N"));
+        Assert.Equal(HttpStatusCode.OK, firstResponse.StatusCode);
+        var first = AppJson.Read<CostForecast>(await firstResponse.Content.ReadAsStringAsync()); first.Validate();
+        Assert.Equal(1, first.Version); Assert.Null(first.PreviousForecastId);
+        Assert.Equal(firstReport.Digest, first.Report.Digest);
+        Assert.Equal(480m, first.Report.ForecastCost);
+        Assert.Equal(520m, first.Report.ForecastMargin);
+        var originalDigest = first.Digest;
+
+        // Source revisions remain frozen in the previous snapshot even after a new forecast is saved.
+        var input2 = input with { TimeCosts = [new(g.Time.Id, 42m, "Reviewed new EUR 42 rate")] };
+        var secondReport = await Report(client, analysis, input2);
+        Assert.NotEqual(firstReport.Digest, secondReport.Digest);
+        using var secondResponse = await Send(client, HttpMethod.Post, versions,
+            new { input = input2, expectedReportDigest = secondReport.Digest, reason = "Updated labor-cost basis" });
+        Assert.Equal(HttpStatusCode.OK, secondResponse.StatusCode);
+        var second = AppJson.Read<CostForecast>(await secondResponse.Content.ReadAsStringAsync()); second.Validate();
+        Assert.Equal(2, second.Version); Assert.Equal(first.Id, second.PreviousForecastId);
+        Assert.Equal(495m, second.Report.ForecastCost);
+        Assert.Equal(505m, second.Report.ForecastMargin);
+
+        using var listResponse = await client.GetAsync(versions);
+        Assert.Equal(HttpStatusCode.OK, listResponse.StatusCode);
+        using var list = JsonDocument.Parse(await listResponse.Content.ReadAsStringAsync());
+        Assert.Equal(2, list.RootElement.GetProperty("total").GetInt32());
+        Assert.Equal(second.Id, list.RootElement.GetProperty("items")[0].GetProperty("id").GetGuid());
+        Assert.Equal(first.Id, list.RootElement.GetProperty("items")[1].GetProperty("id").GetGuid());
+        using var getFirst = await client.GetAsync($"/api/v1/cost-forecasts/{first.Id}");
+        Assert.Equal(HttpStatusCode.OK, getFirst.StatusCode);
+        var historical = AppJson.Read<CostForecast>(await getFirst.Content.ReadAsStringAsync());
+        Assert.Equal(originalDigest, historical.Digest);
+        Assert.Equal(firstReport.Digest, historical.Report.Digest);
+        Assert.Equal(480m, historical.Report.ForecastCost);
+        Assert.Equal(HttpStatusCode.NotFound,
+            (await Send(client, HttpMethod.Put, $"/api/v1/cost-forecasts/{first.Id}", first, first.Revision)).StatusCode);
+    }
+
+    [PostgresApiFact]
+    public async Task Stale_forecast_rejects_after_cost_source_changes_and_permissions_stay_private()
+    {
+        var g = await Setup(); var client = await fixture.Login(g.User);
+        var analysis = $"/api/v1/orders/{g.Order.Id}/cost-analysis";
+        var versions = $"/api/v1/orders/{g.Order.Id}/cost-forecasts";
+        var input = Empty() with { TimeCosts = [new(g.Time.Id, 40m, "Synthetic reviewed rate")] };
+        var previous = await Report(client, analysis, input);
+        var material = await fixture.Save(new Material { TenantId = g.User.TenantId, Name = "Additional cost source" }, g.User.UserId);
+        var movement = new StockMovement
+        {
+            TenantId = g.User.TenantId, ProjectId = g.Order.ProjectId, MaterialId = material.Id,
+            Kind = StockMovementKind.Consumption, Quantity = -2m, UnitCost = 5m,
+            OccurredAt = DateTimeOffset.UtcNow, Reference = "Newly recorded material"
+        };
+        movement.PostedDigest = InventoryRules.MovementDigest(movement);
+        await fixture.Save(movement, g.User.UserId);
+        using var stale = await Send(client, HttpMethod.Post, versions,
+            new { input, expectedReportDigest = previous.Digest, reason = "Outdated snapshot" });
+        Assert.Equal(HttpStatusCode.Conflict, stale.StatusCode);
+        using var problem = JsonDocument.Parse(await stale.Content.ReadAsStringAsync());
+        Assert.Equal("stale_cost_report", problem.RootElement.GetProperty("code").GetString());
+        using var empty = await client.GetAsync(versions);
+        using var history = JsonDocument.Parse(await empty.Content.ReadAsStringAsync());
+        Assert.Equal(0, history.RootElement.GetProperty("total").GetInt32());
+        var accounting = await fixture.Login(await fixture.CreateUser(g.User.TenantId, BusinessRole.Accounting));
+        Assert.Equal(HttpStatusCode.Forbidden, (await accounting.GetAsync(versions)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await Send(accounting, HttpMethod.Post, versions,
+            new { input, expectedReportDigest = previous.Digest, reason = "Forbidden" })).StatusCode);
+        var anotherBusiness = await Setup();
+        var anotherClient = await fixture.Login(anotherBusiness.User);
+        Assert.Equal(HttpStatusCode.NotFound, (await anotherClient.GetAsync(versions)).StatusCode);
+    }
+
+    [PostgresApiFact]
+    public async Task Tampered_historical_forecast_cannot_be_displayed_as_valid_source_evidence()
+    {
+        var g = await Setup(); var client = await fixture.Login(g.User);
+        var input = Empty();
+        var report = await Report(client, $"/api/v1/orders/{g.Order.Id}/cost-analysis", input);
+        using var saved = await Send(client, HttpMethod.Post, $"/api/v1/orders/{g.Order.Id}/cost-forecasts",
+            new { input, expectedReportDigest = report.Digest, reason = "Historical draft with disclosed missing costs" });
+        Assert.Equal(HttpStatusCode.OK, saved.StatusCode);
+        var result = AppJson.Read<CostForecast>(await saved.Content.ReadAsStringAsync());
+        Assert.Null(result.Report.ActualCost);
+        Assert.NotEmpty(result.Report.Missing);
+        await fixture.InScope(async services =>
+        {
+            var db = services.GetRequiredService<FirstBlickDbContext>();
+            var row = await db.Entities.IgnoreQueryFilters().SingleAsync(x => x.TenantId == g.User.TenantId
+                && x.Id == result.Id && x.Kind == "cost-forecasts");
+            var modified = AppJson.Read<CostForecast>(row.Data);
+            modified.Report = modified.Report with { KnownActualCost = 9999m };
+            row.Data = AppJson.Serialize(modified);
+            await db.SaveChangesAsync();
+        });
+        using var details = await client.GetAsync($"/api/v1/cost-forecasts/{result.Id}");
+        Assert.Equal(HttpStatusCode.BadRequest, details.StatusCode);
+        using var error = JsonDocument.Parse(await details.Content.ReadAsStringAsync());
+        Assert.Equal("forecast_changed", error.RootElement.GetProperty("code").GetString());
+        using var list = await client.GetAsync($"/api/v1/orders/{g.Order.Id}/cost-forecasts");
+        Assert.Equal(HttpStatusCode.BadRequest, list.StatusCode);
+    }
+
     private Task<(int Entities, int Audit, int Jobs, int Receipts)> Counts(Guid tenantId) => fixture.InScope(async services =>
     {
         var db = services.GetRequiredService<FirstBlickDbContext>();
