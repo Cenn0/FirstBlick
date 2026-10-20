@@ -17,6 +17,8 @@ public static class TechnicalEndpoints
     {
         api.MapPost("/technical/thermal", async (ThermalInput input, CommandExecutor commands, CancellationToken ct) =>
         { await commands.Authorize("technical-results", true, ct); return Results.Ok(ThermalCalculator.Calculate(input)); }).WithTags("technical");
+        api.MapPost("/technical/moisture/screening", async (MoistureScreeningInput input, CommandExecutor commands, CancellationToken ct) =>
+        { await commands.Authorize("technical-results", true, ct); return Results.Ok(MoistureScreening.Calculate(input)); }).WithTags("technical");
         api.MapPost("/technical/thermal/parallel", async (ParallelThermalInput input, CommandExecutor commands, CancellationToken ct) =>
         { await commands.Authorize("technical-results", true, ct); return Results.Ok(ThermalCalculator.CalculateParallelPaths(input)); }).WithTags("technical");
         api.MapPost("/technical/roof/rectangle", async (RectangularRoofInput input, CommandExecutor commands, CancellationToken ct) =>
