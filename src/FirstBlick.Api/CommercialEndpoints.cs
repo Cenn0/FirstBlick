@@ -1,5 +1,6 @@
 using FirstBlick.Core.Business;
 using FirstBlick.Infrastructure.Persistence;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,6 +10,7 @@ public sealed record EmptyBusinessCommand;
 public sealed record AcceptQuoteRequest(string Digest);
 public sealed record QuoteDeliveryRequest(CommunicationChannel Channel, string Recipient);
 public sealed record CorrectionRequest(string Reason);
+public sealed record InvoiceFromOrderRequest([property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] InvoiceKind? Kind = null);
 public sealed record PaymentAllocationRequest(Guid InvoiceId, Guid BankTransactionId, decimal Amount, decimal DiscountAmount = 0, decimal RetainedAmount = 0, string Reason = "");
 public sealed record RefundRequest(Guid InvoiceId, Guid BankTransactionId, decimal Amount, string Reason);
 public sealed record ReversePaymentRequest(string Reason, Guid? ReturnBankTransactionId = null);
@@ -62,6 +64,7 @@ public static class CommercialEndpoints
             c.Execute("quotes", "quote.issue", body, async ct =>
             {
                 var quote = await c.Current<Quote>(id, ct);
+                await GraphRules.Validate(quote, c.Store, c.Db, c.Scope, ct);
                 CommercialWorkflow.IssueQuote(quote, await c.Store.NextNumber("AN", await c.BusinessDate(ct), ct));
                 var seller = await c.Db.Tenants.SingleAsync(x => x.Id == c.Scope.TenantId, ct);
                 CommercialWorkflow.FreezePresentation(quote, seller.Name, await c.Store.Get<Customer>(quote.CustomerId, ct), DateTimeOffset.UtcNow);
@@ -129,11 +132,11 @@ public static class CommercialEndpoints
 
     private static void MapInvoices(RouteGroupBuilder api)
     {
-        api.MapPost("/invoices/from-order/{id:guid}", (Guid id, EmptyBusinessCommand body, [AsParameters] BusinessCommandServices c) =>
+        api.MapPost("/invoices/from-order/{id:guid}", (Guid id, InvoiceFromOrderRequest body, [AsParameters] BusinessCommandServices c) =>
             c.Execute("invoices", "invoice.from_order", body, async ct =>
             {
                 var order = await c.Current<Order>(id, ct); var customer = await c.Store.Get<Customer>(order.CustomerId, ct);
-                var invoice = InvoiceWorkflow.DraftFromOrder(order, customer); var day = await c.BusinessDate(ct);
+                var invoice = InvoiceWorkflow.DraftFromOrder(order, customer, body.Kind ?? InvoiceKind.Final); var day = await c.BusinessDate(ct);
                 invoice.SellerName = await c.Db.Tenants.Where(x => x.Id == c.Scope.TenantId).Select(x => x.Name).SingleAsync(ct);
                 invoice.ServiceFrom = day; invoice.ServiceUntil = day; invoice.DueDate = day.AddDays(14);
                 return await c.SaveNew(invoice, "invoice.from_order", ct);

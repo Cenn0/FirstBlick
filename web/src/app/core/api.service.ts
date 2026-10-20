@@ -16,19 +16,22 @@ export class ApiService {
 
   async get<T>(path: string): Promise<T> { return this.call<T>(path); }
   async upload<T>(path:string,body:Blob,contentType:string,revision:number,key:string):Promise<T>{return this.mutate<T>(path,'PUT',body,revision,undefined,key,contentType);}
-  async download(path:string):Promise<Blob>{try{const response=await requestResponse(`/api/v1/${path}`,{},this.auth.activeTenantId(),'application/octet-stream');return await response.blob();}catch(error){if(error instanceof ApiError&&error.status===401)await this.auth.clear();if(error instanceof ApiError&&error.status===423&&error.problem.code==='recovery_hold')this.auth.markRecoveryHold();throw error;}}
+  async downloadResponse(path:string):Promise<Response>{try{return await requestResponse(`/api/v1/${path}`,{},this.auth.activeTenantId(),'application/octet-stream');}catch(error){if(error instanceof ApiError&&error.status===401)this.auth.expire();if(error instanceof ApiError&&error.status===423&&error.problem.code==='recovery_hold')this.auth.markRecoveryHold();throw error;}}
+  async download(path:string):Promise<Blob>{return await(await this.downloadResponse(path)).blob();}
+  async previewCsv<T>(body:Blob):Promise<T>{if(this.auth.recoveryHold())throw new Error(recoveryHoldMessage);return this.call<T>('integrations/v1/bank-csv/preview',{method:'POST',body,headers:{'Content-Type':'text/csv;charset=utf-8'}});}
+  async importCsv<T>(body:Blob,sourceSha256:string):Promise<T>{return this.mutate<T>('integrations/v1/bank-csv/import','POST',body,undefined,undefined,undefined,'text/csv;charset=utf-8',{'X-Import-SHA256':sourceSha256});}
   async command<T>(path: string, body: unknown, revision?: number, key: string = crypto.randomUUID(), approvalId?: string): Promise<T> {
     return this.mutate<T>(path,'POST',body,revision,approvalId,key);
   }
 
   async update<T>(path:string,body:unknown,revision:number,approvalId?:string):Promise<T>{return this.mutate<T>(path,'PUT',body,revision,approvalId);}
 
-  private async mutate<T>(path:string,method:string,body:unknown,revision?:number,approvalId?:string,preferredKey?:string,contentType?:string):Promise<T>{
+  private async mutate<T>(path:string,method:string,body:unknown,revision?:number,approvalId?:string,preferredKey?:string,contentType?:string,extraHeaders:Record<string,string>={}):Promise<T>{
     if(this.auth.recoveryHold())throw new Error(recoveryHoldMessage);
     const scope=this.auth.scope();const identity=await this.identities.acquire(scope,method,path,body,revision,approvalId,preferredKey);
     if(scope!==this.auth.scope())throw new Error('Der Betrieb wurde gewechselt. Öffnen Sie den Vorgang im gewünschten Betrieb erneut.');
     if(this.auth.recoveryHold())throw new Error(recoveryHoldMessage);
-    const headers:Record<string,string>={'Idempotency-Key':identity.key};if(revision)headers['If-Match']=`"${revision}"`;if(approvalId)headers['X-Approval-Id']=approvalId;if(contentType)headers['Content-Type']=contentType;
+    const headers:Record<string,string>={...extraHeaders,'Idempotency-Key':identity.key};if(revision)headers['If-Match']=`"${revision}"`;if(approvalId)headers['X-Approval-Id']=approvalId;if(contentType)headers['Content-Type']=contentType;
     try{const result=await this.call<T>(path,{method,body:body instanceof Blob?body:body===undefined?undefined:JSON.stringify(body),headers});this.identities.complete(identity);if(scope!==this.auth.scope())throw new Error('Der Vorgang wurde im vorherigen Betrieb gespeichert. Öffnen Sie ihn dort zur Prüfung.');return result;}
     catch(error){if(error instanceof ApiError&&error.status>=400&&error.status<500)this.identities.complete(identity);throw error;}
   }
@@ -36,7 +39,7 @@ export class ApiService {
   private async call<T>(path: string, options: RequestInit = {}): Promise<T> {
     try { return await request<T>(`/api/v1/${path}`, options, this.auth.activeTenantId()); }
     catch (error) {
-      if (error instanceof ApiError && error.status === 401) await this.auth.clear();
+      if (error instanceof ApiError && error.status === 401) this.auth.expire();
       if(error instanceof ApiError&&error.status===423&&error.problem.code==='recovery_hold')this.auth.markRecoveryHold();
       throw error;
     }
@@ -88,10 +91,11 @@ export class ApiService {
           const headers: Record<string, string> = { 'Idempotency-Key': item.key };
           if (item.revision) headers['If-Match'] = `"${item.revision}"`;
           try{await request(`/api/v1/${item.kind}${item.id ? `/${item.id}` : ''}`, { method: item.method, headers, body: JSON.stringify(item.body) }, tenantId);}
-          catch(error){if(error instanceof ApiError&&error.status===423&&error.problem.code==='recovery_hold')this.auth.markRecoveryHold();throw error;}
+          catch(error){if(error instanceof ApiError&&error.status===401)this.auth.expire();if(error instanceof ApiError&&error.status===423&&error.problem.code==='recovery_hold')this.auth.markRecoveryHold();throw error;}
         }, () => this.auth.scope() === scope&&!this.auth.recoveryHold());
       } catch (error) {
-        if (error instanceof ApiError && (error.status === 401 || error.status === 403)) await this.auth.clear();
+        if (error instanceof ApiError && error.status === 401) this.auth.expire();
+        if (error instanceof ApiError && error.status === 403) await this.auth.clear();
       } finally { this.syncing.set(false); await this.reloadQueue(); }
     };
     if (navigator.locks) await navigator.locks.request(`firstblick-sync:${scope}`, { ifAvailable: true }, async lock => { if (lock) await run(); });

@@ -1,0 +1,24 @@
+{
+  "status": "passed",
+  "checkedAt": "2026-10-20T06:50:16.321331+00:00",
+  "synthetic": true,
+  "test": "InvoicePdfTests.Partial_invoice_pdf_preserves_full_measurement_evidence_and_actual_frozen_amounts",
+  "invoiceQuantity": "5",
+  "measurementEvidenceQuantity": "13.5",
+  "net": "50.00",
+  "tax": "9.50",
+  "gross": "59.50",
+  "domainTestPassed": true,
+  "pdfTextVerified": true,
+  "renderedPageVisuallyReviewed": true,
+  "visualReview": "One page; full German text and all expected values visible; no clipped lines.",
+  "visibleText": "ABSCHLAGSRECHNUNG                                                          RE-2026-000001\n\n\n\nSynthetischer Handwerksbetrieb\nWerkstattstraße 2\n\n\nSynthetischer Rechnungsempfänger\nBeispielstraße 1\n\n\nGemessene Dachfläche\nRE-2026-000001 · Rechnungsdatum 20.10.2026\nLeistungszeitraum 01.10.2026 bis 20.10.2026\nFällig am 03.11.2026\n\n\n001     Unveränderte Messgrundlage\n5 m² × 10,00 EUR = 50,00 EUR netto\nUSt 19 %: 9,50 EUR · Brutto 59,50 EUR\n\n\n\nNettosumme 50,00 EUR\nUSt 19 % auf 50,00 EUR: 9,50 EUR\nGesamtbetrag 59,50 EUR\n\n\n\n\nRE-2026-000001 · Seite 1 von 1\nSHA-256 905627b234feb086385069a6d8e85c984501681a91f1c9144f342519df675e9e\n\f",
+  "sha256": {
+    "pdf": "27128685c8f582ca30282d82e94f7f8748ca357e0d95afe03d4203d1b79ac535",
+    "txt": "91d7504573bd40332c1057f3f335521a372507c15136389edeabe75377c0330c",
+    "png": "dfda8b270e2c7e05bb0898bb7407c63bbec9673a6b75c144884045a4742ba535"
+  },
+  "render": "pdftoppm -singlefile -r 110 -png",
+  "extract": "pdftotext -layout",
+  "boundary": "Synthetic rendering regression only; no legal invoice certification or real customer document is claimed."
+}

@@ -23,9 +23,25 @@ internal static class RecoveryAccounts
             var user = users[membership.UserId]; Guard.Email(user.Email ?? "", true);
             var key = MigrationAccountMarker.Key(user.Id);
             var receipt = await db.Receipts.IgnoreQueryFilters().SingleOrDefaultAsync(x => x.TenantId == membership.TenantId && x.ActorId == Guid.Empty && x.Key == key);
+            var sourceId = user.Id.ToString(); var sourceRole = membership.Role; var sourceActive = membership.Active;
+            if (receipt is not null)
+            {
+                var previous = AppJson.Read<MigrationAccountMarker>(receipt.Response);
+                Require.That(previous.UserId == user.Id && previous.BundleId != Guid.Empty && !string.IsNullOrWhiteSpace(previous.SourceAccountId)
+                    && previous.State is "Pending" or "Claimed" && Enum.IsDefined(previous.SourceRole)
+                    && receipt.RequestDigest.Length == 64 && receipt.RequestDigest.All(char.IsAsciiHexDigit), "Previous account migration provenance is invalid. Recovery remains held.");
+                sourceId = previous.SourceAccountId;
+                // An unclaimed import was already intentionally inactive. Preserve the
+                // actual source role/activity instead of mistaking quarantine for history.
+                if (previous.State == "Pending" && !membership.Active) { sourceRole = previous.SourceRole; sourceActive = previous.SourceActive; }
+                db.Receipts.Add(new CommandReceipt { TenantId = membership.TenantId, ActorId = Guid.Empty,
+                    Key = $"operations.recovery-account:{operationId:N}:{user.Id:N}", RequestDigest = bundleDigest,
+                    Response = AppJson.Serialize(new { operationId, userId = user.Id, previousRequestDigest = receipt.RequestDigest,
+                        previousResponse = receipt.Response, previousCreatedAt = receipt.CreatedAt }) });
+            }
             if (receipt is null) { receipt = new CommandReceipt { TenantId = membership.TenantId, ActorId = Guid.Empty, Key = key }; db.Receipts.Add(receipt); }
             receipt.RequestDigest = bundleDigest;
-            receipt.Response = AppJson.Serialize(new MigrationAccountMarker(operationId, user.Id.ToString(), user.Id, user.Email!, "Pending", membership.Role, membership.Active));
+            receipt.Response = AppJson.Serialize(new MigrationAccountMarker(operationId, sourceId, user.Id, user.Email!, "Pending", sourceRole, sourceActive));
             membership.Active = false; membership.Revision = checked(membership.Revision + 1);
         }
         foreach (var user in users.Values)

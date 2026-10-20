@@ -1,0 +1,1056 @@
+{
+  "format": "firstblick.migration.v1",
+  "bundleId": "f7890a01-66b3-4529-99c4-7db751e8eb82",
+  "sourceSystem": "synthetic-canonical-d1-r2-fixture",
+  "sourceVersion": "source-fixture-1",
+  "targetRelease": "migration-drill-409380222c504841884bf0ce",
+  "exportedAt": "2026-10-20T06:37:35.251307+00:00",
+  "tenants": [
+    {
+      "sourceId": "legacy-tenant-a",
+      "data": {
+        "id": "d0733161-09ec-4a2c-bdae-5b97e5c85a0e",
+        "name": "Synthetic legacy business",
+        "timeZone": "Europe/Berlin",
+        "modules": [
+          "core",
+          "commercial",
+          "field",
+          "purchasing",
+          "finance",
+          "maintenance",
+          "technical"
+        ],
+        "approvalActions": [
+          "invoice.issue",
+          "purchase.issue"
+        ],
+        "policyRevision": 1
+      }
+    },
+    {
+      "sourceId": "legacy-tenant-b",
+      "data": {
+        "id": "f375e6aa-6519-441c-90d1-ba592266deab",
+        "name": "Synthetic second business",
+        "timeZone": "Europe/Berlin",
+        "modules": [
+          "core",
+          "commercial",
+          "field",
+          "purchasing",
+          "finance",
+          "maintenance",
+          "technical"
+        ],
+        "approvalActions": [
+          "invoice.issue",
+          "purchase.issue"
+        ],
+        "policyRevision": 1
+      }
+    }
+  ],
+  "accounts": [
+    {
+      "sourceId": "legacy-owner-17",
+      "id": "ac65fc57-ca15-4036-884e-76fa814b420b",
+      "email": "legacy-owner@example.invalid",
+      "displayName": "Historical owner",
+      "phoneNumber": null
+    },
+    {
+      "sourceId": "legacy-partner-4",
+      "id": "71c79c8a-29da-4fee-b0db-bbd5a449448c",
+      "email": "legacy-partner@example.invalid",
+      "displayName": "Historical partner",
+      "phoneNumber": null
+    }
+  ],
+  "memberships": [
+    {
+      "tenantId": "d0733161-09ec-4a2c-bdae-5b97e5c85a0e",
+      "userId": "ac65fc57-ca15-4036-884e-76fa814b420b",
+      "role": "ManagingDirector",
+      "active": true,
+      "revision": 7
+    },
+    {
+      "tenantId": "f375e6aa-6519-441c-90d1-ba592266deab",
+      "userId": "ac65fc57-ca15-4036-884e-76fa814b420b",
+      "role": "Worker",
+      "active": false,
+      "revision": 3
+    },
+    {
+      "tenantId": "d0733161-09ec-4a2c-bdae-5b97e5c85a0e",
+      "userId": "71c79c8a-29da-4fee-b0db-bbd5a449448c",
+      "role": "Partner",
+      "active": true,
+      "revision": 2
+    }
+  ],
+  "entities": [
+    {
+      "sourceId": "aca049d4-0c85-48b0-ad70-1fdcb39a3878",
+      "kind": "customers",
+      "data": {
+        "name": "Current changed master name",
+        "contactName": "",
+        "email": "legacy-partner@example.invalid",
+        "phone": "",
+        "address": "Current changed master address",
+        "notes": "",
+        "id": "aca049d4-0c85-48b0-ad70-1fdcb39a3878",
+        "tenantId": "d0733161-09ec-4a2c-bdae-5b97e5c85a0e",
+        "revision": 1,
+        "createdAt": "2026-10-19T06:37:34.902998\u002B00:00",
+        "updatedAt": "2026-10-19T06:37:34.902998\u002B00:00",
+        "archived": false
+      },
+      "sha256": "0e484b6f1ac473c0a0d71861af6ce6c2418328e96ea5ef71f359bb1423611179",
+      "contractParties": "NotApplicable",
+      "deliveryHistory": "NotApplicable",
+      "evidenceFile": null
+    },
+    {
+      "sourceId": "10151a10-8272-49f4-92e7-90eec3b6fd24",
+      "kind": "buildings",
+      "data": {
+        "customerId": "aca049d4-0c85-48b0-ad70-1fdcb39a3878",
+        "name": "Legacy building",
+        "address": "Legacy building address",
+        "roofDescription": "",
+        "constructionDate": null,
+        "id": "10151a10-8272-49f4-92e7-90eec3b6fd24",
+        "tenantId": "d0733161-09ec-4a2c-bdae-5b97e5c85a0e",
+        "revision": 1,
+        "createdAt": "2026-10-19T06:37:34.902998\u002B00:00",
+        "updatedAt": "2026-10-19T06:37:34.902998\u002B00:00",
+        "archived": false
+      },
+      "sha256": "e0901e1d98ab23b76c764db778c625f710a78107843fcd14031bc3a7e33d4056",
+      "contractParties": "NotApplicable",
+      "deliveryHistory": "NotApplicable",
+      "evidenceFile": null
+    },
+    {
+      "sourceId": "6bd6e5d1-b022-4ac5-a95e-bd23a9faeb9b",
+      "kind": "projects",
+      "data": {
+        "customerId": "aca049d4-0c85-48b0-ad70-1fdcb39a3878",
+        "buildingId": "10151a10-8272-49f4-92e7-90eec3b6fd24",
+        "name": "Legacy contract project",
+        "number": "",
+        "type": "Renovation",
+        "status": "Inquiry",
+        "description": "",
+        "plannedStart": null,
+        "plannedEnd": null,
+        "id": "6bd6e5d1-b022-4ac5-a95e-bd23a9faeb9b",
+        "tenantId": "d0733161-09ec-4a2c-bdae-5b97e5c85a0e",
+        "revision": 1,
+        "createdAt": "2026-10-19T06:37:34.902998\u002B00:00",
+        "updatedAt": "2026-10-19T06:37:34.902998\u002B00:00",
+        "archived": false
+      },
+      "sha256": "e12c6de7896216ed63d0001c81b18ac6c84c25025d75205ea8a44a6668d0ddf4",
+      "contractParties": "NotApplicable",
+      "deliveryHistory": "NotApplicable",
+      "evidenceFile": null
+    },
+    {
+      "sourceId": "479be740-d3d3-48c7-bd34-5df156315434",
+      "kind": "quotes",
+      "data": {
+        "customerId": "aca049d4-0c85-48b0-ad70-1fdcb39a3878",
+        "projectId": "6bd6e5d1-b022-4ac5-a95e-bd23a9faeb9b",
+        "number": "AN-2026-000042",
+        "title": "Historical roof work",
+        "currency": "EUR",
+        "version": 1,
+        "status": "Accepted",
+        "lines": [
+          {
+            "catalogItemId": null,
+            "description": "Historical effective work",
+            "unit": "m\u00B2",
+            "quantity": "10",
+            "unitMaterialCost": "100",
+            "unitLaborHours": "0",
+            "hourlyRate": "0",
+            "markupPercent": "0",
+            "discountPercent": "0",
+            "vatPercent": "19"
+          }
+        ],
+        "snapshot": {
+          "version": 1,
+          "currency": "EUR",
+          "lines": [
+            {
+              "inputs": {
+                "catalogItemId": null,
+                "description": "Historical effective work",
+                "unit": "m\u00B2",
+                "quantity": "10",
+                "unitMaterialCost": "100",
+                "unitLaborHours": "0",
+                "hourlyRate": "0",
+                "markupPercent": "0",
+                "discountPercent": "0",
+                "vatPercent": "19"
+              },
+              "unitCost": "100",
+              "unitNet": "100",
+              "net": "1000",
+              "tax": "190",
+              "gross": "1190"
+            }
+          ],
+          "net": "1000",
+          "tax": "190",
+          "gross": "1190",
+          "digest": "7dd9228efcc435d3ad589cd7be5377c52936745f737631d795353349af51a224"
+        },
+        "presentation": {
+          "quoteId": "479be740-d3d3-48c7-bd34-5df156315434",
+          "customerId": "aca049d4-0c85-48b0-ad70-1fdcb39a3878",
+          "sellerName": "Synthetic legacy business",
+          "buyerName": "Historical buyer name",
+          "buyerAddress": "Historical buyer address",
+          "number": "AN-2026-000042",
+          "title": "Historical roof work",
+          "validUntil": null,
+          "issuedAt": "2026-10-19T06:37:34.902998\u002B00:00",
+          "pricingDigest": "7dd9228efcc435d3ad589cd7be5377c52936745f737631d795353349af51a224",
+          "rendererContractVersion": "1.0.0",
+          "digest": "6b8e348f4dc514affe3a162b0bf7ef624069cfbb9d1093de89fcce32fcf0459a"
+        },
+        "issuedDigest": "6b8e348f4dc514affe3a162b0bf7ef624069cfbb9d1093de89fcce32fcf0459a",
+        "validUntil": null,
+        "acceptedAt": "2026-10-19T06:37:34.902998\u002B00:00",
+        "deliveries": [
+          {
+            "id": "e7610799-7d74-4bff-840b-429bcde7721d",
+            "channel": "Email",
+            "recipient": "legacy-partner@example.invalid",
+            "state": "Sent",
+            "requestedAt": "2026-10-19T06:37:34.902998\u002B00:00",
+            "resolvedAt": "2026-10-19T06:37:34.902998\u002B00:00",
+            "providerReference": "synthetic-preserved-provider-receipt",
+            "resolutionNote": "Synthetic fixture: export contains the original provider acknowledgement."
+          }
+        ],
+        "id": "479be740-d3d3-48c7-bd34-5df156315434",
+        "tenantId": "d0733161-09ec-4a2c-bdae-5b97e5c85a0e",
+        "revision": 1,
+        "createdAt": "2026-10-19T06:37:34.902998\u002B00:00",
+        "updatedAt": "2026-10-19T06:37:34.902998\u002B00:00",
+        "archived": false
+      },
+      "sha256": "ea456f8f14fbfb112d8a29379bb0390e1e225b92b7c39c8a3df4e303853d752b",
+      "contractParties": "Confirmed",
+      "deliveryHistory": "Confirmed",
+      "evidenceFile": "evidence/source-records.txt"
+    },
+    {
+      "sourceId": "354c093b-986c-44f3-9645-97c0a0649e42",
+      "kind": "orders",
+      "data": {
+        "quoteId": "479be740-d3d3-48c7-bd34-5df156315434",
+        "customerId": "aca049d4-0c85-48b0-ad70-1fdcb39a3878",
+        "projectId": "6bd6e5d1-b022-4ac5-a95e-bd23a9faeb9b",
+        "number": "AU-2026-000017",
+        "title": "Historical roof work",
+        "status": "Open",
+        "contract": {
+          "version": 1,
+          "currency": "EUR",
+          "lines": [
+            {
+              "inputs": {
+                "catalogItemId": null,
+                "description": "Historical effective work",
+                "unit": "m\u00B2",
+                "quantity": "10",
+                "unitMaterialCost": "100",
+                "unitLaborHours": "0",
+                "hourlyRate": "0",
+                "markupPercent": "0",
+                "discountPercent": "0",
+                "vatPercent": "19"
+              },
+              "unitCost": "100",
+              "unitNet": "100",
+              "net": "1000",
+              "tax": "190",
+              "gross": "1190"
+            }
+          ],
+          "net": "1000",
+          "tax": "190",
+          "gross": "1190",
+          "digest": "7dd9228efcc435d3ad589cd7be5377c52936745f737631d795353349af51a224"
+        },
+        "quotePresentation": {
+          "quoteId": "479be740-d3d3-48c7-bd34-5df156315434",
+          "customerId": "aca049d4-0c85-48b0-ad70-1fdcb39a3878",
+          "sellerName": "Synthetic legacy business",
+          "buyerName": "Historical buyer name",
+          "buyerAddress": "Historical buyer address",
+          "number": "AN-2026-000042",
+          "title": "Historical roof work",
+          "validUntil": null,
+          "issuedAt": "2026-10-19T06:37:34.902998\u002B00:00",
+          "pricingDigest": "7dd9228efcc435d3ad589cd7be5377c52936745f737631d795353349af51a224",
+          "rendererContractVersion": "1.0.0",
+          "digest": "6b8e348f4dc514affe3a162b0bf7ef624069cfbb9d1093de89fcce32fcf0459a"
+        },
+        "acceptedAt": "2026-10-19T06:37:34.902998\u002B00:00",
+        "id": "354c093b-986c-44f3-9645-97c0a0649e42",
+        "tenantId": "d0733161-09ec-4a2c-bdae-5b97e5c85a0e",
+        "revision": 1,
+        "createdAt": "2026-10-19T06:37:34.902998\u002B00:00",
+        "updatedAt": "2026-10-19T06:37:34.902998\u002B00:00",
+        "archived": false
+      },
+      "sha256": "a3ef8a6c7d1edcf590ccf13e6ea838a927fa35b2944947feba11247d62bcfcfd",
+      "contractParties": "Confirmed",
+      "deliveryHistory": "NotApplicable",
+      "evidenceFile": "evidence/source-records.txt"
+    },
+    {
+      "sourceId": "f59bc3d6-69c2-4a4f-86d9-4b917484a1fb",
+      "kind": "invoices",
+      "data": {
+        "customerId": "aca049d4-0c85-48b0-ad70-1fdcb39a3878",
+        "orderId": "354c093b-986c-44f3-9645-97c0a0649e42",
+        "originalInvoiceId": null,
+        "number": "RE-2026-000073",
+        "title": "Historical roof work",
+        "sellerName": "Synthetic legacy business",
+        "sellerAddress": "Original seller address",
+        "sellerTaxId": "",
+        "buyerName": "Historical buyer name",
+        "buyerAddress": "Historical buyer address",
+        "correctionReason": "",
+        "currency": "EUR",
+        "issueDate": "2026-10-19",
+        "dueDate": "2026-11-02",
+        "serviceFrom": "2026-10-19",
+        "serviceUntil": "2026-10-19",
+        "kind": "Final",
+        "status": "Issued",
+        "lines": [
+          {
+            "catalogItemId": null,
+            "description": "Historical effective work",
+            "unit": "m\u00B2",
+            "quantity": "10",
+            "unitMaterialCost": "100",
+            "unitLaborHours": "0",
+            "hourlyRate": "0",
+            "markupPercent": "0",
+            "discountPercent": "0",
+            "vatPercent": "19"
+          }
+        ],
+        "snapshot": {
+          "version": 1,
+          "currency": "EUR",
+          "lines": [
+            {
+              "inputs": {
+                "catalogItemId": null,
+                "description": "Historical effective work",
+                "unit": "m\u00B2",
+                "quantity": "10",
+                "unitMaterialCost": "100",
+                "unitLaborHours": "0",
+                "hourlyRate": "0",
+                "markupPercent": "0",
+                "discountPercent": "0",
+                "vatPercent": "19"
+              },
+              "unitCost": "100",
+              "unitNet": "100",
+              "net": "1000",
+              "tax": "190",
+              "gross": "1190"
+            }
+          ],
+          "net": "1000",
+          "tax": "190",
+          "gross": "1190",
+          "digest": "7dd9228efcc435d3ad589cd7be5377c52936745f737631d795353349af51a224"
+        },
+        "issuedDigest": "85e6156780afbc1635adc29b9d26cc27ce723e586f1abcbec95c79ba7d02ac3d",
+        "id": "f59bc3d6-69c2-4a4f-86d9-4b917484a1fb",
+        "tenantId": "d0733161-09ec-4a2c-bdae-5b97e5c85a0e",
+        "revision": 1,
+        "createdAt": "2026-10-19T06:37:34.902998\u002B00:00",
+        "updatedAt": "2026-10-19T06:37:34.902998\u002B00:00",
+        "archived": false
+      },
+      "sha256": "684343066393c30cd6f35923351b44472a9da7a3c2706ecff839e9b633f87df0",
+      "contractParties": "Confirmed",
+      "deliveryHistory": "NotApplicable",
+      "evidenceFile": "evidence/source-records.txt"
+    },
+    {
+      "sourceId": "b973bfdb-ecd4-4707-912a-1cc60d13e222",
+      "kind": "invoices",
+      "data": {
+        "customerId": "aca049d4-0c85-48b0-ad70-1fdcb39a3878",
+        "orderId": "354c093b-986c-44f3-9645-97c0a0649e42",
+        "originalInvoiceId": "f59bc3d6-69c2-4a4f-86d9-4b917484a1fb",
+        "number": "KO-2026-000002",
+        "title": "Correction: RE-2026-000073",
+        "sellerName": "Synthetic legacy business",
+        "sellerAddress": "Original seller address",
+        "sellerTaxId": "",
+        "buyerName": "Historical buyer name",
+        "buyerAddress": "Historical buyer address",
+        "correctionReason": "Preserved partial correction",
+        "currency": "EUR",
+        "issueDate": "2026-10-19",
+        "dueDate": "2026-10-19",
+        "serviceFrom": "2026-10-19",
+        "serviceUntil": "2026-10-19",
+        "kind": "CreditNote",
+        "status": "Issued",
+        "lines": [
+          {
+            "catalogItemId": null,
+            "description": "Historical effective work",
+            "unit": "m\u00B2",
+            "quantity": "2",
+            "unitMaterialCost": "100",
+            "unitLaborHours": "0",
+            "hourlyRate": "0",
+            "markupPercent": "0",
+            "discountPercent": "0",
+            "vatPercent": "19"
+          }
+        ],
+        "snapshot": {
+          "version": 1,
+          "currency": "EUR",
+          "lines": [
+            {
+              "inputs": {
+                "catalogItemId": null,
+                "description": "Historical effective work",
+                "unit": "m\u00B2",
+                "quantity": "2",
+                "unitMaterialCost": "100",
+                "unitLaborHours": "0",
+                "hourlyRate": "0",
+                "markupPercent": "0",
+                "discountPercent": "0",
+                "vatPercent": "19"
+              },
+              "unitCost": "100",
+              "unitNet": "100",
+              "net": "200",
+              "tax": "38",
+              "gross": "238"
+            }
+          ],
+          "net": "200",
+          "tax": "38",
+          "gross": "238",
+          "digest": "9a7b3d2f627b1daac860bd0d5df175eb19e9a212b4147ebdf2c1671dfb698a3b"
+        },
+        "issuedDigest": "437e338dfce9048983f9a8ff9eed54311fb99060b6a064e91e15fd074a0f74bd",
+        "id": "b973bfdb-ecd4-4707-912a-1cc60d13e222",
+        "tenantId": "d0733161-09ec-4a2c-bdae-5b97e5c85a0e",
+        "revision": 1,
+        "createdAt": "2026-10-19T06:37:34.902998\u002B00:00",
+        "updatedAt": "2026-10-19T06:37:34.902998\u002B00:00",
+        "archived": false
+      },
+      "sha256": "dc6c97b48a2fe31dc322c47d52ddea395a16415808565ed65f0684cf4292a042",
+      "contractParties": "Confirmed",
+      "deliveryHistory": "NotApplicable",
+      "evidenceFile": "evidence/source-records.txt"
+    },
+    {
+      "sourceId": "d626da66-37ba-4bca-a7de-ab502344b7d4",
+      "kind": "bank-transactions",
+      "data": {
+        "accountReference": "legacy-account",
+        "externalId": "bank-row-1",
+        "counterparty": "",
+        "reference": "",
+        "bookedOn": "2026-10-19",
+        "amount": "500",
+        "currency": "EUR",
+        "importDigest": "de4f857048489e7d9282b7720dcd6df4a90de76e01de6266ead3d891371c6f4c",
+        "id": "d626da66-37ba-4bca-a7de-ab502344b7d4",
+        "tenantId": "d0733161-09ec-4a2c-bdae-5b97e5c85a0e",
+        "revision": 1,
+        "createdAt": "2026-10-19T06:37:34.902998\u002B00:00",
+        "updatedAt": "2026-10-19T06:37:34.902998\u002B00:00",
+        "archived": false
+      },
+      "sha256": "65f04de6e90a8344411f83d4e9d3c9ea3bfed71129f2371e992766b75a918d33",
+      "contractParties": "NotApplicable",
+      "deliveryHistory": "NotApplicable",
+      "evidenceFile": null
+    },
+    {
+      "sourceId": "003666cc-bbdc-4435-93f7-9a1724090987",
+      "kind": "payment-allocations",
+      "data": {
+        "invoiceId": "f59bc3d6-69c2-4a4f-86d9-4b917484a1fb",
+        "bankTransactionId": "d626da66-37ba-4bca-a7de-ab502344b7d4",
+        "amount": "500",
+        "discountAmount": "10",
+        "retainedAmount": "100",
+        "direction": "Receipt",
+        "retentionReleases": [],
+        "allocatedAt": "2026-10-19T06:37:34.902998\u002B00:00",
+        "allocatedBy": "ac65fc57-ca15-4036-884e-76fa814b420b",
+        "reversedAt": null,
+        "reversedBy": null,
+        "reason": "Preserved discount and retention",
+        "reversalReason": "",
+        "returnBankTransactionId": null,
+        "postedDigest": "567c709644f42dfad11d010b093584f8f0162602edc5c7c372209b329bd92d6f",
+        "id": "003666cc-bbdc-4435-93f7-9a1724090987",
+        "tenantId": "d0733161-09ec-4a2c-bdae-5b97e5c85a0e",
+        "revision": 1,
+        "createdAt": "2026-10-19T06:37:34.902998\u002B00:00",
+        "updatedAt": "2026-10-19T06:37:34.902998\u002B00:00",
+        "archived": false
+      },
+      "sha256": "576a0187c723931fa8ea45dfa883d1848a84406087344e1ec7bec68fbae2d899",
+      "contractParties": "NotApplicable",
+      "deliveryHistory": "NotApplicable",
+      "evidenceFile": null
+    },
+    {
+      "sourceId": "98c36019-77a9-4ad5-a3ee-32d02e524660",
+      "kind": "suppliers",
+      "data": {
+        "name": "Historical supplier",
+        "contactName": "",
+        "email": "",
+        "phone": "",
+        "address": "Historical supplier address",
+        "accountReference": "",
+        "id": "98c36019-77a9-4ad5-a3ee-32d02e524660",
+        "tenantId": "d0733161-09ec-4a2c-bdae-5b97e5c85a0e",
+        "revision": 1,
+        "createdAt": "2026-10-19T06:37:34.902998\u002B00:00",
+        "updatedAt": "2026-10-19T06:37:34.902998\u002B00:00",
+        "archived": false
+      },
+      "sha256": "719c434567f93a9820eb976bc2f3e8667f43ed3304472e3428001dbc91d38358",
+      "contractParties": "NotApplicable",
+      "deliveryHistory": "NotApplicable",
+      "evidenceFile": null
+    },
+    {
+      "sourceId": "f2efe2c3-6271-46f2-8ce2-572eaab9f353",
+      "kind": "supplier-invoices",
+      "data": {
+        "supplierId": "98c36019-77a9-4ad5-a3ee-32d02e524660",
+        "purchaseOrderId": null,
+        "originalInvoiceId": null,
+        "number": "SUP-17",
+        "title": "Preserved supplier invoice",
+        "supplierName": "Historical supplier",
+        "supplierAddress": "Historical supplier address",
+        "currency": "EUR",
+        "invoiceDate": "2026-10-19",
+        "dueDate": "2026-11-02",
+        "net": "200",
+        "tax": "38",
+        "gross": "238",
+        "kind": "Invoice",
+        "status": "Approved",
+        "reviewNote": "",
+        "approvedBy": "ac65fc57-ca15-4036-884e-76fa814b420b",
+        "approvedAt": "2026-10-19T06:37:34.902998\u002B00:00",
+        "approvedDigest": "bc8e5680435bd254c658c9e7351fad71e22344e9924727373a7f5474931d0b9a",
+        "id": "f2efe2c3-6271-46f2-8ce2-572eaab9f353",
+        "tenantId": "d0733161-09ec-4a2c-bdae-5b97e5c85a0e",
+        "revision": 1,
+        "createdAt": "2026-10-19T06:37:34.902998\u002B00:00",
+        "updatedAt": "2026-10-19T06:37:34.902998\u002B00:00",
+        "archived": false
+      },
+      "sha256": "ee11675a05f3b200399dd4219141b8c381de478a2b2a8dac5cb4602ff3cbb8f0",
+      "contractParties": "Confirmed",
+      "deliveryHistory": "NotApplicable",
+      "evidenceFile": "evidence/source-records.txt"
+    },
+    {
+      "sourceId": "a71dbf30-1e65-4305-b4b4-f8f6d92d0851",
+      "kind": "bank-transactions",
+      "data": {
+        "accountReference": "legacy-account",
+        "externalId": "bank-row-2",
+        "counterparty": "",
+        "reference": "",
+        "bookedOn": "2026-10-19",
+        "amount": "-238",
+        "currency": "EUR",
+        "importDigest": "250ad841558665786b7860620fd895e3e51a26e5fb8284ba502e27027a4e284b",
+        "id": "a71dbf30-1e65-4305-b4b4-f8f6d92d0851",
+        "tenantId": "d0733161-09ec-4a2c-bdae-5b97e5c85a0e",
+        "revision": 1,
+        "createdAt": "2026-10-19T06:37:34.902998\u002B00:00",
+        "updatedAt": "2026-10-19T06:37:34.902998\u002B00:00",
+        "archived": false
+      },
+      "sha256": "79f43e418e189b266e746479998d0287b649fecc03de17fff998f58e8a8aaf57",
+      "contractParties": "NotApplicable",
+      "deliveryHistory": "NotApplicable",
+      "evidenceFile": null
+    },
+    {
+      "sourceId": "5e1d8368-54ee-46bb-8ca8-92c21a2c165c",
+      "kind": "supplier-payment-allocations",
+      "data": {
+        "supplierInvoiceId": "f2efe2c3-6271-46f2-8ce2-572eaab9f353",
+        "bankTransactionId": "a71dbf30-1e65-4305-b4b4-f8f6d92d0851",
+        "direction": "Payment",
+        "amount": "238",
+        "discountAmount": "0",
+        "reason": "Preserved supplier payment",
+        "allocatedBy": "ac65fc57-ca15-4036-884e-76fa814b420b",
+        "allocatedAt": "2026-10-19T06:37:34.902998\u002B00:00",
+        "reversedBy": null,
+        "reversedAt": null,
+        "reversalReason": "",
+        "returnBankTransactionId": null,
+        "postedDigest": "0063ba18cc3d02ac18d4e542a26ab8d283e72413c58ead773149e0797f64366f",
+        "id": "5e1d8368-54ee-46bb-8ca8-92c21a2c165c",
+        "tenantId": "d0733161-09ec-4a2c-bdae-5b97e5c85a0e",
+        "revision": 1,
+        "createdAt": "2026-10-19T06:37:34.902998\u002B00:00",
+        "updatedAt": "2026-10-19T06:37:34.902998\u002B00:00",
+        "archived": false
+      },
+      "sha256": "85ae85c4661cb5e44b30d2683c9b3f025ce5da8a04f9b78a8d85c3ed3f0b57dd",
+      "contractParties": "NotApplicable",
+      "deliveryHistory": "NotApplicable",
+      "evidenceFile": null
+    },
+    {
+      "sourceId": "d94b1dfd-0a65-4006-8c51-5402104925b8",
+      "kind": "supplier-invoices",
+      "data": {
+        "supplierId": "98c36019-77a9-4ad5-a3ee-32d02e524660",
+        "purchaseOrderId": null,
+        "originalInvoiceId": "f2efe2c3-6271-46f2-8ce2-572eaab9f353",
+        "number": "SUP-CREDIT-2",
+        "title": "Preserved supplier correction",
+        "supplierName": "Historical supplier",
+        "supplierAddress": "Historical supplier address",
+        "currency": "EUR",
+        "invoiceDate": "2026-10-19",
+        "dueDate": "2026-10-19",
+        "net": "100",
+        "tax": "19",
+        "gross": "119",
+        "kind": "CreditNote",
+        "status": "Approved",
+        "reviewNote": "",
+        "approvedBy": "ac65fc57-ca15-4036-884e-76fa814b420b",
+        "approvedAt": "2026-10-19T06:37:34.902998\u002B00:00",
+        "approvedDigest": "05db3f8f95dc5b540dcef943935addd94b452ea8d13d844a1690992a2b1852a7",
+        "id": "d94b1dfd-0a65-4006-8c51-5402104925b8",
+        "tenantId": "d0733161-09ec-4a2c-bdae-5b97e5c85a0e",
+        "revision": 1,
+        "createdAt": "2026-10-19T06:37:34.902998\u002B00:00",
+        "updatedAt": "2026-10-19T06:37:34.902998\u002B00:00",
+        "archived": false
+      },
+      "sha256": "2627ba0e585c2daa48a355ff30bf86db5dc1a26b833da5efc18e878fb97d4ced",
+      "contractParties": "Confirmed",
+      "deliveryHistory": "NotApplicable",
+      "evidenceFile": "evidence/source-records.txt"
+    },
+    {
+      "sourceId": "e53d1589-c6d1-4eb7-ba06-b76130375e0f",
+      "kind": "bank-transactions",
+      "data": {
+        "accountReference": "legacy-account",
+        "externalId": "bank-row-3",
+        "counterparty": "",
+        "reference": "",
+        "bookedOn": "2026-10-19",
+        "amount": "100",
+        "currency": "EUR",
+        "importDigest": "91cac3be764792187fd023705e6132cc55a32f3df609f2b1413b73dfa3189f2a",
+        "id": "e53d1589-c6d1-4eb7-ba06-b76130375e0f",
+        "tenantId": "d0733161-09ec-4a2c-bdae-5b97e5c85a0e",
+        "revision": 1,
+        "createdAt": "2026-10-19T06:37:34.902998\u002B00:00",
+        "updatedAt": "2026-10-19T06:37:34.902998\u002B00:00",
+        "archived": false
+      },
+      "sha256": "59079ee116c132da9ad51444d92dda84055dab66403510cf753852594054931c",
+      "contractParties": "NotApplicable",
+      "deliveryHistory": "NotApplicable",
+      "evidenceFile": null
+    },
+    {
+      "sourceId": "b04f80b6-bc9a-4eca-b0b5-37c9f9e9cc4f",
+      "kind": "supplier-payment-allocations",
+      "data": {
+        "supplierInvoiceId": "f2efe2c3-6271-46f2-8ce2-572eaab9f353",
+        "bankTransactionId": "e53d1589-c6d1-4eb7-ba06-b76130375e0f",
+        "direction": "Refund",
+        "amount": "100",
+        "discountAmount": "0",
+        "reason": "Preserved supplier refund",
+        "allocatedBy": "ac65fc57-ca15-4036-884e-76fa814b420b",
+        "allocatedAt": "2026-10-19T06:37:34.902998\u002B00:00",
+        "reversedBy": null,
+        "reversedAt": null,
+        "reversalReason": "",
+        "returnBankTransactionId": null,
+        "postedDigest": "5f916a11361cd6bbf80555755cfde84ca625309cddee7ac5dbf9d78187038faf",
+        "id": "b04f80b6-bc9a-4eca-b0b5-37c9f9e9cc4f",
+        "tenantId": "d0733161-09ec-4a2c-bdae-5b97e5c85a0e",
+        "revision": 1,
+        "createdAt": "2026-10-19T06:37:34.902998\u002B00:00",
+        "updatedAt": "2026-10-19T06:37:34.902998\u002B00:00",
+        "archived": false
+      },
+      "sha256": "20f8977cea41dcc8ea5840057f008c8893a48a8972b035217b1b98922c24a0cf",
+      "contractParties": "NotApplicable",
+      "deliveryHistory": "NotApplicable",
+      "evidenceFile": null
+    },
+    {
+      "sourceId": "cb960f9e-24d9-4130-9243-85ae21c8cec1",
+      "kind": "technical-results",
+      "data": {
+        "projectId": "6bd6e5d1-b022-4ac5-a95e-bd23a9faeb9b",
+        "buildingId": "10151a10-8272-49f4-92e7-90eec3b6fd24",
+        "roofRevisionId": null,
+        "title": "Historical supported geometry",
+        "method": "roof.rectangle",
+        "methodVersion": "1.0.0",
+        "input": {
+          "ridgeLengthM": 10,
+          "horizontalRunM": 4,
+          "riseM": 3,
+          "measurementSource": "Synthetic measured source"
+        },
+        "result": {
+          "input": {
+            "ridgeLengthM": 10,
+            "horizontalRunM": 4,
+            "riseM": 3,
+            "measurementSource": "Synthetic measured source"
+          },
+          "slopingLengthM": 5,
+          "pitchDegrees": 36.86989764584402,
+          "projectedAreaM2": 40,
+          "surfaceAreaM2": 50,
+          "perimeterM": 30,
+          "provenance": {
+            "methodId": "rectangular-roof-plane",
+            "methodVersion": "1.0.0",
+            "inputSha256": "e4500451c2a9ac5af64e14159c0ddc63b51cca54775fdf3508d76b9dc1d77af1",
+            "isNormative": false,
+            "limitations": [
+              "Pure geometry for one rectangular roof plane. A two-sided roof requires two planes.",
+              "No overhangs, openings, waste allowances, load verification or contractual measurement rules are inferred."
+            ]
+          }
+        },
+        "calculatedBy": "ac65fc57-ca15-4036-884e-76fa814b420b",
+        "calculatedAt": "2026-10-19T06:37:34.902998\u002B00:00",
+        "digest": "b7bdd47c82dca9065f892a2f289a0dbeb4df328b88308e852a079041ce8c0eb8",
+        "isNormative": false,
+        "id": "cb960f9e-24d9-4130-9243-85ae21c8cec1",
+        "tenantId": "d0733161-09ec-4a2c-bdae-5b97e5c85a0e",
+        "revision": 1,
+        "createdAt": "2026-10-19T06:37:34.902998\u002B00:00",
+        "updatedAt": "2026-10-19T06:37:34.902998\u002B00:00",
+        "archived": false
+      },
+      "sha256": "d3c81a6656dea5aa11bd0b704b597a62df7071951fd4bd18515f2a31bb5cab7d",
+      "contractParties": "NotApplicable",
+      "deliveryHistory": "NotApplicable",
+      "evidenceFile": null
+    },
+    {
+      "sourceId": "983eca9f-3401-4142-b1ff-5eff4a4462ee",
+      "kind": "portal-shares",
+      "data": {
+        "recipientUserId": "71c79c8a-29da-4fee-b0db-bbd5a449448c",
+        "grantedBy": "ac65fc57-ca15-4036-884e-76fa814b420b",
+        "projectId": "6bd6e5d1-b022-4ac5-a95e-bd23a9faeb9b",
+        "title": "Historical named grant",
+        "sourceKind": "quotes",
+        "sourceId": "479be740-d3d3-48c7-bd34-5df156315434",
+        "sourceDigest": "6b8e348f4dc514affe3a162b0bf7ef624069cfbb9d1093de89fcce32fcf0459a",
+        "allowAcceptance": true,
+        "expiresAt": "2026-11-18T06:37:34.902998\u002B00:00",
+        "revokedAt": null,
+        "id": "983eca9f-3401-4142-b1ff-5eff4a4462ee",
+        "tenantId": "d0733161-09ec-4a2c-bdae-5b97e5c85a0e",
+        "revision": 1,
+        "createdAt": "2026-10-19T06:37:34.902998\u002B00:00",
+        "updatedAt": "2026-10-19T06:37:34.902998\u002B00:00",
+        "archived": false
+      },
+      "sha256": "36576e81e7e84802a80f2012aad92c344cd02380ef032f5d543be9c0270ba368",
+      "contractParties": "NotApplicable",
+      "deliveryHistory": "NotApplicable",
+      "evidenceFile": null
+    },
+    {
+      "sourceId": "718cc626-4b82-410b-a878-60098285dd76",
+      "kind": "customers",
+      "data": {
+        "name": "Second tenant customer",
+        "contactName": "",
+        "email": "",
+        "phone": "",
+        "address": "Separate historical address",
+        "notes": "",
+        "id": "718cc626-4b82-410b-a878-60098285dd76",
+        "tenantId": "f375e6aa-6519-441c-90d1-ba592266deab",
+        "revision": 1,
+        "createdAt": "2026-10-19T06:37:34.902998\u002B00:00",
+        "updatedAt": "2026-10-19T06:37:34.902998\u002B00:00",
+        "archived": false
+      },
+      "sha256": "9a65df41450953fea2bce0043dab03ea59f95d29abc37a4316dc4a39de895b88",
+      "contractParties": "NotApplicable",
+      "deliveryHistory": "NotApplicable",
+      "evidenceFile": null
+    }
+  ],
+  "documents": [
+    {
+      "sourceId": "legacy-file-0",
+      "data": {
+        "id": "57e81ede-7319-43af-a0c4-a23662074b74",
+        "tenantId": "d0733161-09ec-4a2c-bdae-5b97e5c85a0e",
+        "uploadedBy": "ac65fc57-ca15-4036-884e-76fa814b420b",
+        "name": "historical-original.txt",
+        "contentType": "text/plain",
+        "size": 92,
+        "sha256": "8db8e36fa75d343fd0e6bc97af52da59f4ff958ef1009ffcd905f4ac10b56f2c",
+        "objectKey": "legacy/r2/57e81ede731943afa0c4a23662074b74",
+        "versionId": null,
+        "state": "Ready",
+        "revision": 1,
+        "projectId": "6bd6e5d1-b022-4ac5-a95e-bd23a9faeb9b",
+        "projectKind": "projects",
+        "sourceKind": "quotes",
+        "sourceId": "479be740-d3d3-48c7-bd34-5df156315434",
+        "sourceDigest": "6b8e348f4dc514affe3a162b0bf7ef624069cfbb9d1093de89fcce32fcf0459a",
+        "rendererVersion": "legacy-source-retained",
+        "createdAt": "2026-10-19T06:37:34.902998+00:00"
+      },
+      "file": {
+        "file": "objects/57e81ede731943afa0c4a23662074b74.txt",
+        "size": 92,
+        "sha256": "8db8e36fa75d343fd0e6bc97af52da59f4ff958ef1009ffcd905f4ac10b56f2c"
+      },
+      "sourceStore": "synthetic-r2-export",
+      "sourceVersionId": null
+    },
+    {
+      "sourceId": "legacy-file-1",
+      "data": {
+        "id": "7886a259-9386-4696-bc1c-3d90461512d8",
+        "tenantId": "f375e6aa-6519-441c-90d1-ba592266deab",
+        "uploadedBy": "ac65fc57-ca15-4036-884e-76fa814b420b",
+        "name": "historical-original.txt",
+        "contentType": "text/plain",
+        "size": 40,
+        "sha256": "764ec2510ebda248459523a8db503a6f2df3669b4ad8a47326193b2aee8c1fb4",
+        "objectKey": "legacy/r2/7886a25993864696bc1c3d90461512d8",
+        "versionId": null,
+        "state": "Archived",
+        "revision": 1,
+        "projectId": null,
+        "projectKind": null,
+        "sourceKind": null,
+        "sourceId": null,
+        "sourceDigest": "",
+        "rendererVersion": "legacy-source-retained",
+        "createdAt": "2026-10-19T06:37:34.902998+00:00"
+      },
+      "file": {
+        "file": "objects/7886a25993864696bc1c3d90461512d8.txt",
+        "size": 40,
+        "sha256": "764ec2510ebda248459523a8db503a6f2df3669b4ad8a47326193b2aee8c1fb4"
+      },
+      "sourceStore": "synthetic-r2-export",
+      "sourceVersionId": null
+    }
+  ],
+  "counters": [
+    {
+      "tenantId": "d0733161-09ec-4a2c-bdae-5b97e5c85a0e",
+      "kind": "AN",
+      "year": 2026,
+      "value": 42,
+      "expectedNextNumber": "AN-2026-000043"
+    },
+    {
+      "tenantId": "d0733161-09ec-4a2c-bdae-5b97e5c85a0e",
+      "kind": "AU",
+      "year": 2026,
+      "value": 17,
+      "expectedNextNumber": "AU-2026-000018"
+    },
+    {
+      "tenantId": "d0733161-09ec-4a2c-bdae-5b97e5c85a0e",
+      "kind": "RE",
+      "year": 2026,
+      "value": 73,
+      "expectedNextNumber": "RE-2026-000074"
+    },
+    {
+      "tenantId": "d0733161-09ec-4a2c-bdae-5b97e5c85a0e",
+      "kind": "KO",
+      "year": 2026,
+      "value": 2,
+      "expectedNextNumber": "KO-2026-000003"
+    },
+    {
+      "tenantId": "d0733161-09ec-4a2c-bdae-5b97e5c85a0e",
+      "kind": "BE",
+      "year": 2026,
+      "value": 0,
+      "expectedNextNumber": "BE-2026-000001"
+    },
+    {
+      "tenantId": "f375e6aa-6519-441c-90d1-ba592266deab",
+      "kind": "AN",
+      "year": 2026,
+      "value": 0,
+      "expectedNextNumber": "AN-2026-000001"
+    },
+    {
+      "tenantId": "f375e6aa-6519-441c-90d1-ba592266deab",
+      "kind": "AU",
+      "year": 2026,
+      "value": 0,
+      "expectedNextNumber": "AU-2026-000001"
+    },
+    {
+      "tenantId": "f375e6aa-6519-441c-90d1-ba592266deab",
+      "kind": "RE",
+      "year": 2026,
+      "value": 0,
+      "expectedNextNumber": "RE-2026-000001"
+    },
+    {
+      "tenantId": "f375e6aa-6519-441c-90d1-ba592266deab",
+      "kind": "KO",
+      "year": 2026,
+      "value": 0,
+      "expectedNextNumber": "KO-2026-000001"
+    },
+    {
+      "tenantId": "f375e6aa-6519-441c-90d1-ba592266deab",
+      "kind": "BE",
+      "year": 2026,
+      "value": 0,
+      "expectedNextNumber": "BE-2026-000001"
+    }
+  ],
+  "history": [
+    {
+      "sourceId": "legacy-event-9",
+      "id": "b377f201-f1f2-4984-8f5a-32d8686be7c5",
+      "tenantId": "d0733161-09ec-4a2c-bdae-5b97e5c85a0e",
+      "category": "dispatch",
+      "kind": "quotes",
+      "entityId": "479be740-d3d3-48c7-bd34-5df156315434",
+      "occurredAt": "2026-10-19T06:37:34.902998+00:00",
+      "data": {
+        "legacyAttemptId": "provider-row-9",
+        "state": "sent",
+        "providerReference": "synthetic-preserved-provider-receipt",
+        "quoteId": "479be740-d3d3-48c7-bd34-5df156315434",
+        "quoteDigest": "6b8e348f4dc514affe3a162b0bf7ef624069cfbb9d1093de89fcce32fcf0459a"
+      },
+      "sha256": "a12ec1ed8ad7e3af0ad5588d6ba833abebd35319eeca7a9af0f421882624b07a",
+      "evidenceFile": "evidence/source-records.txt"
+    }
+  ],
+  "evidenceFiles": [
+    {
+      "file": "evidence/source-records.txt",
+      "size": 186,
+      "sha256": "0c142ddcdd6344746fc46a42712ac609c8b976ff1b94899845b8384e944ad6f1"
+    }
+  ],
+  "uncertainties": [],
+  "controls": [
+    {
+      "tenantId": "d0733161-09ec-4a2c-bdae-5b97e5c85a0e",
+      "entityCount": 18,
+      "documentCount": 1,
+      "membershipCount": 2,
+      "entityDigest": "d78ff6202c5f910c719d4ef747783696101b67f366731b10fcb8bd4a867abc7e",
+      "documentDigest": "16e373945b6bcd427a29fb0e4ebe4e98a6a051215b4816bffc768cc39d730ff7",
+      "historyDigest": "0530899be62193f25e83348851cd79da05e11bb3f5604bef12b03c670e21cee3",
+      "accountDigest": "5b7764503bc52e2445b877d7b30bbf8d11710f8fee6d4ffac4e3b242815acfe6",
+      "counterDigest": "6af29ff1989b6c3539f481aa60a156e3301310c0449ea15b1e2563f2f16869dd",
+      "totals": {
+        "quotedGross": "1190",
+        "orderedGross": "1190",
+        "invoiceNet": "1000",
+        "invoiceTax": "190",
+        "invoiceGross": "1190",
+        "creditGross": "238",
+        "receipts": "500",
+        "refunds": "0",
+        "discounts": "10",
+        "retained": "100",
+        "bankNet": "362",
+        "supplierInvoiceGross": "238",
+        "supplierCreditGross": "119",
+        "supplierPayments": "238",
+        "supplierRefunds": "100"
+      }
+    },
+    {
+      "tenantId": "f375e6aa-6519-441c-90d1-ba592266deab",
+      "entityCount": 1,
+      "documentCount": 1,
+      "membershipCount": 1,
+      "entityDigest": "e88eb5533642975ef4267bf8262332c4117631ae39af7091e6a6352b151f0a86",
+      "documentDigest": "7addc53b74ddd3e498bb362e96ef41a91d7c621e2b7ee7e896f9f90fa677c4ca",
+      "historyDigest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "accountDigest": "2f556125fe13d412d8900a40108e4ba3f649207d6d35f5c170167ea22b25d8e2",
+      "counterDigest": "52661ec35fb0d86aa179bfcc81abb4c083c93c0660533b25a9a560e7efad32eb",
+      "totals": {
+        "quotedGross": "0",
+        "orderedGross": "0",
+        "invoiceNet": "0",
+        "invoiceTax": "0",
+        "invoiceGross": "0",
+        "creditGross": "0",
+        "receipts": "0",
+        "refunds": "0",
+        "discounts": "0",
+        "retained": "0",
+        "bankNet": "0",
+        "supplierInvoiceGross": "0",
+        "supplierCreditGross": "0",
+        "supplierPayments": "0",
+        "supplierRefunds": "0"
+      }
+    }
+  ]
+}

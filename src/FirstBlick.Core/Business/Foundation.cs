@@ -130,7 +130,7 @@ public static class BusinessRegistry
         ["equipment"] = typeof(Equipment), ["supplier-invoices"] = typeof(SupplierInvoice),
         ["supplier-payment-allocations"] = typeof(SupplierPaymentAllocation),
         ["roof-revisions"] = typeof(RoofRevision), ["measurements"] = typeof(Measurement), ["technical-results"] = typeof(TechnicalRecord),
-        ["portal-shares"] = typeof(PortalShare), ["portal-feedback"] = typeof(PortalFeedback)
+        ["portal-shares"] = typeof(PortalShare), ["portal-feedback"] = typeof(PortalFeedback), ["material-demands"] = typeof(MaterialDemand)
     };
 
     public static string KindOf<T>() where T : TenantEntity => Entities.Single(x => x.Value == typeof(T)).Key;

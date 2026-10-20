@@ -49,7 +49,9 @@ public static class BusinessPdf
             writer.Text(invoice.CorrectionReason);
             writer.Text("Die ausgewiesenen positiven Beträge mindern die Forderung der ursprünglichen Rechnung.", true, 9);
         }
-        writer.Space(18); writer.Lines(invoice.Snapshot);
+        // Invoice.Validate already checks the invoice-specific frozen contract,
+        // including partial quantities with their complete measurement evidence.
+        writer.Space(18); writer.Lines(invoice.Snapshot, validateQuote: false);
         return writer.Finish();
     }
 
@@ -142,9 +144,10 @@ public static class BusinessPdf
             lines.Add(current); return lines;
         }
 
-        public void Lines(QuoteSnapshot snapshot)
+        public void Lines(QuoteSnapshot snapshot, bool validateQuote = true)
         {
-            snapshot.Validate(); var index = 0;
+            if (validateQuote) snapshot.Validate();
+            var index = 0;
             foreach (var line in snapshot.Lines)
             {
                 // Keep the heading and price row together; long descriptions may continue on subsequent pages.

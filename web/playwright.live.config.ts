@@ -1,7 +1,7 @@
 import { defineConfig,devices } from '@playwright/test';
 
 export default defineConfig({
-  testDir:'tests/live',workers:1,fullyParallel:false,retries:0,timeout:240000,
+  testDir:'tests/live',testIgnore:'offline-workday.spec.ts',workers:1,fullyParallel:false,retries:0,timeout:240000,
   outputDir:'test-results/live',
   expect:{timeout:20000},
   reporter:[['list'],['json',{outputFile:'test-results/live-report.json'}]],

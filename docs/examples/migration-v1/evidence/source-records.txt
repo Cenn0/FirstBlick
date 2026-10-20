@@ -1,0 +1,1 @@
+Synthetic canonical source only. Historical party names, prices, accepted contract, provider acknowledgement and old source IDs were intentionally retained. No real provider was called.

@@ -29,6 +29,7 @@ public static class FieldEndpoints
             c.Execute("purchase-orders", "purchase.issue", body, async ct =>
             {
                 var purchase = await c.Current<PurchaseOrder>(id, ct);
+                await GraphRules.Validate(purchase, c.Store, c.Db, c.Scope, ct);
                 await c.Approvals.Require(c.Http, "purchase.issue", "purchase-orders", id, purchase.Revision, "{}", ct);
                 InventoryRules.Order(purchase, await c.Store.NextNumber("BE", await c.BusinessDate(ct), ct));
                 await c.Store.Save(purchase, "purchase.issue", false, ct); return purchase;

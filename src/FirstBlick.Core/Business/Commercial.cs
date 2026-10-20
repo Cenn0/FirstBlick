@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace FirstBlick.Core.Business;
 
 public sealed record QuoteLine
@@ -12,8 +14,13 @@ public sealed record QuoteLine
     public decimal MarkupPercent { get; set; }
     public decimal DiscountPercent { get; set; }
     public decimal VatPercent { get; set; }
+    // Omitting absent evidence preserves the digests of all pre-existing frozen quotes.
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public QuantityEvidence? QuantityEvidence { get; set; }
 
-    public void Validate()
+    public void Validate() => Validate(allowPartialMeasurement: false);
+
+    public void Validate(bool allowPartialMeasurement)
     {
         Guard.OptionalId(CatalogItemId, nameof(CatalogItemId)); Guard.Text(Description, nameof(Description), 4000); Guard.Text(Unit, nameof(Unit), 32);
         Guard.Range(Quantity, 0.000001m, 1_000_000m, nameof(Quantity));
@@ -21,17 +28,20 @@ public sealed record QuoteLine
         Guard.Range(UnitLaborHours, 0, 10_000m, nameof(UnitLaborHours)); Guard.Range(HourlyRate, 0, 100_000m, nameof(HourlyRate));
         Guard.Range(MarkupPercent, 0, 1000, nameof(MarkupPercent)); Guard.Range(DiscountPercent, 0, 100, nameof(DiscountPercent));
         Guard.Range(VatPercent, 0, 100, nameof(VatPercent));
+        QuantityLinks.EnsureTarget(QuantityEvidence, Quantity, Unit, allowPartialMeasurement);
     }
 }
 
 public sealed record PricedLine(QuoteLine Inputs, decimal UnitCost, decimal UnitNet, decimal Net, decimal Tax, decimal Gross);
 public sealed record QuoteSnapshot(int Version, string Currency, IReadOnlyList<PricedLine> Lines, decimal Net, decimal Tax, decimal Gross, string Digest)
 {
-    public void Validate()
+    public void Validate() => Validate(allowPartialMeasurement: false);
+
+    public void Validate(bool allowPartialMeasurement)
     {
         Guard.Require(Version > 0, "invalid_version", "Snapshot version must be positive."); Guard.Currency(Currency);
         Guard.Items(Lines, nameof(Lines), 1000, 1);
-        var recalculated = Pricing.Freeze(Lines.Select(x => x.Inputs).ToList(), Version, Currency);
+        var recalculated = Pricing.Freeze(Lines.Select(x => x.Inputs).ToList(), Version, Currency, allowPartialMeasurement);
         Guard.Require(recalculated.Digest == Digest && recalculated.Net == Net && recalculated.Tax == Tax && recalculated.Gross == Gross,
             "snapshot_changed", "The calculation snapshot does not match its frozen input values.");
         Guard.Require(recalculated.Lines.SequenceEqual(Lines), "snapshot_changed", "A frozen line was modified.");
@@ -41,20 +51,20 @@ public sealed record QuoteSnapshot(int Version, string Currency, IReadOnlyList<P
 /// <summary>EUR commercial arithmetic: round effective unit price to cents, then line net, then line tax. Tax rates are explicit inputs, never inferred.</summary>
 public static class Pricing
 {
-    public static QuoteSnapshot Freeze(IReadOnlyList<QuoteLine> lines, int version = 1, string currency = "EUR")
+    public static QuoteSnapshot Freeze(IReadOnlyList<QuoteLine> lines, int version = 1, string currency = "EUR", bool allowPartialMeasurement = false)
     {
         Guard.Items(lines, nameof(lines), 1000, 1); Guard.Currency(currency);
         Guard.Require(version > 0, "invalid_version", "Calculation version must be positive.");
-        var priced = lines.Select(Price).ToList().AsReadOnly();
+        var priced = lines.Select(x => Price(x, allowPartialMeasurement)).ToList().AsReadOnly();
         var net = priced.Sum(x => x.Net); var tax = priced.Sum(x => x.Tax); var gross = net + tax;
         Money.Amount(net, "Net"); Money.Amount(tax, "Tax"); Money.Amount(gross, "Gross");
         var digest = ContentDigest.Of(new { Version = version, Currency = currency, Lines = priced, Net = net, Tax = tax, Gross = gross });
         return new(version, currency, priced, net, tax, gross, digest);
     }
 
-    public static PricedLine Price(QuoteLine input)
+    public static PricedLine Price(QuoteLine input, bool allowPartialMeasurement = false)
     {
-        Guard.Require(input is not null, "required", "Calculation line is required."); input!.Validate();
+        Guard.Require(input is not null, "required", "Calculation line is required."); input!.Validate(allowPartialMeasurement);
         var frozen = input with { };
         var cost = input.UnitMaterialCost + input.UnitLaborHours * input.HourlyRate;
         var unit = Money.Round(cost * (1m + input.MarkupPercent / 100m) * (1m - input.DiscountPercent / 100m));
@@ -135,6 +145,8 @@ public sealed class Quote : TenantEntity
         yield return BusinessRegistry.Reference<Customer>(CustomerId); yield return BusinessRegistry.Reference<Project>(ProjectId);
         foreach (var id in Lines.Where(x => x.CatalogItemId.HasValue).Select(x => x.CatalogItemId!.Value).Distinct())
             yield return BusinessRegistry.Reference<CatalogItem>(id);
+        foreach (var id in Lines.Where(x => x.QuantityEvidence is not null).Select(x => x.QuantityEvidence!.MeasurementId).Distinct())
+            yield return BusinessRegistry.Reference<Measurement>(id);
     }
 }
 
@@ -187,7 +199,14 @@ public sealed class ChangeOrder : TenantEntity
             Guard.Require(Pricing.Freeze(Lines).Digest == Snapshot.Digest, "snapshot_changed", "Accepted change values are immutable.");
         }
     }
-    public override IEnumerable<EntityReference> References() => [BusinessRegistry.Reference<Order>(OrderId)];
+    public override IEnumerable<EntityReference> References()
+    {
+        yield return BusinessRegistry.Reference<Order>(OrderId);
+        foreach (var id in Lines.Where(x => x.QuantityEvidence is not null).Select(x => x.QuantityEvidence!.MeasurementId).Distinct())
+            yield return BusinessRegistry.Reference<Measurement>(id);
+        foreach (var id in Lines.Where(x => x.CatalogItemId.HasValue).Select(x => x.CatalogItemId!.Value).Distinct())
+            yield return BusinessRegistry.Reference<CatalogItem>(id);
+    }
 }
 
 public static class CommercialWorkflow

@@ -63,22 +63,8 @@ public sealed class EntityStore(FirstBlickDbContext db, TenantScope scope)
         stored.UpdatedAt = entity.UpdatedAt;
         stored.Archived = entity.Archived;
         stored.Data = AppJson.Serialize(entity);
-        stored.UniqueKey = entity switch
-        {
-            Order o => $"quote:{o.QuoteId}",
-            Invoice i when i.Status == InvoiceStatus.Issued => $"number:{i.Number}",
-            Quote q when q.Status != QuoteStatus.Draft => $"number:{q.Number}",
-            BankTransaction t => $"bank:{ContentDigest.Of(new { t.AccountReference, t.ExternalId })}",
-            Employee e when e.UserId.HasValue => $"user:{e.UserId}",
-            NotificationPreference p => $"user:{p.UserId}",
-            SupplierInvoice i => $"supplier:{i.SupplierId}:number:{i.Number.Trim().ToUpperInvariant()}",
-            RoofRevision r when r.PreviousRevisionId.HasValue => $"previous:{r.PreviousRevisionId}",
-            _ => null
-        };
-        using var doc = JsonDocument.Parse(stored.Data);
-        stored.SearchText = string.Join(' ', doc.RootElement.EnumerateObject().Where(p => p.Value.ValueKind == JsonValueKind.String)
-            .Select(p => p.Value.GetString()).Where(x => x is not null)).ToLowerInvariant();
-        if (stored.SearchText.Length > 12000) stored.SearchText = stored.SearchText[..12000];
+        stored.UniqueKey = EntityProjection.UniqueKey(entity);
+        stored.SearchText = EntityProjection.SearchText(stored.Data);
         if (isNew) db.Entities.Add(stored);
         else db.Links.RemoveRange(await db.Links.Where(x => x.SourceKind == kind && x.SourceId == entity.Id).ToListAsync(ct));
         // The transaction writes source, tenant-qualified references, audit, outbox and receipt together.

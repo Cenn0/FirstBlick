@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace FirstBlick.Core.Business;
 
 public sealed class Supplier : TenantEntity
@@ -38,11 +40,18 @@ public sealed record PurchaseLine
     public decimal Quantity { get; set; }
     public decimal UnitNet { get; set; }
     public decimal VatPercent { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public Guid? MaterialDemandId { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public QuantityEvidence? QuantityEvidence { get; set; }
     public void Validate()
     {
         Guard.Id(Id, nameof(Id)); Guard.Id(MaterialId, nameof(MaterialId)); Guard.Text(Description, nameof(Description), 2000);
         Guard.Range(Quantity, 0.000001m, 1_000_000m, nameof(Quantity)); Guard.Range(UnitNet, 0, 1_000_000m, nameof(UnitNet)); Guard.Range(VatPercent, 0, 100, nameof(VatPercent));
         Money.Amount(Money.Round(Quantity * UnitNet), "Purchase line net");
+        Guard.OptionalId(MaterialDemandId, nameof(MaterialDemandId));
+        Guard.Require(MaterialDemandId.HasValue == (QuantityEvidence is not null), "invalid_demand_reference", "A demand purchase line must retain both its demand and quantity evidence.");
+        QuantityLinks.EnsureTarget(QuantityEvidence, Quantity);
     }
 }
 
@@ -73,6 +82,7 @@ public sealed class PurchaseOrder : TenantEntity
         yield return BusinessRegistry.Reference<Supplier>(SupplierId);
         if (ProjectId is { } project) yield return BusinessRegistry.Reference<Project>(project);
         foreach (var id in Lines.Select(x => x.MaterialId).Distinct()) yield return BusinessRegistry.Reference<Material>(id);
+        foreach (var id in Lines.Where(x => x.MaterialDemandId.HasValue).Select(x => x.MaterialDemandId!.Value).Distinct()) yield return BusinessRegistry.Reference<MaterialDemand>(id);
     }
 }
 

@@ -35,6 +35,10 @@ jobs:
           FIRSTBLICK_OPS_CONTAINER=true ./scripts/restore-drill.sh --output /backups/ci-drill
           cp backups/ci-drill/drill-report.json artifacts/operations/restore-drill.json
           cp backups/ci-drill/restore-report.json artifacts/operations/restore-report.json
+      - name: Canonical legacy migration, exact comparison and blocked-source cases
+        run: |
+          FIRSTBLICK_OPS_CONTAINER=true ./scripts/operations.sh migration-drill --output /backups/ci-migration
+          cp backups/ci-migration/migration-drill.json artifacts/operations/migration-drill.json
       - name: Verify the running application backup and restart without data loss
         run: |
           FIRSTBLICK_OPS_CONTAINER=true ./scripts/backup.sh --output /backups/ci-application
@@ -48,11 +52,17 @@ jobs:
           docker compose ps --format json > artifacts/operations/containers.json
           python3 scripts/container-diagnostics.py > artifacts/operations/diagnostics.json
           python3 - <<'PY'
-          import json, pathlib, subprocess
+          import json, pathlib, shutil, subprocess
           refs = subprocess.check_output(['docker', 'compose', 'images', '-q'], text=True).split()
           images = json.loads(subprocess.check_output(['docker', 'image', 'inspect', *sorted(set(refs))], text=True)) if refs else []
           safe = [{'id': image['Id'], 'tags': image.get('RepoTags', []), 'digests': image.get('RepoDigests', [])} for image in images]
           pathlib.Path('artifacts/operations/images.json').write_text(json.dumps(safe, indent=2) + '\n')
+          # This directory contains only synthetic JSON reports. Never publish
+          # the target PFX, application backup, source export or environment.
+          reports = pathlib.Path('artifacts/operations/migration')
+          reports.mkdir(exist_ok=True)
+          for report in pathlib.Path('backups/ci-migration').glob('*.json'):
+              shutil.copyfile(report, reports / report.name)
           PY
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         if: always()

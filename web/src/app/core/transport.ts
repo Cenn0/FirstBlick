@@ -28,13 +28,16 @@ export async function requestResponse(path: string, init: RequestInit = {}, tena
   if (!path.startsWith('/api/v1/') || path.startsWith('//')) throw new Error('Ungültiger API-Pfad.');
   const headers = new Headers(init.headers);
   headers.set('Accept', accept);
+  // Authentication and business responses always use the browser network stack,
+  // even when an older application-shell service worker controls this page.
+  headers.set('ngsw-bypass', '1');
   if (init.body && !(init.body instanceof FormData) && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
   if (tenantId) headers.set('X-Tenant-Id', tenantId);
   const method = (init.method || 'GET').toUpperCase();
   if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
     let token = csrfToken();
     if (!token) {
-      const response = await fetch('/api/v1/auth/csrf', { credentials: 'same-origin', cache: 'no-store' });
+      const response = await fetch('/api/v1/auth/csrf', { credentials: 'same-origin', cache: 'no-store', headers: { 'ngsw-bypass': '1' } });
       if (!response.ok) throw new ApiError(response.status, { title: 'Sitzung konnte nicht geprüft werden.' });
       token = csrfToken();
     }

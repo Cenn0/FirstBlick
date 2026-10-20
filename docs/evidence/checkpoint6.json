@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "checkpoint": 6,
+  "commit": "06b58921f206bd216f6c23408b735da091ef1e8e",
+  "recordedAt": "2026-10-20T06:04:32.461545+00:00",
+  "syntheticDataOnly": true,
+  "backend": {
+    "core": {
+      "total": 190,
+      "executed": 190,
+      "passed": 190,
+      "failed": 0,
+      "notExecuted": 0
+    },
+    "apiWorker": {
+      "total": 78,
+      "executed": 78,
+      "passed": 78,
+      "failed": 0,
+      "notExecuted": 0,
+      "realPostgreSql": true
+    }
+  },
+  "frontend": {
+    "productionBuild": "passed",
+    "unitPassed": 32,
+    "portalFixtureBrowserPassed": 45,
+    "livePortalJourneysPassed": 3,
+    "portalEvidence": "live-portal-checkpoint5.json"
+  },
+  "restoreEvidence": "restore-drill.json",
+  "limits": [
+    "Local test reports describe the committed checkpoint. New worktree functions have separate subsequent tests.",
+    "The final current container CI and production/data/professional acceptance are separate gates.",
+    "All browser, identity, bank and restore data are synthetic."
+  ]
+}

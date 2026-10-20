@@ -122,7 +122,37 @@ internal static class GraphRules
                     await ValidateWindow(project, assignment, db, scope, ct);
                 break;
             case Quote quote:
-                Guard.Require((await store.Get<Project>(quote.ProjectId, ct)).CustomerId == quote.CustomerId, "customer_mismatch", "Quote and project customers must match."); break;
+                Guard.Require((await store.Get<Project>(quote.ProjectId, ct)).CustomerId == quote.CustomerId, "customer_mismatch", "Quote and project customers must match.");
+                foreach (var line in quote.Lines.Where(x => x.QuantityEvidence is not null))
+                    QuantityLinks.EnsureSource(line.QuantityEvidence!, await store.Get<Measurement>(line.QuantityEvidence!.MeasurementId, ct), scope.TenantId, quote.ProjectId);
+                break;
+            case ChangeOrder change:
+                var changeProjectId = (await store.Get<Order>(change.OrderId, ct)).ProjectId;
+                foreach (var line in change.Lines.Where(x => x.QuantityEvidence is not null))
+                    QuantityLinks.EnsureSource(line.QuantityEvidence!, await store.Get<Measurement>(line.QuantityEvidence!.MeasurementId, ct), scope.TenantId, changeProjectId);
+                break;
+            case Material material:
+                var storedMaterial = await db.Entities.SingleOrDefaultAsync(x => x.Kind == "materials" && x.Id == material.Id, ct);
+                if (storedMaterial is not null && AppJson.Read<Material>(storedMaterial.Data).Unit != material.Unit)
+                    Guard.Require(!await db.Links.AnyAsync(x => x.TargetKind == "materials" && x.TargetId == material.Id, ct),
+                        "material_unit_in_use", "A material used in purchasing, stock or demand retains its unit. Create a separate item for a different unit.");
+                break;
+            case MaterialDemand demand:
+                QuantityLinks.EnsureSource(demand.Evidence, await store.Get<Measurement>(demand.Evidence.MeasurementId, ct), scope.TenantId, demand.ProjectId);
+                Guard.Require((await store.Get<Material>(demand.MaterialId, ct)).Unit == demand.Evidence.TargetUnit, "quantity_target_changed", "The demand unit must match its material.");
+                break;
+            case PurchaseOrder purchase:
+                foreach (var purchaseLine in purchase.Lines.Where(x => x.MaterialDemandId.HasValue))
+                {
+                    var linked = await store.Get<MaterialDemand>(purchaseLine.MaterialDemandId!.Value, ct);
+                    Guard.Require(linked.Status == MaterialDemandStatus.Converted && linked.PurchaseOrderId == purchase.Id && linked.PurchaseLineId == purchaseLine.Id
+                        && linked.ProjectId == purchase.ProjectId && linked.MaterialId == purchaseLine.MaterialId && linked.Evidence == purchaseLine.QuantityEvidence,
+                        "purchase_demand_changed", "The purchase line must retain its reviewed demand, project, material and quantity evidence.");
+                }
+                foreach (var linked in (await store.All<MaterialDemand>(ct)).Where(x => x.PurchaseOrderId == purchase.Id))
+                    Guard.Require(purchase.Lines.Any(x => x.Id == linked.PurchaseLineId && x.MaterialDemandId == linked.Id),
+                        "purchase_demand_changed", "A converted demand cannot be removed silently from its purchase draft.");
+                break;
             case Invoice invoice:
                 var order = await store.Get<Order>(invoice.OrderId, ct);
                 Guard.Require(order.CustomerId == invoice.CustomerId, "customer_mismatch", "Invoice and order customers must match."); break;

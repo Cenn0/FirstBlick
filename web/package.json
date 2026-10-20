@@ -8,7 +8,9 @@
     "test": "vitest run",
     "test:browser": "playwright test",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
-    "test:live": "playwright test -c playwright.live.config.ts"
+    "test:live": "playwright test -c playwright.live.config.ts",
+    "preview": "node tools/preview.mjs",
+    "test:offline": "playwright test -c playwright.offline.config.ts"
   },
   "engines": {
     "node": "^22.22.3 || ^24.15.0 || >=26.0.0"

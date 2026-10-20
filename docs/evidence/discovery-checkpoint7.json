@@ -1,0 +1,107 @@
+{
+  "schema": "firstblick.discovery-evidence/1.0.0",
+  "recordedAtUtc": "2026-10-20T06:28:28.961458+00:00",
+  "publishedBaseline": "06b58921f206bd216f6c23408b735da091ef1e8e",
+  "scope": "subsequent working-tree source identified by SHA-256; not a claim of a new published commit",
+  "syntheticDataOnly": true,
+  "realHttp": true,
+  "realPostgreSql": true,
+  "postgresqlVersion": "16.15",
+  "runtime": ".NET 10.0.13",
+  "filter": "FullyQualifiedName~DiscoveryApiTests",
+  "times": {
+    "creation": "2026-10-20T00:27:18.3602614-06:00",
+    "queuing": "2026-10-20T00:27:18.3602615-06:00",
+    "start": "2026-10-20T00:27:01.6748513-06:00",
+    "finish": "2026-10-20T00:27:42.0251045-06:00"
+  },
+  "counters": {
+    "total": 11,
+    "executed": 11,
+    "passed": 11,
+    "failed": 0,
+    "error": 0,
+    "timeout": 0,
+    "aborted": 0,
+    "inconclusive": 0,
+    "passedButRunAborted": 0,
+    "notRunnable": 0,
+    "notExecuted": 0,
+    "disconnected": 0,
+    "warning": 0,
+    "completed": 0,
+    "inProgress": 0,
+    "pending": 0
+  },
+  "testResults": [
+    {
+      "name": "FirstBlick.Api.Tests.DiscoveryApiTests.Search_whitelists_fields_and_tenant_before_stable_pagination_and_treats_query_as_literal",
+      "outcome": "Passed",
+      "duration": "00:00:02.1612967"
+    },
+    {
+      "name": "FirstBlick.Api.Tests.DiscoveryApiTests.Self_copy_rejects_a_record_budget_overrun_before_returning_any_partial_archive_or_audit",
+      "outcome": "Passed",
+      "duration": "00:00:04.8133627"
+    },
+    {
+      "name": "FirstBlick.Api.Tests.DiscoveryApiTests.Worker_search_uses_current_assignments_and_personal_profile_and_counts_only_visible_results",
+      "outcome": "Passed",
+      "duration": "00:00:01.7215641"
+    },
+    {
+      "name": "FirstBlick.Api.Tests.DiscoveryApiTests.Document_search_applies_source_record_and_project_visibility_without_storage_metadata",
+      "outcome": "Passed",
+      "duration": "00:00:01.5841603"
+    },
+    {
+      "name": "FirstBlick.Api.Tests.DiscoveryApiTests.Search_and_self_copy_recheck_revocation_after_actually_waiting_for_the_tenant_lock",
+      "outcome": "Passed",
+      "duration": "00:00:01.3142695"
+    },
+    {
+      "name": "FirstBlick.Api.Tests.DiscoveryApiTests.Self_copy_contains_only_own_current_tenant_categories_and_safe_identity_with_verified_zip_and_file_hashes",
+      "outcome": "Passed",
+      "duration": "00:00:02.5478128"
+    },
+    {
+      "name": "FirstBlick.Api.Tests.DiscoveryApiTests.Worker_history_hides_other_personal_and_financial_records_and_revokes_project_access_immediately",
+      "outcome": "Passed",
+      "duration": "00:00:02.6978327"
+    },
+    {
+      "name": "FirstBlick.Api.Tests.DiscoveryApiTests.Self_copy_fails_closed_when_a_stored_record_disagrees_with_its_tenant_metadata",
+      "outcome": "Passed",
+      "duration": "00:00:01.0227062"
+    },
+    {
+      "name": "FirstBlick.Api.Tests.DiscoveryApiTests.Discovery_rejects_invalid_duplicate_unknown_and_unbounded_query_parameters",
+      "outcome": "Passed",
+      "duration": "00:00:12.8862283"
+    },
+    {
+      "name": "FirstBlick.Api.Tests.DiscoveryApiTests.Project_history_follows_current_incoming_links_not_shared_customers_or_banks_and_projects_generic_titles",
+      "outcome": "Passed",
+      "duration": "00:00:02.4892119"
+    },
+    {
+      "name": "FirstBlick.Api.Tests.DiscoveryApiTests.Self_copy_rechecks_personal_policy_role_and_membership_and_does_not_offer_other_subjects",
+      "outcome": "Passed",
+      "duration": "00:00:03.0704413"
+    }
+  ],
+  "sourceSha256": {
+    "src/FirstBlick.Api/DiscoveryEndpoints.cs": "82d935705d13c7a09c27edd0031672b49d595ba9d69ce4725d160f3e76954490",
+    "src/FirstBlick.Api/DiscoveryAccess.cs": "dfc374bda8a2c51c602ca4f2711a1e81b40f218788513ad09e249632a0928217",
+    "tests/FirstBlick.Api.Tests/DiscoveryApiTests.cs": "89493c5079fe436f4316a0ac16f1cbb65b63632d5ba878a0cb1c40a3f71a2405",
+    "docs/discovery-data-copy.md": "7d72ccd8ac84c6ee9c6a85fa4df3a45ce439354332c411bfeeaa551cca0eda0f"
+  },
+  "rawTrxSha256": "dbae601cc498a6659638e68299beac2344f1e547e7efea10023fc61452292ee7",
+  "limits": [
+    "The test fixture uses a unique disposable local database, real migrations, personal Identity cookies and HTTP requests.",
+    "No external email, bank, customer, production deployment or legal acceptance occurred.",
+    "Search uses a fixed title/number whitelist; project history uses currently accessible incoming project links, not historical associations.",
+    "The ZIP is a bounded self-service copy of own current accessible records in four categories, not a complete data-subject access response.",
+    "This API evidence does not assert browser UI coverage or representative production load."
+  ]
+}
