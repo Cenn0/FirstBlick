@@ -159,14 +159,14 @@ public static class GaebBidWriter
                         {
                             Guard.Require(!detail.Descendants().Any(x => x.Name.LocalName == "attachment"), "gaeb_bid_attachment",
                                 "X84 does not carry the original X83 attachment field. Resolve attachment delivery explicitly rather than silently discarding it.");
-                            target.Add(new XElement(Target + "Description", new XElement(Target + "CompleteText", ConvertNamespace(detail))));
+                            target.Add(new XElement(Target + "Description", new XElement(Target + "CompleteText", ConvertBidDescription(detail, price.OriginalItemId, excluded))));
                         }
                         else if (outline is not null)
                         {
                             var text = new XElement(Target + "Text");
                             foreach (var fragment in outline.Descendants(ns + "TextOutlTxt")) foreach (var element in fragment.Elements()) text.Add(ConvertNamespace(element));
                             Guard.Require(text.HasElements, "gaeb_bid_description", "The outline text cannot be represented as a complete X84 item description.");
-                            target.Add(new XElement(Target + "Description", new XElement(Target + "CompleteText", new XElement(Target + "DetailTxt", text))));
+                            target.Add(new XElement(Target + "Description", new XElement(Target + "CompleteText", new XElement(Target + "DetailTxt", ConvertBidDescription(text, price.OriginalItemId, excluded)))));
                         }
                         foreach (var field in description.Elements()) if (field.Name.LocalName != "CompleteText") excluded.Add($"Item[{price.OriginalItemId}]/Description/" + field.Name.LocalName);
                         if (description.Element(ns + "CompleteText")?.Element(ns + "OutlineText") is not null) excluded.Add($"Item[{price.OriginalItemId}]/Description/CompleteText/OutlineText");
@@ -183,6 +183,28 @@ public static class GaebBidWriter
             }
         }
         return body;
+    }
+    /// <summary>
+    /// GAEB X83 can contain inline span elements in description paragraphs, whereas the
+    /// pinned official X84 paragraph content model permits text and TextComplement, not span.
+    /// Preserve all plain text, but explicitly report unsupported typographic span markup
+    /// as phase-specific loss. Do not fake a TextComplement or silently drop nested content.
+    /// </summary>
+    private static XElement ConvertBidDescription(XElement source, string itemId, List<string> excluded)
+    {
+        var detail = ConvertNamespace(source);
+        foreach (var span in detail.Descendants(Target + "span").Reverse().ToArray())
+        {
+            Guard.Require(span.Nodes().All(x => x is XText),
+                "gaeb_inline_markup_unsupported",
+                "The GAEB X83 description contains nested span markup not representable as ordinary X84 paragraph text. Resolve the original markup explicitly.");
+            Guard.Require(!span.Attributes().Any(x => x.IsNamespaceDeclaration || x.Name.NamespaceName.Length > 0),
+                "gaeb_inline_markup_unsupported",
+                "The GAEB description has namespace-qualified span attributes that cannot be silently simplified.");
+            span.ReplaceWith(new XText(span.Value));
+            excluded.Add($"Item[{itemId}]/Description/inline span formatting: removed for X84 compatibility; complete literal text preserved; original X83 archived");
+        }
+        return detail;
     }
     private static void UpdateBody(XElement body, IReadOnlyDictionary<string, GaebBidLineResult> prices)
     {
