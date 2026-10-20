@@ -114,17 +114,53 @@ public static class CostEndpoints
         var purchases = await Linked<PurchaseOrder>("projects", order.ProjectId, c.Db, ct);
         var purchaseIds = purchases.Select(x => x.Id).ToArray();
         Guard.Items(input.SupplierCosts, nameof(input.SupplierCosts), 5000);
+
+        // Bind the current report to immutable, approved project-cost postings. Manual
+        // allocations remain previews only and must not override amounts already booked
+        // anywhere in the tenant for the same supplier invoice.
+        var projectJournal = await Linked<SupplierCostAllocation>("projects", order.ProjectId, c.Db, ct);
+        Guard.Require(projectJournal.All(x => x.TenantId == order.TenantId && x.ProjectId == order.ProjectId),
+            "cost_allocation_metadata", "Project cost journal references do not match their tenant and project.");
+        var projectActive = SupplierCostAllocationRules.Active(projectJournal);
+        var postedInvoiceIds = projectActive.Select(x => x.SupplierInvoiceId).Distinct().ToArray();
         var explicitInvoiceIds = input.SupplierCosts.Select(x => x.SupplierInvoiceId).ToArray();
         var linkedInvoiceIds = c.Db.Links.Where(x => x.SourceKind == "supplier-invoices" && x.TargetKind == "purchase-orders"
             && purchaseIds.Contains(x.TargetId)).Select(x => x.SourceId);
         var rows = await c.Db.Entities.Where(x => x.Kind == "supplier-invoices" && !x.Archived
-                && (linkedInvoiceIds.Contains(x.Id) || explicitInvoiceIds.Contains(x.Id)))
+                && (linkedInvoiceIds.Contains(x.Id) || explicitInvoiceIds.Contains(x.Id) || postedInvoiceIds.Contains(x.Id)))
             .OrderBy(x => x.Id).Take(5001).Select(x => x.Data).ToListAsync(ct);
         Guard.Require(rows.Count <= 5000, "cost_report_budget", "This source report exceeds 5,000 supplier documents.");
         var invoices = rows.Select(AppJson.Read<SupplierInvoice>).ToList();
-        Guard.Require(invoices.All(x => !x.PurchaseOrderId.HasValue || purchaseIds.Contains(x.PurchaseOrderId.Value)),
-            "wrong_cost_project", "A selected supplier invoice belongs to another project's purchase order.");
-        return ProjectCosting.Calculate(order, changes, time, stock, invoices, input);
+        Guard.Require(invoices.All(x => !x.PurchaseOrderId.HasValue || purchaseIds.Contains(x.PurchaseOrderId.Value)
+                || postedInvoiceIds.Contains(x.Id)),
+            "wrong_cost_project", "A supplier invoice belongs to another project's purchase order without a posted project allocation.");
+        Guard.Require(projectActive.All(x => invoices.Any(i => i.Id == x.SupplierInvoiceId
+                && i.TenantId == x.TenantId && i.Status == SupplierInvoiceStatus.Approved
+                && i.ApprovedDigest == x.SourceDigest)),
+            "cost_allocation_source_changed", "A posted cost allocation does not match an approved supplier invoice.");
+
+        var invoiceIds = invoices.Select(x => x.Id).ToArray();
+        var allocationIds = c.Db.Links.Where(x => x.SourceKind == "supplier-cost-allocations"
+            && x.TargetKind == "supplier-invoices" && invoiceIds.Contains(x.TargetId)).Select(x => x.SourceId);
+        var ledgerRows = await c.Db.Entities.Where(x => x.Kind == "supplier-cost-allocations"
+            && !x.Archived && allocationIds.Contains(x.Id)).OrderBy(x => x.Id)
+            .Take(5001).Select(x => x.Data).ToListAsync(ct);
+        Guard.Require(ledgerRows.Count <= 5000, "cost_report_budget",
+            "A supplier document's project distribution exceeds the supported evidence budget.");
+        var allJournal = ledgerRows.Select(AppJson.Read<SupplierCostAllocation>).ToList();
+        Guard.Require(allJournal.All(x => x.TenantId == order.TenantId && invoiceIds.Contains(x.SupplierInvoiceId)),
+            "cost_allocation_metadata", "The supplier allocation journal does not match this business and these sources.");
+        var allActive = SupplierCostAllocationRules.Active(allJournal);
+        var bookedIds = allActive.Select(x => x.SupplierInvoiceId).ToHashSet();
+        Guard.Require(!input.SupplierCosts.Any(x => bookedIds.Contains(x.SupplierInvoiceId)),
+            "cost_allocation_posted", "A booked supplier amount cannot be overridden with a manual project-cost estimate.");
+
+        var bookedBases = projectActive.GroupBy(x => x.SupplierInvoiceId).Select(group =>
+            new SupplierCostBasis(group.Key, SupplierCostTreatment.ExternalService, group.Sum(x => x.NetAmount),
+                "Posted allocation journal " + ContentDigest.Of(group.OrderBy(x => x.Id)
+                    .Select(x => new { x.Id, x.PostedDigest }).ToArray()))).ToList();
+        var evaluatedInput = input with { SupplierCosts = input.SupplierCosts.Concat(bookedBases).ToList() };
+        return ProjectCosting.Calculate(order, changes, time, stock, invoices, evaluatedInput);
     }
 
     private static async Task<List<T>> Linked<T>(string targetKind, Guid id, FirstBlickDbContext db, CancellationToken ct) where T : TenantEntity
