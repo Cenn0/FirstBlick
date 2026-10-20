@@ -14,7 +14,7 @@ public static class BusinessEndpoints
     {
         foreach (var (kind, type) in BusinessRegistry.Entities)
         {
-            if (kind is "collection-cases" or "cost-forecasts") continue; // Dedicated, authorized commands own these immutable resources.
+            if (kind is "collection-cases" or "cost-forecasts" or "supplier-cost-allocations") continue; // Dedicated, authorized commands own these immutable resources.
             typeof(BusinessEndpoints).GetMethod(nameof(MapResource), BindingFlags.NonPublic | BindingFlags.Static)!.MakeGenericMethod(type).Invoke(null, [api, kind]);
         }
         CommercialEndpoints.Map(api);
