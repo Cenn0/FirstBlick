@@ -1,3 +1,4 @@
+import { GaebBidExchangeComponent } from './gaeb-bid-exchange.component';
 import { Component, DestroyRef, computed, effect, inject, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
