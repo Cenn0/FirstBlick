@@ -1,13 +1,13 @@
 using FirstBlick.Core.Business;
 using FirstBlick.Core.Technical;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace FirstBlick.Core.Tests.Technical;
 
-public sealed class Iso13788BalanceTests
+public sealed class Iso13788BalanceTests(ITestOutputHelper output)
 {
-    // Numerical reference data only, not a copy of the standard's prose or figures.
-    // ISO 13788:2012 informative Annex C.1/C.2/C.3 and D provide independent expected results.
+    // Independently encoded numeric reference fixtures, not copied standard prose or figures.
     public static IReadOnlyList<MoistureDesignMonth> ReferenceClimate(bool high)
     {
         double[] outside = [-1, 0, 4, 9, 14, 18, 19, 19, 15, 10, 5, 1];
@@ -24,11 +24,17 @@ public sealed class Iso13788BalanceTests
             "ISO 13788:2012 Annex C.1 reference boundary values; equivalent thermal temperature explicitly matches this reference example"));
     private static MoistureResistanceLayer Layer(string name, double r, double sd, MoistureMaterialKind kind = MoistureMaterialKind.HomogeneousLayer)
         => new(name, r, sd, kind, "Independent normative-reference fixture; not manufacturer data");
+    private void Report(Iso13788BalanceResult result)
+    {
+        output.WriteLine($"Start={result.StartingMonth}; residual={result.ResidualCondensateKgM2:R}; class={result.Classification}");
+        foreach (var month in result.Months)
+            output.WriteLine($"Month {month.Month}: condensed={month.CondensedKgM2:R}; evaporated={month.EvaporatedKgM2:R}; stored={month.EndStoredMassKgM2:R}; " + string.Join("; ", month.WetInterfaces.Select(x => $"node {x.NodeIndex}: T={x.TemperatureC:R}, ps={x.SaturationPressurePa:R}, water={x.EndMassKgM2:R}")));
+    }
 
     [Fact]
     public void Single_interface_reference_reproduces_seasonal_condensation_and_complete_re_evaporation()
     {
-        var result = Iso13788Balance.Calculate(Reference());
+        var result = Iso13788Balance.Calculate(Reference()); Report(result);
         Assert.Equal(11, result.StartingMonth);
         Assert.Equal(AnnualMoistureClassification.CondensateFullyReevaporates, result.Classification);
         var peak = Assert.Single(result.InterfaceMaxima);
@@ -44,7 +50,7 @@ public sealed class Iso13788BalanceTests
     [Fact]
     public void High_occupancy_reference_keeps_the_end_of_year_water_instead_of_resetting_each_month()
     {
-        var result = Iso13788Balance.Calculate(Reference(high: true));
+        var result = Iso13788Balance.Calculate(Reference(high: true)); Report(result);
         Assert.Equal(10, result.StartingMonth); Assert.Equal(AnnualMoistureClassification.ResidualCondensate, result.Classification);
         Assert.InRange(result.ResidualCondensateKgM2, .00088, .00092);
         var peak = Assert.Single(result.InterfaceMaxima); Assert.Equal(4, peak.Month);
@@ -56,7 +62,7 @@ public sealed class Iso13788BalanceTests
     {
         var basis = Reference(true);
         var input = basis with { Layers = [basis.Layers[0], Layer("Inner insulation", 3, 15), basis.Layers[1], basis.Layers[2], basis.Layers[3]] };
-        var result = Iso13788Balance.Calculate(input);
+        var result = Iso13788Balance.Calculate(input); Report(result);
         Assert.Equal(12, result.StartingMonth); Assert.Equal(2, result.InterfaceMaxima.Count);
         var innerNode = result.Grid.Single(x => x.LayerIndex == 1 && x.LayerFraction == 1).Index;
         var inner = result.InterfaceMaxima.Single(x => x.NodeIndex == innerNode);
@@ -134,11 +140,12 @@ public sealed class Iso13788BalanceTests
         var input = Reference(true) with { Layers = [Layer("Liner", .06, .15), Layer("Unventilated cavity", .160, .01, MoistureMaterialKind.UnventilatedAirLayer),
             Layer("Deck", .146, .19), Layer("Vapour check", 0, 75, MoistureMaterialKind.Membrane), Layer("Insulation", 5, .2), Layer("Membrane", .008, 12)] };
         var result = Iso13788Balance.Dry(new(input, 4, 9, "Reference comparison; baseline contains no interstitial accumulation"));
+        output.WriteLine($"Drying time={result.DryingTimeMonths}; residual={result.ResidualMassKgM2:R}; first-month water={result.Months[0].EndStoredMassKgM2:R}");
         Assert.Equal(1, result.InitialExcessMassKgM2); Assert.Equal(DryingClassification.DriedWithRedistribution, result.Classification);
         Assert.Equal(83, result.DryingTimeMonths); Assert.Equal(0, result.ResidualMassKgM2);
         Assert.InRange(result.Months[0].EndStoredMassKgM2, .990, .993);
         Assert.Equal(0, result.Months[0].WetInterfaces.Single(x => x.NodeIndex == result.InitiallyWettedNode).EndMassKgM2);
-        Assert.True(result.Months[0].WetInterfaces.Any(x => x.NodeIndex != result.InitiallyWettedNode && x.EndMassKgM2 > .9));
+        Assert.Contains(result.Months[0].WetInterfaces, x => x.NodeIndex != result.InitiallyWettedNode && x.EndMassKgM2 > .9);
         Assert.All(result.Months, m => Assert.InRange(m.MassConservationErrorKgM2, -1e-8, 1e-8));
     }
     [Fact]
