@@ -1,9 +1,9 @@
 {
   "schema": "firstblick.roadmap-evidence/1.0.0",
-  "recordedAtUtc": "2026-10-20T07:02:24.871824+00:00",
+  "recordedAtUtc": "2026-10-20T09:02:44.062934+00:00",
   "counts": {
-    "K": 47,
     "T": 43,
+    "K": 47,
     "O": 10
   },
   "meaning": "K=declared technical core evidenced; T=partial; O=no accepted implementation. None means original-roadmap acceptance or production certification.",
@@ -114,7 +114,14 @@
     "offline": "web/src/app/core/offline-store.ts",
     "offline-tests": "web/tests/offline-store.test.ts",
     "sw-tests": "web/tests/service-worker.test.ts",
-    "browser-tests": "web/tests/browser/workflows.spec.ts"
+    "browser-tests": "web/tests/browser/workflows.spec.ts",
+    "attachments-eight": "docs/evidence/attachment-inventory-2026-10-20.json",
+    "backend-eight": "docs/evidence/checkpoint8-backend.json",
+    "observability": "docs/observability.md",
+    "operations-api-tests": "tests/FirstBlick.Api.Tests/OperationsApiTests.cs",
+    "telemetry-tests": "tests/FirstBlick.Api.Tests/TelemetryTests.cs",
+    "invoice-rounding": "docs/invoice-rounding.md",
+    "collections-docs": "docs/collections.md"
   },
   "tasks": [
     {
@@ -127,8 +134,8 @@
     {
       "id": "DP-00-02",
       "status": "T",
-      "evidence": "[Baseline][baseline] und [Methodeninventar][methods] erfassen Quellgrenzen sowie fünf statisch untersuchte Installer mit Dateihashes.",
-      "remaining": "Produktive D1-/R2-Exporte, reale Datensatz-/Dokumentvollständigkeit und drei fehlende Installer fehlen.",
+      "evidence": "[Baseline][baseline], [Methodeninventar][methods] und [aktuelles Anhanginventar][attachments-eight] erfassen Quellgrenzen sowie sechs aktuell verfügbare, statisch per PE-Header und SHA-256 geprüfte Installer.",
+      "remaining": "Produktive D1-/R2-Exporte und reale Datensatz-/Dokumentvollständigkeit fehlen. Flachdach- und Steildach-Demo sind in dieser Übertragung nicht verfügbar; der ältere Flachdach-Befund bleibt ausdrücklich historisch.",
       "title": "Daten und Dateien inventarisieren"
     },
     {
@@ -253,8 +260,8 @@
     {
       "id": "DP-02-07",
       "status": "T",
-      "evidence": "[Konfiguration][service-registration], [API-Start][api-program], [Workerbetrieb][jobs] und [Operations][operations] bieten persistente Schlüssel, Zertifikate, Health und korrelationsbezogene Fehlerlogs.",
-      "remaining": "Metriken, verteiltes Tracing, Alarmierung, echte Secret-Rotation und Betreiber-SLOs sind nicht vollständig belegt.",
+      "evidence": "[Konfiguration][service-registration], [Schlüssel][api-program] und [Betriebsbeobachtung][observability] ergänzen persistente Schlüssel um begrenzte Command-/Outbox-Metriken sowie einen mandantengebundenen Geschäftsführungs-Snapshot. [Vier Snapshot- und drei Metrikfälle][operations-api-tests] sind im [vollständigen Checkpoint-8-Lauf][backend-eight] enthalten.",
+      "remaining": "Externer Metrikexport, verteiltes Tracing, Alarmzustellung, reale Secret-Rotation, repräsentative Last und vereinbarte Betreiber-SLOs bleiben offen. Der Snapshot behauptet keine Worker-/Providerverfügbarkeit.",
       "title": "Serverkonfiguration, Schlüssel und Beobachtbarkeit schaffen"
     },
     {
@@ -512,15 +519,15 @@
     {
       "id": "DP-08-01",
       "status": "T",
-      "evidence": "[Money/Pricing][commercial], [Invoice][finance], [SupplierInvoice][supplier-finance] und [Finanztests][supplier-tests] erzwingen Cent-/Summen-/Positionsregeln.",
+      "evidence": "[Money/Pricing][commercial], [Invoice][finance], [kumulative Rechnungsarithmetik][invoice-rounding] und [SupplierInvoice][supplier-finance] erzwingen Cent-, Positions- und Summenregeln. 21 neue Core-Fälle prüfen Originalpositionsrundung, tatsächliche Vorbeträge und Centkorrekturen.",
       "remaining": "Steuerfälle, Belegpflichtfelder und rechts-/anbieterbezogene Rechnungsprofile sind nicht vollständig spezifiziert oder extern abgenommen.",
       "title": "Beleg- und Steuerregeln spezifizieren"
     },
     {
       "id": "DP-08-02",
       "status": "K",
-      "evidence": "[InvoiceWorkflow][finance], [Kommandos][commercial-api] und [Mengenverknüpfungs-Tests][quantity-tests] begrenzen Teil-/Schlussrechnungen und Korrekturen; [PG-Tests][quantity-api-tests] prüfen gemessene Abrechnungen und ihre eingefrorene Aufmaßherkunft im [Checkpoint 7][backend-seven].",
-      "remaining": "Kumulative Cent-/Steuerrundung bei mehreren Teilrechnungen und Teilkorrekturen wird separat erweitert; dieser Stand behauptet dafür keine vollständige Abnahme. PDF/Records sind keine zertifizierte E-Rechnung oder steuerliche Fachabnahme.",
+      "evidence": "[InvoiceWorkflow][finance] verwendet für neue Belege [kumulative Originalpositionsbeträge und eingefrorene Herleitung][invoice-rounding]. 21 Core-, fünf echte HTTP-/PG- und drei PDF-Fälle sind im [aktuellen vollständigen Serverlauf][backend-eight] enthalten. Legacy-Digests und Aufmaßherkunft bleiben prüfbar.",
+      "remaining": "Nullbetrag-Mengenabschluss, anfänglich tenantweit geladene Beleglisten, E-Rechnungsprofile und steuerliche Fachabnahme bleiben offen. Die kumulative Arithmetik ist kein zertifiziertes Rechnungsprofil.",
       "title": "Ausgangsrechnungen und Korrekturen umsetzen"
     },
     {
@@ -533,8 +540,8 @@
     {
       "id": "DP-08-04",
       "status": "T",
-      "evidence": "[PaymentWorkflow][finance], [FinanceReadModel][finance-read], [OP-Export][ledger-export] und [Ledger-Tests][ledger-tests] berechnen offene/collectible/credit Beträge aus Historie.",
-      "remaining": "Eigenständiges Mahnwesen mit Stufen, Fristen, Gebühren/Zinsen und prüfbarem Mahnversand fehlt; keine historischen as-of-Salden.",
+      "evidence": "[Forderungsfälle][collections-docs] ergänzen Ledger und OP-Export um offenen Arbeitsvorrat, eingefrorene Saldenprüfung, manuelle Schritte, Kontakte, Streit-/Pausenzustände und Wiederöffnung. 18 Core- und elf echte HTTP-/PG-Fälle sind im [Checkpoint 8][backend-eight] enthalten.",
+      "remaining": "Keine automatische Mahnzustellung, Gebühren-/Zinsberechnung, Rechtsprüfung oder historische as-of-Buchhaltung. Freigabe dokumentiert den Schritt; ein tatsächlicher Versand muss separat belegt werden.",
       "title": "Offene Posten und Mahnwesen führen"
     },
     {
@@ -561,7 +568,7 @@
     {
       "id": "DP-08-08",
       "status": "T",
-      "evidence": "[Finanzexport][ledger-export], [51/7-Integrationsnachweis][integration-evidence] und [HTTP-Gesamtfälle][commercial-api-tests] belegen exakte Beträge und verlinkte Beleg-/Zahlungshistorie.",
+      "evidence": "[Finanzexport][ledger-export] und [Integrationsnachweis][integration-evidence] werden durch kumulative Rechnungs-/Korrekturbeträge, konkurrierende Schlussrechnungen sowie saldengebundene Forderungsschritte im [Checkpoint 8][backend-eight] ergänzt.",
       "remaining": "Kein Steuerberater-/Buchhaltungsanbieter-Abnahmetest oder produktiver Kontoabgleich; eigener CSV-Vertrag ist kein DATEV-Zertifikat.",
       "title": "Finanzablauf und Exporte fachlich prüfen"
     },
@@ -771,8 +778,8 @@
     {
       "id": "DP-13-03",
       "status": "T",
-      "evidence": "[Budgets][api-program], [Outbox-Fehlerfälle][worker-tests] und [Drillmessung][restore-evidence] liefern begrenzte Fehler-/Zeitnachweise.",
-      "remaining": "Keine repräsentativen Datenmengen, Last-/Kostenmodelle, Kapazitätsgrenzen oder Betriebsausfallmessungen.",
+      "evidence": "[Budgets][api-program], [Outbox-Fehlerfälle][worker-tests], [Drillmessung][restore-evidence] und [neue Prozessmetriken/Betriebssignale][observability] liefern begrenzte Fehler-, Zeit- und Zustandsnachweise.",
+      "remaining": "Keine repräsentativen Datenmengen, Last-/Kostenmodelle, Kapazitätsgrenzen, externe Alarmierung oder gemessenen Betriebsausfall-SLOs.",
       "title": "Last, Kosten und Betriebsfehler messen"
     },
     {

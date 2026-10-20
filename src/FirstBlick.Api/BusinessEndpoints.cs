@@ -13,7 +13,10 @@ public static class BusinessEndpoints
     public static void Map(RouteGroupBuilder api)
     {
         foreach (var (kind, type) in BusinessRegistry.Entities)
+        {
+            if (kind == "collection-cases") continue; // Dedicated locked reads and audited commands own this resource.
             typeof(BusinessEndpoints).GetMethod(nameof(MapResource), BindingFlags.NonPublic | BindingFlags.Static)!.MakeGenericMethod(type).Invoke(null, [api, kind]);
+        }
         CommercialEndpoints.Map(api);
         FieldEndpoints.Map(api);
         api.MapGet("/dashboard", Dashboard);
@@ -43,7 +46,7 @@ public static class BusinessEndpoints
             var total = await db.Database.SqlQueryRaw<long>($"SELECT count(*) AS \"Value\" FROM \"Entities\" WHERE {predicate}", Parameters()).SingleAsync(ct);
             var parameters = Parameters().Concat([new NpgsqlParameter("limit", pageSize), new NpgsqlParameter("offset", checked((page - 1) * pageSize))]).ToArray();
             // PostgreSQL removes full quote/invoice/form snapshots before sending list data to the API process.
-            var data = await db.Database.SqlQueryRaw<string>($"SELECT (\"Data\" - 'snapshot' - 'contract' - 'lines' - 'deliveries' - 'fields' - 'values' || jsonb_build_object('net',COALESCE(\"Data\"->'snapshot'->'net',\"Data\"->'contract'->'net'),'gross',COALESCE(\"Data\"->'snapshot'->'gross',\"Data\"->'contract'->'gross')))::text AS \"Value\" FROM \"Entities\" WHERE {predicate} ORDER BY \"UpdatedAt\" DESC, \"Id\" LIMIT @limit OFFSET @offset", parameters).ToListAsync(ct);
+            var data = await db.Database.SqlQueryRaw<string>($"SELECT (\"Data\" - 'snapshot' - 'calculation' - 'contract' - 'lines' - 'deliveries' - 'fields' - 'values' || jsonb_build_object('net',COALESCE(\"Data\"->'snapshot'->'net',\"Data\"->'contract'->'net'),'gross',COALESCE(\"Data\"->'snapshot'->'gross',\"Data\"->'contract'->'gross')))::text AS \"Value\" FROM \"Entities\" WHERE {predicate} ORDER BY \"UpdatedAt\" DESC, \"Id\" LIMIT @limit OFFSET @offset", parameters).ToListAsync(ct);
 #pragma warning restore EF1002
             return Results.Ok(new { items = data.Select(x => JsonSerializer.Deserialize<JsonElement>(x)), total, page, pageSize });
         }).WithName($"List_{kind}").WithTags(kind);
@@ -130,7 +133,7 @@ internal static class EditRules
 {
     public static void EnsureGenericCreate(TenantEntity e, bool retainPurchaseLinks = false)
     {
-        Guard.Require(e is not Order and not BankTransaction and not PaymentAllocation and not SupplierPaymentAllocation and not StockMovement and not FormSubmission and not TechnicalRecord and not PortalShare and not PortalFeedback and not MaterialDemand,
+        Guard.Require(e is not Order and not BankTransaction and not PaymentAllocation and not SupplierPaymentAllocation and not StockMovement and not FormSubmission and not TechnicalRecord and not PortalShare and not PortalFeedback and not MaterialDemand and not CollectionCase,
             "command_required", "This record can only be created through its dedicated business command.");
         switch (e)
         {
@@ -153,7 +156,7 @@ internal static class EditRules
     public static void EnsureGenericUpdate(TenantEntity old, TenantEntity next)
     {
         Guard.Require(old.GetType() == next.GetType() && !old.Archived, "record_immutable", "This record cannot be edited.");
-        Guard.Require(old is not Order and not BankTransaction and not PaymentAllocation and not SupplierPaymentAllocation and not StockMovement and not FormSubmission and not MaterialReservation and not Acceptance and not TechnicalRecord and not PortalShare and not PortalFeedback and not MaterialDemand,
+        Guard.Require(old is not Order and not BankTransaction and not PaymentAllocation and not SupplierPaymentAllocation and not StockMovement and not FormSubmission and not MaterialReservation and not Acceptance and not TechnicalRecord and not PortalShare and not PortalFeedback and not MaterialDemand and not CollectionCase,
             "command_required", "Use the dedicated auditable command for this record.");
         switch (old)
         {
@@ -179,7 +182,7 @@ internal static class EditRules
     }
     public static void EnsureArchivable(TenantEntity e)
     {
-        Guard.Require(e is not Order and not Invoice and not SupplierInvoice and not PaymentAllocation and not SupplierPaymentAllocation and not BankTransaction and not StockMovement and not MaterialReservation and not FormSubmission and not Acceptance and not TechnicalRecord and not PortalShare and not PortalFeedback and not MaterialDemand,
+        Guard.Require(e is not Order and not Invoice and not SupplierInvoice and not PaymentAllocation and not SupplierPaymentAllocation and not BankTransaction and not StockMovement and not MaterialReservation and not FormSubmission and not Acceptance and not TechnicalRecord and not PortalShare and not PortalFeedback and not MaterialDemand and not CollectionCase,
             "record_immutable", "Business evidence is retained; use a correction or reversal.");
         if (e is Quote q) Guard.Require(q.Status == QuoteStatus.Draft, "quote_immutable", "Issued quote versions are retained.");
         if (e is ChangeOrder c) Guard.Require(c.Status != ChangeOrderStatus.Accepted, "change_immutable", "Accepted changes remain part of the contract and its financial history.");

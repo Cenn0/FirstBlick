@@ -1,0 +1,231 @@
+{
+  "status": "passed",
+  "checkedAt": "2026-10-20T08:59:40.150387+00:00",
+  "scope": "Focused cumulative invoice rounding verification; does not claim a full-suite pass.",
+  "baseCommit": "03f0e818251c361ceea6b6e16fb1bbe4dcf3712d",
+  "testedWorkingTree": true,
+  "dotnetSdk": "10.0.402",
+  "postgresMajor": 16,
+  "postgresRequired": true,
+  "methodVersion": "firstblick.invoice-cumulative/1.0.0",
+  "rendererVersion": "firstblick-business-pdf/1.1",
+  "sourceSha256": {
+    "src/FirstBlick.Core/Business/Finance.cs": "301d4d01b39fec9f4ff74a3236b1b95c3c54097e0f9887a40acc49b71fc4b56e",
+    "src/FirstBlick.Core/Business/InvoiceArithmetic.cs": "418c782cc3816f1a08c2a50544312020e489502f98fa8a4150a6159b3208c72f",
+    "src/FirstBlick.Infrastructure/Documents/BusinessPdf.cs": "afb4373f4bfe42d635714c6cb2d488a66b678efbd1fb38995c46ef64996c26a7",
+    "tests/FirstBlick.Core.Tests/Business/InvoiceCumulativeRoundingTests.cs": "e5be0d4f769a464f8078b1d335961d576fe5c69c3ef0afcf10f1fff031e8799f",
+    "tests/FirstBlick.Api.Tests/InvoiceRoundingApiTests.cs": "22eacaafe2339c8675e7b7e92921c8ada2556211fa76b22ad8c04d8b7a816bc9",
+    "tests/FirstBlick.Api.Tests/InvoicePdfTests.cs": "4055973df36fd600696173007e4df80baa396e886597c61e4efc3a70ce338193",
+    "docs/invoice-rounding.md": "576e83e7c150e7a6d7550a05f846651a725fa5e0b36605c53422315d6633e225"
+  },
+  "runs": [
+    {
+      "project": "tests/FirstBlick.Core.Tests",
+      "configuration": "Release",
+      "filter": "FullyQualifiedName~InvoiceCumulativeRoundingTests",
+      "command": "dotnet test tests/FirstBlick.Core.Tests -c Release --no-restore --filter \"FullyQualifiedName~InvoiceCumulativeRoundingTests\"",
+      "trx": "invoice-core-focused.trx",
+      "trxSha256": "cf43db5b3ba3b3ee2f8bb8338018322a1586e80f5f8b17cd6de607d0516d12c5",
+      "times": {
+        "creation": "2026-10-20T02:55:08.9667912-06:00",
+        "queuing": "2026-10-20T02:55:08.9667912-06:00",
+        "start": "2026-10-20T02:55:07.4279543-06:00",
+        "finish": "2026-10-20T02:55:09.1123701-06:00"
+      },
+      "counts": {
+        "total": 21,
+        "executed": 21,
+        "passed": 21,
+        "failed": 0,
+        "notExecuted": 0
+      },
+      "cases": [
+        {
+          "name": "FirstBlick.Core.Tests.Business.InvoiceCumulativeRoundingTests.Final_invoice_carries_the_contract_tax_cent_after_a_partial_invoice",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.InvoiceCumulativeRoundingTests.Distinct_tax_rates_are_never_offset_against_each_other",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.InvoiceCumulativeRoundingTests.Zero_cent_remaining_invoice_is_explicitly_rejected_without_mutation",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.InvoiceCumulativeRoundingTests.Duplicate_history_and_duplicate_changes_cannot_inflate_the_calculation_basis",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.InvoiceCumulativeRoundingTests.Rebilling_after_complete_correction_uses_zero_actual_previous_balance",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.InvoiceCumulativeRoundingTests.Legacy_invoice_is_preserved_and_new_final_invoice_accounts_for_its_actual_cents",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.InvoiceCumulativeRoundingTests.A_credit_without_its_original_cannot_reduce_the_order_billed_balance",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.InvoiceCumulativeRoundingTests.Source_snapshot_is_independent_and_rehashed_wrong_output_is_still_rejected",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.InvoiceCumulativeRoundingTests.Repeated_equal_positions_cannot_expand_a_small_input_into_unbounded_evidence",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.InvoiceCumulativeRoundingTests.Altered_source_or_previous_balance_invalidates_the_frozen_calculation",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.InvoiceCumulativeRoundingTests.Equal_source_positions_retain_their_separate_original_rounding",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.InvoiceCumulativeRoundingTests.Full_quantities_across_two_corrections_reverse_the_original_tax_cent",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.InvoiceCumulativeRoundingTests.Fractional_quantities_carry_both_net_and_tax_without_repricing_prior_invoice",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.InvoiceCumulativeRoundingTests.Corrections_of_a_tax_adjusted_partial_invoice_use_its_actual_amounts",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.InvoiceCumulativeRoundingTests.Prior_rounding_difference_is_visible_and_not_silently_rewritten",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.InvoiceCumulativeRoundingTests.An_accepted_change_retains_its_own_rounding_and_source_identity",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.InvoiceCumulativeRoundingTests.Multiple_legacy_partial_invoices_settle_to_the_original_contract_cents",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.InvoiceCumulativeRoundingTests.Three_partial_quantities_allocate_tax_cents_as_1_2_1_not_1_1_1",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.InvoiceCumulativeRoundingTests.Json_round_trip_preserves_all_decimal_evidence_and_rejects_removed_calculation",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.InvoiceCumulativeRoundingTests.Drafts_cannot_supply_server_generated_calculation_evidence",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.InvoiceCumulativeRoundingTests.Previously_overbilled_legacy_cents_are_rejected_without_negative_adjustment",
+          "outcome": "Passed"
+        }
+      ]
+    },
+    {
+      "project": "tests/FirstBlick.Api.Tests",
+      "configuration": "Release",
+      "filter": "FullyQualifiedName~InvoiceRoundingApiTests|FullyQualifiedName~InvoicePdfTests",
+      "command": "dotnet test tests/FirstBlick.Api.Tests -c Release --no-restore --filter \"FullyQualifiedName~InvoiceRoundingApiTests|FullyQualifiedName~InvoicePdfTests\"",
+      "trx": "invoice-http-pdf.trx",
+      "trxSha256": "ec835101dc7847f42dda60590b7b7519239ad918c5c6215d88b3f7db7e9cec26",
+      "times": {
+        "creation": "2026-10-20T02:52:19.0179621-06:00",
+        "queuing": "2026-10-20T02:52:19.0179622-06:00",
+        "start": "2026-10-20T02:52:16.8802194-06:00",
+        "finish": "2026-10-20T02:52:42.0009071-06:00"
+      },
+      "counts": {
+        "total": 8,
+        "executed": 8,
+        "passed": 8,
+        "failed": 0,
+        "notExecuted": 0
+      },
+      "cases": [
+        {
+          "name": "FirstBlick.Api.Tests.InvoiceRoundingApiTests.Clients_cannot_inject_issued_evidence_into_a_draft_or_use_another_tenants_invoice",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.InvoicePdfTests.Cumulative_invoice_pdf_renders_the_actual_carried_net_and_tax_amounts(unitNet: \"0.03\", quantity: \"1\", firstQuantity: \"0.5\", finalQuantity: \"0.5\", expectedNet: \"0.01\", expectedTax: \"0.01\", evidenceName: \"cumulative-net-invoice\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.InvoicePdfTests.Cumulative_invoice_pdf_renders_the_actual_carried_net_and_tax_amounts(unitNet: \"0.01\", quantity: \"3\", firstQuantity: \"1\", finalQuantity: \"2\", expectedNet: \"0.02\", expectedTax: \"0.01\", evidenceName: \"cumulative-tax-invoice\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.InvoiceRoundingApiTests.Two_real_corrections_of_an_adjusted_final_reverse_its_actual_net_tax_and_receivable",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.InvoiceRoundingApiTests.Competing_final_invoices_serialize_against_current_quantities_and_cannot_bill_the_same_remaining_cent_twice",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.InvoiceRoundingApiTests.Tampered_jsonb_calculation_is_rejected_by_balance_and_pdf_without_generating_a_document",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.InvoiceRoundingApiTests.Real_http_issuance_persists_tax_carry_and_replay_does_not_duplicate_a_document_or_number",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.InvoicePdfTests.Partial_invoice_pdf_preserves_full_measurement_evidence_and_actual_frozen_amounts",
+          "outcome": "Passed"
+        }
+      ]
+    }
+  ],
+  "syntheticPdfReview": {
+    "synthetic": true,
+    "extract": "pdftotext -layout",
+    "render": "pdftoppm -png -scale-to 1500 -singlefile",
+    "reviewedPages": [
+      "cumulative-net-invoice.png",
+      "cumulative-tax-invoice.png"
+    ],
+    "result": "Both rendered one-page invoices were visually reviewed: actual net/tax amounts and before/after cumulative balances visible; no clipped lines.",
+    "artifacts": [
+      {
+        "file": "cumulative-net-invoice.pdf",
+        "sha256": "f1c403a0dee5b0e3f6bfd7e55163a024cd33b47d6aff45cf531bb640f574da74"
+      },
+      {
+        "file": "cumulative-net-invoice.png",
+        "sha256": "e68641ea3dc13ae315e98eb561fbe32caff9084c79debec4e8803b5d423da1e1"
+      },
+      {
+        "file": "cumulative-net-invoice.txt",
+        "sha256": "2dc63e15859e1dfb196865bb1963ed0f1bdd05ae91df8cea62409f96b81d3ec3"
+      },
+      {
+        "file": "cumulative-tax-invoice.pdf",
+        "sha256": "085bba1e668f423477078a4d4fc5689479e0763bbb04814945b492fe78ef2edf"
+      },
+      {
+        "file": "cumulative-tax-invoice.png",
+        "sha256": "b86e1a6f61da87dccd58d74c7848ff14b319042ccfb0072976205340af1ea1f4"
+      },
+      {
+        "file": "cumulative-tax-invoice.txt",
+        "sha256": "6656f4fcf0b13cb6bb5d5d0c3acc3a9b47366bae7f282ce649e75ced73655278"
+      },
+      {
+        "file": "partial-measurement-invoice.pdf",
+        "sha256": "e823af365119ac47f21e9666df81f5c8ce7a642b6113d8b0a280ee30329989d7"
+      }
+    ]
+  },
+  "boundaries": [
+    "Initial invoice and change-order queries remain tenant-wide Store.All calls. Relevant historical invoices are validated before the arithmetic budgets, so initial SQL and validation workloads are not fully bounded.",
+    "Zero-gross invoices and negative rounding differences are rejected; a zero-value residual-quantity closing workflow is not implemented.",
+    "The calculation uses frozen EUR amounts and explicit input tax rates. No statutory accounting-method certification or XRechnung/ZUGFeRD conformance is claimed.",
+    "No full-suite result is inferred by adding overlapping focused or earlier runs."
+  ]
+}

@@ -9,6 +9,7 @@ public static class EntityProjection
     public static string? UniqueKey(TenantEntity entity) => entity switch
     {
         Order o => $"quote:{o.QuoteId}",
+        CollectionCase c => $"invoice:{c.InvoiceId}",
         Invoice i when i.Status == InvoiceStatus.Issued => $"number:{i.Number}",
         Quote q when q.Status != QuoteStatus.Draft => $"number:{q.Number}",
         BankTransaction t => $"bank:{ContentDigest.Of(new { t.AccountReference, t.ExternalId })}",

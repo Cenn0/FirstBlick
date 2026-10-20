@@ -14,6 +14,9 @@ FirstBlick connects customers, buildings, projects and field work with quotation
 * [Technical methods](docs/technical-methods.md) — independent arithmetic, reference cases and applicability limits.
 * [Measurement quantity transfer](docs/quantity-links.md) — reviewed quote quantities, retained partial-invoice evidence, material demands and purchase drafts.
 * [Source-based cost analysis](docs/cost-analysis.md) — contract/change sources, labor, stock and supplier valuations; missing costs remain unknown.
+* [Cumulative invoice rounding](docs/invoice-rounding.md) — actual previous cents, retained original positions, corrections and calculation evidence.
+* [Collections](docs/collections.md) — reviewed balances, manual reminder steps, disputes and auditable contact history.
+* [Operational observations](docs/observability.md) — tenant-authorized queue/document snapshots and bounded process instruments.
 * [Bank and export contracts](docs/integrations.md) — read-only CSV bank import and versioned accounting, open-item and payroll-time packages.
 * [Search, project history and personal data copy](docs/discovery-data-copy.md) — authorized fields and explicit scope limits.
 * [Operations](docs/operations.md) and [canonical migration](docs/migration.md) — actual database/S3 backup, isolated restore, account quarantine, import comparison and controlled restart.

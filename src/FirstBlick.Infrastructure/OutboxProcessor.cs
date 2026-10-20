@@ -74,17 +74,19 @@ public sealed class OutboxProcessor
     private readonly IOutboxEmailSender sender;
     private readonly IHostEnvironment? environment;
     private readonly UserManager<ApplicationUser>? users;
+    private readonly FirstBlickTelemetry? telemetry;
     private readonly int leaseSeconds;
     private readonly int sendTimeoutSeconds;
     private readonly int maximumAttempts;
 
     public OutboxProcessor(FirstBlickDbContext db, TenantScope scope, IConfiguration configuration,
         IDataProtectionProvider protection, ILogger<OutboxProcessor> logger, IOutboxEmailSender? sender = null,
-        IHostEnvironment? environment = null, UserManager<ApplicationUser>? users = null)
+        IHostEnvironment? environment = null, UserManager<ApplicationUser>? users = null, FirstBlickTelemetry? telemetry = null)
     {
         this.db = db; this.scope = scope; this.configuration = configuration;
         this.protection = protection; this.logger = logger; this.sender = sender ?? new SmtpOutboxEmailSender(configuration);
         this.environment = environment; this.users = users;
+        this.telemetry = telemetry;
         leaseSeconds = ReadOption(configuration, "Outbox:LeaseSeconds", 120, 30, 600);
         sendTimeoutSeconds = ReadOption(configuration, "Outbox:SendTimeoutSeconds", 30, 1, 120);
         maximumAttempts = ReadOption(configuration, "Outbox:MaximumAttempts", 5, 1, 20);
@@ -361,6 +363,7 @@ public sealed class OutboxProcessor
         if (changed != 1) throw new LeaseLostException();
         await AuditJob(job, "outbox." + state.ToString().ToLowerInvariant(), code, reference, now, ct);
         await transaction.CommitAsync(ct);
+        telemetry?.RecordJobTransition(job.Type, state);
         if (state is JobState.Uncertain or JobState.Failed) logger.LogWarning("Outbox job {JobId}: {Code}", job.Id, code);
     }
 

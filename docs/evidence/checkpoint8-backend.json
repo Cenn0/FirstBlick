@@ -1,0 +1,1697 @@
+{
+  "schema": "firstblick.checkpoint-backend/1.0.0",
+  "checkpoint": 8,
+  "recordedAtUtc": "2026-10-20T09:02:44.084278+00:00",
+  "sourceBasis": "Working tree based on 03f0e818251c361ceea6b6e16fb1bbe4dcf3712d; source SHA-256 below identify the tested code. Published commit is recorded by the next checkpoint.",
+  "command": "FIRSTBLICK_REQUIRE_POSTGRES=true dotnet test FirstBlick.slnx -c Release --no-restore --logger trx --results-directory artifacts/checkpoint8-tests/full",
+  "environment": {
+    "dotnetSdk": "10.0.402",
+    "database": "fresh isolated native PostgreSQL 16.15 instance; separate disposable database per API fixture",
+    "storage": "controlled test object store for API fault injection; this run does not claim the live S3/container stack"
+  },
+  "result": {
+    "passed": 377,
+    "failed": 0,
+    "skipped": 0,
+    "core": 251,
+    "apiPostgresWorker": 126
+  },
+  "runs": [
+    {
+      "suite": "Core",
+      "counters": {
+        "total": "251",
+        "executed": "251",
+        "passed": "251",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      },
+      "times": {
+        "creation": "2026-10-20T02:58:46.0401139-06:00",
+        "queuing": "2026-10-20T02:58:46.0401140-06:00",
+        "start": "2026-10-20T02:58:44.2372554-06:00",
+        "finish": "2026-10-20T02:58:47.2992386-06:00"
+      },
+      "trxSha256": "3ddceead5ca07afbab8259792774946a74a2a8daaf7d9d9b4955bd3f5fb362c3",
+      "tests": [
+        {
+          "name": "FirstBlick.Core.Tests.Technical.ThermalTests.UnsupportedConductivityIsRejected(conductivity: 501)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Technical.ThermalTests.InputEvidenceIsStableAndSnapshotIsIsolatedFromCallerMutation",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Integrations.PayrollExportTests.Overnight_work_and_a_break_crossing_local_midnight_are_partitioned_without_loss",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Technical.ThermalTests.UnsupportedConductivityIsRejected(conductivity: NaN)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Integrations.PayrollExportTests.Spring_clock_change_counts_three_elapsed_hours_in_four_displayed_wall_hours",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Integrations.CsvAdapterTests.Bank_profile_never_guesses_or_rounds_invalid_money(amount: \" 1.00\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.RoofMeasurementTests.Measurement_input_is_bounded_and_unsupported_or_ambiguous_cases_fail_closed(change: \"negative\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Technical.RoofGeometryTests.MultipleDisjointOpeningsAndInputSnapshotAreSupported",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.InvoiceCumulativeRoundingTests.Drafts_cannot_supply_server_generated_calculation_evidence",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.RoofMeasurementTests.Measurement_rounding_happens_after_repetitions_and_retains_declared_deductions",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Integrations.CsvAdapterTests.Every_untrusted_text_cell_uses_an_exact_reversible_literal_prefix(value: \"Normal, \\\"quoted\\\"\\r\\ntext\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.CollectionTests.Manual_closure_and_reopen_preserve_all_financial_evidence",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.CollectionTests.Settled_closure_uses_current_sources_and_a_returned_payment_requires_explicit_reopen",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.RoofMeasurementTests.Measurement_requires_the_matching_published_roof_context(change: \"roof_not_published\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Integrations.LedgerExportTests.Reversal_event_window_includes_original_invoice_original_bank_and_return_bank_as_context",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.OperationsFormTests.Forms_reject_ambiguous_invalid_or_out_of_range_values(key: \"date\", value: \"20.10.2026\", code: \"invalid_date\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Technical.ThermalTests.UnsupportedConductivityIsRejected(conductivity: 0)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.CommercialTests.Acceptance_checks_digest_expiry_and_contractual_state",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Technical.RoofGeometryTests.AggregateVertexBudgetBoundsIntersectionWork",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.InvoiceCumulativeRoundingTests.An_accepted_change_retains_its_own_rounding_and_source_identity",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.PlanningInventoryTests.Time_entry_overlap_is_rejected_across_projects",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.LedgerTests.Mutation_of_imported_bank_amount_is_detected",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Integrations.LedgerExportTests.Settled_originals_are_omitted_from_open_tables_but_evidence_is_retained_and_missing_bank_fails",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Integrations.CsvAdapterTests.Bank_profile_never_guesses_or_rounds_invalid_money(amount: \"1E+02\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Technical.ThermalTests.ReversingBoundaryTemperaturesReversesFluxWithoutChangingUValue",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.QuantityLinkTests.Frozen_basis_identity_project_and_source_values_are_rechecked",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Integrations.CsvAdapterTests.Bank_profile_never_guesses_or_rounds_invalid_money(amount: \"1.00 \")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.RoofMeasurementTests.Frozen_measurement_evidence_rejects_later_mutations(change: \"roof_digest\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.CollectionTests.Retained_only_and_not_due_balances_cannot_be_used_for_a_reminder",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.CollectionTests.Same_balance_with_changed_source_revision_invalidates_the_previously_reviewed_preview",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.OperationsFormTests.Forms_reject_ambiguous_invalid_or_out_of_range_values(key: \"area\", value: \"NaN\", code: \"invalid_number\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Integrations.CsvAdapterTests.Export_scalars_reject_arbitrary_formula_text_and_subcent_money",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Integrations.CsvAdapterTests.Csv_rejects_malformed_quoting_and_record_endings(source: \"\\\"a\\\" garbage,b\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.RoofMeasurementTests.Typed_input_deserialization_accepts_jsonb_key_order_and_rejects_unknown_metadata_or_fields",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Integrations.CsvAdapterTests.Every_untrusted_text_cell_uses_an_exact_reversible_literal_prefix(value: \"-1+2\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.OperationsFormTests.Forms_reject_ambiguous_invalid_or_out_of_range_values(key: \"area\", value: \"101\", code: \"out_of_range\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.LedgerTests.Financial_inputs_reject_subcent_cash_and_unsealed_or_wrong_direction_bank_entries",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.RoofMeasurementTests.Frozen_measurement_remains_reproducible_after_a_new_roof_revision_and_caller_mutation",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.RoofMeasurementTests.Frozen_measurement_evidence_rejects_later_mutations(change: \"geometry\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.RoofMeasurementTests.Registry_and_references_keep_roof_and_measurement_records_in_the_tenant_graph",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.PlanningInventoryTests.Overnight_entry_across_dst_uses_instants_and_rejects_non_utc_offsets",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.CostAnalysisTests.Time_cost_uses_exact_elapsed_ticks_before_final_money_rounding",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Technical.ThermalTests.UnsupportedConductivityIsRejected(conductivity: -1)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.QuantityLinkTests.The_evidence_rejects_changes_to_every_basis_and_result(fault: \"factor\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Technical.ThermalTests.IdenticalParallelPathsReduceToSinglePath",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Integrations.LedgerExportTests.Zip_manifest_binds_every_exact_csv_byte_and_does_not_claim_provider_certification",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.LedgerTests.Returned_payment_reopens_invoice_and_cannot_reuse_same_return_bank_money",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.CollectionTests.Approval_is_bound_to_sources_input_case_history_and_business_date",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.PlanningInventoryTests.Schedule_edit_cannot_shift_into_an_existing_assignment",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.CommercialTests.Each_tax_line_is_rounded_and_no_implicit_tax_rate_is_added",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.InvoiceCumulativeRoundingTests.Multiple_legacy_partial_invoices_settle_to_the_original_contract_cents",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Technical.RoofGeometryTests.CollinearForwardBoundaryVerticesAreAllowed",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.RoofMeasurementTests.Roof_drafts_reject_invalid_geometry_and_detail_evidence(change: \"vertex_budget\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.InvoiceCumulativeRoundingTests.Final_invoice_carries_the_contract_tax_cent_after_a_partial_invoice",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.LedgerTests.A_partial_payment_remains_open_and_can_be_reversed_without_losing_history",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.CostAnalysisTests.Unapproved_time_is_not_made_cost_complete_by_supplying_an_hourly_rate",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.CollectionTests.Foreign_duplicate_and_over_budget_financial_sources_are_rejected",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Integrations.CsvAdapterTests.Bank_profile_never_guesses_or_rounds_invalid_money(amount: \"1e2\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.CommercialTests.Invalid_or_excess_precision_quantity_is_rejected(quantity: \"-1\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Technical.RoofGeometryTests.InvalidRectangleDimensionsAreRejected(run: -1)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Technical.RoofGeometryTests.FlatPlaneEqualsItsHorizontalProjection",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.RoofMeasurementTests.Frozen_measurement_evidence_rejects_later_mutations(change: \"deduction\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.QuantityLinkTests.Partial_invoice_quantities_cannot_replace_or_detach_their_accepted_measurement_evidence(detach: False)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.InvoiceCumulativeRoundingTests.Corrections_of_a_tax_adjusted_partial_invoice_use_its_actual_amounts",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.QuantityLinkTests.The_evidence_rejects_changes_to_every_basis_and_result(fault: \"rule\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Technical.ThermalTests.IndependentPathsUseAreaWeightedConductanceAndRetainScope",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.PlanningInventoryTests.Absence_assignment_invariants_are_checked_in_both_creation_orders",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.CollectionTests.Manual_preview_freezes_invoice_parties_and_exact_collectible_balance_without_adding_fees",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Integrations.CsvAdapterTests.Csv_rejects_malformed_quoting_and_record_endings(source: \"a,b\\rc,d\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.InvoiceCumulativeRoundingTests.Json_round_trip_preserves_all_decimal_evidence_and_rejects_removed_calculation",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Integrations.CsvAdapterTests.Every_untrusted_text_cell_uses_an_exact_reversible_literal_prefix(value: \"@SUM(A1:A2)\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.CollectionTests.Contact_needs_the_approved_text_actual_utc_time_and_explicit_evidence",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Integrations.CsvAdapterTests.Bank_profile_never_guesses_or_rounds_invalid_money(amount: \"1.0\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.RoofMeasurementTests.Measurement_input_is_bounded_and_unsupported_or_ambiguous_cases_fail_closed(change: \"quantity_budget\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Integrations.CsvAdapterTests.Every_untrusted_text_cell_uses_an_exact_reversible_literal_prefix(value: \"＋1+1\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.RoofMeasurementTests.Publish_detaches_mutable_caller_collections_and_details",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.PlanningInventoryTests.New_reservation_cannot_overbook_existing_stock_or_use_other_tenant_stock",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Integrations.CsvAdapterTests.Bank_profile_never_guesses_or_rounds_invalid_money(amount: \"1,00\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Integrations.PayrollExportTests.Export_keeps_approved_historic_time_for_inactive_employees_and_omits_unapproved_or_archived_entries",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Technical.RoofGeometryTests.GeometricOpeningsAreDeductedWithoutAContractualThreshold",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.CostAnalysisTests.Explicit_zero_cost_and_stock_classification_do_not_double_count_supplier_materials",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Integrations.CsvAdapterTests.Bank_profile_preserves_quoted_unicode_multiline_text_and_hashes_exact_bytes",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.CostAnalysisTests.Duplicate_unknown_foreign_or_excessive_source_valuations_are_rejected",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.InvoiceCumulativeRoundingTests.Repeated_equal_positions_cannot_expand_a_small_input_into_unbounded_evidence",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.CollectionTests.Retained_case_mutation_is_detected(field: \"dispute\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.OperationsFormTests.Unknown_fields_and_self_training_review_are_rejected",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.InvoiceCumulativeRoundingTests.Full_quantities_across_two_corrections_reverse_the_original_tax_cent",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Integrations.PayrollExportTests.Autumn_clock_change_counts_both_occurrences_and_clips_break_in_utc",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Integrations.CsvAdapterTests.Csv_rejects_malformed_quoting_and_record_endings(source: \"un\\\"quoted,b\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.SupplierFinanceTests.Supplier_payment_records_outgoing_bank_data_and_rejects_wrong_direction",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.CommercialTests.Order_snapshot_is_independent_of_the_source_object",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.SupplierFinanceTests.Invoice_and_credit_positions_cannot_swap_effective_prices_or_tax_rates",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Integrations.CsvAdapterTests.Every_untrusted_text_cell_uses_an_exact_reversible_literal_prefix(value: \"＝1+1\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.CommercialTests.Rounding_policy_is_unit_then_line_then_line_tax_away_from_zero",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.LedgerTests.Refund_without_customer_credit_is_rejected",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.OperationsFormTests.Forms_reject_ambiguous_invalid_or_out_of_range_values(key: \"area\", value: \"1,5\", code: \"invalid_number\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.PlanningInventoryTests.Time_entry_uses_elapsed_utc_time_and_excludes_nonoverlapping_breaks",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.RoofMeasurementTests.A_published_roof_rejects_mutated_inputs_and_output_evidence(change: \"digest\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.SupplierFinanceTests.Actual_return_does_not_make_the_original_customer_receipt_reallocatable",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Technical.RoofGeometryTests.OrientationTranslationAndClosedInputDoNotChangeQuantities",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.RoofMeasurementTests.Roof_drafts_reject_invalid_geometry_and_detail_evidence(change: \"point_length\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Integrations.CsvAdapterTests.Bank_profile_rejects_ambiguous_keys_dates_currency_and_column_counts(row: \"account,ext ,2026-10-20,1.00,EUR,Name,Reference\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.CollectionTests.Next_stage_requires_actual_contact_and_expiry_of_the_reviewed_response_date",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.InvoiceCumulativeRoundingTests.Three_partial_quantities_allocate_tax_cents_as_1_2_1_not_1_1_1",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.RoofMeasurementTests.A_published_roof_rejects_mutated_inputs_and_output_evidence(change: \"title\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Integrations.CsvAdapterTests.Bank_profile_rejects_ambiguous_keys_dates_currency_and_column_counts(row: \" account,ext,2026-10-20,1.00,EUR,Name,Reference\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.RoofMeasurementTests.A_published_roof_rejects_mutated_inputs_and_output_evidence(change: \"result\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.RoofMeasurementTests.Roof_drafts_reject_invalid_geometry_and_detail_evidence(change: \"self_intersection\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.OperationsFormTests.Briefing_occurrence_deduplicates_the_repeated_dst_hour_by_local_date",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Technical.RoofGeometryTests.SelfIntersectionRepeatedVertexAndCollinearDegeneracyAreRejected",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Technical.ThermalTests.SuppliedBridgeCoefficientsHaveCorrectDimensionsAndCanBeSigned",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Integrations.CsvAdapterTests.Bank_profile_never_guesses_or_rounds_invalid_money(amount: \"99999999999999999999999999999.99\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.LedgerTests.Mutation_of_posted_allocation_amount_is_detected",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Technical.ThermalTests.UnsupportedConductivityIsRejected(conductivity: Infinity)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.CostAnalysisTests.Missing_labor_material_classification_and_forecast_stay_unknown_instead_of_zero_cost",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.QuantityLinkTests.The_evidence_rejects_changes_to_every_basis_and_result(fault: \"quantity\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.RoofMeasurementTests.Frozen_measurement_evidence_rejects_later_mutations(change: \"input\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Technical.RoofGeometryTests.VerticalAndNegativeRiseAreUnsupported",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.QuantityLinkTests.Conversion_uses_frozen_net_quantity_explicit_factor_and_one_final_six_place_rounding",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.RoofMeasurementTests.Measurement_input_is_bounded_and_unsupported_or_ambiguous_cases_fail_closed(change: \"precision\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.RoofMeasurementTests.Publishing_a_revision_checks_its_actual_predecessor(change: \"missing\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.LedgerTests.Combined_payment_cannot_be_allocated_twice_across_invoices",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.CommercialTests.Accepted_quote_status_survives_sending_and_delivery_uncertainty",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.OperationsFormTests.Invalid_timezone_does_not_silently_use_server_timezone",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.PlanningInventoryTests.Ordered_purchase_and_posted_stock_input_mutations_are_detected",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Integrations.CsvAdapterTests.Every_untrusted_text_cell_uses_an_exact_reversible_literal_prefix(value: \"+1+2\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.OperationsFormTests.Business_reference_workflow_runs_renovation_from_customer_to_payment",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Integrations.CsvAdapterTests.Every_untrusted_text_cell_uses_an_exact_reversible_literal_prefix(value: \"text:already prefixed\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.InvoiceCumulativeRoundingTests.Legacy_invoice_is_preserved_and_new_final_invoice_accounts_for_its_actual_cents",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.RoofMeasurementTests.Measurement_input_is_bounded_and_unsupported_or_ambiguous_cases_fail_closed(change: \"zero\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Integrations.CsvAdapterTests.Bank_profile_never_guesses_or_rounds_invalid_money(amount: \"1000000000001.00\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.InvoiceCumulativeRoundingTests.Fractional_quantities_carry_both_net_and_tax_without_repricing_prior_invoice",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Integrations.CsvAdapterTests.Bank_profile_never_guesses_or_rounds_invalid_money(amount: \"1.001\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.QuantityLinkTests.The_evidence_rejects_changes_to_every_basis_and_result(fault: \"allowance\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.RoofMeasurementTests.Roof_drafts_reject_invalid_geometry_and_detail_evidence(change: \"missing_surface\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.InvoiceCumulativeRoundingTests.Previously_overbilled_legacy_cents_are_rejected_without_negative_adjustment",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.RoofMeasurementTests.Publishing_a_revision_checks_its_actual_predecessor(change: \"building\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.CollectionTests.Retained_case_mutation_is_detected(field: \"assignment\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Technical.RoofGeometryTests.InvalidRectangleDimensionsAreRejected(run: NaN)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.RoofMeasurementTests.A_new_revision_copies_published_evidence_and_leaves_its_predecessor_unchanged",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.RoofMeasurementTests.Typed_measurements_produce_independent_reference_quantities_and_separate_units",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Integrations.CsvAdapterTests.Bank_profile_rejects_ambiguous_keys_dates_currency_and_column_counts(row: \"account,ext,2026-10-20,1.00,EUR,Name\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.RoofMeasurementTests.Measurement_requires_the_matching_published_roof_context(change: \"wrong_project\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.RoofMeasurementTests.A_published_roof_rejects_mutated_inputs_and_output_evidence(change: \"detail\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.RoofMeasurementTests.Publishing_preserves_independent_plane_geometry_without_inferring_detail_deductions",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Integrations.CsvAdapterTests.Bank_profile_rejects_ambiguous_keys_dates_currency_and_column_counts(row: \"account,ext,2026-10-20,1.00,USD,Name,Reference\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.CommercialTests.Invoice_rejects_post_issue_mutation_including_customer_address",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Technical.ThermalTests.AbsentInputsAndInvalidBoundsAreRejected",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Technical.RoofGeometryTests.InvalidRectangleDimensionsAreRejected(run: 0)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.SupplierFinanceTests.Shared_bank_capacity_also_holds_when_supplier_payment_was_recorded_first",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.OperationsFormTests.Forms_reject_ambiguous_invalid_or_out_of_range_values(key: \"condition\", value: \"Invented\", code: \"invalid_choice\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Integrations.CsvAdapterTests.Bank_profile_never_guesses_or_rounds_invalid_money(amount: \"1\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.RoofMeasurementTests.Measurement_requires_the_matching_published_roof_context(change: \"wrong_tenant\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Integrations.CsvAdapterTests.Every_untrusted_text_cell_uses_an_exact_reversible_literal_prefix(value: \" \\r\\n=1+1\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.QuantityLinkTests.The_evidence_rejects_changes_to_every_basis_and_result(fault: \"digest\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.QuantityLinkTests.Partial_measurement_validation_is_confined_to_invoices_and_cannot_expand_the_source_quantity",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.CostAnalysisTests.Source_costs_include_net_time_consumption_returns_and_explicit_subcontract_allocations_once",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.RoofMeasurementTests.An_empty_draft_cannot_be_published",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.RoofMeasurementTests.A_published_roof_rejects_mutated_inputs_and_output_evidence(change: \"geometry\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Integrations.LedgerExportTests.Open_receivable_uses_exact_current_credits_cash_discount_and_released_retention_with_linked_evidence",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.RoofMeasurementTests.Roof_drafts_reject_invalid_geometry_and_detail_evidence(change: \"duplicate_surface\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.InvoiceCumulativeRoundingTests.Rebilling_after_complete_correction_uses_zero_actual_previous_balance",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.RoofMeasurementTests.Measurement_input_is_bounded_and_unsupported_or_ambiguous_cases_fail_closed(change: \"unknown_type\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.RoofMeasurementTests.Measurement_input_is_bounded_and_unsupported_or_ambiguous_cases_fail_closed(change: \"excessive_deduction\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Technical.RoofGeometryTests.DiagonalOpeningCannotCrossAConcaveOuterBoundary",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Integrations.CsvAdapterTests.Csv_rejects_malformed_quoting_and_record_endings(source: \"a,\\\"unfinished\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.OperationsFormTests.Maintenance_stops_when_next_occurrence_exceeds_contract_end",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.InvoiceCumulativeRoundingTests.Source_snapshot_is_independent_and_rehashed_wrong_output_is_still_rejected",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.RoofMeasurementTests.Measurement_input_is_bounded_and_unsupported_or_ambiguous_cases_fail_closed(change: \"empty_source\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.CommercialTests.Altering_an_issued_input_invalidates_the_frozen_quote",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Integrations.CsvAdapterTests.Bank_profile_never_guesses_or_rounds_invalid_money(amount: \"+1.00\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.CollectionTests.Invalid_disputed_amount_never_opens_a_case_hold(amount: 0.001)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.OperationsFormTests.Forms_reject_ambiguous_invalid_or_out_of_range_values(key: \"date\", value: \"2026-02-30\", code: \"invalid_date\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.OperationsFormTests.Form_submission_freezes_the_published_schema_and_validates_field_types",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.CostAnalysisTests.A_coverage_declaration_and_forecast_are_separate_from_valued_source_totals",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.RoofMeasurementTests.Roof_drafts_reject_invalid_geometry_and_detail_evidence(change: \"non_finite\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Technical.RoofGeometryTests.InvalidRectangleDimensionsAreRejected(run: Infinity)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.CommercialTests.Cumulative_credit_notes_are_limited_to_original_invoice",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.CommercialTests.Frozen_prices_capture_effective_labor_material_markup_and_discount",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.InvoiceCumulativeRoundingTests.Distinct_tax_rates_are_never_offset_against_each_other",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Integrations.PayrollExportTests.Half_open_endings_and_full_break_segments_do_not_create_phantom_work",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Integrations.CsvAdapterTests.Preview_detects_same_file_and_stored_duplicate_conflicts_without_replacing_evidence",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.InvoiceCumulativeRoundingTests.Prior_rounding_difference_is_visible_and_not_silently_rewritten",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Integrations.CsvAdapterTests.Bank_profile_never_guesses_or_rounds_invalid_money(amount: \"01.00\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.RoofMeasurementTests.Measurement_requires_the_matching_published_roof_context(change: \"wrong_roof_id\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Technical.RoofGeometryTests.ConcavePolygonHasCorrectArea",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Technical.ThermalTests.UnsupportedConductivityIsRejected(conductivity: -Infinity)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.CommercialTests.Invalid_or_excess_precision_quantity_is_rejected(quantity: \"1000001\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Integrations.CsvAdapterTests.Bank_profile_rejects_ambiguous_keys_dates_currency_and_column_counts(row: \"account,ext,20.10.2026,1.00,EUR,Name,Reference\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.CommercialTests.Altering_a_snapshot_output_is_detected",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.QuantityLinkTests.An_absent_quantity_link_preserves_the_exact_legacy_pricing_digest_shape",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Technical.RoofGeometryTests.ThreeFourFiveRoofPlaneHasExactAreaAndLengths",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Technical.ThermalTests.SeriesResistanceAndBoundaryTemperaturesConserveEnergy",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.OperationsFormTests.Monthly_maintenance_preserves_original_month_end_anchor",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Integrations.CsvAdapterTests.Bank_profile_rejects_ambiguous_keys_dates_currency_and_column_counts(row: \"account,ext,2026-02-30,1.00,EUR,Name,Reference\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.CollectionTests.Retained_case_mutation_is_detected(field: \"event\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.InvoiceCumulativeRoundingTests.Equal_source_positions_retain_their_separate_original_rounding",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Integrations.CsvAdapterTests.Every_untrusted_text_cell_uses_an_exact_reversible_literal_prefix(value: \"00123\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.PlanningInventoryTests.Adjacent_windows_are_permitted_and_cross_tenant_windows_are_isolated",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.CommercialTests.Invalid_or_excess_precision_quantity_is_rejected(quantity: \"0.0000001\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.CommercialTests.Progress_and_final_invoices_cannot_bill_the_order_twice",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Technical.RoofGeometryTests.OpeningsMustNotTouchCrossOverlapOrNest",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.QuantityLinkTests.Linked_sales_and_purchase_quantities_cannot_silently_change_unit_or_quantity",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.InvoiceCumulativeRoundingTests.Duplicate_history_and_duplicate_changes_cannot_inflate_the_calculation_basis",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.InvoiceCumulativeRoundingTests.A_credit_without_its_original_cannot_reduce_the_order_billed_balance",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.SupplierFinanceTests.Customer_refunds_and_supplier_payments_share_one_bank_capacity",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Integrations.CsvAdapterTests.Encoding_header_and_input_budgets_fail_closed",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.RoofMeasurementTests.A_published_roof_rejects_mutated_inputs_and_output_evidence(change: \"normative\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.InvoiceCumulativeRoundingTests.Altered_source_or_previous_balance_invalidates_the_frozen_calculation",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.CollectionTests.Retained_case_mutation_is_detected(field: \"text\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Technical.RoofGeometryTests.InvalidRectangleDimensionsAreRejected(run: 4.9406564584124654E-324)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.RoofMeasurementTests.Frozen_measurement_evidence_rejects_later_mutations(change: \"result\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.RoofMeasurementTests.Measurement_input_is_bounded_and_unsupported_or_ambiguous_cases_fail_closed(change: \"unknown_surface\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Integrations.CsvAdapterTests.Every_untrusted_text_cell_uses_an_exact_reversible_literal_prefix(value: \"=HYPERLINK(\\\"https://example.test\\\")\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.QuantityLinkTests.Partial_and_final_invoices_and_partial_corrections_preserve_the_complete_measurement_basis",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.LedgerTests.Discount_requires_reason_and_does_not_create_extra_cash_on_full_correction",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.QuantityLinkTests.Partial_invoice_quantities_cannot_replace_or_detach_their_accepted_measurement_evidence(detach: True)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Integrations.PayrollExportTests.Invalid_or_ambiguous_local_midnights_fail_instead_of_guessing_payroll_boundaries",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.RoofMeasurementTests.Frozen_measurement_evidence_rejects_later_mutations(change: \"normative\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.SupplierFinanceTests.Returned_supplier_payment_reserves_both_bank_entries_against_reuse",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.SupplierFinanceTests.Supplier_credit_after_discounted_payment_creates_refundable_cash_only",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.LedgerTests.Retainage_is_outstanding_but_not_collectible_until_released",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.RoofMeasurementTests.Measurement_input_is_bounded_and_unsupported_or_ambiguous_cases_fail_closed(change: \"fractional_count_deduction\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.RoofMeasurementTests.Publishing_a_revision_checks_its_actual_predecessor(change: \"tenant\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.CommercialTests.Invalid_or_excess_precision_quantity_is_rejected(quantity: \"0\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.CollectionTests.Invalid_disputed_amount_never_opens_a_case_hold(amount: 0)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.QuantityLinkTests.The_evidence_rejects_changes_to_every_basis_and_result(fault: \"unit\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.RoofMeasurementTests.Publishing_a_revision_checks_its_actual_predecessor(change: \"unpublished\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.RoofMeasurementTests.Measurement_input_is_bounded_and_unsupported_or_ambiguous_cases_fail_closed(change: \"negative_deduction\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Technical.ThermalTests.InvalidBridgeEvidenceAndNonPhysicalAggregateAreRejected",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.CollectionTests.Invalid_disputed_amount_never_opens_a_case_hold(amount: -1)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.RoofMeasurementTests.Measurement_input_is_bounded_and_unsupported_or_ambiguous_cases_fail_closed(change: \"rounds_to_zero\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Integrations.CsvAdapterTests.Bank_profile_never_guesses_or_rounds_invalid_money(amount: \"0.00\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Technical.ThermalTests.IdealSurfaceBoundariesAndLayerSplittingRetainResistance",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.SupplierFinanceTests.Configured_independent_approval_rejects_self_approval_without_changing_bill",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.OperationsFormTests.Forms_reject_ambiguous_invalid_or_out_of_range_values(key: \"checked\", value: \"yes\", code: \"invalid_boolean\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Integrations.CsvAdapterTests.Every_untrusted_text_cell_uses_an_exact_reversible_literal_prefix(value: \"\\t=1+1\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.PlanningInventoryTests.Equipment_collision_is_rejected_even_with_different_employees",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Integrations.CsvAdapterTests.Bank_profile_never_guesses_or_rounds_invalid_money(amount: \"-0.00\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.OperationsFormTests.Acceptance_requires_acknowledging_every_unaccepted_project_defect",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.RoofMeasurementTests.Roof_drafts_reject_invalid_geometry_and_detail_evidence(change: \"missing_linear_length\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.CollectionTests.A_partial_dispute_withdraws_an_uncontacted_draft_and_pauses_the_whole_case",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.QuantityLinkTests.The_evidence_rejects_changes_to_every_basis_and_result(fault: \"method\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.PlanningInventoryTests.Purchasing_partial_receipts_reservations_consumption_and_release_reconcile",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Technical.ThermalTests.EqualBoundaryTemperaturesProduceNoFlux",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.InvoiceCumulativeRoundingTests.Zero_cent_remaining_invoice_is_explicitly_rejected_without_mutation",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Integrations.LedgerExportTests.Supplier_credit_and_payment_are_reconciled_with_their_original_ids_and_approval_digests",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.RoofMeasurementTests.Publishing_a_revision_checks_its_actual_predecessor(change: \"skipped_version\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.CollectionTests.Invalid_disputed_amount_never_opens_a_case_hold(amount: 119.01)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Integrations.CsvAdapterTests.Bank_profile_rejects_ambiguous_keys_dates_currency_and_column_counts(row: \"account,ext,2026-10-20,1.00,EUR,Name,Reference,Ext\"···)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Core.Tests.Business.RoofMeasurementTests.A_published_roof_rejects_mutated_inputs_and_output_evidence(change: \"project\")",
+          "outcome": "Passed"
+        }
+      ]
+    },
+    {
+      "suite": "API/PostgreSQL/Worker",
+      "counters": {
+        "total": "126",
+        "executed": "126",
+        "passed": "126",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      },
+      "times": {
+        "creation": "2026-10-20T02:58:49.5628152-06:00",
+        "queuing": "2026-10-20T02:58:49.5628153-06:00",
+        "start": "2026-10-20T02:58:46.4115897-06:00",
+        "finish": "2026-10-20T02:59:46.9277974-06:00"
+      },
+      "trxSha256": "4883b0402ae6c058d9298f7ea31beeb2f551afd44c4e49d025d12510631e2227",
+      "tests": [
+        {
+          "name": "FirstBlick.Api.Tests.AuthorizationRegressionTests.Deactivating_the_staff_profile_also_blocks_replaying_its_cached_diary_response",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.WorkerTests.Current_authority_and_snapshot_are_rechecked_before_external_send(change: \"membership\", expectedError: \"membership_revoked\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.SecurityApiTests.Invitation_cannot_take_over_an_existing_account_or_reset_its_password",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.SecurityApiTests.Tenant_switches_and_cross_tenant_references_never_expose_or_link_foreign_data",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.DiscoveryApiTests.Self_copy_fails_closed_when_a_stored_record_disagrees_with_its_tenant_metadata",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.CollectionApiTests.Worklist_rejects_duplicate_unknown_malformed_and_unsupported_query_values",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.IntegrationApiTests.Bank_adapter_enforces_current_finance_role_module_and_tenant_isolation",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.TelemetryTests.Outbox_counts_only_persisted_transitions_and_does_not_count_a_stale_claim_twice",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.QuantityApiTests.Quantity_commands_require_current_roles_and_modules_and_deny_revoked_receipt_replay",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.CommercialApiTests.Quote_delivery_acceptance_invoice_discount_retention_credit_and_refund_keep_distinct_auditable_states",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.CollectionApiTests.A_payment_after_preview_rejects_old_text_and_new_approval_preserves_exact_frozen_sources",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.RecoveryAccessTests.Concurrent_first_claims_across_businesses_create_exactly_one_credential_then_require_owner_login",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.OperationsApiTests.Snapshot_rechecks_director_role_after_an_observed_database_lock_wait",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.WorkerTests.Lease_recovery_during_an_external_attempt_quarantines_it_and_rejects_the_old_completion",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.CollectionApiTests.Roles_tenants_module_disabling_and_current_assignees_are_enforced_server_side",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.CostApiTests.The_report_uses_real_project_sources_and_leaves_missing_costs_unknown_without_posting_anything",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.SecurityApiTests.JSON_request_budget_is_enforced_before_deserialization",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.QuantityApiTests.Quote_preview_binds_catalog_revisions_and_applies_frozen_quantities_once_without_altering_issued_quotes",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.AuthorizationRegressionTests.Persisted_technical_evidence_survives_JSONB_normalization_of_exponential_numbers",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.WorkerTests.Unsupported_generation_jobs_fail_without_claiming_a_deliverable(type: \"invoice.generate\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.QuantityApiTests.Reviewed_material_demand_becomes_one_unissued_purchase_draft_and_retains_its_quantity_links",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.WorkerTests.A_cross_tenant_quote_identifier_cannot_dispatch_or_modify_the_other_tenants_delivery",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.CommercialApiTests.Published_form_submissions_bind_the_schema_and_worker_project_authority",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.DiscoveryApiTests.Self_copy_rejects_a_record_budget_overrun_before_returning_any_partial_archive_or_audit",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.IntegrationApiTests.Finance_exports_include_connected_current_corrections_payments_and_digest_manifest_without_other_tenants",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.AuthorizationRegressionTests.Removing_a_project_assignment_also_blocks_replaying_its_cached_defect_response",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.WorkerTests.Unsupported_generation_jobs_fail_without_claiming_a_deliverable(type: \"document.generate\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.CollectionApiTests.Current_role_is_rechecked_after_observed_database_lock_wait_before_sensitive_reads",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.SecurityApiTests.Concurrent_edits_require_the_current_revision_and_only_one_wins",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.QuantityApiTests.Demand_uniqueness_cancellation_and_material_unit_changes_have_explicit_boundaries",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.DiscoveryApiTests.Search_and_self_copy_recheck_revocation_after_actually_waiting_for_the_tenant_lock",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.IntegrationApiTests.Csv_preview_is_read_only_and_import_is_atomic_idempotent_and_bound_to_actual_raw_bytes",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.InvoiceRoundingApiTests.Tampered_jsonb_calculation_is_rejected_by_balance_and_pdf_without_generating_a_document",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.InvoicePdfTests.Cumulative_invoice_pdf_renders_the_actual_carried_net_and_tax_amounts(unitNet: \"0.03\", quantity: \"1\", firstQuantity: \"0.5\", finalQuantity: \"0.5\", expectedNet: \"0.01\", expectedTax: \"0.01\", evidenceName: \"cumulative-net-invoice\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.WorkerTests.Expired_lease_replacement_rejects_the_old_token_and_completes_internal_work",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.AuthorizationRegressionTests.Upload_rechecks_ownership_after_body_transfer_and_role_demotion",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.CommercialApiTests.Purchase_receipts_reservations_and_consumption_are_atomic_and_concurrent_reservations_cannot_overdraw",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.WorkerTests.Missing_quote_evidence_after_a_crash_still_persists_uncertainty_instead_of_repeating_leases",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.WorkerTests.Current_authority_and_snapshot_are_rechecked_before_external_send(change: \"rejected\", expectedError: \"quote_snapshot_changed\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.CollectionApiTests.Dispute_resolution_manual_closure_and_reopening_leave_invoice_and_payment_ledger_unchanged",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.CostApiTests.An_accepted_change_cannot_be_archived_to_remove_it_from_contract_and_cost_totals",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.SecurityApiTests.Disabled_modules_keep_history_readable_but_reject_new_commands_and_remove_dashboard_metrics",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.WorkerTests.Dispatch_durably_marks_the_attempt_and_does_not_hold_tenant_locks_during_transport",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.AuthorizationRegressionTests.A_former_director_cannot_replay_an_invitation_response_after_role_demotion",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.AuthorizationRegressionTests.A_project_cannot_move_a_published_roof_and_its_measurement_to_another_building",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.SecurityApiTests.Four_eyes_bind_the_actual_proposal_revision_policy_and_second_person",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.TelemetryTests.Instrument_dimensions_are_bounded_and_custom_spans_never_contain_caller_identifiers",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.IntegrationApiTests.Payroll_http_export_uses_business_midnights_dst_breaks_and_only_approved_records",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.SecurityApiTests.Antiforgery_and_final_headers_cover_success_and_errors",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.RecoveryAccessTests.A_recovery_hold_blocks_reads_commands_receipt_replay_activation_and_recovery_until_evidenced_release",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.CollectionApiTests.An_explicit_case_is_unique_idempotent_audited_and_has_no_external_send_job",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.PortalApiTests.Grant_cannot_target_an_unrelated_identity_draft_or_unreviewed_document_and_has_a_bounded_lifetime",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.InvoiceRoundingApiTests.Real_http_issuance_persists_tax_carry_and_replay_does_not_duplicate_a_document_or_number",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.WorkerTests.Internal_crash_recovery_is_bounded_by_the_attempt_limit(priorAttempts: 5, expected: Failed)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.InvoiceRoundingApiTests.Competing_final_invoices_serialize_against_current_quantities_and_cannot_bill_the_same_remaining_cent_twice",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.CollectionApiTests.Metadata_mismatch_fails_closed_instead_of_returning_a_partial_or_foreign_balance",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.InvoiceRoundingApiTests.Clients_cannot_inject_issued_evidence_into_a_draft_or_use_another_tenants_invoice",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.WorkerTests.Internal_crash_recovery_is_bounded_by_the_attempt_limit(priorAttempts: 4, expected: Completed)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.WorkerTests.Recovery_uses_shared_persistent_keys_and_puts_the_reset_token_only_in_the_email_fragment",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.WorkerTests.An_unconfigured_provider_fails_the_queued_attempt_without_reporting_sent",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.AuthorizationRegressionTests.Equivalent_signed_zero_survives_persisted_technical_provenance_validation",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.AuthorizationRegressionTests.Site_manager_cannot_remove_an_existing_staff_account_link",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.WorkerTests.Recovery_rejects_wrong_purposes_invalidated_tokens_and_changed_accounts(change: \"purpose\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.DocumentApiTests.Download_detects_same_size_corruption_and_never_discloses_a_foreign_tenant_document",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.RecoveryAccessTests.A_person_with_an_active_account_elsewhere_must_login_and_cannot_reset_credentials_through_migration",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.DiscoveryApiTests.Document_search_applies_source_record_and_project_visibility_without_storage_metadata",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.SecurityApiTests.Database_foreign_keys_are_tenant_qualified_even_when_application_checks_are_bypassed",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.InvoiceRoundingApiTests.Two_real_corrections_of_an_adjusted_final_reverse_its_actual_net_tax_and_receivable",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.CommercialApiTests.Supplier_and_customer_reconciliations_share_the_same_debit_capacity",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.DiscoveryApiTests.Search_whitelists_fields_and_tenant_before_stable_pagination_and_treats_query_as_literal",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.RecoveryAccessTests.A_pending_import_requires_a_fresh_invitation_and_creates_one_personal_credential_with_the_new_role",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.WorkerTests.A_disabled_notification_preference_cancels_queued_send_at_preflight",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.OperationsApiTests.Snapshot_returns_explicit_empty_counts_without_claiming_worker_or_storage_reachability",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.WorkerTests.Recovery_rejects_wrong_purposes_invalidated_tokens_and_changed_accounts(change: \"stamp\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.SecurityApiTests.Password_reset_tokens_cannot_activate_memberships_and_successful_reset_revokes_old_cookies",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.CommercialApiTests.Training_submission_requires_the_apprentice_and_review_requires_the_assigned_mentor",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.DiscoveryApiTests.Worker_search_uses_current_assignments_and_personal_profile_and_counts_only_visible_results",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.PortalApiTests.Feedback_is_version_bound_and_filtered_while_portal_disable_and_membership_withdrawal_stop_access",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.DocumentApiTests.Issued_quote_freezes_parties_and_decimal_values_and_binds_acceptance_order_and_multipage_PDF_to_complete_digest",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.RecoveryAccessTests.Malformed_unknown_or_unevidenced_recovery_markers_fail_closed",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.CostApiTests.Source_level_costs_are_limited_to_director_and_office_and_foreign_sources_are_unavailable",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.SecurityApiTests.Roles_are_enforced_by_the_server_including_direct_resource_urls",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.RecoveryAccessTests.Missing_or_mismatched_import_evidence_cannot_make_an_existing_identity_claimable",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.WorkerTests.Current_authority_and_snapshot_are_rechecked_before_external_send(change: \"module\", expectedError: \"permission_revoked\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.CommercialApiTests.Concurrent_order_creation_is_unique_and_stale_or_reused_request_keys_cannot_change_content",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.WorkerTests.Daily_notifications_deduplicate_concurrent_schedulers_and_include_only_currently_authorized_own_work",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.WorkerTests.A_transient_failure_before_the_marker_retries_with_backoff_and_does_not_duplicate_a_send",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.WorkerTests.A_transport_exception_after_possible_acceptance_is_uncertain_and_never_automatically_retried",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.CommercialApiTests.Concurrent_partial_allocations_use_current_bank_capacity_and_real_returns_never_free_the_original_bank_row",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.CollectionApiTests.Contact_recording_binds_the_approved_text_and_actual_utc_contact_evidence",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.WorkerTests.Current_authority_and_snapshot_are_rechecked_before_external_send(change: \"role\", expectedError: \"permission_revoked\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.WorkerTests.Concurrent_claims_have_distinct_tokens_and_skip_a_row_locked_by_another_transaction",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.InvoicePdfTests.Cumulative_invoice_pdf_renders_the_actual_carried_net_and_tax_amounts(unitNet: \"0.01\", quantity: \"3\", firstQuantity: \"1\", finalQuantity: \"2\", expectedNet: \"0.02\", expectedTax: \"0.01\", evidenceName: \"cumulative-tax-invoice\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.DiscoveryApiTests.Project_history_follows_current_incoming_links_not_shared_customers_or_banks_and_projects_generic_titles",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.CostApiTests.Sensitive_source_reports_recheck_role_withdrawal_after_waiting_for_the_tenant_lock",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.DiscoveryApiTests.Worker_history_hides_other_personal_and_financial_records_and_revokes_project_access_immediately",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.WorkerTests.Recovery_rejects_wrong_purposes_invalidated_tokens_and_changed_accounts(change: \"email\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.PortalApiTests.A_fresh_partner_invitation_activates_a_personal_account_with_no_implicit_content",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.WorkerTests.Recovery_rejects_wrong_purposes_invalidated_tokens_and_changed_accounts(change: \"membership\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.SecurityApiTests.Revoked_membership_blocks_reads_writes_and_receipt_replay_on_the_next_request",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.DiscoveryApiTests.Self_copy_contains_only_own_current_tenant_categories_and_safe_identity_with_verified_zip_and_file_hashes",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.CollectionApiTests.Worklist_filters_before_paging_uses_frozen_invoice_labels_and_never_loads_deep_evidence",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.IntegrationApiTests.Bulk_exports_enforce_the_explicit_finance_and_payroll_role_matrix",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.WorkerTests.Recovery_rejects_wrong_purposes_invalidated_tokens_and_changed_accounts(change: \"confirmation\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.CostApiTests.Issued_purchase_and_completed_maintenance_evidence_remain_available_in_history",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.WorkerTests.Current_authority_and_snapshot_are_rechecked_before_external_send(change: \"snapshot\", expectedError: \"quote_snapshot_changed\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.CollectionApiTests.Generic_replace_create_and_archive_are_rejected_without_history_or_receipt_changes",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.QuantityApiTests.Reviewed_measurement_lines_support_partial_final_and_correcting_invoices_without_losing_the_accepted_basis",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.AuthorizationRegressionTests.Concurrent_recovery_requests_enqueue_only_one_message_for_the_account_cooldown",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.CommercialApiTests.Maintenance_completion_advances_the_month_anchor_once_and_never_reuses_completed_project_evidence",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.SecurityApiTests.Last_director_cannot_be_removed_and_module_dependencies_cannot_be_bypassed",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.DiscoveryApiTests.Self_copy_rechecks_personal_policy_role_and_membership_and_does_not_offer_other_subjects",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.OperationsApiTests.Snapshot_counts_only_the_current_business_and_distinguishes_delayed_work_from_scheduled_work",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.TelemetryTests.Commands_record_committed_replayed_and_rejected_attempts_separately",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.OperationsApiTests.Snapshot_rejects_other_roles_unrelated_businesses_and_client_scope_selectors",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.QuantityApiTests.Cross_tenant_project_and_self_consistent_forged_quantity_references_are_rejected",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.WorkerTests.A_recovery_hold_prevents_external_effects_and_quarantines_a_pending_attempt",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.InvoicePdfTests.Partial_invoice_pdf_preserves_full_measurement_evidence_and_actual_frozen_amounts",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.PortalApiTests.Named_partner_sees_only_explicit_sales_content_and_acceptance_replay_is_denied_after_revocation",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.SecurityApiTests.Concurrent_identical_minimal_create_requests_replay_once_despite_server_generated_fields",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.DocumentApiTests.Upload_requires_exact_checksum_and_an_immutable_storage_version_before_marking_ready",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.CollectionApiTests.Over_budget_sources_return_no_partial_balance_or_preview",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.IntegrationApiTests.Concurrent_imports_serialize_the_same_account_external_key_without_duplicate_bank_evidence",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.DiscoveryApiTests.Discovery_rejects_invalid_duplicate_unknown_and_unbounded_query_parameters",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.SecurityApiTests.Literal_search_and_filters_cannot_change_query_structure",
+          "outcome": "Passed"
+        },
+        {
+          "name": "FirstBlick.Api.Tests.IntegrationApiTests.Any_duplicate_conflict_or_invalid_final_row_prevents_all_rows_and_receipts_from_being_written",
+          "outcome": "Passed"
+        }
+      ]
+    }
+  ],
+  "sourceSha256": {
+    "src/FirstBlick.Api/ApiInfrastructure.cs": "f49292e3d9ca2530f050a15b57b4a3e8e34a615826467b6d9301e98b3cb82f0e",
+    "src/FirstBlick.Api/ApprovalService.cs": "df8477532229249ce4e33db62553492b77f7928d87b9329c12220b08444a8f43",
+    "src/FirstBlick.Api/AuthEndpoints.cs": "60196b44eb74b7316edcc01628e103efb417e32c45240eb4d7073a8eb93eb9d9",
+    "src/FirstBlick.Api/Bootstrap.cs": "a05cd5fe9e6076802f1b0e1d6796730300d1e12e11be6fcc941ddbb7b25ba2a1",
+    "src/FirstBlick.Api/BusinessEndpoints.cs": "2f4f9e011c1c79d50fc21f177ea2db6b28e339f855a475ec6ecafbe4fb16ce44",
+    "src/FirstBlick.Api/CollectionEndpoints.cs": "eb3afc821c991bfdef85abcfdce7d4e2830c425c4035c710cb1a2a8fd373a9fa",
+    "src/FirstBlick.Api/CollectionWorklistEndpoints.cs": "788a75f015b12a9ea4eb05298f4e78a4da08cc2bb6ae58be06dcd02d0c0a96a1",
+    "src/FirstBlick.Api/CommercialEndpoints.cs": "c7e814c28f0e7a9f3496dac1e9d342e216f58eaead7b2ad9e42ba8a1c7376b0d",
+    "src/FirstBlick.Api/CostEndpoints.cs": "672a904cf18e1cd1c0c5c0c9e0a72153b3bedcc15984976d5cd9b44666124d3f",
+    "src/FirstBlick.Api/DiscoveryAccess.cs": "dfc374bda8a2c51c602ca4f2711a1e81b40f218788513ad09e249632a0928217",
+    "src/FirstBlick.Api/DiscoveryEndpoints.cs": "82d935705d13c7a09c27edd0031672b49d595ba9d69ce4725d160f3e76954490",
+    "src/FirstBlick.Api/DocumentEndpoints.cs": "3afc86b0371f3e634d3ddaefbc764f889f615650bcd3fd4d1aca78d948d926cd",
+    "src/FirstBlick.Api/FieldEndpoints.cs": "0dc850b70f0aebaead74d059f5aeb0dee52b480a155299e9ab8e32c17ed0a4f7",
+    "src/FirstBlick.Api/IntegrationEndpoints.cs": "9aee8ca2c7169c5c9c27f4cd662498cae433adf547f06a45c49b4cdf2b4cf4cd",
+    "src/FirstBlick.Api/ManagementEndpoints.cs": "6ccb280c80fc1a688c9ef3c0486092dc7b48018906cf83b48b5c746b77190948",
+    "src/FirstBlick.Api/OperationsEndpoints.cs": "830570cfdbf08585e66e58d9c4e2bd1d479a64784d6115336cab1293c4401609",
+    "src/FirstBlick.Api/PortalEndpoints.cs": "bf49f79aac48cfb92711049b5f1d8134f15f8fe49d7a2c02433c8e0d19971f2f",
+    "src/FirstBlick.Api/Program.cs": "e46a30d8bf0faa88127b4d59fb54ad3e8a0fec2649c017ae4938ffaaa3b8bb0e",
+    "src/FirstBlick.Api/QuantityEndpoints.cs": "4672a124fcee3ef9928e2b845906220d4b27ee7bb32ac3745541d99c4b6d0a06",
+    "src/FirstBlick.Api/RecordPolicy.cs": "f05408522dfb46895dd7bb5d429bde36a0b5e81a38b9ffecce1e95302f455d31",
+    "src/FirstBlick.Api/TechnicalEndpoints.cs": "034bfe6fbb1cc7ee1eaf3a332f63393ba14a24caa69ef4bc31c9c83f7fb6b9ac",
+    "src/FirstBlick.Core/Business/Collections.cs": "771d6d2293de98dabb9f644492d7d7de09b605df71e330e2d81942b48566cc65",
+    "src/FirstBlick.Core/Business/Commercial.cs": "5ce7378d1789495a555bc3a6d798fcd68ded0f61da929fec26269b49cdb42298",
+    "src/FirstBlick.Core/Business/CostAnalysis.cs": "378dde3c51af4212988f5b86e293c5adb7df1d82f741019d786520202b4b1db5",
+    "src/FirstBlick.Core/Business/Finance.cs": "301d4d01b39fec9f4ff74a3236b1b95c3c54097e0f9887a40acc49b71fc4b56e",
+    "src/FirstBlick.Core/Business/Foundation.cs": "c2243015720f9a63a54523675554d8d19864a720c7a2b3a72e8b48e89ae0f597",
+    "src/FirstBlick.Core/Business/Inventory.cs": "59ecd68da3451f99dbb187ef642d994f3a96f04e6de153f2ee304533a6524f9b",
+    "src/FirstBlick.Core/Business/InvoiceArithmetic.cs": "418c782cc3816f1a08c2a50544312020e489502f98fa8a4150a6159b3208c72f",
+    "src/FirstBlick.Core/Business/Operations.cs": "75809af115d69ffc49b1a013148c30fb4e7643bb1d271d60d7a220f34575d82c",
+    "src/FirstBlick.Core/Business/Planning.cs": "15fca581e64538efcc46cfa9b428c77a0fbf9654dd4bcf6b4b20d96ccbfcebf4",
+    "src/FirstBlick.Core/Business/Portal.cs": "04dbb13c73e7a7522f672b2befea27e8fac2922ba9394ae03ff9760848f1d544",
+    "src/FirstBlick.Core/Business/Projects.cs": "00948f032e9caa6aafbcc1a880604f7855ee2531fffc2e087daae4586919e5c7",
+    "src/FirstBlick.Core/Business/QuantityLinks.cs": "f940e4710dcf894fd156f74270fd8d64548088a501cee4a427c4ad5d0d70fccc",
+    "src/FirstBlick.Core/Business/RoofMeasurements.cs": "b73c11eed1e91551685472c62f8a48e73493ef30f04af408f4548ea42c849fc9",
+    "src/FirstBlick.Core/Business/SupplierFinance.cs": "8000aa5328238d2575bce016b9966bdd16193e26976f0908a9323529ce78e0dd",
+    "src/FirstBlick.Core/Business/TechnicalRecord.cs": "fdad2062a9cb9f32ba78905b5badd98e642d609bc5a3c0c7bea71f0469857d5d",
+    "src/FirstBlick.Core/Business/TrainingAndForms.cs": "535e3b5aea926dbdc9915f5f1340972cc3f2e3827ca390fbc1385823612f062d",
+    "src/FirstBlick.Core/Integrations/BankCsvV1.cs": "953111c81f9d5b0ed3e4fa33507739df565c27f0ecb3276d4fed512ce2a47faf",
+    "src/FirstBlick.Core/Integrations/CsvV1.cs": "2cdf1c40e5046c333afe61f8cf7071863d6c460a09268ec645ab9f8b070f415b",
+    "src/FirstBlick.Core/Integrations/ExportContracts.cs": "0ae9da899c8c53ad6623a351ade074e4a76e68f597b6c5c7c67dece3ceb397ad",
+    "src/FirstBlick.Core/Integrations/LedgerExport.cs": "d8dc184d60aab268046d8e783935ff4c0f54a59c0697c4cd56c9b6ebe9805a66",
+    "src/FirstBlick.Core/Integrations/PayrollTimeExport.cs": "5f59c354d160f93f8f886ac85d83f6fb0ad169803092dcfb597f95b747fedf1f",
+    "src/FirstBlick.Core/Security/AccessRules.cs": "6965e0aedb4fe417741656dfa7184d9ded051aa08bea80c587f4dfd363f11cdd",
+    "src/FirstBlick.Core/Technical/CalculationProvenance.cs": "b24fb306c29e9ca3b693f928485e51cdfc5a51e2da73ed2ccb09feaab94e3e40",
+    "src/FirstBlick.Core/Technical/RoofGeometry.cs": "608a50b82fb910dcb20e45522ea27f3841b49a788ce7a60da10a5b4f12d036b3",
+    "src/FirstBlick.Core/Technical/ThermalBridgeCalculator.cs": "858c8743ddc1130a29764c910a68ae2f22ff9b9a6ef5730e760b9441830009a5",
+    "src/FirstBlick.Core/Technical/ThermalCalculator.cs": "d702e7c06af26c5bd405377ceb5254928e8d6648e6045fd00e51f63745f8f389",
+    "src/FirstBlick.Infrastructure/Documents/BusinessPdf.cs": "afb4373f4bfe42d635714c6cb2d488a66b678efbd1fb38995c46ef64996c26a7",
+    "src/FirstBlick.Infrastructure/FirstBlickTelemetry.cs": "f633f86ced269ff80c881470b0599e221ff98eaf7303b17762048d750535c3df",
+    "src/FirstBlick.Infrastructure/OutboxProcessor.cs": "b1b77e6ae90cb9a338e0cd0e0a75e500b63cd408067ec5ddff18cc77be7c78e8",
+    "src/FirstBlick.Infrastructure/Persistence/DecimalStringConverter.cs": "03ba82523ab4f2e0f9bd5c7445d972474a2dd984df44baa2d908f9bd927102c0",
+    "src/FirstBlick.Infrastructure/Persistence/DesignTimeFactory.cs": "11930839e7bbc3fa0bcc35e02a4a210d152be52aa19004f584e9b41ccef831b9",
+    "src/FirstBlick.Infrastructure/Persistence/EntityProjection.cs": "bd88c504a239c2a6c440e647f715a9cdb8652c37b0588e7e3048842e648e534b",
+    "src/FirstBlick.Infrastructure/Persistence/EntityStore.cs": "c67a491edc7b6855f15d0ff46a9a366d061e2307ca51831ca4986566cb497630",
+    "src/FirstBlick.Infrastructure/Persistence/FinanceReadModel.cs": "213502c9681d9dfdfe46098fee17da7052df3e603fc16f3e4690bf357c896970",
+    "src/FirstBlick.Infrastructure/Persistence/FirstBlickDbContext.cs": "742805e7539b8ab58df0a6d3a40b27ea1a63f39bc2237b2f3e4298b7fe9c239f",
+    "src/FirstBlick.Infrastructure/Persistence/MigrationAccountMarker.cs": "4cdc67f05aaf01c1cffad898791a3170dd574308d2b348c91a6da173cb878a4f",
+    "src/FirstBlick.Infrastructure/Persistence/Migrations/20261020043844_InitialSchema.Designer.cs": "9a3e6b3a96f169cb7beeff41d3f0e7e8d801312c56fcdf415454e6d623d5a239",
+    "src/FirstBlick.Infrastructure/Persistence/Migrations/20261020043844_InitialSchema.cs": "65e7e87e9538e86a8f97376e306f71b8952497f993d5b023b57b9a3afa1a6594",
+    "src/FirstBlick.Infrastructure/Persistence/Migrations/FirstBlickDbContextModelSnapshot.cs": "4d05cb9b5747608f6def7393c95419e306d2f14caa024ba4b91727eba9367ed4",
+    "src/FirstBlick.Infrastructure/Persistence/Models.cs": "3f6cd2cf7be22ce57d3c7682f8d36885b6ccb91dccb2540fb18e4e6837c97a13",
+    "src/FirstBlick.Infrastructure/Persistence/OperationsRecoveryHold.cs": "3e55f0eb49c2e651ce021c158dd2033bbfaf4a56136ffc78d2d9e027dc50a67e",
+    "src/FirstBlick.Infrastructure/ServiceRegistration.cs": "f1d8364ef4682c9f490b64ce7b6cb4c6d7673bfedf77651877ff522a39f3e5f5",
+    "src/FirstBlick.Infrastructure/Storage/ObjectStore.cs": "77168332fbc5452e334849a911d39a2175b3c3e57071a82d44f51a0da21bd982",
+    "src/FirstBlick.Worker/OutboxWorker.cs": "2722f3203c25a50f504c6c2c68e700c4be3c3efda4c65c60a840e2a8a495d99a",
+    "src/FirstBlick.Worker/Program.cs": "16796e07eaf5ac79d0e7fe0e52f7970746d46c558beca336a334e372d2726896",
+    "tests/FirstBlick.Api.Tests/AuthorizationRegressionTests.cs": "d1290d6b76684a2f729654de8c94a6a971b46c66849eb07cd07fc1c9970cc465",
+    "tests/FirstBlick.Api.Tests/CollectionApiTests.cs": "10272083810c6e2d16ab72b124c59bf7097e34a3e1af4c7a9fae80ec8dc9ae1d",
+    "tests/FirstBlick.Api.Tests/CommercialApiTests.cs": "0af2d165854db42c61f9afaec21a2e1cf4e1b5b4690b4dbe73a3ecfadef95d96",
+    "tests/FirstBlick.Api.Tests/CostApiTests.cs": "0d67b5431cb5fb81fd31b911d7955f5c8c1ae968320efa724990e9e9555dcf24",
+    "tests/FirstBlick.Api.Tests/DiscoveryApiTests.cs": "89493c5079fe436f4316a0ac16f1cbb65b63632d5ba878a0cb1c40a3f71a2405",
+    "tests/FirstBlick.Api.Tests/DocumentApiTests.cs": "6bd45c93e83736183b318fde073c5fcd7065e0e4ca06bf3f9109f09e80a856d3",
+    "tests/FirstBlick.Api.Tests/IntegrationApiTests.cs": "f5ffd76f73016aec9dab194306b6f9a462c7165b59a3b96b652d50f8140f97ba",
+    "tests/FirstBlick.Api.Tests/InvoicePdfTests.cs": "4055973df36fd600696173007e4df80baa396e886597c61e4efc3a70ce338193",
+    "tests/FirstBlick.Api.Tests/InvoiceRoundingApiTests.cs": "22eacaafe2339c8675e7b7e92921c8ada2556211fa76b22ad8c04d8b7a816bc9",
+    "tests/FirstBlick.Api.Tests/OperationsApiTests.cs": "4aa8ac4238fbe0ab41c1ff0ad653e71a65424b8b2113f7ad8ccdbf5a8a5ef870",
+    "tests/FirstBlick.Api.Tests/PortalApiTests.cs": "1839d9b5fd85bb5fd2f2553e4300795b276153cf3803bf83b59535371caf6d66",
+    "tests/FirstBlick.Api.Tests/PostgresApiFixture.cs": "c3550d13ba87be0150cc486c32c17edb03597dd7b570c7dae96dcec7ef43728a",
+    "tests/FirstBlick.Api.Tests/QuantityApiTests.cs": "87905d7ef687a7dc34206898e47c6f5fccc217dfd7e97b1fade2f3b906fbd7ba",
+    "tests/FirstBlick.Api.Tests/RecoveryAccessTests.cs": "d58fe5c844299d79f7d70032c0366c07e8bc7a62cc5504fc77c8b3199ea559f4",
+    "tests/FirstBlick.Api.Tests/SecurityApiTests.cs": "8938c27229526b44ba3e7ce2cad4e9631d84b968091a8c9e3f08703377ac0c45",
+    "tests/FirstBlick.Api.Tests/TelemetryTests.cs": "35adf3786833626eebcb68c41293d53f7217ece1667b16d09cdafb8b3b2d1c90",
+    "tests/FirstBlick.Api.Tests/WorkerTests.cs": "d7fbaf2571243885da01aaafdb1d22343e655fbfde7933100a8593982742e1eb",
+    "tests/FirstBlick.Core.Tests/Business/BusinessFixture.cs": "d36ac8d700058e79f7e39bf306783ae743e8c3c8afa048941a59e01f963ba2e4",
+    "tests/FirstBlick.Core.Tests/Business/CollectionTests.cs": "ed69cc5a46c50ea5c96f292c6082c3990f3bf9f1b6bddb909030f20172c1a999",
+    "tests/FirstBlick.Core.Tests/Business/CommercialTests.cs": "01b962e81eeba63c1075e00bbb1c4a67813095bcb07a93efa0d19ae2947634d3",
+    "tests/FirstBlick.Core.Tests/Business/CostAnalysisTests.cs": "e32d2291813284cbe5bb39fe887c2ddad9af6ad19200785ffaff07450e3239c5",
+    "tests/FirstBlick.Core.Tests/Business/InvoiceCumulativeRoundingTests.cs": "e5be0d4f769a464f8078b1d335961d576fe5c69c3ef0afcf10f1fff031e8799f",
+    "tests/FirstBlick.Core.Tests/Business/LedgerTests.cs": "f9a5e312f11c7cbc856f339824b1f2cbfd8c155c8ff9704f50a98af02bc25745",
+    "tests/FirstBlick.Core.Tests/Business/OperationsFormTests.cs": "6e2935633a1529f7771d05e58d37d2e2d7761a2c523fb0242e5a14315f3de789",
+    "tests/FirstBlick.Core.Tests/Business/PlanningInventoryTests.cs": "d2b6db8b855ce56ef152ce77b165794a7985a17427e1f68abfcf9d5609b3d0f5",
+    "tests/FirstBlick.Core.Tests/Business/QuantityLinkTests.cs": "6f4de41fc93a7f25732a7c231b31be1e91ca3b2bb95cf75c72a1e5766de7533f",
+    "tests/FirstBlick.Core.Tests/Business/RoofMeasurementTests.cs": "11ecdbfbc496cb5826906af50c2d2fbe5386f6714d2569855cbadc7d8522583f",
+    "tests/FirstBlick.Core.Tests/Business/SupplierFinanceTests.cs": "081bf18f8ab536afc242c6d351de0bbe3dfbe9fa295a5469dd765a67cbc73dc9",
+    "tests/FirstBlick.Core.Tests/Integrations/CsvAdapterTests.cs": "923a0077dc8db6c1ba6fe1fb3e8e9baf6b4fc6c29b83cac50e9a7238083e86a1",
+    "tests/FirstBlick.Core.Tests/Integrations/LedgerExportTests.cs": "0d7afe74ab37abd5cd2daa82d89e128cd9f45803eb9963481dde47693e2c7225",
+    "tests/FirstBlick.Core.Tests/Integrations/PayrollExportTests.cs": "96d1cbf2a8c0ae0bb4d4e2a8b121628a524b354bd47c73e015588fe34573da89",
+    "tests/FirstBlick.Core.Tests/Technical/RoofGeometryTests.cs": "2a8d695ee470724314ebc01b58f9e84c3342a3bcb42d249141e5256e77fbf414",
+    "tests/FirstBlick.Core.Tests/Technical/ThermalTests.cs": "124de013d591581075a790a2ee035806cc78cd58d26c3388495fb4224d39e0c9"
+  },
+  "scope": [
+    "Full currently implemented server tests, not all 100 original roadmap acceptance criteria.",
+    "21 cumulative rounding Core cases, 5 actual HTTP/PG rounding cases, 3 PDF cases included.",
+    "18 collections Core cases and 11 actual HTTP/PG collections cases included.",
+    "4 operations snapshot API cases and 3 instrumentation cases included.",
+    "UI, live browser, containers, restore and remote CI require their own current-source evidence."
+  ]
+}

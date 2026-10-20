@@ -91,7 +91,7 @@ app.Use(async (context, next) =>
         context.Response.Headers["Permissions-Policy"] = "camera=(self), microphone=(), geolocation=(self)";
         context.Response.Headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; connect-src 'self'; font-src 'self'; object-src 'none'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'";
         if (!local && context.Request.IsHttps) context.Response.Headers.StrictTransportSecurity = "max-age=2592000";
-        if (context.Request.Path.StartsWithSegments("/api")) context.Response.Headers.CacheControl = "no-store";
+        if (context.Request.Path.StartsWithSegments("/api")) context.Response.Headers.CacheControl = "no-store, private";
         return Task.CompletedTask;
     });
     await next();
@@ -123,6 +123,8 @@ IntegrationEndpoints.Map(api);
 QuantityEndpoints.Map(api);
 CostEndpoints.Map(api);
 DiscoveryEndpoints.Map(api);
+OperationsEndpoints.Map(api);
+CollectionEndpoints.Map(api);
 app.MapOpenApi().RequireAuthorization();
 app.UseDefaultFiles();
 app.UseStaticFiles();

@@ -16,6 +16,8 @@ public static class ServiceRegistration
         services.AddScoped<TenantScope>();
         services.AddDbContext<FirstBlickDbContext>(o => o.UseNpgsql(connection).EnableDetailedErrors(false));
         services.AddScoped<EntityStore>();
+        services.AddMetrics();
+        services.AddSingleton<FirstBlickTelemetry>();
         services.AddScoped<OutboxProcessor>();
         var endpoint = config["Storage:Endpoint"];
         if (!string.IsNullOrWhiteSpace(endpoint))

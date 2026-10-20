@@ -9,7 +9,7 @@ namespace FirstBlick.Infrastructure.Documents;
 /// <summary>Versioned PDF renderer. Financial amounts are read exclusively from validated, frozen snapshots.</summary>
 public static class BusinessPdf
 {
-    public const string Version = "firstblick-business-pdf/1.0";
+    public const string Version = "firstblick-business-pdf/1.1";
     private static readonly CultureInfo German = CultureInfo.GetCultureInfo("de-DE");
 
     static BusinessPdf() => GlobalFontSettings.FontResolver = new InstalledFontResolver();
@@ -51,7 +51,19 @@ public static class BusinessPdf
         }
         // Invoice.Validate already checks the invoice-specific frozen contract,
         // including partial quantities with their complete measurement evidence.
-        writer.Space(18); writer.Lines(invoice.Snapshot, validateQuote: false);
+        writer.Space(18); writer.Lines(invoice.Snapshot, validateQuote: false, invoice.Calculation);
+        if (invoice.Calculation is { } calculation)
+        {
+            writer.Space(14);
+            writer.Text(calculation.Basis == InvoiceCalculationBasis.Contract
+                ? "Die Positionsbeträge sind die Differenz zwischen dem neuen kumulativen Auftragsstand und den tatsächlich zuvor abgerechneten Beträgen."
+                : "Die Korrektur verteilt die tatsächlichen Netto- und Steuerbeträge des Ursprungsbelegs nach der korrigierten Menge. Frühere Korrekturen sind berücksichtigt.", size: 9);
+            writer.Text("Rundungen sind bereits in den ausgewiesenen Beträgen enthalten. Die Summe aller Teilmengen übernimmt die vollständigen Centbeträge der ursprünglichen Positionen.", size: 9);
+            writer.Text("Grundlage: " + string.Join("; ", calculation.Sources.Select(x => x.Label)), size: 9);
+            if (calculation.PreviousInvoices.Count > 0)
+                writer.Text("Berücksichtigte frühere Belege: " + string.Join("; ", calculation.PreviousInvoices.Select(x => x.Number)), size: 9);
+            writer.Text($"Berechnungsverfahren {calculation.MethodVersion} · SHA-256 {calculation.Digest}", size: 7);
+        }
         return writer.Finish();
     }
 
@@ -144,7 +156,7 @@ public static class BusinessPdf
             lines.Add(current); return lines;
         }
 
-        public void Lines(QuoteSnapshot snapshot, bool validateQuote = true)
+        public void Lines(QuoteSnapshot snapshot, bool validateQuote = true, InvoiceCalculation? calculation = null)
         {
             if (validateQuote) snapshot.Validate();
             var index = 0;
@@ -153,7 +165,16 @@ public static class BusinessPdf
                 // Keep the heading and price row together; long descriptions may continue on subsequent pages.
                 if (y > 692) NewPage();
                 Text($"{++index:D3}   {line.Inputs.Description}", true);
-                Text($"{line.Inputs.Quantity.ToString("0.######", German)} {line.Inputs.Unit} × {line.UnitNet.ToString("N2", German)} EUR = {line.Net.ToString("N2", German)} EUR netto", size: 9);
+                if (calculation is null)
+                    Text($"{line.Inputs.Quantity.ToString("0.######", German)} {line.Inputs.Unit} × {line.UnitNet.ToString("N2", German)} EUR = {line.Net.ToString("N2", German)} EUR netto", size: 9);
+                else
+                {
+                    var evidence = calculation.Lines[index - 1];
+                    Text($"{line.Inputs.Quantity.ToString("0.######", German)} {line.Inputs.Unit} · Einzelpreis netto {line.UnitNet.ToString("N2", German)} EUR", size: 9);
+                    Text($"Netto dieser Position: {line.Net.ToString("N2", German)} EUR", size: 9);
+                    Text($"Bisher kumulativ: {evidence.BeforeQuantity.ToString("0.######", German)} {line.Inputs.Unit}, netto {evidence.BeforeNet.ToString("N2", German)} EUR, USt {evidence.BeforeTax.ToString("N2", German)} EUR", size: 8);
+                    Text($"Neu kumulativ: {evidence.AfterQuantity.ToString("0.######", German)} {line.Inputs.Unit}, netto {evidence.AfterNet.ToString("N2", German)} EUR, USt {evidence.AfterTax.ToString("N2", German)} EUR", size: 8);
+                }
                 Text($"USt {line.Inputs.VatPercent.ToString("0.######", German)} %: {line.Tax.ToString("N2", German)} EUR · Brutto {line.Gross.ToString("N2", German)} EUR", size: 9);
                 Space(9);
             }
@@ -161,7 +182,9 @@ public static class BusinessPdf
             graphics.DrawLine(new XPen(Accent, 1), Left, y, Left + Width, y); Space(18);
             Text($"Nettosumme  {snapshot.Net.ToString("N2", German)} EUR", true);
             foreach (var tax in snapshot.Lines.GroupBy(x => x.Inputs.VatPercent))
-                Text($"USt {tax.Key.ToString("0.######", German)} % auf {tax.Sum(x => x.Net).ToString("N2", German)} EUR: {tax.Sum(x => x.Tax).ToString("N2", German)} EUR");
+                Text(calculation is null
+                    ? $"USt {tax.Key.ToString("0.######", German)} % auf {tax.Sum(x => x.Net).ToString("N2", German)} EUR: {tax.Sum(x => x.Tax).ToString("N2", German)} EUR"
+                    : $"Kumulativ abgegrenzte USt {tax.Key.ToString("0.######", German)} %: {tax.Sum(x => x.Tax).ToString("N2", German)} EUR");
             Text($"Gesamtbetrag  {snapshot.Gross.ToString("N2", German)} EUR", true, 13);
         }
 

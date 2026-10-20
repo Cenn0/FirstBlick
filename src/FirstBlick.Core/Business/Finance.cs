@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace FirstBlick.Core.Business;
 
 public enum InvoiceKind { Final, Progress, CreditNote }
@@ -24,6 +26,9 @@ public sealed class Invoice : TenantEntity
     public InvoiceStatus Status { get; set; }
     public List<QuoteLine> Lines { get; set; } = [];
     public QuoteSnapshot? Snapshot { get; set; }
+    // Absence retains the exact validation and digest contract of historical invoices.
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public InvoiceCalculation? Calculation { get; set; }
     public string IssuedDigest { get; set; } = "";
 
     public override void Validate()
@@ -41,15 +46,28 @@ public sealed class Invoice : TenantEntity
         {
             Guard.Require(IssueDate.HasValue && DueDate >= IssueDate.Value, "invalid_due_date", "The due date must not precede the issue date.");
             Guard.Require(ServiceFrom != default && ServiceUntil >= ServiceFrom, "invalid_service_period", "A valid service period is required.");
-            Guard.Require(Snapshot is not null, "missing_snapshot", "Issued invoices require a frozen snapshot."); Snapshot!.Validate(allowPartialMeasurement: true);
-            Guard.Require(Pricing.Freeze(Lines, allowPartialMeasurement: true).Digest == Snapshot.Digest && InvoiceWorkflow.Digest(this) == IssuedDigest,
+            Guard.Require(Snapshot is not null, "missing_snapshot", "Issued invoices require a frozen snapshot.");
+            if (Calculation is null)
+            {
+                Snapshot!.Validate(allowPartialMeasurement: true);
+                Guard.Require(Pricing.Freeze(Lines, allowPartialMeasurement: true).Digest == Snapshot.Digest,
+                    "invoice_immutable", "The historical invoice calculation has changed.");
+            }
+            else InvoiceArithmetic.Validate(this);
+            Guard.Require(InvoiceWorkflow.Digest(this) == IssuedDigest,
                 "invoice_immutable", "Issued invoice content is immutable. Use a referenced correction.");
         }
+        else Guard.Require(Calculation is null, "command_required", "A draft cannot supply its own issued calculation evidence.");
     }
     public override IEnumerable<EntityReference> References()
     {
         yield return BusinessRegistry.Reference<Customer>(CustomerId); yield return BusinessRegistry.Reference<Order>(OrderId);
         if (OriginalInvoiceId is { } id) yield return BusinessRegistry.Reference<Invoice>(id);
+        if (Calculation is { } calculation)
+        {
+            foreach (var source in calculation.Sources) yield return new(source.Kind, source.Id);
+            foreach (var previous in calculation.PreviousInvoices) yield return BusinessRegistry.Reference<Invoice>(previous.Id);
+        }
     }
 }
 
@@ -100,23 +118,8 @@ public static class InvoiceWorkflow
         var issued = existingInvoices.Where(x => x.TenantId == order.TenantId && x.OrderId == order.Id && x.Id != invoice.Id && x.Status == InvoiceStatus.Issued).ToList();
         var accepted = changes.Where(x => x.TenantId == order.TenantId && x.OrderId == order.Id && x.Status == ChangeOrderStatus.Accepted).ToList();
         foreach (var item in issued) item.Validate(); foreach (var change in accepted) change.Validate();
-        var contractGross = order.Contract!.Gross + accepted.Sum(x => x.Snapshot!.Gross);
-        var billed = issued.Sum(x => x.Kind == InvoiceKind.CreditNote ? -x.Snapshot!.Gross : x.Snapshot!.Gross);
-        var resulting = billed + Pricing.Freeze(invoice.Lines, allowPartialMeasurement: true).Gross;
-        Guard.Require(resulting <= contractGross, "order_overbilled", "Cumulative invoices exceed the accepted order and accepted changes.");
-        Guard.Require(invoice.Kind != InvoiceKind.Final || resulting == contractGross, "incomplete_final_invoice", "The final invoice must settle the remaining accepted contract amount.");
-        var contracted = order.Contract.Lines.Select(x => x.Inputs).Concat(accepted.SelectMany(x => x.Snapshot!.Lines.Select(y => y.Inputs)))
-            .GroupBy(LineKey).ToDictionary(x => x.Key, x => x.Sum(y => y.Quantity), StringComparer.Ordinal);
-        var cumulative = new Dictionary<string, decimal>(StringComparer.Ordinal);
-        foreach (var previous in issued)
-            foreach (var line in previous.Snapshot!.Lines.Select(x => x.Inputs))
-                cumulative[LineKey(line)] = cumulative.GetValueOrDefault(LineKey(line)) + (previous.Kind == InvoiceKind.CreditNote ? -line.Quantity : line.Quantity);
-        foreach (var line in invoice.Lines) cumulative[LineKey(line)] = cumulative.GetValueOrDefault(LineKey(line)) + line.Quantity;
-        Guard.Require(cumulative.All(x => contracted.TryGetValue(x.Key, out var quantity) && x.Value >= 0 && x.Value <= quantity),
-            "uncontracted_line", "Invoice quantities and effective unit prices must derive from the accepted order and changes.");
-        Guard.Require(invoice.Kind != InvoiceKind.Final || contracted.All(x => cumulative.GetValueOrDefault(x.Key) == x.Value),
-            "incomplete_final_invoice", "Final invoice quantities must settle every accepted contract position.");
-        IssueCore(invoice, number, issueDate);
+        var calculation = InvoiceArithmetic.ForOrder(invoice, order, issued, accepted);
+        IssueCore(invoice, number, issueDate, calculation);
     }
 
     /// <summary>The caller must serialize issuance per original invoice and pass all existing corrections from the same transaction.</summary>
@@ -128,18 +131,11 @@ public static class InvoiceWorkflow
             "invalid_correction", "Credit note and original invoice do not match.");
         var matching = existingCredits.Where(x => x.TenantId == original.TenantId && x.OriginalInvoiceId == original.Id && x.Status == InvoiceStatus.Issued).ToList();
         foreach (var existing in matching) existing.Validate();
-        var amount = Pricing.Freeze(credit.Lines, allowPartialMeasurement: true).Gross;
-        Guard.Require(matching.Sum(x => x.Snapshot!.Gross) + amount <= original.Snapshot!.Gross, "excess_credit", "Cumulative credit notes cannot exceed the original invoice.");
-        var originalQuantities = original.Snapshot.Lines.Select(x => x.Inputs).GroupBy(LineKey).ToDictionary(x => x.Key, x => x.Sum(y => y.Quantity), StringComparer.Ordinal);
-        var credited = matching.SelectMany(x => x.Snapshot!.Lines.Select(y => y.Inputs)).Concat(credit.Lines).GroupBy(LineKey);
-        Guard.Require(credited.All(x => originalQuantities.TryGetValue(x.Key, out var originalQuantity) && x.Sum(y => y.Quantity) <= originalQuantity),
-            "invalid_credit_lines", "Credit positions must retain the original effective prices and tax rates and cannot exceed their original quantities.");
-        IssueCore(credit, number, issueDate);
+        var calculation = InvoiceArithmetic.ForCorrection(credit, original, matching);
+        IssueCore(credit, number, issueDate, calculation);
     }
 
-    private static string LineKey(QuoteLine line) => ContentDigest.Of(line with { Quantity = 1m });
-
-    private static void IssueCore(Invoice invoice, string number, DateOnly issueDate)
+    private static void IssueCore(Invoice invoice, string number, DateOnly issueDate, InvoiceCalculation? calculation = null)
     {
         invoice.Validate(); Guard.Require(invoice.Status == InvoiceStatus.Draft, "invoice_immutable", "Only a draft invoice can be issued.");
         Guard.Text(number, nameof(number), 80); Guard.Require(issueDate != default, "required", "Issue date is required.");
@@ -147,18 +143,24 @@ public static class InvoiceWorkflow
         Guard.Require(invoice.ServiceFrom != default && invoice.ServiceUntil >= invoice.ServiceFrom, "invalid_service_period", "A valid service period is required.");
         Guard.Text(invoice.SellerName, "SellerName"); Guard.Text(invoice.SellerAddress, "SellerAddress", 2000);
         Guard.Text(invoice.BuyerName, "BuyerName"); Guard.Text(invoice.BuyerAddress, "BuyerAddress", 2000);
-        var snapshot = Pricing.Freeze(invoice.Lines, allowPartialMeasurement: true); Guard.Require(snapshot.Gross > 0, "zero_invoice", "An issued invoice must have a positive absolute amount.");
+        var snapshot = calculation is null ? Pricing.Freeze(invoice.Lines, allowPartialMeasurement: true) : InvoiceArithmetic.Snapshot(invoice, calculation);
+        Guard.Require(snapshot.Gross > 0, "zero_invoice", "An issued invoice must have a positive absolute amount.");
         invoice.Number = number; invoice.IssueDate = issueDate; invoice.Snapshot = snapshot; invoice.Status = InvoiceStatus.Issued;
+        invoice.Calculation = calculation;
         invoice.IssuedDigest = Digest(invoice);
     }
 
-    public static string Digest(Invoice invoice) => ContentDigest.Of(new
+    public static string Digest(Invoice invoice)
     {
+        var content = new
+        {
         invoice.TenantId, invoice.Id, invoice.CustomerId, invoice.OrderId, invoice.OriginalInvoiceId,
         invoice.Number, invoice.Title, invoice.SellerName, invoice.SellerAddress, invoice.SellerTaxId,
         invoice.BuyerName, invoice.BuyerAddress, invoice.CorrectionReason, invoice.Currency,
         invoice.IssueDate, invoice.DueDate, invoice.ServiceFrom, invoice.ServiceUntil, invoice.Kind, invoice.Snapshot
-    });
+        };
+        return invoice.Calculation is null ? ContentDigest.Of(content) : ContentDigest.Of(new { Content = content, invoice.Calculation });
+    }
 }
 
 public sealed class BankTransaction : TenantEntity

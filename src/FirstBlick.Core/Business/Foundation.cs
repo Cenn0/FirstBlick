@@ -120,6 +120,7 @@ public static class BusinessRegistry
         ["tasks"] = typeof(TaskItem), ["catalog-items"] = typeof(CatalogItem), ["quotes"] = typeof(Quote),
         ["orders"] = typeof(Order), ["change-orders"] = typeof(ChangeOrder), ["invoices"] = typeof(Invoice),
         ["bank-transactions"] = typeof(BankTransaction), ["payment-allocations"] = typeof(PaymentAllocation),
+        ["collection-cases"] = typeof(CollectionCase),
         ["suppliers"] = typeof(Supplier), ["purchase-orders"] = typeof(PurchaseOrder), ["materials"] = typeof(Material),
         ["stock-movements"] = typeof(StockMovement), ["material-reservations"] = typeof(MaterialReservation),
         ["employees"] = typeof(Employee), ["time-entries"] = typeof(TimeEntry), ["absences"] = typeof(Absence),

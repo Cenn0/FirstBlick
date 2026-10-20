@@ -9,7 +9,7 @@ public static class AccessRules
     public static string ModuleFor(string kind) => kind switch
     {
         "quotes" or "orders" or "change-orders" or "catalog-items" => "commercial",
-        "invoices" or "bank-transactions" or "payment-allocations" or "supplier-invoices" or "supplier-payment-allocations" => "finance",
+        "invoices" or "collection-cases" or "bank-transactions" or "payment-allocations" or "supplier-invoices" or "supplier-payment-allocations" => "finance",
         "suppliers" or "purchase-orders" or "materials" or "stock-movements" or "material-reservations" or "material-demands" or "equipment" => "purchasing",
         "employees" or "time-entries" or "absences" or "schedule-assignments" or "diary-entries" or "defects" or "acceptances" or "form-definitions" or "form-submissions" => "field",
         "training-records" => "training",

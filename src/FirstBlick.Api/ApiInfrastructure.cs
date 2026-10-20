@@ -1,9 +1,11 @@
 using System.Data;
+using System.Diagnostics;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text.Json;
 using FirstBlick.Core.Business;
 using FirstBlick.Core.Security;
+using FirstBlick.Infrastructure;
 using FirstBlick.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.EntityFrameworkCore;
@@ -80,7 +82,7 @@ public sealed class TenantAccessFilter(FirstBlickDbContext db, TenantScope scope
     }
 }
 
-public sealed class CommandExecutor(FirstBlickDbContext db, TenantScope scope, EntityStore store)
+public sealed class CommandExecutor(FirstBlickDbContext db, TenantScope scope, EntityStore store, FirstBlickTelemetry telemetry)
 {
     public async Task Authorize(string kind, bool write, CancellationToken ct)
     {
@@ -100,13 +102,30 @@ public sealed class CommandExecutor(FirstBlickDbContext db, TenantScope scope, E
     public async Task<IResult> Execute(HttpContext http, string kind, string action, object? input, Func<CancellationToken, Task<object>> mutation,
         Func<CancellationToken, Task>? authorizeCurrent = null)
     {
+        using var observation = telemetry.ObserveCommand(kind);
+        try
+        {
+            var result = await ExecuteCore(http, kind, action, input, mutation, authorizeCurrent);
+            observation.Committed(http.Response.Headers.ContainsKey("Idempotency-Replayed"));
+            return result;
+        }
+        catch (DomainException) { observation.Rejected(); throw; }
+        catch (DbUpdateConcurrencyException) { observation.Rejected(); throw; }
+        catch (OperationCanceledException) when (http.RequestAborted.IsCancellationRequested) { observation.Cancelled(); throw; }
+    }
+
+    private async Task<IResult> ExecuteCore(HttpContext http, string kind, string action, object? input, Func<CancellationToken, Task<object>> mutation,
+        Func<CancellationToken, Task>? authorizeCurrent)
+    {
         var ct = http.RequestAborted;
         var key = http.Request.Headers["Idempotency-Key"].ToString();
         Guard.Require(key.Length is >= 8 and <= 128 && key.All(c => char.IsAsciiLetterOrDigit(c) || c is '-' or '_' or ':'), "idempotency_required", "Supply an Idempotency-Key of 8 to 128 safe characters.");
         var digest = ContentDigest.Of(new { method = http.Request.Method, path = http.Request.Path.Value, action,
             bodyDigest = http.Items[RequestFingerprint.ItemKey] as string ?? ContentDigest.Of(input), revision = http.Request.Headers.IfMatch.ToString() });
         await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, ct);
+        var lockStarted = Stopwatch.GetTimestamp();
         await db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(hashtextextended({scope.TenantId.ToString()}, 0))", ct);
+        telemetry.RecordLockWait(kind, Stopwatch.GetElapsedTime(lockStarted));
         await Authorize(kind, true, ct);
         // Explicitly scoped grants must also be current when an earlier result is replayed.
         if (authorizeCurrent is not null) await authorizeCurrent(ct);
