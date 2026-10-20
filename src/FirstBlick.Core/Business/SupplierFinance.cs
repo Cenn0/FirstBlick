@@ -23,6 +23,7 @@ public sealed class SupplierInvoice : TenantEntity
     public Guid? ApprovedBy { get; set; }
     public DateTimeOffset? ApprovedAt { get; set; }
     public string ApprovedDigest { get; set; } = "";
+    public ElectronicSupplierInvoiceEvidence? ElectronicSource { get; set; }
     public override void Validate()
     {
         ValidateCommon(); Guard.Id(SupplierId, nameof(SupplierId)); Guard.OptionalId(PurchaseOrderId, nameof(PurchaseOrderId));
@@ -37,6 +38,7 @@ public sealed class SupplierInvoice : TenantEntity
         Guard.Text(ReviewNote, nameof(ReviewNote), 4000, Status == SupplierInvoiceStatus.Rejected);
         Guard.Require(ApprovedBy.HasValue == ApprovedAt.HasValue && (Status == SupplierInvoiceStatus.Approved) == ApprovedAt.HasValue,
             "invalid_approval", "Approval requires both actor and timestamp, and only approved records may contain them.");
+        ElectronicSource?.Validate(this);
         if (Status == SupplierInvoiceStatus.Approved)
         {
             Guard.Id(ApprovedBy!.Value, nameof(ApprovedBy)); Guard.Utc(ApprovedAt!.Value, nameof(ApprovedAt));
@@ -96,23 +98,26 @@ public sealed class SupplierPaymentAllocation : TenantEntity
 public sealed record PayableBalance(decimal Gross, decimal Credits, decimal Paid, decimal Discount, decimal Outstanding, decimal SupplierCredit, bool Overdue);
 public static class PayablesWorkflow
 {
-    public static string InvoiceDigest(SupplierInvoice invoice) => ContentDigest.Of(new
+    public static string InvoiceDigest(SupplierInvoice invoice)
     {
-        invoice.TenantId, invoice.Id, invoice.SupplierId, invoice.PurchaseOrderId, invoice.OriginalInvoiceId, invoice.Number, invoice.Title,
-        invoice.SupplierName, invoice.SupplierAddress, invoice.Currency, invoice.InvoiceDate, invoice.DueDate, invoice.Net, invoice.Tax, invoice.Gross, invoice.Kind
-    });
+        var legacy = ContentDigest.Of(new
+        {
+            invoice.TenantId, invoice.Id, invoice.SupplierId, invoice.PurchaseOrderId, invoice.OriginalInvoiceId, invoice.Number, invoice.Title,
+            invoice.SupplierName, invoice.SupplierAddress, invoice.Currency, invoice.InvoiceDate, invoice.DueDate, invoice.Net, invoice.Tax, invoice.Gross, invoice.Kind
+        });
+        // Preserve historical hashes for every existing non-electronic payable.
+        return invoice.ElectronicSource is null ? legacy : ContentDigest.Of(new { Financial = legacy, invoice.ElectronicSource });
+    }
     public static string AllocationDigest(SupplierPaymentAllocation allocation) => ContentDigest.Of(new
     {
         allocation.TenantId, allocation.Id, allocation.SupplierInvoiceId, allocation.BankTransactionId, allocation.Direction,
         allocation.Amount, allocation.DiscountAmount, allocation.Reason, allocation.AllocatedBy, allocation.AllocatedAt
     });
-
     public static void Approve(SupplierInvoice invoice, Supplier supplier, Guid creatorId, Guid approverId, DateTimeOffset now, bool requireIndependentApproval)
     {
         Guard.Require(invoice.Kind != SupplierInvoiceKind.CreditNote, "credit_check_required", "Supplier credit notes require checking their original and existing credits.");
         ApproveCore(invoice, supplier, creatorId, approverId, now, requireIndependentApproval);
     }
-
     public static void ApproveCredit(SupplierInvoice credit, SupplierInvoice original, Supplier supplier, IReadOnlyCollection<SupplierInvoice> existingCredits,
         Guid creatorId, Guid approverId, DateTimeOffset now, bool requireIndependentApproval)
     {
@@ -127,7 +132,6 @@ public static class PayablesWorkflow
             "excess_credit", "Supplier credit net and tax totals cannot exceed the original components.");
         ApproveCore(credit, supplier, creatorId, approverId, now, requireIndependentApproval);
     }
-
     private static void ApproveCore(SupplierInvoice invoice, Supplier supplier, Guid creatorId, Guid approverId, DateTimeOffset now, bool requireIndependentApproval)
     {
         invoice.Validate(); supplier.Validate(); Guard.Id(creatorId, nameof(creatorId)); Guard.Id(approverId, nameof(approverId)); Guard.Utc(now, nameof(now));
@@ -137,7 +141,6 @@ public static class PayablesWorkflow
         invoice.SupplierName = supplier.Name; invoice.SupplierAddress = supplier.Address;
         invoice.ApprovedBy = approverId; invoice.ApprovedAt = now; invoice.ApprovedDigest = InvoiceDigest(invoice); invoice.Status = SupplierInvoiceStatus.Approved;
     }
-
     public static PayableBalance Balance(SupplierInvoice invoice, IEnumerable<SupplierPaymentAllocation> allocations, IEnumerable<SupplierInvoice> credits, DateOnly asOf)
     {
         invoice.Validate(); Guard.Require(invoice.Status == SupplierInvoiceStatus.Approved && invoice.Kind == SupplierInvoiceKind.Invoice, "invoice_not_approved", "Payables require an approved supplier invoice.");
@@ -150,7 +153,6 @@ public static class PayablesWorkflow
         var raw = invoice.Gross - creditGross - paid - discount; var outstanding = Math.Max(0, raw);
         return new(invoice.Gross, creditGross, paid, discount, outstanding, Math.Max(0, -raw), asOf > invoice.DueDate && outstanding > 0);
     }
-
     /// <summary>Records reconciliation only. This method does not initiate or authorize a bank transfer.</summary>
     public static SupplierPaymentAllocation Allocate(SupplierInvoice invoice, BankTransaction bank, IReadOnlyCollection<SupplierPaymentAllocation> supplierAllocations,
         IReadOnlyCollection<PaymentAllocation> customerAllocations, IReadOnlyCollection<SupplierInvoice> credits,
@@ -171,7 +173,6 @@ public static class PayablesWorkflow
             "supplier_overallocated", "This allocation exceeds the outstanding supplier invoice or supplier credit.");
         allocation.PostedDigest = AllocationDigest(allocation); return allocation;
     }
-
     public static void Reverse(SupplierPaymentAllocation allocation, string reason, Guid actorId, DateTimeOffset now)
     {
         allocation.Validate(); Guard.Require(!allocation.ReversedAt.HasValue, "already_reversed", "This allocation was already reversed.");
@@ -179,7 +180,6 @@ public static class PayablesWorkflow
         Guard.Require(now >= allocation.AllocatedAt, "invalid_time", "Reversal cannot precede allocation.");
         allocation.ReversedAt = now; allocation.ReversedBy = actorId; allocation.ReversalReason = reason;
     }
-
     public static void ReverseForReturn(SupplierPaymentAllocation allocation, BankTransaction bank, IReadOnlyCollection<SupplierPaymentAllocation> supplierAllocations,
         IReadOnlyCollection<PaymentAllocation> customerAllocations, string reason, Guid actorId, DateTimeOffset now)
     {

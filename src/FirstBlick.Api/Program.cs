@@ -63,6 +63,7 @@ builder.Services.ConfigureHttpJsonOptions(o =>
 builder.Services.AddScoped<TenantAccessFilter>();
 builder.Services.AddScoped<CommandExecutor>();
 builder.Services.AddScoped<ApprovalService>();
+builder.Services.AddSingleton<StandardsRuntime>();
 builder.Services.AddRateLimiter(o =>
 {
     o.RejectionStatusCode = 429;
@@ -82,7 +83,6 @@ if (args.Contains("--migrate") || args.Contains("--bootstrap"))
 app.UseMiddleware<ErrorMiddleware>();
 app.Use(async (context, next) =>
 {
-    // Apply to the final response, including errors that clear previously written headers.
     context.Response.OnStarting(() =>
     {
         context.Response.Headers["X-Content-Type-Options"] = "nosniff";
@@ -122,6 +122,7 @@ PortalEndpoints.Map(api);
 IntegrationEndpoints.Map(api);
 TradePreviewEndpoints.Map(api);
 GaebCatalogEndpoints.Map(api);
+OfficialInvoiceEndpoints.Map(api);
 QuantityEndpoints.Map(api);
 CostEndpoints.Map(api);
 SupplierCostAllocationEndpoints.Map(api);

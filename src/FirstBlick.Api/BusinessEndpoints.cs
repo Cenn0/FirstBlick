@@ -41,16 +41,13 @@ public static class BusinessEndpoints
             var predicate = "\"TenantId\"=@tenant AND \"Kind\"=@kind AND NOT \"Archived\" AND (@search='' OR position(@search in \"SearchText\")>0) AND (@status='' OR \"Data\"->>'status'=@status) AND (@project='' OR \"Data\"->>'projectId'=@project) AND (@customer='' OR \"Data\"->>'customerId'=@customer) AND (@due='' OR (@kind='tasks' AND \"Data\"->>'dueDate'<=@due AND \"Data\"->>'status' NOT IN ('Done','Cancelled')) OR (@kind='maintenance-contracts' AND \"Data\"->>'nextDueDate'<=@due AND \"Data\"->>'active'='true' AND (\"Data\"->>'endDate' IS NULL OR \"Data\"->>'nextDueDate'<=\"Data\"->>'endDate'))) AND (@all OR \"Id\"=ANY(@visible))";
             if (openOnly) predicate += " AND \"Id\" IN (" + FinanceReadModel.OpenInvoiceIdsSql + ")";
             NpgsqlParameter[] Parameters() => [new("tenant", scope.TenantId), new("kind", kind), new("search", search), new("status", status), new("project", project), new("customer", customer), new("due", due), new("all", visible is null), new("visible", visible ?? Array.Empty<Guid>())];
-            // Only source-code SQL fragments are composed here. Every request value remains a typed SQL parameter.
 #pragma warning disable EF1002
             var total = await db.Database.SqlQueryRaw<long>($"SELECT count(*) AS \"Value\" FROM \"Entities\" WHERE {predicate}", Parameters()).SingleAsync(ct);
             var parameters = Parameters().Concat([new NpgsqlParameter("limit", pageSize), new NpgsqlParameter("offset", checked((page - 1) * pageSize))]).ToArray();
-            // PostgreSQL removes full quote/invoice/form snapshots before sending list data to the API process.
             var data = await db.Database.SqlQueryRaw<string>($"SELECT (\"Data\" - 'snapshot' - 'calculation' - 'contract' - 'lines' - 'deliveries' - 'fields' - 'values' || jsonb_build_object('net',COALESCE(\"Data\"->'snapshot'->'net',\"Data\"->'contract'->'net'),'gross',COALESCE(\"Data\"->'snapshot'->'gross',\"Data\"->'contract'->'gross')))::text AS \"Value\" FROM \"Entities\" WHERE {predicate} ORDER BY \"UpdatedAt\" DESC, \"Id\" LIMIT @limit OFFSET @offset", parameters).ToListAsync(ct);
 #pragma warning restore EF1002
             return Results.Ok(new { items = data.Select(x => JsonSerializer.Deserialize<JsonElement>(x)), total, page, pageSize });
         }).WithName($"List_{kind}").WithTags(kind);
-
         api.MapGet($"/{kind}/{{id:guid}}", async (Guid id, HttpContext http, EntityStore store, TenantScope scope, CommandExecutor commands, CancellationToken ct) =>
         {
             await commands.Authorize(kind, false, ct);
@@ -59,7 +56,6 @@ public static class BusinessEndpoints
             http.Response.Headers.ETag = $"\"{stored.Revision}\"";
             return Results.Content(stored.Data, "application/json");
         }).Produces<T>().WithName($"Get_{kind}").WithTags(kind);
-
         api.MapPost($"/{kind}", (T body, HttpContext http, EntityStore store, TenantScope scope, FirstBlickDbContext db, CommandExecutor commands) =>
             commands.Execute(http, kind, "create", body, async ct =>
             {
@@ -71,7 +67,6 @@ public static class BusinessEndpoints
                 await store.Save(body, "create", true, ct);
                 return body;
             })).Produces<T>().WithName($"Create_{kind}").WithTags(kind);
-
         api.MapPut($"/{kind}/{{id:guid}}", (Guid id, T body, HttpContext http, EntityStore store, TenantScope scope, FirstBlickDbContext db, CommandExecutor commands) =>
             commands.Execute(http, kind, "update", body, async ct =>
             {
@@ -88,7 +83,6 @@ public static class BusinessEndpoints
                 await store.Save(body, "update", false, ct);
                 return body;
             })).Produces<T>().WithName($"Update_{kind}").WithTags(kind);
-
         api.MapDelete($"/{kind}/{{id:guid}}", (Guid id, HttpContext http, EntityStore store, TenantScope scope, FirstBlickDbContext db, CommandExecutor commands) =>
             commands.Execute(http, kind, "archive", new { id }, async ct =>
             {
@@ -100,7 +94,6 @@ public static class BusinessEndpoints
                 entity.Archived = true; await store.Save(entity, "archive", false, ct); return entity;
             })).WithName($"Archive_{kind}").WithTags(kind);
     }
-
     private static async Task<IResult> Dashboard(TenantScope scope, FirstBlickDbContext db, EntityStore store, CancellationToken ct)
     {
         var counts = new Dictionary<string, long>();
@@ -118,7 +111,6 @@ public static class BusinessEndpoints
                 "openInvoices" => "AND \"Id\" IN (" + FinanceReadModel.OpenInvoiceIdsSql + ")",
                 _ => ""
             };
-            // The switch above chooses literal SQL; it never inserts client text into the command.
 #pragma warning disable EF1002
             counts[key] = await db.Database.SqlQueryRaw<long>($"SELECT count(*) AS \"Value\" FROM \"Entities\" WHERE \"TenantId\"=@tenant AND \"Kind\"=@kind AND NOT \"Archived\" AND (@all OR \"Id\"=ANY(@visible)) {clause}",
                 new NpgsqlParameter("tenant", scope.TenantId), new NpgsqlParameter("kind", kind), new NpgsqlParameter("all", visible is null),
@@ -126,74 +118,5 @@ public static class BusinessEndpoints
 #pragma warning restore EF1002
         }
         return Results.Ok(counts);
-    }
-}
-
-internal static class EditRules
-{
-    public static void EnsureGenericCreate(TenantEntity e, bool retainPurchaseLinks = false)
-    {
-        Guard.Require(e is not Order and not BankTransaction and not PaymentAllocation and not SupplierPaymentAllocation and not StockMovement and not FormSubmission and not TechnicalRecord and not PortalShare and not PortalFeedback and not MaterialDemand and not CollectionCase,
-            "command_required", "This record can only be created through its dedicated business command.");
-        switch (e)
-        {
-            case CatalogItem { GaebOrigin: not null }: throw new DomainException("command_required", "GAEB origins may only be created by reviewed catalogue import.");
-            case Quote q: Guard.Require(q.Status == QuoteStatus.Draft && q.Snapshot is null && q.Presentation is null && q.Deliveries.Count == 0 && q.AcceptedAt is null && q.Number == "", "command_required", "Create a draft quote; issue and delivery are separate commands."); break;
-            case Invoice i: Guard.Require(i.Status == InvoiceStatus.Draft && i.Snapshot is null && i.Number == "" && i.Kind != InvoiceKind.CreditNote && i.OriginalInvoiceId is null, "command_required", "Create a draft receivable; corrections and issuance use dedicated commands."); break;
-            case ChangeOrder c: Guard.Require(c.Status == ChangeOrderStatus.Draft && c.Snapshot is null && c.AcceptedAt is null, "command_required", "Create a draft change order."); break;
-            case PurchaseOrder p:
-                Guard.Require(p.Status == PurchaseOrderStatus.Draft && p.OrderedDigest == "" && p.Number == "", "command_required", "Create a draft purchase order.");
-                Guard.Require(retainPurchaseLinks || p.Lines.All(x => x.MaterialDemandId is null), "command_required", "Demand links require the reviewed demand-to-purchase command."); break;
-            case MaterialReservation r: Guard.Require(r.ConsumedQuantity == 0 && r.ReleasedQuantity == 0, "command_required", "A new reservation cannot contain previous movements."); break;
-            case FormDefinition f: Guard.Require(!f.Published && f.PublishedDigest == "", "command_required", "Create an unpublished form definition."); break;
-            case SupplierInvoice i: Guard.Require(i.Status == SupplierInvoiceStatus.Draft && i.ApprovedAt is null && i.ApprovedBy is null && i.ApprovedDigest == "", "command_required", "Create an unapproved supplier invoice."); break;
-            case TimeEntry t: Guard.Require(!t.Approved, "command_required", "Create unapproved time; approval uses its dedicated command."); break;
-            case TrainingRecord t: Guard.Require(t.Status == TrainingRecordStatus.Draft && t.ReviewedAt is null && t.MentorFeedback == "", "command_required", "Create a draft training record without a review."); break;
-            case MaintenanceContract m: Guard.Require(m.CompletedOccurrences == 0, "command_required", "A new maintenance contract cannot invent completed occurrences."); break;
-            case RoofRevision r: Guard.Require(r.Status == RoofRevisionStatus.Draft && r.Snapshot is null && r.PublishedAt is null && r.Version == 1 && r.PreviousRevisionId is null, "command_required", "Create a first draft roof; subsequent versions use the revision command."); break;
-            case Measurement m: Guard.Require(m.Status == MeasurementStatus.Draft && m.Snapshot is null && m.FrozenAt is null, "command_required", "Create a draft measurement; freezing uses its dedicated command."); break;
-        }
-    }
-    public static void EnsureGenericUpdate(TenantEntity old, TenantEntity next)
-    {
-        Guard.Require(old.GetType() == next.GetType() && !old.Archived, "record_immutable", "This record cannot be edited.");
-        Guard.Require(old is not Order and not BankTransaction and not PaymentAllocation and not SupplierPaymentAllocation and not StockMovement and not FormSubmission and not MaterialReservation and not Acceptance and not TechnicalRecord and not PortalShare and not PortalFeedback and not MaterialDemand and not CollectionCase,
-            "command_required", "Use the dedicated auditable command for this record.");
-        switch (old)
-        {
-            case CatalogItem catalog:
-                Guard.Require(((CatalogItem)next).GaebOrigin == catalog.GaebOrigin,
-                    "gaeb_origin_immutable", "GAEB source evidence cannot be changed by editing a catalogue item."); break;
-            case Quote q:
-                Guard.Require(q.Status == QuoteStatus.Draft, "quote_immutable", "An issued quote is immutable; create a new version.");
-                EnsureGenericCreate(next); break;
-            case Invoice i:
-                Guard.Require(i.Status == InvoiceStatus.Draft && ((Invoice)next).Status == InvoiceStatus.Draft && ((Invoice)next).Snapshot is null && ((Invoice)next).Kind == i.Kind && ((Invoice)next).OriginalInvoiceId == i.OriginalInvoiceId,
-                    "invoice_immutable", "Issued invoices require a separate correction document."); break;
-            case ChangeOrder c: Guard.Require(c.Status == ChangeOrderStatus.Draft, "change_immutable", "Accepted changes are immutable."); EnsureGenericCreate(next); break;
-            case PurchaseOrder p: Guard.Require(p.Status == PurchaseOrderStatus.Draft, "purchase_immutable", "Ordered quantities and prices are immutable."); EnsureGenericCreate(next, true); break;
-            case FormDefinition f: Guard.Require(!f.Published, "form_immutable", "Published forms require a new version."); EnsureGenericCreate(next); break;
-            case TimeEntry t: Guard.Require(!t.Approved && !((TimeEntry)next).Approved, "time_immutable", "Approved time requires an explicit correction; approval uses its dedicated command."); break;
-            case TrainingRecord t: Guard.Require(t.Status == TrainingRecordStatus.Draft, "training_immutable", "Submitted training records are sealed; review uses its dedicated command."); EnsureGenericCreate(next); break;
-            case SupplierInvoice i: Guard.Require(i.Status == SupplierInvoiceStatus.Draft, "supplier_invoice_immutable", "Approved supplier invoices require separate corrections."); EnsureGenericCreate(next); break;
-            case MaintenanceContract m: Guard.Require(((MaintenanceContract)next).CompletedOccurrences == m.CompletedOccurrences && (m.CompletedOccurrences == 0 || ((MaintenanceContract)next).StartDate == m.StartDate), "command_required", "Maintenance occurrence history uses the completion command."); break;
-            case RoofRevision r:
-                var nextRoof = (RoofRevision)next;
-                Guard.Require(r.Status == RoofRevisionStatus.Draft && nextRoof.Status == RoofRevisionStatus.Draft && nextRoof.Snapshot is null && nextRoof.PublishedAt is null && r.Version == nextRoof.Version && r.PreviousRevisionId == nextRoof.PreviousRevisionId,
-                    "roof_immutable", "Published roofs require a new draft revision; predecessor and version cannot be edited."); break;
-            case Measurement m: Guard.Require(m.Status == MeasurementStatus.Draft, "measurement_immutable", "Frozen measurements retain their input evidence."); EnsureGenericCreate(next); break;
-        }
-    }
-    public static void EnsureArchivable(TenantEntity e)
-    {
-        Guard.Require(e is not Order and not Invoice and not SupplierInvoice and not PaymentAllocation and not SupplierPaymentAllocation and not BankTransaction and not StockMovement and not MaterialReservation and not FormSubmission and not Acceptance and not TechnicalRecord and not PortalShare and not PortalFeedback and not MaterialDemand and not CollectionCase,
-            "record_immutable", "Business evidence is retained; use a correction or reversal.");
-        if (e is Quote q) Guard.Require(q.Status == QuoteStatus.Draft, "quote_immutable", "Issued quote versions are retained.");
-        if (e is ChangeOrder c) Guard.Require(c.Status != ChangeOrderStatus.Accepted, "change_immutable", "Accepted changes remain part of the contract and its financial history.");
-        if (e is PurchaseOrder p) Guard.Require(p.Status == PurchaseOrderStatus.Draft, "purchase_immutable", "Issued purchase evidence is retained.");
-        if (e is MaintenanceContract contract) Guard.Require(contract.CompletedOccurrences == 0, "maintenance_immutable", "Completed maintenance history is retained; deactivate the contract to stop future work.");
-        if (e is TimeEntry t) Guard.Require(!t.Approved, "time_immutable", "Approved time is retained.");
-        if (e is RoofRevision r) Guard.Require(r.Status == RoofRevisionStatus.Draft, "roof_immutable", "Published roof evidence is retained.");
-        if (e is Measurement m) Guard.Require(m.Status == MeasurementStatus.Draft, "measurement_immutable", "Frozen measurement evidence is retained.");
     }
 }
