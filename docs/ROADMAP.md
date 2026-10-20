@@ -2,13 +2,13 @@
 
 > Übernommen aus der Projektanalyse „DachPlaner Rework Roadmap“, 19.10.2026 (34 Seiten). Dies ist eine strukturierte Arbeitsfassung, **kein Nachweis bereits umgesetzter Funktionen**. Der Originalbericht umfasst 100 Aufgaben in 15 Epics. Aufgaben gelten bis zur belegten Abnahme als offen.
 
-## Aktueller Arbeitsstand – Checkpoints 8 und 9
+## Aktueller Arbeitsstand – Checkpoints 9 bis 11
 
-Die [Nachweismatrix](roadmap-evidence.md) enthält jetzt **49 technische Kerne mit Beleg, 41 Teilumfänge und 10 offene Fachfunktionen**. Dies ist kein Fertigstellungsprozentsatz und ersetzt keine ursprüngliche Fachabnahme.
+Die [Nachweismatrix](roadmap-evidence.md) unterscheidet weiterhin **49 technische Kerne mit Beleg, 41 Teilumfänge und 10 offene Fachfunktionen**. Das sind historische Inventarkategorien, **kein Fertigstellungsprozentsatz**. Ihre Einzelbelege wurden um die späteren Schritte ergänzt; die ursprünglichen Abnahmekriterien gelten unverändert.
 
-Neu umgesetzt und geprüft sind kumulative Rechnungs-Cents samt Herleitung, saldengebundene Forderungs-/Streitfallbearbeitung, die quellengebundene Nachkalkulationsoberfläche und eine berechtigte Betriebsübersicht. 377 Serverfälle, 45 Frontend-Unitfälle, 216 Clientfixtures sowie 30 unterschiedliche echte Online-/Offline-Browserkombinationen sind mit getrennten Läufen im [Checkpoint 9](checkpoint9.md) dokumentiert. Der Produktionsbuild wurde zusätzlich gegen die tatsächlich ausgelieferte CSP und sein Bildschirm-Stylesheet geprüft.
+[Checkpoint 9](checkpoint9.md) dokumentiert den früheren Gesamtstand mit 377 Serverfällen, 45 Frontend-Unitfällen, 216 Clientfixtures und 30 echten Online-/Offline-Browserkombinationen aus getrennten Läufen. [Checkpoint 10](checkpoint10.md) ergänzt begrenzte, mandatenspezifische Rechnungsquellen und unveränderliche, versionierte Projektkostenprognosen. [Checkpoint 11](checkpoint11.md) ergänzt den nur bei belegter Restmengenabwicklung zulässigen Null-Euro-Schlussbeleg und stärkere Mandanten-, Revisions- und Referenzprüfungen für Kostenquellen. Ein separat gebuchtes [Lieferanten-Kostenjournal](supplier-cost-allocations.md) schützt explizit zugeordnete Rechnungsnettoanteile projektübergreifend vor Überbuchung. Die beiden neuen Funktionsstände sind jeweils mit erfolgreichen CI- und Operations-Läufen für ihren eigenen Commit verbunden.
 
-Offen bleiben unter anderem zusätzliche Rechnungsprofile/Steuerfälle, der Nullbetrag-Mengenabschluss, dauerhaft versionierte Forecasts, begrenzte anfängliche Rechnungsausgabeabfragen, repräsentative Betriebs-/Lastabnahme, reale Altquelldaten und normative Fachverfahren mit freigegebenen Daten. Die originalen Aufgabenkennungen und Checkboxen bleiben bis zur jeweiligen belegten Abnahme erhalten.
+Offen bleiben insbesondere sichere XRechnung-/ZUGFeRD-Profile, Steuer-/Buchhaltungsabnahme, automatisierter Providerbetrieb, repräsentative Datenbank-/Last-/SLO-Nachweise, reale D1-/R2-Altbestände, lizenzierte Norm-/Herstellerdaten und die unabhängige fachliche Prüfung der bautechnischen Verfahren. Die originalen Aufgabenkennungen und Checkboxen werden nicht aus rein synthetischen Tests auf erledigt gesetzt.
 
 ## Zielarchitektur
 

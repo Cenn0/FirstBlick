@@ -6,6 +6,7 @@ FirstBlick connects customers, buildings, projects and field work with quotation
 
 ## Project documentation
 
+* [Checkpoint 11](docs/checkpoint11.md) — evidenced zero-cent final settlements, strengthened cost-source integrity and verified commit-specific CI/Operations.
 * [Checkpoint 10](docs/checkpoint10.md) — bounded financial source reads and versioned, audited cost forecasts, with API and browser regression coverage.
 * [Checkpoint 9](docs/checkpoint9.md) — preceding finance/UI implementation, exact verification and remaining roadmap work.
 * [Roadmap](docs/ROADMAP.md) — complete target scope and acceptance criteria.
@@ -16,6 +17,7 @@ FirstBlick connects customers, buildings, projects and field work with quotation
 * [Technical methods](docs/technical-methods.md) — independent arithmetic, reference cases and applicability limits.
 * [Measurement quantity transfer](docs/quantity-links.md) — reviewed quote quantities, retained partial-invoice evidence, material demands and purchase drafts.
 * [Source-based cost analysis](docs/cost-analysis.md) — contract/change sources, labor, stock and supplier valuations, plus immutable, manually reviewed forecast versions; missing costs remain unknown.
+* [Supplier project-cost allocations](docs/supplier-cost-allocations.md) — auditable invoice-linked project allocation and reversal journal, separate from accounting and payment.
 * [Cumulative invoice rounding](docs/invoice-rounding.md) — actual previous cents, retained original positions, corrections and calculation evidence.
 * [Collections](docs/collections.md) — reviewed balances, manual reminder steps, disputes and auditable contact history.
 * [Operational observations](docs/observability.md) — tenant-authorized queue/document snapshots and bounded process instruments.
