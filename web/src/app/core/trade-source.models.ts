@@ -12,7 +12,7 @@ export interface SourceCatalogLink { id: string; positionKey: string; name: stri
 export interface OriginalDetail { source: OriginalSource; preview: GaebPreview | InvoicePreview; catalogItems: SourceCatalogLink[]; contentVerified: true }
 const uuid = (v: unknown): v is string => typeof v === 'string' && /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(v) && v !== '00000000-0000-0000-0000-000000000000';
 const visibleText = (v: unknown, maximum: number): v is string => typeof v === 'string' && !!v.trim() && v.length <= maximum && !/[\u0000-\u001f\u007f-\u009f]/u.test(v);
-const bad = (): never => { throw new Error('Die Originalakte ist unvollständig oder gehört nicht zum aktuellen Betrieb und Dateiverfahren.'); };
+function bad(): never { throw new Error('Die Originalakte ist unvollständig oder gehört nicht zum aktuellen Betrieb und Dateiverfahren.'); }
 
 export function originalSource(value: unknown, tenant: string, kind: TradeKind): OriginalSource {
   const s = asObject(value);
