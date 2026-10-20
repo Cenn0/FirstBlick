@@ -18,6 +18,7 @@ export class ApiService {
   async upload<T>(path:string,body:Blob,contentType:string,revision:number,key:string):Promise<T>{return this.mutate<T>(path,'PUT',body,revision,undefined,key,contentType);}
   async downloadResponse(path:string):Promise<Response>{try{return await requestResponse(`/api/v1/${path}`,{},this.auth.activeTenantId(),'application/octet-stream');}catch(error){if(error instanceof ApiError&&error.status===401)this.auth.expire();if(error instanceof ApiError&&error.status===423&&error.problem.code==='recovery_hold')this.auth.markRecoveryHold();throw error;}}
   async download(path:string):Promise<Blob>{return await(await this.downloadResponse(path)).blob();}
+  async xml<T>(path:string, body:Blob):Promise<T>{if(this.auth.recoveryHold())throw new Error(recoveryHoldMessage);return this.call<T>(path,{method:'POST',body,headers:{'Content-Type':'application/xml;charset=utf-8'}});}
   async previewCsv<T>(body:Blob):Promise<T>{if(this.auth.recoveryHold())throw new Error(recoveryHoldMessage);return this.call<T>('integrations/v1/bank-csv/preview',{method:'POST',body,headers:{'Content-Type':'text/csv;charset=utf-8'}});}
   async importCsv<T>(body:Blob,sourceSha256:string):Promise<T>{return this.mutate<T>('integrations/v1/bank-csv/import','POST',body,undefined,undefined,undefined,'text/csv;charset=utf-8',{'X-Import-SHA256':sourceSha256});}
   async command<T>(path: string, body: unknown, revision?: number, key: string = crypto.randomUUID(), approvalId?: string): Promise<T> {
