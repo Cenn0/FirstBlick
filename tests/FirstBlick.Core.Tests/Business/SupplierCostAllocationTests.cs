@@ -55,7 +55,7 @@ public sealed class SupplierCostAllocationTests
         undo.ProjectId = Guid.NewGuid(); undo.PostedDigest = undo.CalculateDigest();
         Assert.Equal("invalid_allocation_reversal", Assert.Throws<DomainException>(() =>
             SupplierCostAllocationRules.Active([source, undo])).Code);
-        Assert.Equal("invalid_allocation_amount", Assert.Throws<DomainException>(() =>
+        Assert.Equal("invalid_money_precision", Assert.Throws<DomainException>(() =>
             SupplierCostAllocationRules.Post(invoice, project, [source], 0.001m, "Fractional cent", actor, DateTimeOffset.UtcNow)).Code);
     }
 
