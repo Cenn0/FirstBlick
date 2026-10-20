@@ -50,9 +50,9 @@ public static class FinancialSources
             Guard.Require(row.TenantId == tenantId && value.TenantId == tenantId && row.Kind == kind
                 && row.Id == value.Id && row.Revision == value.Revision && !row.Archived && !value.Archived,
                 "financial_source_metadata", "The linked financial source metadata does not match its stored body.");
+            value.Validate();
             Guard.Require(value.References().Any(x => x.Kind == targetKind && x.Id == targetId),
                 "financial_source_reference", "The linked financial source no longer refers to its retained target.");
-            value.Validate();
             result.Add(value);
         }
         return result;

@@ -118,7 +118,7 @@ public static class BusinessRegistry
     {
         ["customers"] = typeof(Customer), ["buildings"] = typeof(Building), ["projects"] = typeof(Project),
         ["tasks"] = typeof(TaskItem), ["catalog-items"] = typeof(CatalogItem), ["quotes"] = typeof(Quote),
-        ["orders"] = typeof(Order), ["change-orders"] = typeof(ChangeOrder), ["invoices"] = typeof(Invoice),
+        ["orders"] = typeof(Order), ["change-orders"] = typeof(ChangeOrder), ["invoices"] = typeof(Invoice), ["cost-forecasts"] = typeof(CostForecast),
         ["bank-transactions"] = typeof(BankTransaction), ["payment-allocations"] = typeof(PaymentAllocation),
         ["collection-cases"] = typeof(CollectionCase),
         ["suppliers"] = typeof(Supplier), ["purchase-orders"] = typeof(PurchaseOrder), ["materials"] = typeof(Material),
