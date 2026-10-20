@@ -122,6 +122,7 @@ PortalEndpoints.Map(api);
 IntegrationEndpoints.Map(api);
 QuantityEndpoints.Map(api);
 CostEndpoints.Map(api);
+SupplierCostAllocationEndpoints.Map(api);
 DiscoveryEndpoints.Map(api);
 OperationsEndpoints.Map(api);
 CollectionEndpoints.Map(api);
