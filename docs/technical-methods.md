@@ -136,9 +136,9 @@ This is a method-scope record for open-source development. It is not a productio
 
 ## Attached demonstration installers: static evidence
 
-The current continuation on **2026-10-20** received and statically inspected six attachments. [The machine-readable inventory](evidence/attachment-inventory-2026-10-20.json) records actual byte counts, SHA-256 and PE-header fields. No attachment was executed. This run performed no payload extraction and copied no proprietary code, assets, catalogue or help-document text into FirstBlick.
+An earlier static inventory from **2026-10-20** inspected the following **six** attachments. [Its machine-readable evidence](evidence/attachment-inventory-2026-10-20.json) records actual byte counts, SHA-256 and PE-header fields for precisely that six-file set. The installers were not executed. That historical inspection performed no payload extraction and copied no proprietary code, assets, catalogue or help-document text into FirstBlick. References to two additional attachments in a later project context do not retroactively extend its scope.
 
-| Currently available attachment | Bytes | SHA-256 |
+| Attachment verified in earlier six-file inventory | Bytes | SHA-256 |
 |---|---:|---|
 | `daemmdemo.exe` | 277900706 | `d415a91a1b7f1ee5febac9dea5c719a9c709178d28f457a2d30fe4baec8ab9cb` |
 | `handwerkdemo.exe` | 362714168 | `aa33eb1877c1b28347b56b00b74a52ca9481d44605e313c53fd33e5daefbf6bc` |
@@ -147,8 +147,8 @@ The current continuation on **2026-10-20** received and statically inspected six
 | `drain-demo.exe` | 279678038 | `7e0735ea3407b9652be456984a31e74cb25e2237e0b24b006804746ca297325e` |
 | `dd-demo.exe` | 281804915 | `b195a67f0c8d5509cbc2ac1f7c32870457282515c786ab27ef17ab10bdc243ae` |
 
-All six have a PE32 x86 header, five sections and data extending beyond the final raw section. These byte-level observations establish neither the contents of a compressed payload nor an implemented calculation method. In particular, the two newly available files do not supply a verified hydraulic or structural calculation merely by being present.
+All six have a PE32 x86 header, five sections and data extending beyond the final raw section. These byte-level observations establish neither the contents of a compressed payload nor an implemented calculation method. In particular, neither a filename nor the presence of an additional executable establishes a verified hydraulic or structural calculation.
 
-`flachdach-demo.exe` and `steildach-demo.exe` were **not transferred in this continuation** and were not read here. Checkpoint 7 retains a historical flat-roof file inventory (`290283372` bytes, SHA-256 `5cf35fa3dc5396973f155815335c8aa3e35e83d92d56e466b3971f3ec26ed94b`) and prior filename-level observations; that historical record is not a new inspection of an available file. The four overlapping attachments above match their checkpoint-7 hashes. The current absence of the other two files remains explicit.
+`flachdach-demo.exe` and `steildach-demo.exe` were **not part of that earlier six-file static inspection**. Both are referenced as newly attached files in the more recent project context, but their current bytes have **not** been inspected or hashed in the GitHub continuation documented here; no functionality, payload structure, integrity match or code reuse is inferred. Checkpoint 7 retains a historical flat-roof file inventory (`290283372` bytes, SHA-256 `5cf35fa3dc5396973f155815335c8aa3e35e83d92d56e466b3971f3ec26ed94b`) and prior filename-level observations. Those historical observations cannot be assigned to the newly referenced attachment without an independent SHA-256 check. The four overlapping attachments in the original six-file set matched checkpoint-7 hashes.
 
 The vendor's [public physics-software page](https://www.mf-dach.de/software/bauphysiksoftware) describes U-value and moisture calculations and a component library. That is a functional reference, not permission to redistribute its software or data, and not an independent validation of FirstBlick. The implementation above derives its elementary equations independently and ships no vendor material library.
