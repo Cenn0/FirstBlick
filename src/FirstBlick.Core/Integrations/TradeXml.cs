@@ -60,12 +60,29 @@ public static class TradeXml
         return text;
     }
 
+    /// <summary>Invariant XML decimal, without currency rounding. Callers separately enforce their field's range and scale.</summary>
+    public static decimal DecimalValue(string text, string name)
+    {
+        Guard.Text(text, name, 80);
+        Guard.Require(decimal.TryParse(text.Trim(), System.Globalization.NumberStyles.AllowLeadingSign |
+            System.Globalization.NumberStyles.AllowDecimalPoint, System.Globalization.CultureInfo.InvariantCulture, out var value),
+            "xml_decimal", name + " must be a finite invariant decimal without grouping or an exponent.");
+        // System.Decimal may round an excessively long mantissa. Reject loss of source precision.
+        var lexical = text.Trim().TrimStart('+');
+        var negative = lexical.StartsWith('-'); if (negative) lexical = lexical[1..];
+        var parts = lexical.Split('.');
+        Guard.Require(parts.Length <= 2, "xml_decimal", name + " is not an XML decimal.");
+        var integer = parts[0].TrimStart('0'); if (integer.Length == 0) integer = "0";
+        var fraction = parts.Length == 2 ? parts[1].TrimEnd('0') : "";
+        var normalized = (negative && value != 0 ? "-" : "") + integer + (fraction.Length > 0 ? "." + fraction : "");
+        Guard.Require(value.ToString("0.############################", System.Globalization.CultureInfo.InvariantCulture) == normalized,
+            "xml_decimal_precision", name + " exceeds the exact supported decimal precision.");
+        return value;
+    }
+
     public static decimal Decimal(XElement? element, string name, bool signed = false)
     {
-        var value = Required(element, name, 80);
-        Guard.Require(decimal.TryParse(value, System.Globalization.NumberStyles.AllowLeadingSign |
-            System.Globalization.NumberStyles.AllowDecimalPoint, System.Globalization.CultureInfo.InvariantCulture, out var amount),
-            "xml_decimal", name + " must be an invariant finite decimal.");
+        var amount = DecimalValue(Required(element, name, 80), name);
         if (element?.Attribute("currencyID") is { } currency)
             Guard.Require(currency.Value == "EUR", "unsupported_currency", "A document monetary field uses a currency other than EUR.");
         Money.Amount(amount, name, signed);
@@ -74,10 +91,7 @@ public static class TradeXml
 
     public static decimal Quantity(XElement? element, string name)
     {
-        var value = Required(element, name, 80);
-        Guard.Require(decimal.TryParse(value, System.Globalization.NumberStyles.AllowLeadingSign |
-            System.Globalization.NumberStyles.AllowDecimalPoint, System.Globalization.CultureInfo.InvariantCulture, out var amount),
-            "xml_decimal", name + " must be an invariant decimal quantity.");
+        var amount = DecimalValue(Required(element, name, 80), name);
         Guard.Range(amount, 0.000001m, 1_000_000m, name);
         return amount;
     }
