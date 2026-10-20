@@ -1,9 +1,9 @@
 {
   "schema": "firstblick.roadmap-evidence/1.0.0",
-  "recordedAtUtc": "2026-10-20T09:02:44.062934+00:00",
+  "recordedAtUtc": "2026-10-20T09:41:20.226589+00:00",
   "counts": {
-    "T": 43,
-    "K": 47,
+    "K": 49,
+    "T": 41,
     "O": 10
   },
   "meaning": "K=declared technical core evidenced; T=partial; O=no accepted implementation. None means original-roadmap acceptance or production certification.",
@@ -121,7 +121,13 @@
     "operations-api-tests": "tests/FirstBlick.Api.Tests/OperationsApiTests.cs",
     "telemetry-tests": "tests/FirstBlick.Api.Tests/TelemetryTests.cs",
     "invoice-rounding": "docs/invoice-rounding.md",
-    "collections-docs": "docs/collections.md"
+    "collections-docs": "docs/collections.md",
+    "checkpoint-nine": "docs/evidence/checkpoint9.json",
+    "checkpoint-nine-docs": "docs/checkpoint9.md",
+    "ui-nine": "docs/checkpoint8-ui.md",
+    "ci-eight": "docs/evidence/checkpoint8-ci.json",
+    "asset-check": "scripts/production_assets.py",
+    "container-smoke": "scripts/container-smoke.py"
   },
   "tasks": [
     {
@@ -253,8 +259,8 @@
     {
       "id": "DP-02-06",
       "status": "T",
-      "evidence": "[SQL-paginierte Suche][discovery-api], [zentrale Datensatzrechte][discovery-access], [11 HTTP-/PG-Nachweise][discovery-evidence] und [Angular ApiService][web-api] bündeln begrenzte, mandantengefilterte Lesezugriffe.",
-      "remaining": "Kein repräsentativer Lastnachweis oder vollständiger globaler Suchindex; die bestehende RecordPolicy lädt abhängige Sammlungen innerhalb eines vorab geprüften Budgets.",
+      "evidence": "[SQL-paginierte Suche][discovery-api], [zentrale Datensatzrechte][discovery-access] und [Angular-Kontextschutz][ui-nine] bündeln begrenzte, mandantengefilterte Lesezugriffe. Rechte-/Betriebswechsel entwerten alte Listen, Details und Downloads; die [aktuellen Fixture-/Live-Nachweise][checkpoint-nine] trennen Fehlerfälle und echte Datenzugriffe.",
+      "remaining": "Kein repräsentativer Lastnachweis oder vollständiger globaler Suchindex. Abhängige Sammlungen der bestehenden RecordPolicy sowie anfängliche Rechnungsausgabe-Abfragen bleiben gesonderte Skalierungsgrenzen.",
       "title": "API-Abfragen und Angular-Datenzugriff konsolidieren"
     },
     {
@@ -399,8 +405,8 @@
     },
     {
       "id": "DP-05-06",
-      "status": "T",
-      "evidence": "[Quellengebundene Nachkalkulation][cost-docs], [CostAnalysis][cost-model] und [HTTP-Endpunkt][cost-api] verbinden angenommene Vertragsquellen mit freigegebener Zeit, gebuchtem Material und explizit bewerteten Eingangsbelegen; [Core-Tests][cost-tests]/[PG-Tests][cost-api-tests] und [Checkpoint 7][backend-seven] belegen Berechnung, Herkunft und Rollenentzug.",
+      "status": "K",
+      "evidence": "[Quellengebundene Nachkalkulation][cost-docs], [Core/API][cost-api] und [Bedienung][ui-nine] verbinden angenommene Vertragsquellen mit freigegebener Zeit, bewerteten Lagerbewegungen und explizit zugeordneten Eingangsbelegen. Drei echte Fälle im [Checkpoint 9][checkpoint-nine] prüfen 380 EUR Istkosten, 480 EUR Prognose, 520 EUR Überschuss und den originalgetreuen JSON-Bericht.",
       "remaining": "Bewertungen/Restprognose werden nicht dauerhaft als eigene Forecast-Versionen oder betriebsweit reservierte Kostenstellenzuordnung gebucht. Ohne belegte Vollständigkeit bleibt Ist/Prognose unbekannt; externe Fachabnahme fehlt.",
       "title": "Soll, Ist und Prognose vergleichen"
     },
@@ -463,8 +469,8 @@
     {
       "id": "DP-06-08",
       "status": "K",
-      "evidence": "[Live-Sanierung][live-renovation], [Live-Portal][live-portal] und [produktiver Offline-Browserlauf][live-offline] sind je Desktop/Tablet/Mobil ohne API-Interception gelaufen; UTC-Lücken/Überlappungen haben zusätzliche unabhängige Unit-/Browserfälle.",
-      "remaining": "Viewports ersetzen keine reale Geräteflotte; alle Fachrollen, neue Discovery-/Mengenoberflächen und Produktivbedingungen brauchen weiterhin ihren jeweiligen Nachweis.",
+      "evidence": "[Checkpoint 9][checkpoint-nine] belegt 30 unterschiedliche echte Browserkombinationen: zehn Abläufe jeweils Desktop/Tablet/Mobil, darunter Rechnungen, Kosten, Forderungen, Mengen, Exporte, Portal, Discovery, Sanierung, Operations und vollständiger Offline-Browserneustart. Der reale Produktionshost und sein CSS/CSP werden zusätzlich geprüft.",
+      "remaining": "Viewports ersetzen keine reale Geräteflotte. Zusätzliche Fachrollen, reale Betriebsbedingungen und bisher nicht implementierte Roadmapmodule benötigen eigene Abnahmen.",
       "title": "Mobile und Tablet-Abläufe praktisch prüfen"
     },
     {
@@ -539,9 +545,9 @@
     },
     {
       "id": "DP-08-04",
-      "status": "T",
-      "evidence": "[Forderungsfälle][collections-docs] ergänzen Ledger und OP-Export um offenen Arbeitsvorrat, eingefrorene Saldenprüfung, manuelle Schritte, Kontakte, Streit-/Pausenzustände und Wiederöffnung. 18 Core- und elf echte HTTP-/PG-Fälle sind im [Checkpoint 8][backend-eight] enthalten.",
-      "remaining": "Keine automatische Mahnzustellung, Gebühren-/Zinsberechnung, Rechtsprüfung oder historische as-of-Buchhaltung. Freigabe dokumentiert den Schritt; ein tatsächlicher Versand muss separat belegt werden.",
+      "status": "K",
+      "evidence": "[Forderungsfälle][collections-docs] verbinden offenen Arbeitsvorrat, geprüfte Salden, manuelle Stufen, Kontakte, Streit-/Pausenzustände und Wiederöffnung. 18 Core-/elf PG-Fälle, 27 Clientfixtures und drei echte 119→99-EUR-Vorschauabläufe sind in [Checkpoint 8][backend-eight] und [Checkpoint 9][checkpoint-nine] belegt.",
+      "remaining": "Keine automatische Mahnzustellung, Gebühren-/Zinsberechnung, Rechtsprüfung oder historische as-of-Buchhaltung. Freigabe dokumentiert den internen Entwurf; ein tatsächlicher Kontakt wird separat mit Beleg erfasst.",
       "title": "Offene Posten und Mahnwesen führen"
     },
     {
@@ -568,7 +574,7 @@
     {
       "id": "DP-08-08",
       "status": "T",
-      "evidence": "[Finanzexport][ledger-export] und [Integrationsnachweis][integration-evidence] werden durch kumulative Rechnungs-/Korrekturbeträge, konkurrierende Schlussrechnungen sowie saldengebundene Forderungsschritte im [Checkpoint 8][backend-eight] ergänzt.",
+      "evidence": "[Finanzexport][ledger-export], kumulative Rechnungen/Korrekturen und saldengebundene Forderungen sind mit Core-/PG-Fällen sowie echten [Rechnungs-, Forderungs- und Exportketten][checkpoint-nine] geprüft. Drei CSV/ZIP-Abläufe verifizieren tatsächlich heruntergeladene Exportbytes gegen ihre Manifeste.",
       "remaining": "Kein Steuerberater-/Buchhaltungsanbieter-Abnahmetest oder produktiver Kontoabgleich; eigener CSV-Vertrag ist kein DATEV-Zertifikat.",
       "title": "Finanzablauf und Exporte fachlich prüfen"
     },
@@ -652,8 +658,8 @@
     {
       "id": "DP-10-06",
       "status": "K",
-      "evidence": "[QuantityEvidence/MaterialDemand][quantity-model], [Mengentransfer-API][quantity-api], [15 bestätigte Core-Fälle][quantity-tests] und [6 bestätigte echte PG-Fälle][quantity-api-tests] binden eingefrorene Aufmaßmengen an Katalog-/Angebotspositionen, Bestellung sowie gemessene Teilrechnung/Korrektur.",
-      "remaining": "Kein allgemeiner externer LV-/GAEB-Austausch oder normative Produkt-/Verschnittregel. Die vollständige neue Herkunftsprojektion, Bedienung und betriebliche Abnahme benötigen nach Änderungen eigene Nachweise.",
+      "evidence": "[QuantityEvidence/MaterialDemand][quantity-model] und [Mengentransfer-API][quantity-api] binden eingefrorene Aufmaßmengen an Angebot, gemessene Rechnung/Korrektur und Einkauf. Drei echte [UI-Fälle][checkpoint-nine] prüfen 10,8 m² Quellmenge, ausdrücklich umgerechnete 13,5 m² und genau einen Bestellentwurf samt Herkunft.",
+      "remaining": "Kein allgemeiner externer LV-/GAEB-Austausch, normative Produkt-/Verschnittregel oder reale betriebliche Mengenabnahme.",
       "title": "Mengen, Material und Leistungsverzeichnis verbinden"
     },
     {
@@ -729,7 +735,7 @@
     {
       "id": "DP-12-01",
       "status": "K",
-      "evidence": "[CSV-/Exportverträge][integrations], [Integrations-Core][csv], [Bankadapter][bank-csv] und [51/7-Testnachweis][integration-evidence] versionieren Header, Bytes, Text, Datumsfenster und Ereignisreceipt.",
+      "evidence": "[Versionierte CSV-/Exportverträge][integrations], [Core-/PG-Nachweise][integration-evidence] und drei echte [UI-Ketten][checkpoint-nine] prüfen Vorschau, ausdrücklich ausgelösten Import, stabile Duplikat-IDs, atomare Konfliktablehnung und verifizierte Exportpakete.",
       "remaining": "Weitere Provider benötigen eigene Profile, Identitäts-/Idempotenzregeln und geprüfte Fixtures.",
       "title": "Integrationsverträge und Adapterbasis definieren"
     },
@@ -778,7 +784,7 @@
     {
       "id": "DP-13-03",
       "status": "T",
-      "evidence": "[Budgets][api-program], [Outbox-Fehlerfälle][worker-tests], [Drillmessung][restore-evidence] und [neue Prozessmetriken/Betriebssignale][observability] liefern begrenzte Fehler-, Zeit- und Zustandsnachweise.",
+      "evidence": "[Budgets][api-program], [Outbox-Fehlerfälle][worker-tests] und [Betriebsmetriken][observability] liefern begrenzte Fehler-/Zeitnachweise. Der neue [Production-Assetcheck][asset-check] erkennt tatsächlich von CSP blockierte Bildschirm-Styles und ist in den [Container-Smoke][container-smoke] eingebunden.",
       "remaining": "Keine repräsentativen Datenmengen, Last-/Kostenmodelle, Kapazitätsgrenzen, externe Alarmierung oder gemessenen Betriebsausfall-SLOs.",
       "title": "Last, Kosten und Betriebsfehler messen"
     },
@@ -799,22 +805,22 @@
     {
       "id": "DP-13-06",
       "status": "T",
-      "evidence": "[Backend-Checkpoint 6][backend-evidence], [Live-Sanierung][live-renovation], [Live-Portal][live-portal], [3 echte Offline-Fälle][live-offline], [Discovery][discovery-evidence], [Container-Restore][container-restore] und [Migration][migration-evidence] dokumentieren getrennte abgeschlossene Umfänge.",
-      "remaining": "Kein finaler Gesamtnachweis aller 100 Aufgaben; neuester kombinierter Quell-/Containerstand, echte Altquelle, reale Betriebsfälle und externe Fachabnahmen bleiben getrennte Anforderungen.",
+      "evidence": "[Checkpoint 8][backend-eight] mit 377 Serverfällen und [erfolgreichen eigenen CI-/Container-/Restore-/Migrationsläufen][ci-eight] sowie [Checkpoint 9][checkpoint-nine] mit 45 Units, 216 Clientfixtures und 30 unterschiedlichen echten Browserkombinationen dokumentieren die aktuellen getrennten Umfänge.",
+      "remaining": "Kein finaler Gesamtnachweis aller 100 Aufgaben. Der jeweils abschließende veröffentlichte Commit benötigt seine eigenen in PR #1 verlinkten CI-/Operations-Ergebnisse; echte Altquelle, reale Betriebsfälle und externe Fachabnahmen bleiben offen.",
       "title": "Gesamtfälle und Wartungsdokumentation abschließen"
     },
     {
       "id": "DP-14-01",
       "status": "T",
-      "evidence": "[Dashboard][business-api], [FinanceReadModel][finance-read] und [Browser-Kartenprüfungen][browser-tests] verbinden gezählte Zustände mit gefilterten Quellen.",
-      "remaining": "Vollständiger KPI-Katalog, zeitliche Vergleichsreihen, betriebliche Kennzahlendefinitionen und exakte Wert-Herkunft aller Prognosen fehlen.",
+      "evidence": "[Dashboard][business-api], [Finanzlesemodell][finance-read], [Kostenbericht][cost-docs] und [Betriebsübersicht][observability] verknüpfen klar definierte Zustände bzw. Beträge mit ihren prüfbaren Quellen; [Checkpoint 9][checkpoint-nine] ergänzt echte UI-Nachweise.",
+      "remaining": "Vollständiger KPI-Katalog, zeitliche Vergleichsreihen, abgestimmte betriebliche Kennzahlendefinitionen und frei wählbare Analysen fehlen.",
       "title": "Kennzahlen definieren und verlinken"
     },
     {
       "id": "DP-14-02",
       "status": "T",
-      "evidence": "[Versionierte CSV-Pakete][integrations], [Finanz-/Zeitexport][ledger-export] und [HTTP-Exporttests][integration-tests] liefern überprüfbare Detaildaten.",
-      "remaining": "Breitere frei konfigurierbare Auswertungen, interaktive Trends und durchgehende Exportbedienung sind im Nachweisstand nicht fertig.",
+      "evidence": "[Versionierte CSV-Pakete][integrations] und [quellengebundener Kostenbericht][cost-docs] liefern prüfbare Detaildaten; die neue [Exportbedienung][ui-nine] ist mit tatsächlichen Downloads und Manifest-/Digestprüfung im [Checkpoint 9][checkpoint-nine] belegt.",
+      "remaining": "Breitere frei konfigurierbare Auswertungen und interaktive Trends fehlen; die vorhandenen Berichte sind ausdrücklich definierte Einzelverträge.",
       "title": "Auswertungen und Datenexport ergänzen"
     },
     {

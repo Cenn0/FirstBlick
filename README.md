@@ -6,6 +6,7 @@ FirstBlick connects customers, buildings, projects and field work with quotation
 
 ## Project documentation
 
+* [Checkpoint 9](docs/checkpoint9.md) — current finance/UI implementation, exact local verification and remaining roadmap work.
 * [Roadmap](docs/ROADMAP.md) — complete target scope and acceptance criteria.
 * [Roadmap evidence matrix](docs/roadmap-evidence.md) — all 100 original tasks, concrete source/test links and remaining acceptance work. A verified technical core is not a completed business acceptance.
 * [Architecture decisions](docs/ARCHITECTURE.md) — server, identity, tenant, data and offline contracts.
@@ -80,6 +81,14 @@ Completed real browser captures are retained separately for [renovation through 
 The implementation includes explicit commands for frozen quotes, accepted orders, changes, billing, payments and returns, purchasing, stock, planning, forms and maintenance. New quantities require a reviewed preview; historic prices, parties and source evidence remain frozen. Personal accounts and current permissions govern the portal and offline queue. The canonical migration drill preserves historical business data and document bytes while keeping imported accounts and outbound work quarantined.
 
 Remaining roadmap acceptance, the real D1/R2 source export and its independently reviewed mapping, external-provider formats, representative production volume and normative technical evidence are tracked separately. No actual production cutover, financial/engineering certification, provider contract or missing licensed dataset is inferred from a green build or synthetic drill.
+
+## Actual browser workflows
+
+Build and serve the production client from an explicitly started isolated API/PostgreSQL/S3 application. Set `FIRSTBLICK_LIVE_URL` to that application origin and provide synthetic personal `FIRSTBLICK_LIVE_EMAIL` / `FIRSTBLICK_LIVE_PASSWORD` credentials. Portal and offline cases additionally use the documented synthetic partner and worker environment variables. Live and offline configurations require the explicit origin; they never select an existing development server implicitly.
+
+`npm run test:live` exercises the online workflows; `npm run test:offline` exercises the production service worker and complete browser restart. The collections scenario requires historical synthetic invoices prepared with the [checked-in fixture runner](docs/collections.md#reproducing-the-historical-live-fixtures). Prepare a fresh manifest before another mutating collections run. The fixture runner is separate from production and only permits a loopback `firstblick_live_*` database and an `@example.test` operator.
+
+`python3 scripts/production_assets.py http://127.0.0.1:8080` checks the actual served shell, enforced CSP and normal screen stylesheet without signing in. Container smoke includes this gate before its authenticated workflow. This caught the critical-CSS inline-activation regression; production now uses `inlineCritical=false` while preserving `script-src 'self'`.
 
 ## Development principles
 

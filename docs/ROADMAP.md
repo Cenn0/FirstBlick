@@ -2,6 +2,14 @@
 
 > Übernommen aus der Projektanalyse „DachPlaner Rework Roadmap“, 19.10.2026 (34 Seiten). Dies ist eine strukturierte Arbeitsfassung, **kein Nachweis bereits umgesetzter Funktionen**. Der Originalbericht umfasst 100 Aufgaben in 15 Epics. Aufgaben gelten bis zur belegten Abnahme als offen.
 
+## Aktueller Arbeitsstand – Checkpoints 8 und 9
+
+Die [Nachweismatrix](roadmap-evidence.md) enthält jetzt **49 technische Kerne mit Beleg, 41 Teilumfänge und 10 offene Fachfunktionen**. Dies ist kein Fertigstellungsprozentsatz und ersetzt keine ursprüngliche Fachabnahme.
+
+Neu umgesetzt und geprüft sind kumulative Rechnungs-Cents samt Herleitung, saldengebundene Forderungs-/Streitfallbearbeitung, die quellengebundene Nachkalkulationsoberfläche und eine berechtigte Betriebsübersicht. 377 Serverfälle, 45 Frontend-Unitfälle, 216 Clientfixtures sowie 30 unterschiedliche echte Online-/Offline-Browserkombinationen sind mit getrennten Läufen im [Checkpoint 9](checkpoint9.md) dokumentiert. Der Produktionsbuild wurde zusätzlich gegen die tatsächlich ausgelieferte CSP und sein Bildschirm-Stylesheet geprüft.
+
+Offen bleiben unter anderem zusätzliche Rechnungsprofile/Steuerfälle, der Nullbetrag-Mengenabschluss, dauerhaft versionierte Forecasts, begrenzte anfängliche Rechnungsausgabeabfragen, repräsentative Betriebs-/Lastabnahme, reale Altquelldaten und normative Fachverfahren mit freigegebenen Daten. Die originalen Aufgabenkennungen und Checkboxen bleiben bis zur jeweiligen belegten Abnahme erhalten.
+
 ## Zielarchitektur
 
 - **Frontend:** Angular 22, responsive PWA, selektive Offline-Daten in IndexedDB

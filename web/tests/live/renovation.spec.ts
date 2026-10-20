@@ -44,7 +44,7 @@ test('renovation from real sign-in through roof, measured quantities, quotation,
   response=responseFor(page,'measurements');await dialog.getByRole('button',{name:'Aufmaßentwurf speichern'}).click();let measurement=await accepted(response);await expect(dialog).not.toBeVisible();
   response=responseFor(page,`measurements/${measurement['id']}/preview`,'GET');await page.getByRole('button',{name:'Mengen prüfen'}).click();const preview=await accepted(response);expect(String(preview['totals'][0]['quantity'])).toBe('30.75');
   response=responseFor(page,`measurements/${measurement['id']}/freeze`);page.once('dialog',dialog=>dialog.accept());await page.getByRole('button',{name:'Geprüftes Aufmaß festhalten'}).click();measurement=await accepted(response);expect(measurement['status']).toBe('Frozen');
-  await expect(page.getByText('Festgehaltene Mengen',{exact:false})).toBeVisible();await page.screenshot({path:testInfo.outputPath('frozen-measurement.png'),fullPage:true});
+  await expect(page.getByText(/^Festgehaltene Mengen · Dachversion/)).toBeVisible();await page.screenshot({path:testInfo.outputPath('frozen-measurement.png'),fullPage:true});
 
   await page.goto('/quotes');await page.getByRole('button',{name:'Angebot anlegen',exact:true}).first().click();dialog=page.getByRole('dialog');
   await dialog.getByLabel('Angebotstitel').fill(`Sanierungsangebot ${suffix}`);await dialog.getByLabel('Kunde',{exact:false}).selectOption(customer['id']);await dialog.getByLabel('Projekt',{exact:false}).selectOption(project['id']);await dialog.getByLabel('Leistung',{exact:true}).fill('Dachfläche gemäß dokumentiertem Aufmaß');await dialog.getByLabel('Menge',{exact:true}).fill('30.75');

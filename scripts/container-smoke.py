@@ -8,6 +8,7 @@ import time
 import urllib.parse
 import urllib.request
 import uuid
+from production_assets import check_production_assets
 
 root = pathlib.Path(__file__).resolve().parent.parent
 config = {}
@@ -43,6 +44,7 @@ while True:
         if time.monotonic() >= deadline:
             raise RuntimeError("API did not become ready within 120 seconds") from None
         time.sleep(2)
+assets = check_production_assets(base)
 call("GET", "/api/v1/auth/csrf")
 assert call("POST", "/api/v1/auth/login", {"email": config["Bootstrap__Email"], "password": config["Bootstrap__Password"]})["authenticated"]
 identity = call("GET", "/api/v1/auth/me")
@@ -60,6 +62,6 @@ else:
 assert customer["name"] == "Container verification customer"
 assert call("GET", "/api/v1/customers/" + customer["id"], tenant=tenant)["name"] == customer["name"]
 call("POST", "/api/v1/auth/logout", {})
-report = {"status": "passed", "completedAt": datetime.datetime.now(datetime.timezone.utc).isoformat(), "customerId": customer["id"], "previousCustomerPreservedAcrossRestart": bool(previous), "checks": ["database readiness", "CSRF", "bootstrap login", "tenant membership", "authenticated create/read", "logout"]}
+report = {"status": "passed", "completedAt": datetime.datetime.now(datetime.timezone.utc).isoformat(), "customerId": customer["id"], "previousCustomerPreservedAcrossRestart": bool(previous), "productionAssets": assets, "checks": ["database readiness", "production HTML/CSP/screen stylesheet", "CSRF", "bootstrap login", "tenant membership", "authenticated create/read", "logout"]}
 (folder / "container-smoke.json").write_text(json.dumps(report, indent=2) + "\n")
 print(json.dumps(report, indent=2))

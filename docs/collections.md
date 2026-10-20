@@ -10,6 +10,8 @@ Every balance and reminder preview uses the issued invoice, its issued correctio
 
 Each source has its resource kind, ID, revision and SHA-256. Before producing a balance the API checks the stored tenant, resource kind, ID, revision and archived flag against the retained JSON body. The domain requires the source list to cover the calculated records exactly once. At most **1,000 source records in total** are accepted. Exceeding that budget returns an explicit error with no partial balance or reminder.
 
+A retained financial snapshot contains the business date, frozen invoice labels and parties, calculated balances and the complete source ID/revision/digest manifest. It does not copy every source record's full JSON body into the collection case. Source links can identify the current record and its retained business evidence; a digest alone does not reconstruct a previous version of a changed source.
+
 The preview binds the following data into a digest:
 
 - Case ID, current revision and history digest.
@@ -68,10 +70,39 @@ All routes below are under `/api/v1/collection-cases`, use the existing personal
 | `POST /{id}/close` | Close as settled or for separately evidenced manual handling. |
 | `POST /{id}/reopen` | Reopen the existing case with retained history. |
 
+## Reproducing the historical live fixtures
+
+[`tests/FirstBlick.LiveFixtures`](../tests/FirstBlick.LiveFixtures/Program.cs) retains the fixture runner used for the real browser checks, together with its project file and dependency lockfile. It is a separate executable outside the production solution and deployment. It creates one synthetic EUR 119 invoice for each configured viewport (`desktop`, `tablet`, `mobile`), plus its customer, building, project, accepted quote and order. The Core issuance workflow and `EntityStore` run inside a tenant-locked database transaction. Issue and due dates are respectively 30 and 15 days before the current business-local date. Each saved entity records `test.synthetic_historical_collection` audit provenance and the normal `entity.changed` outbox entry.
+
+The database must already be initialized for the isolated live environment. The runner accepts only a loopback PostgreSQL host (`127.0.0.1`, `localhost` or `::1`), a database name beginning with `firstblick_live_`, and an existing synthetic operator whose configured and stored email ends with `@example.test`. The account must be confirmed and available, with an active director membership in a business that has the finance module enabled. The runner does not create accounts or change permissions. `FIRSTBLICK_LIVE_TENANT_ID` selects the exact business when the operator has more than one active director membership.
+
+From the repository root, with the SDK from `global.json` available and the isolated environment's `ConnectionStrings__Database` and `FIRSTBLICK_LIVE_EMAIL` already exported:
+
+```bash
+export FIRSTBLICK_COLLECTION_FIXTURES_PATH="$PWD/test-results/collections-fixtures-run-1.json"
+dotnet restore tests/FirstBlick.LiveFixtures/FirstBlick.LiveFixtures.csproj --locked-mode
+dotnet run --project tests/FirstBlick.LiveFixtures/FirstBlick.LiveFixtures.csproj --no-restore
+```
+
+The manifest path must be new; an existing file is rejected. The manifest contains only synthetic tenant, user and invoice IDs, issued metadata and setup provenance. It contains no password or database connection string. Keep `FIRSTBLICK_COLLECTION_FIXTURES_PATH` exported for the separate browser test. With `FIRSTBLICK_LIVE_URL` pointing at the isolated API serving the production frontend and `FIRSTBLICK_LIVE_PASSWORD` set for the synthetic operator:
+
+```bash
+cd web
+npm run test:live -- collections.spec.ts --output=test-results/collections-live --reporter=list
+```
+
+The live test fails explicitly if the manifest configuration is missing. The scenario is stateful: each viewport opens and changes its own case, so another complete run needs fresh fixtures and a fresh manifest path. The tracked runner was restored in locked mode and compiled after adding these environment restrictions; the completed browser evidence below was not regenerated during that packaging check.
+
 ## Verification scope
 
 `CollectionTests.cs` independently checks amount examples, source binding, changed previews, manual contact sequencing, retained-only balances, disputes, closure/reopening, invalid inputs and mutated evidence. `CollectionApiTests.cs` uses actual HTTP, identity cookies and a disposable PostgreSQL database. It checks idempotency, atomic retained state, role/tenant boundaries, membership revocation after an observed lock wait, worklist filtering and paging, frozen labels, invalid query inputs, rejected generic edits and fail-closed source validation/budgets.
 
 The HTTP test's starting invoices are explicitly created historical fixtures in the isolated test database. The ordinary issue endpoint does not backdate or alter an existing issued invoice. Subsequent collection actions use real HTTP requests. `web/tests/browser/collections.spec.ts` separately contains API-intercepted client fixtures for the three configured viewports. Those client fixtures check the UI contract, uncertainty/retry and access-change behavior; they do not prove the server's financial arithmetic.
+
+The final targeted client run after correcting the pending-draft instruction and guard passed **27/27**, with **0 skipped**, in **46.7 seconds**. An approved, uncontacted draft now requires a documented contact or explicit withdrawal before another preview, matching the server's rule.
+
+`web/tests/live/collections.spec.ts` separately passed **3/3**, with **0 skipped**, in **22.4 seconds** against the final production frontend served by the real isolated API. Each viewport signed in normally and used a fresh synthetic historical EUR 119 invoice created through Core and `EntityStore`, outside the public issuance endpoint. The UI opened the case and displayed the first preview. A real authenticated HTTP allocation then recorded EUR 20; approval of the old preview was rejected without changing the case. The operator refreshed the EUR 99 balance, explicitly checked the new text and approved that exact text and source manifest through the UI. The original issued invoice stayed unchanged, and no contact was recorded.
+
+The live checks require the global stylesheet to be active and reject browser CSP errors. An earlier host run exposed a critical-style activation script blocked by the existing CSP; the production build was corrected without weakening that policy, then all three cases were rerun with new fixtures. Desktop, tablet and mobile screenshots from the final run were visually reviewed and had no horizontal overflow. [The recorded test summary and captured per-viewport evidence](evidence/collections-checkpoint8.json) distinguish the final runs from these superseded attempts and record the tested source and index hashes. Raw screenshots remain at the local paths listed in that evidence file.
 
 Real provider delivery, representative business cases, actual-device checks and a reviewed legal process remain separate scope. No outbound message provider is called by these collection commands.

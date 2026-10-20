@@ -28,7 +28,7 @@ test('real field work survives a complete offline browser restart, replays once 
   const assignment=await command(page,tenantId,'schedule-assignments',{title:`Synthetischer Offline-Einsatz ${suffix}`,projectId:project['id'],employeeId:employee.id,start,end,equipmentIds:[],cancelled:false});
 
   const profile=testInfo.outputPath('synthetic-worker-browser-profile');
-  const options={headless:true,baseURL:'http://127.0.0.1:4300',viewport:page.viewportSize(),isMobile:testInfo.project.use.isMobile,hasTouch:testInfo.project.use.hasTouch,timezoneId:testInfo.project.use.timezoneId,...(process.env['FIRSTBLICK_TEST_CHROME']?{executablePath:process.env['FIRSTBLICK_TEST_CHROME']}:{})};
+  const options={headless:true,baseURL:new URL(page.url()).origin,viewport:page.viewportSize(),isMobile:testInfo.project.use.isMobile,hasTouch:testInfo.project.use.hasTouch,timezoneId:testInfo.project.use.timezoneId,...(process.env['FIRSTBLICK_TEST_CHROME']?{executablePath:process.env['FIRSTBLICK_TEST_CHROME']}:{})};
   let workerContext:BrowserContext|undefined;let worker:Page|undefined;const errors:string[]=[];
   try{
     workerContext=await chromium.launchPersistentContext(profile,options);worker=workerContext.pages()[0]||await workerContext.newPage();worker.on('pageerror',error=>errors.push(error.message));await signIn(worker,workerEmail,workerPassword);

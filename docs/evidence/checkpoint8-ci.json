@@ -1,0 +1,200 @@
+{
+  "schema": "firstblick.remote-ci-evidence/1.0.0",
+  "commit": "2ac13105c78d077101350fc61f05c541a3728506",
+  "source": "GitHub Actions API, read after completion",
+  "workflows": [
+    {
+      "name": "CI",
+      "id": 39399611917,
+      "url": "https://github.com/Cenn0/FirstBlick/actions/runs/39399611917",
+      "conclusion": "success"
+    },
+    {
+      "name": "Operations",
+      "id": 39399611732,
+      "url": "https://github.com/Cenn0/FirstBlick/actions/runs/39399611732",
+      "conclusion": "success"
+    }
+  ],
+  "jobs": [
+    {
+      "name": "compose-and-restore",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/Cenn0/FirstBlick/actions/runs/39399611732/job/118550752358",
+      "startedAt": "2026-10-20T09:17:39Z",
+      "completedAt": "2026-10-20T09:19:36Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803",
+          "conclusion": "success"
+        },
+        {
+          "name": "Create isolated local credentials and validate Compose",
+          "conclusion": "success"
+        },
+        {
+          "name": "Build pinned images, migrate, bootstrap and start the actual stack",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify the actual API, Identity cookies and tenant CRUD",
+          "conclusion": "success"
+        },
+        {
+          "name": "Real PostgreSQL 18.6 and versioned S3 backup/restore drill",
+          "conclusion": "success"
+        },
+        {
+          "name": "Canonical legacy migration, exact comparison and blocked-source cases",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify the running application backup and restart without data loss",
+          "conclusion": "success"
+        },
+        {
+          "name": "Capture component identities and bounded logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f",
+          "conclusion": "success"
+        },
+        {
+          "name": "Remove only this ephemeral CI stack",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "name": "server",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/Cenn0/FirstBlick/actions/runs/39399611917/job/118550752907",
+      "startedAt": "2026-10-20T09:17:39Z",
+      "completedAt": "2026-10-20T09:19:32Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize containers",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install the report font used by the PDF contract",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run dotnet restore FirstBlick.slnx --locked-mode",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run dotnet test FirstBlick.slnx -c Release --no-restore --logger trx --results-directory TestResults",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803",
+          "conclusion": "success"
+        },
+        {
+          "name": "Stop containers",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "name": "web",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/Cenn0/FirstBlick/actions/runs/39399611917/job/118550753382",
+      "startedAt": "2026-10-20T09:17:39Z",
+      "completedAt": "2026-10-20T09:19:55Z",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npm ci",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npm test",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npm run build",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npx playwright install --with-deps chromium",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run npm run test:browser",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Post Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    }
+  ],
+  "boundary": "These completed runs verify backend checkpoint 8. The next UI checkpoint requires its own published-head checks, which are linked from pull request #1."
+}

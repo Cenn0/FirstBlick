@@ -1,4 +1,4 @@
-import { Component, ElementRef, ViewChild, effect, inject, signal, untracked } from '@angular/core';
+import { Component, DestroyRef, ElementRef, ViewChild, effect, inject, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -13,14 +13,16 @@ import { WorkflowPanelComponent } from './workflow-panel.component';
 import { OfflineKind } from '../core/offline-store';
 import { QuantityEvidence, QuantityLine, PurchaseLine } from '../core/quantity.models';
 import { QuantityEvidenceComponent } from './quantity-evidence.component';
+import { FrozenCommercialSnapshot, InvoiceCalculation } from '../core/invoice.models';
+import { InvoiceEvidenceComponent } from './invoice-evidence.component';
 
 type LineInput=QuantityLine;
 interface PauseInput { start: string; end: string; startOffset?:string; endOffset?:string }
 type PurchaseInput=PurchaseLine;
-interface Snapshot { net: number; tax: number; gross: number; digest: string; lines?: { inputs: LineInput; unitNet: number; net: number; tax: number; gross: number }[] }
+type Snapshot=FrozenCommercialSnapshot;
 
 @Component({
-  imports:[FormsModule,RouterLink,WorkflowPanelComponent,QuantityEvidenceComponent],
+  imports:[FormsModule,RouterLink,WorkflowPanelComponent,QuantityEvidenceComponent,InvoiceEvidenceComponent],
   template:`@if(config();as config){
     <header class="page-heading"><div><p class="eyebrow">{{config.group}}</p><h1>{{config.title}}</h1><p>{{config.description}}</p></div>@if(!config.readonly && allowed() && writable()){<button class="button primary" (click)="create()"><span aria-hidden="true">+</span> {{config.singular}} anlegen</button>}</header>
     @if(!allowed()){<section class="panel empty-state"><h2>Dieser Bereich ist nicht verfügbar.</h2><p>Das Modul ist deaktiviert oder Ihr Konto hat keinen Zugriff.</p></section>}@else{
@@ -48,6 +50,7 @@ interface Snapshot { net: number; tax: number; gross: number; digest: string; li
           @if(auth.can('payment-allocations.write') && config.kind==='bank-transactions' && positiveAmount(item)){<button class="button primary" (click)="prepareAction('payment-allocate')">Zahlung zuordnen</button>}
           @if(auth.can('payment-allocations.write') && config.kind==='payment-allocations' && !item['reversedAt']){<button class="button secondary" (click)="prepareAction('payment-reverse')">Zuordnung zurücknehmen</button>}
         </div>
+        @if(config.kind==='invoices'){@if(invoiceCalculation(item);as calculation){<app-invoice-evidence [value]="calculation" [snapshot]="snapshot(item)"></app-invoice-evidence>}}
         <app-workflow-panel [kind]="config.kind" [item]="item" (completed)="workflowCompleted($event)"></app-workflow-panel>
       </section>}
     }
@@ -79,12 +82,13 @@ export class CollectionComponent {
   readonly api=inject(ApiService);readonly auth=inject(AuthService);private readonly route=inject(ActivatedRoute);private readonly router=inject(Router);
   readonly config=signal<ModuleDefinition|undefined>(undefined);readonly page=signal<Page>({items:[],total:0,page:1,pageSize:25});readonly loading=signal(false);readonly saving=signal(false);readonly error=signal('');readonly notice=signal('');readonly formError=signal('');readonly selected=signal<Entity|null>(null);readonly editing=signal<Entity|null>(null);readonly statusFilter=signal('');readonly filters=signal<Record<string,string>>({});readonly relations=signal<Record<string,Entity[]>>({});readonly cachedAt=signal('');readonly action=signal('');readonly approvalNeeded=signal(false);readonly labelFor=labelFor;
   @ViewChild('editor')editor?:ElementRef<HTMLDialogElement>;@ViewChild('actionDialog')actionDialog?:ElementRef<HTMLDialogElement>;
-  breaks:PauseInput[]=[];purchaseLines:PurchaseInput[]=[];form:Record<string,unknown>={};quoteLines:LineInput[]=[];searchText='';pageNumber=1;private loadVersion=0;private relationVersion=0;
+  breaks:PauseInput[]=[];purchaseLines:PurchaseInput[]=[];form:Record<string,unknown>={};quoteLines:LineInput[]=[];searchText='';pageNumber=1;private loadVersion=0;private relationVersion=0;private viewVersion=0;
   timeOffsets:Record<string,string>={};readonly timeZone=Intl.DateTimeFormat().resolvedOptions().timeZone;timeChoices(value:unknown){return localTimeChoices(String(value||''));}
   invoiceKind='Final';
   actionNumber='';actionReason='';allocationInvoice='';allocationAmount='0';allocationDiscount='0';allocationRetained='0';
   readonly priceFields=[{key:'unitMaterialCost',label:'Material je Einheit (€)',max:1000000},{key:'unitLaborHours',label:'Arbeitsstunden je Einheit',max:10000},{key:'hourlyRate',label:'Stundensatz (€)',max:100000},{key:'markupPercent',label:'Zuschlag (%)',max:1000},{key:'discountPercent',label:'Rabatt (%)',max:100},{key:'vatPercent',label:'Umsatzsteuer (%)',max:100}];
   constructor(){
+    inject(DestroyRef).onDestroy(()=>{this.loadVersion++;this.relationVersion++;this.viewVersion++;});
     combineLatest([this.route.data,this.route.queryParamMap]).pipe(takeUntilDestroyed()).subscribe(([data,query])=>{
       const config=moduleByKind.get(String(data['kind']));this.config.set(config);this.statusFilter.set(query.get('status')||'');
       this.filters.set(Object.fromEntries(['due','openOnly','projectId','customerId'].filter(k=>query.has(k)).map(k=>[k,query.get(k)!])));
@@ -93,13 +97,11 @@ export class CollectionComponent {
     });
     let previousScope='',previousAccess='';
     effect(()=>{
-      const scope=this.auth.scope(),tenant=this.auth.tenant();
-      const access=JSON.stringify([scope,tenant?.role,tenant?.employeeId,tenant?.modules,tenant?.capabilities]);
+      const scope=this.auth.scope(),access=this.auth.accessSignature();
       if(access===previousAccess)return;
       const changedBusiness=!!previousScope&&scope!==previousScope;previousScope=scope;previousAccess=access;
       untracked(()=>{
-        this.loadVersion++;this.relationVersion++;this.selected.set(null);this.relations.set({});this.page.set({items:[],total:0,page:1,pageSize:25});
-        this.editor?.nativeElement.close();this.actionDialog?.nativeElement.close();this.action.set('');this.formError.set('');this.error.set('');
+        this.clearVisibleData();
         if(changedBusiness&&this.route.snapshot.queryParamMap.has('selected'))void this.router.navigate([],{relativeTo:this.route,queryParams:{selected:null,new:null},queryParamsHandling:'merge',replaceUrl:true});
         else void this.load(this.route.snapshot.queryParamMap.get('selected')||undefined);
       });
@@ -134,8 +136,9 @@ export class CollectionComponent {
   columnLabel(key:string):string{return this.config()?.fields.find(f=>f.key===key)?.label||({title:'Bezeichnung',name:'Name',status:'Status',number:'Nummer',customerId:'Kunde',projectId:'Projekt',orderId:'Auftrag',invoiceId:'Rechnung',supplierInvoiceId:'Eingangsrechnung',bankTransactionId:'Bankumsatz',acceptedAt:'Angenommen am',amount:'Betrag',bookedOn:'Buchungstag',reference:'Verwendungszweck',counterparty:'Gegenpartei',reversedAt:'Zurückgenommen am',fileName:'Dateiname',sizeBytes:'Dateigröße',createdAt:'Erstellt',materialName:'Material',materialId:'Material',kind:'Art',quantity:'Menge',consumedQuantity:'Verbrauchte Menge',location:'Lagerort',occurredAt:'Zeitpunkt',discountAmount:'Skonto',direction:'Richtung',nextDueDate:'Nächster Termin',gross:'Bruttobetrag',supplierId:'Lieferant',employeeId:'Mitarbeiter',definitionVersion:'Formularversion',submittedAt:'Eingereicht am'} as Record<string,string>)[key]||key;}
   name(item:Entity):string{return String(item['name']||item['title']||item['number']||item['fileName']||item['activity']||item['reference']||item['description']||item.id);}
   display(item:Entity,key:string):string{const value=item[key];const field=this.config()?.fields.find(f=>f.key===key);if(field?.relation){const target=this.relations()[field.relation]?.find(i=>i.id===value);return target?this.name(target):value?'Verknüpfter Eintrag':'–';}if((field?.type==='date'||field?.type==='datetime-local'||/At$|On$|Date$/.test(key))&&value)return this.formatDate(String(value),field?.type==='datetime-local'||key.endsWith('At'));if(['amount','net','tax','gross','discountAmount','retainedAmount'].includes(key)&&value!==null&&value!==undefined)return this.money(Number(value));if(field?.type==='relations'&&Array.isArray(value))return value.map(id=>this.relations()[field.relation!]?.find(x=>x.id===id)).filter(Boolean).map(x=>this.name(x!)).join(', ')||'–';if(key==='start'||key==='end')return value?this.formatDate(String(value),true):'–';return labelFor(value);}
-  formatDate(value:string,withTime=false):string{if(!value)return '–';const date=new Date(value);if(Number.isNaN(date.getTime()))return value;return new Intl.DateTimeFormat('de-DE',withTime?{dateStyle:'short',timeStyle:'short'}:{dateStyle:'medium'}).format(date);}
-  money(value:number):string{return new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(value);}
+  formatDate(value:string,withTime=false):string{if(!value)return '–';const date=new Date(value);if(Number.isNaN(date.getTime()))return value;const dateOnly=/^\d{4}-\d{2}-\d{2}$/.test(value);return new Intl.DateTimeFormat('de-DE',withTime?{dateStyle:'short',timeStyle:'short'}:{dateStyle:'medium',...(dateOnly?{timeZone:'UTC'}:{})}).format(date);}
+  money(value:unknown):string{return new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(Number(value));}
+  invoiceCalculation(item:Entity):InvoiceCalculation|null{return (item['calculation']||null) as InvoiceCalculation|null;}
   snapshot(item:Entity):Snapshot|null{return (item['snapshot']||item['contract']||null) as Snapshot|null;}
   isStatus(item:Entity,state:string):boolean{return String(item['status']).toLowerCase()===state.toLowerCase();}
   positiveAmount(item:Entity):boolean{return Number(item['amount'])>0;}
@@ -143,7 +146,19 @@ export class CollectionComponent {
   relationTitle(field:Field):string{return moduleByKind.get(field.relation||'')?.title||field.label;}
   totalPages():number{return Math.ceil(this.page().total/this.page().pageSize);}
   emptyDescription():string{return this.searchText||this.statusFilter()?'Passen Sie die Suche an oder entfernen Sie den Filter.':this.config()?.kind==='orders'?'Erstellen Sie einen Auftrag aus einem angenommenen Angebot.':this.config()?.kind==='invoices'?'Bereiten Sie die erste Rechnung aus einem Auftrag vor.':'Legen Sie den ersten Eintrag an. Ihre Daten werden dem ausgewählten Betrieb zugeordnet.';}
-  async load(selectId?:string):Promise<void>{const config=this.config();if(!config||!this.auth.activeTenantId()||!this.allowed())return;const version=++this.loadVersion,scope=this.auth.scope();this.loading.set(true);this.error.set('');this.cachedAt.set('');try{const page=await this.api.list(config.kind,this.searchText,this.pageNumber,this.statusFilter(),this.filters());if(version!==this.loadVersion||scope!==this.auth.scope())return;this.page.set(page);if(selectId){const item=await this.api.get<Entity>(`${config.kind}/${encodeURIComponent(selectId)}`);if(version!==this.loadVersion||scope!==this.auth.scope())return;this.selected.set(item);}void this.loadRelations();}catch(error){if(version!==this.loadVersion||scope!==this.auth.scope())return;if(config.offline){const cached=await this.auth.store.cached(scope,config.kind as OfflineKind);if(version!==this.loadVersion||scope!==this.auth.scope())return;if(cached){this.page.set(cached.value as Page);this.cachedAt.set(cached.savedAt);}else this.error.set(errorMessage(error));void this.loadRelations();}else this.error.set(errorMessage(error));}finally{if(version===this.loadVersion)this.loading.set(false);}}
+  private clearVisibleData():void{this.loadVersion++;this.relationVersion++;this.viewVersion++;this.selected.set(null);this.editing.set(null);this.relations.set({});this.page.set({items:[],total:0,page:1,pageSize:25});this.form={};this.quoteLines=[];this.purchaseLines=[];this.breaks=[];this.actionReason='';this.editor?.nativeElement.close();this.actionDialog?.nativeElement.close();this.action.set('');this.formError.set('');this.error.set('');this.notice.set('');this.cachedAt.set('');this.loading.set(false);this.saving.set(false);}
+  private denied(error:unknown):boolean{if(!(error instanceof ApiError)||![401,403].includes(error.status))return false;this.clearVisibleData();this.error.set(errorMessage(error));return true;}
+  async load(selectId?:string):Promise<void>{
+    const config=this.config();if(!config||!this.auth.activeTenantId()||!this.allowed())return;
+    const version=++this.loadVersion,scope=this.auth.scope(),access=this.auth.accessSignature();this.viewVersion++;
+    const current=()=>version===this.loadVersion&&scope===this.auth.scope()&&access===this.auth.accessSignature()&&config.kind===this.config()?.kind;
+    this.loading.set(true);this.error.set('');this.cachedAt.set('');
+    try{const page=await this.api.list(config.kind,this.searchText,this.pageNumber,this.statusFilter(),this.filters());if(!current())return;this.page.set(page);
+      if(selectId){const item=await this.api.get<Entity>(`${config.kind}/${encodeURIComponent(selectId)}`);if(!current())return;this.selected.set(item);}void this.loadRelations();
+    }catch(error){if(!current()||this.denied(error))return;
+      if(config.offline){const cached=await this.auth.store.cached(scope,config.kind as OfflineKind);if(!current())return;if(cached){this.page.set(cached.value as Page);this.cachedAt.set(cached.savedAt);}else this.error.set(errorMessage(error));void this.loadRelations();}else this.error.set(errorMessage(error));
+    }finally{if(current())this.loading.set(false);}
+  }
   async loadRelations(extra:string[]=[]):Promise<void>{
     const scope=this.auth.scope(),access=this.auth.accessSignature(),version=++this.relationVersion;
     const current=()=>scope===this.auth.scope()&&access===this.auth.accessSignature()&&version===this.relationVersion;
@@ -164,7 +179,15 @@ export class CollectionComponent {
   search():void{this.pageNumber=1;void this.load();}
   paginate(delta:number):void{this.pageNumber+=delta;void this.load();}
   clearFilter():void{void this.router.navigate([],{relativeTo:this.route,queryParams:{status:null},queryParamsHandling:'merge'});}
-  async view(item:Entity):Promise<void>{const config=this.config()!;const scope=this.auth.scope();try{const full=await this.api.get<Entity>(`${config.kind}/${item.id}`);if(scope===this.auth.scope()&&config.kind===this.config()?.kind)this.selected.set(full);}catch(error){if(config.offline&&error instanceof TypeError&&scope===this.auth.scope())this.selected.set(item);else this.error.set(errorMessage(error));}setTimeout(()=>document.getElementById('detail-title')?.scrollIntoView({behavior:'smooth',block:'center'}));}
+  async view(item:Entity):Promise<void>{
+    const config=this.config();if(!config||!this.allowed())return;
+    const scope=this.auth.scope(),access=this.auth.accessSignature(),version=++this.viewVersion,listVersion=this.loadVersion;
+    const current=()=>scope===this.auth.scope()&&access===this.auth.accessSignature()&&config.kind===this.config()?.kind&&version===this.viewVersion&&listVersion===this.loadVersion;
+    this.error.set('');
+    try{const full=await this.api.get<Entity>(`${config.kind}/${item.id}`);if(!current())return;this.selected.set(full);}
+    catch(error){if(!current()||this.denied(error))return;if(config.offline&&error instanceof TypeError)this.selected.set(item);else this.error.set(errorMessage(error));}
+    setTimeout(()=>{if(current())document.getElementById('detail-title')?.scrollIntoView({behavior:'smooth',block:'center'});});
+  }
   create():void{if(!this.config()||this.config()!.readonly||!this.allowed()||!this.writable())return;this.editing.set(null);this.timeOffsets={};this.form={};for(const field of this.editorFields())this.form[field.key]=field.default??(field.type==='checkbox'?false:field.type==='number'?0:field.type==='relations'?[]:'');this.syncPersonalFields();this.quoteLines=[this.newLine()];this.breaks=[];this.purchaseLines=[];if(this.config()!.kind==='purchase-orders')this.addPurchase();this.formError.set('');this.editor?.nativeElement.showModal();void this.loadRelations(this.config()!.kind==='purchase-orders'?['materials']:[]);}
   edit(item:Entity):void{this.editing.set(item);this.timeOffsets={};this.form=structuredClone(item);this.syncPersonalFields();for(const field of this.editorFields()){if(field.type==='datetime-local'&&item[field.key]){this.form[field.key]=localDateTime(String(item[field.key]));this.timeOffsets[field.key]=instantOffset(String(item[field.key]));}}this.quoteLines=structuredClone((item['lines']||[])as LineInput[]);this.purchaseLines=structuredClone((item['lines']||[])as PurchaseInput[]);this.breaks=((item['breaks']||[])as PauseInput[]).map(p=>({start:localDateTime(p.start),end:localDateTime(p.end),startOffset:instantOffset(p.start),endOffset:instantOffset(p.end)}));this.formError.set('');this.editor?.nativeElement.showModal();}
   closeEditor():void{if(!this.saving())this.editor?.nativeElement.close();}
