@@ -32,10 +32,14 @@ public sealed class OfficialGaebEndpointTests(PostgresApiFixture fixture) : ICla
         await using var host = new ExchangeApiHarness(fixture);
         using var client = await host.Login(user);
 
-        using var validate = await Send(client, HttpMethod.Post, "/api/v1/integrations/v2/gaeb/validate",
-            new ByteArrayContent(original));
-        // The dedicated raw endpoint requires application/xml rather than JSON.
-        Assert.Equal(HttpStatusCode.BadRequest, validate.StatusCode);
+        using var originalBody = new StringContent(Encoding.UTF8.GetString(original), Encoding.UTF8, "application/xml");
+        using var validate = await client.PostAsync("/api/v1/integrations/v2/gaeb/validate", originalBody);
+        Assert.Equal(HttpStatusCode.OK, validate.StatusCode);
+        using (var json = JsonDocument.Parse(await validate.Content.ReadAsStringAsync()))
+        {
+            Assert.True(json.RootElement.GetProperty("validation").GetProperty("valid").GetBoolean());
+            Assert.False(json.RootElement.GetProperty("originalBytesRetained").GetBoolean());
+        }
 
         var request = Request(project, original);
         var preview = await Ok<OfficialGaebBidPreview>(Send(client, HttpMethod.Post,
