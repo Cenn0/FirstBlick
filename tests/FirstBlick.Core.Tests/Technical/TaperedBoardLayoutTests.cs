@@ -1,4 +1,5 @@
 using FirstBlick.Core.Technical;
+using FirstBlick.Core.Business;
 using Xunit;
 
 namespace FirstBlick.Core.Tests.Technical;
@@ -87,7 +88,7 @@ public sealed class TaperedBoardLayoutTests
     {
         var input = Input();
         var missing = input.Catalog with { Boards = input.Catalog.Boards.Where(x => x.Sku != "B").ToArray() };
-        Assert.ThrowsAny<ArgumentException>(() => TaperedBoardLayout.Calculate(input with { Catalog = missing }));
+        Assert.Throws<DomainException>(() => TaperedBoardLayout.Calculate(input with { Catalog = missing }));
     }
 
     [Theory]
@@ -104,15 +105,15 @@ public sealed class TaperedBoardLayoutTests
         var input = Input();
         var changed = input.Catalog with { Boards = input.Catalog.Boards.Select(x =>
             x.Sku == "A" ? x with { ThickEdgeM = .105 } : x).ToArray() };
-        Assert.ThrowsAny<ArgumentException>(() => TaperedBoardLayout.Calculate(input with { Catalog = changed }));
+        Assert.Throws<DomainException>(() => TaperedBoardLayout.Calculate(input with { Catalog = changed }));
         var duplicate = input.Catalog with { Boards = [input.Catalog.Boards[0], input.Catalog.Boards[0]] };
-        Assert.ThrowsAny<ArgumentException>(() => TaperedBoardLayout.Calculate(input with { Catalog = duplicate }));
+        Assert.Throws<DomainException>(() => TaperedBoardLayout.Calculate(input with { Catalog = duplicate }));
     }
 
     [Fact]
     public void Oversized_roof_and_unsupported_total_thickness_fail_closed()
     {
-        Assert.ThrowsAny<ArgumentException>(() => TaperedBoardLayout.Calculate(Input() with { RoofWidthM = 1000 }));
-        Assert.ThrowsAny<ArgumentException>(() => TaperedBoardLayout.Calculate(Input() with { RoofLengthM = 100 }));
+        Assert.Throws<DomainException>(() => TaperedBoardLayout.Calculate(Input() with { RoofWidthM = 1000 }));
+        Assert.Throws<DomainException>(() => TaperedBoardLayout.Calculate(Input() with { RoofLengthM = 100 }));
     }
 }
