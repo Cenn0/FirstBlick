@@ -26,12 +26,15 @@ public sealed class OfficialGaebExchangeTests
         Assert.Equal("84", output.Root!.Element(ns + "Award")!.Element(ns + "DP")!.Value);
         Assert.Equal(new[] { "Item001", "Item002" }, output.Descendants(ns + "Item").Select(x => (string)x.Attribute("ID")!));
         Assert.Equal(3, output.Descendants(ns + "p").Count());
-        Assert.Contains(output.Descendants(ns + "span"), x => x.Value == "Synthetic roof insulation & installation");
+        Assert.DoesNotContain(output.Descendants(ns + "span"), _ => true);
+        Assert.Contains(output.Descendants(ns + "p"), x => x.Value == "Synthetic roof insulation & installation");
+        Assert.Contains(result.PhaseExcludedSourceFields, x => x.Contains("inline span formatting"));
+        Assert.Equal(3, result.PhaseExcludedSourceFields.Count(x => x.Contains("inline span formatting")));
         Assert.Contains(result.PhaseExcludedSourceFields, x => x.Contains("/QU"));
         Assert.Contains(result.PhaseExcludedSourceFields, x => x.Contains("LblBoQ"));
     }
     [Fact]
-    public void X84_roundtrip_repricing_preserves_hierarchy_and_rich_text_without_silently_keeping_old_totals()
+    public void X84_roundtrip_repricing_preserves_hierarchy_and_literal_description_text_without_stale_totals()
     {
         var validator = new GaebSchemaValidator(OfficialXmlValidationTests.Bundle());
         var source = OfficialGaebFixtures.Tender(); var first = GaebBidWriter.Render(source, OfficialGaebFixtures.Prices(source)); Valid(validator, first.Xml);
