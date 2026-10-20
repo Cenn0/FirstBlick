@@ -1,0 +1,172 @@
+{
+  "format": 1,
+  "snapshotAt": "2026-10-20T05:23:09.3694592+00:00",
+  "completedAt": "2026-10-20T05:23:09.5382343+00:00",
+  "release": "restore-drill-0bc9a4a8a13f4d239d70caac",
+  "databaseVersion": "16.15 (Ubuntu 16.15-0ubuntu0.24.04.1)",
+  "databaseMajor": 16,
+  "pgDumpVersion": "pg_dump (PostgreSQL) 16.15 (Ubuntu 16.15-0ubuntu0.24.04.1)",
+  "dotnetRuntime": "10.0.13",
+  "dataProtectionApplication": "FirstBlick",
+  "tables": [
+    {
+      "name": "Approvals",
+      "rows": 1,
+      "sha256": "887c448d004911a5d897d09077fe55d9d6b51fa647829039cf73d9bbfbb80168"
+    },
+    {
+      "name": "AspNetRoleClaims",
+      "rows": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "AspNetRoles",
+      "rows": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "AspNetUserClaims",
+      "rows": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "AspNetUserLogins",
+      "rows": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "AspNetUserRoles",
+      "rows": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "AspNetUserTokens",
+      "rows": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "AspNetUsers",
+      "rows": 1,
+      "sha256": "6bf2d18d6b4a581238eeca08b88dbb318c7fea69dc1d778b6634ffa9f579c55a"
+    },
+    {
+      "name": "Audit",
+      "rows": 4,
+      "sha256": "1bd8ad8998f17004327942d62ddca381de4ceebfa931d06e6763247f4973160c"
+    },
+    {
+      "name": "Counters",
+      "rows": 1,
+      "sha256": "9b8f395c10c303762eff8a7de59207a7f6e2ca627c2c8c4404f928abb7877673"
+    },
+    {
+      "name": "DataProtectionKeys",
+      "rows": 1,
+      "sha256": "ef74b8cc7b8052eed9a38442ccb4e8a3c69c302df07270cd07f39e918a027d18"
+    },
+    {
+      "name": "Documents",
+      "rows": 2,
+      "sha256": "4ce1dc4921f95a324807e56c7e098956c2b46d6ee59b4a755964ec5836078420"
+    },
+    {
+      "name": "Entities",
+      "rows": 4,
+      "sha256": "e5201fe3e7051b1ad3f7d7e02a8ef91a9dfa2033065bf72d70c342dff2236f59"
+    },
+    {
+      "name": "Invitations",
+      "rows": 1,
+      "sha256": "1a9db82c5641356914ddaefe47a24f45edae0ea5720470fc8e49b333e6ccc201"
+    },
+    {
+      "name": "Jobs",
+      "rows": 6,
+      "sha256": "51a67d35349b2a3a7cf46c1a2a524bbd5ccdbcbdce81393e97e67237cc0a5a30"
+    },
+    {
+      "name": "Links",
+      "rows": 5,
+      "sha256": "444179dcb148a6192f17f61593644d87b777f92356baf3599546e881ac9b6ca2"
+    },
+    {
+      "name": "Memberships",
+      "rows": 1,
+      "sha256": "767717309380487a0cdcdbfa44b6d32cd3187b2a77c2e9df79c1504f0bd5e9ea"
+    },
+    {
+      "name": "Receipts",
+      "rows": 1,
+      "sha256": "96609260387b382acbf2d2f87aa1f2509ef72d3d49068e14c65d692c5a9770e9"
+    },
+    {
+      "name": "Tenants",
+      "rows": 2,
+      "sha256": "30aeae03003975cfbb1b20c56843b584697518cf3a4e85c91f159bff761ceb66"
+    },
+    {
+      "name": "__EFMigrationsHistory",
+      "rows": 1,
+      "sha256": "d392fba97094f57839db6499d25960a57c3c3a8d9ca7b8d3cc77b7b43f2ce12b"
+    }
+  ],
+  "objects": [
+    {
+      "documentId": "2790737c-78b6-495f-b95c-f4be0ef176e9",
+      "tenantId": "c8b8cca8-97c4-4b61-b2b7-7c9d687fca65",
+      "key": "c8b8cca897c44b61b2b77c9d687fca65/2790737c78b6495fb95cf4be0ef176e9/drill.pdf",
+      "versionId": "671fda95efb32384e33914cffe812451",
+      "size": 44,
+      "sha256": "e380700ae6ae102b45a317782328028a8c923aa3ff569bfc80df1ea778605dda",
+      "contentType": "application/pdf",
+      "state": "Archived",
+      "file": "objects/2790737c78b6495fb95cf4be0ef176e9.bin"
+    },
+    {
+      "documentId": "a3c51ec1-5d46-49f4-bb02-117a9fe23aa1",
+      "tenantId": "f51eab85-c3d7-4577-94e4-7927645e3c9d",
+      "key": "f51eab85c3d7457794e47927645e3c9d/a3c51ec15d4649f4bb02117a9fe23aa1/drill.pdf",
+      "versionId": "671fda95ffb17f4292d34a40fdc3647a",
+      "size": 54,
+      "sha256": "5cfee9440732cac09c293b955de065a407f33f641eabea0794040edffc3dec81",
+      "contentType": "application/pdf",
+      "state": "Ready",
+      "file": "objects/a3c51ec15d4649f4bb02117a9fe23aa1.bin"
+    }
+  ],
+  "files": [
+    {
+      "file": "certificates/data-protection.pfx",
+      "size": 3159,
+      "sha256": "f68b5a7be16cc04aa8ef3a6290b245311cca9834cf1aee2ebbfd72a12c94546a"
+    },
+    {
+      "file": "database.dump",
+      "size": 44341,
+      "sha256": "b61095f446f72a8647826371f7ae36bdd883950c6022da55acdffc540fffa4fc"
+    },
+    {
+      "file": "objects/2790737c78b6495fb95cf4be0ef176e9.bin",
+      "size": 44,
+      "sha256": "e380700ae6ae102b45a317782328028a8c923aa3ff569bfc80df1ea778605dda"
+    },
+    {
+      "file": "objects/a3c51ec15d4649f4bb02117a9fe23aa1.bin",
+      "size": 54,
+      "sha256": "5cfee9440732cac09c293b955de065a407f33f641eabea0794040edffc3dec81"
+    }
+  ],
+  "scope": "Synthetic isolated drill only; all rows were compared before the audited recovery barrier.",
+  "restoredVersions": [
+    {
+      "documentId": "2790737c-78b6-495f-b95c-f4be0ef176e9",
+      "sourceVersionId": "671fda95efb32384e33914cffe812451",
+      "restoredVersionId": "671fda95be4eeb87927755f607facf53"
+    },
+    {
+      "documentId": "a3c51ec1-5d46-49f4-bb02-117a9fe23aa1",
+      "sourceVersionId": "671fda95ffb17f4292d34a40fdc3647a",
+      "restoredVersionId": "671fda95b17e4bf371d50b07f6483941"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+FROM mcr.microsoft.com/dotnet/sdk:10.0.402-noble@sha256:0d99ebf1ccad15037b5c98c9fe8979d6b8dbac23812feae2277a0b277b5c5ffa AS build
+ARG RELEASE=unversioned-local
+WORKDIR /source
+COPY . .
+RUN dotnet restore src/FirstBlick.Worker/FirstBlick.Worker.csproj --locked-mode
+RUN dotnet publish src/FirstBlick.Worker/FirstBlick.Worker.csproj -c Release --no-restore -o /publish -p:UseAppHost=false -p:SourceRevisionId="$RELEASE"
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0.13-noble@sha256:d5633778c754e89a386882eddf8dbee6942447a8a4b8267c19cf1e1158d0b0ac
+ARG RELEASE=unversioned-local
+LABEL org.opencontainers.image.source="https://github.com/Cenn0/FirstBlick" org.opencontainers.image.revision="$RELEASE"
+WORKDIR /app
+COPY --from=build /publish/ ./
+ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false TZ=Europe/Berlin FIRSTBLICK_RELEASE=$RELEASE
+USER app
+ENTRYPOINT ["dotnet", "FirstBlick.Worker.dll"]

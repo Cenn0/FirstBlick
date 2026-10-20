@@ -26,4 +26,6 @@ uploads/
 artifacts/
 src/FirstBlick.Api/wwwroot/
 web/out-tsc/
+**/__pycache__/
+*.pyc
 
