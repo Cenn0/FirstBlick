@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/FirstBlick.Core/FirstBlick.Core.csproj" />
+    <Project Path="src/FirstBlick.Infrastructure/FirstBlick.Infrastructure.csproj" />
+    <Project Path="src/FirstBlick.Api/FirstBlick.Api.csproj" />
+    <Project Path="src/FirstBlick.Worker/FirstBlick.Worker.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/FirstBlick.Core.Tests/FirstBlick.Core.Tests.csproj" />
+    <Project Path="tests/FirstBlick.Api.Tests/FirstBlick.Api.Tests.csproj" />
+  </Folder>
+</Solution>

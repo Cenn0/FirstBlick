@@ -17,10 +17,16 @@ export function csrfToken(): string | undefined {
 }
 
 export async function request<T>(path: string, init: RequestInit = {}, tenantId?: string): Promise<T> {
+  const response = await requestResponse(path, init, tenantId);
+  if (response.status === 204 || response.headers.get('content-length') === '0') return undefined as T;
+  return await response.json() as T;
+}
+
+export async function requestResponse(path: string, init: RequestInit = {}, tenantId?: string, accept = 'application/json'): Promise<Response> {
   if (!path.startsWith('/api/v1/') || path.startsWith('//')) throw new Error('Ungültiger API-Pfad.');
   const headers = new Headers(init.headers);
-  headers.set('Accept', 'application/json');
-  if (init.body && !(init.body instanceof FormData)) headers.set('Content-Type', 'application/json');
+  headers.set('Accept', accept);
+  if (init.body && !(init.body instanceof FormData) && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
   if (tenantId) headers.set('X-Tenant-Id', tenantId);
   const method = (init.method || 'GET').toUpperCase();
   if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
@@ -37,13 +43,13 @@ export async function request<T>(path: string, init: RequestInit = {}, tenantId?
     const problem = await response.json().catch(() => ({ title: `Anfrage fehlgeschlagen (${response.status}).` })) as ApiProblem;
     throw new ApiError(response.status, problem);
   }
-  if (response.status === 204 || response.headers.get('content-length') === '0') return undefined as T;
-  return await response.json() as T;
+  return response;
 }
 
 export function errorMessage(error: unknown): string {
   if (error instanceof ApiError) {
-    if (error.status === 409 || error.status === 412) return 'Dieser Eintrag wurde zwischenzeitlich geändert. Bitte neu laden und Ihre Angaben mit dem aktuellen Stand abgleichen.';
+    if (error.problem.code === 'approval_required') return 'Für diesen Vorgang ist eine zweite Freigabe erforderlich.';
+    if (error.status === 412 || ['revision_conflict','concurrency_conflict','stale_revision'].includes(error.problem.code || '')) return 'Dieser Eintrag wurde zwischenzeitlich geändert. Bitte neu laden und Ihre Angaben mit dem aktuellen Stand abgleichen.';
     if (error.status === 401) return 'Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.';
     if (error.status === 403) return 'Für diese Aktion fehlt die Berechtigung oder das Modul ist deaktiviert.';
     const fields = Object.values(error.problem.errors ?? {}).flat().join(' ');

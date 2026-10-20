@@ -16,6 +16,7 @@ export interface QueuedMutation {
 }
 
 interface CachedList { key: string; scope: string; kind: OfflineKind; savedAt: string; value: unknown }
+export interface FieldOption { id:string;name:string }
 
 function finish(transaction: IDBTransaction): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -109,6 +110,19 @@ export class OfflineStore {
     const value = await result(tx.objectStore('cache').get(`${scope}|${kind}`)) as CachedList | undefined;
     await completed;
     return value;
+  }
+
+  async cacheOptions(scope:string,kind:'projects'|'employees',items:FieldOption[]):Promise<void>{
+    if(!['projects','employees'].includes(kind))throw new Error('Diese Auswahldaten werden nicht offline gespeichert.');
+    const db=await this.open();const tx=db.transaction('cache','readwrite');const completed=finish(tx);
+    tx.objectStore('cache').put({key:`${scope}|options:${kind}`,scope,value:items.map(item=>({id:item.id,name:item.name})),savedAt:new Date().toISOString()});
+    await completed;
+  }
+
+  async options(scope:string,kind:'projects'|'employees'):Promise<FieldOption[]>{
+    const db=await this.open();const tx=db.transaction('cache');const completed=finish(tx);
+    const value=await result(tx.objectStore('cache').get(`${scope}|options:${kind}`)) as {value:FieldOption[]}|undefined;
+    await completed;return value?.value||[];
   }
 
   async purgeUser(userId: string): Promise<void> {

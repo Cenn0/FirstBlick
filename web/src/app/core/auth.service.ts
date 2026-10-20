@@ -1,6 +1,7 @@
 import { Injectable, computed, signal } from '@angular/core';
 import { ApiError, request } from './transport';
 import { OfflineStore } from './offline-store';
+import { purgeCommandIdentities } from './command-identities';
 
 export interface TenantAccess { id: string; name: string; role: string; modules: string[]; capabilities: string[]; employeeId?: string }
 export interface Session { user: { id: string; email: string; displayName: string }; tenants: TenantAccess[]; activeTenantId?: string }
@@ -9,6 +10,8 @@ const logoutKey = 'firstblick-pending-logout';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
+  recoveryEmail='';recoveryToken='';
+  captureRecoveryFragment():boolean{const fields=new URLSearchParams(location.hash.slice(1));const token=fields.get('reset-token');const email=fields.get('reset-email');if(!token||!email)return false;this.recoveryToken=token;this.recoveryEmail=email;const reset=new URL('reset',document.baseURI);history.replaceState(history.state,'',reset.pathname);return true;}
   readonly session = signal<Session | null>(null);
   readonly activeTenantId = signal('');
   readonly ready = signal(false);
@@ -45,7 +48,7 @@ export class AuthService {
   async refresh(): Promise<void> {
     const previous=this.session();
     const value = await request<Session>('/api/v1/auth/me');
-    if(previous && (previous.user.id!==value.user.id || previous.tenants.some(t=>{const next=value.tenants.find(n=>n.id===t.id);return !next||t.capabilities.some(c=>!next.capabilities.includes(c))||t.modules.some(m=>!next.modules.includes(m));})))await this.store.purgeUser(previous.user.id);
+    if(previous && (previous.user.id!==value.user.id || previous.tenants.some(t=>{const next=value.tenants.find(n=>n.id===t.id);return !next||t.capabilities.some(c=>!next.capabilities.includes(c))||t.modules.some(m=>!next.modules.includes(m));}))){purgeCommandIdentities(localStorage,previous.user.id);await this.store.purgeUser(previous.user.id);}
     this.accept(value);
     this.offlineSession.set(false);
     this.bootstrapError.set('');
@@ -74,7 +77,7 @@ export class AuthService {
     catch { this.bootstrapError.set('Lokale Daten sind entfernt. Die Serversitzung wird bei der nächsten Verbindung abgemeldet.'); }
   }
 
-  private async finishPendingLogout():Promise<void>{try{await request('/api/v1/auth/logout',{method:'POST',body:'{}'});}catch(error){if(!(error instanceof ApiError)||error.status!==401)throw error;}localStorage.removeItem(logoutKey);}
+  private async finishPendingLogout():Promise<void>{await request('/api/v1/auth/csrf');try{await request('/api/v1/auth/logout',{method:'POST',body:'{}'});}catch(error){if(!(error instanceof ApiError)||error.status!==401)throw error;}localStorage.removeItem(logoutKey);}
 
   async clear(): Promise<void> {
     let id = this.session()?.user.id;
@@ -83,7 +86,7 @@ export class AuthService {
     this.activeTenantId.set('');
     this.offlineSession.set(false);
     localStorage.removeItem(sessionKey);
-    if (id) await this.store.purgeUser(id);
+    if (id) {purgeCommandIdentities(localStorage,id);await this.store.purgeUser(id);}
   }
 
   async switchTenant(id: string): Promise<void> {
