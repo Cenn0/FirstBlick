@@ -1,13 +1,22 @@
-using System.Text;
+using System.Text.Json.Serialization;
 using FirstBlick.Core.Business;
 using FirstBlick.Core.Integrations;
 
 namespace FirstBlick.Api;
 
-public sealed record GaebCatalogSelection(string PositionKey, decimal UnitMaterialCost,
-    decimal UnitLaborHours, decimal HourlyRate, decimal MarkupPercent, decimal VatPercent,
-    string PriceEvidence);
-public sealed record GaebCatalogRequest(string SourceBase64, IReadOnlyList<GaebCatalogSelection> Selections,
+// Missing numeric fields must not silently become zero-cost catalogue entries.
+// Explicit zero remains a valid, deliberately supplied value.
+public sealed record GaebCatalogSelection(
+    [property: JsonRequired] string PositionKey,
+    [property: JsonRequired] decimal UnitMaterialCost,
+    [property: JsonRequired] decimal UnitLaborHours,
+    [property: JsonRequired] decimal HourlyRate,
+    [property: JsonRequired] decimal MarkupPercent,
+    [property: JsonRequired] decimal VatPercent,
+    [property: JsonRequired] string PriceEvidence);
+public sealed record GaebCatalogRequest(
+    [property: JsonRequired] string SourceBase64,
+    [property: JsonRequired] IReadOnlyList<GaebCatalogSelection> Selections,
     string? PreviewDigest = null);
 public sealed record GaebCatalogCandidate(string PositionKey, string Description, string Unit,
     decimal? TenderQuantity, decimal? OfferedUnitPrice, GaebCatalogOrigin Origin,
@@ -21,7 +30,7 @@ public sealed record GaebCatalogImportReceipt(string Contract, string SourceSha2
     string ReviewedPreviewDigest, IReadOnlyList<GaebCatalogImportedLine> Items);
 
 /// <summary>
-/// Explicitly reviewed transfer into the *internal* service catalogue; no GAEB bid export.
+/// Explicitly reviewed transfer into the internal service catalogue; no GAEB bid export.
 /// Tender unit prices are never silently interpreted as internal costs or sales prices.
 /// </summary>
 public static class GaebCatalogEndpoints
@@ -48,7 +57,7 @@ public static class GaebCatalogEndpoints
             {
                 var preview = Build(body, c.Scope.TenantId);
                 Guard.Require(body.PreviewDigest == preview.Digest, "gaeb_preview_changed",
-                    "GAEB bytes, selected mapping or source contents differ from the reviewed catalogue preview.");
+                    "The business, GAEB bytes or selected cost mapping differ from the reviewed catalogue preview.");
                 var inserted = new List<GaebCatalogImportedLine>(preview.Candidates.Count);
                 foreach (var candidate in preview.Candidates)
                 {
@@ -70,9 +79,11 @@ public static class GaebCatalogEndpoints
 
     internal static GaebCatalogPreview Build(GaebCatalogRequest body, Guid tenantId)
     {
+        Guard.Id(tenantId, nameof(tenantId));
         Guard.Require(body is not null && body.SourceBase64 is { Length: > 0 and <= 1_400_000 },
             "gaeb_input_budget", "A bounded Base64-encoded source is required.");
         Guard.Items(body.Selections, "GAEB selections", 100, 1);
+        foreach (var selection in body.Selections) Guard.Text(selection.PositionKey, "GAEB position", 240);
         Guard.Require(body.Selections.Select(x => x.PositionKey).Distinct(StringComparer.Ordinal).Count() == body.Selections.Count,
             "gaeb_duplicate_selection", "Each GAEB position may be selected only once.");
         byte[] source;
@@ -97,7 +108,6 @@ public static class GaebCatalogEndpoints
             var candidate = new GaebCatalogCandidate(line.PositionKey, line.Description, line.Unit,
                 line.TenderQuantity, line.OfferedUnitPrice, origin, selection.UnitMaterialCost,
                 selection.UnitLaborHours, selection.HourlyRate, selection.MarkupPercent, selection.VatPercent);
-            // Reuse the real catalogue arithmetic bounds. External price is *not* used as internal cost.
             var item = new CatalogItem
             {
                 TenantId = tenantId, Name = candidate.Description, Unit = candidate.Unit,
@@ -117,6 +127,8 @@ public static class GaebCatalogEndpoints
                 "tender_quantities_are_not_imported_as_quote_or_material_reservations",
                 "offered_unit_prices_are_not_automatically_reinterpreted_as_internal_costs"
             }), false);
-        return result with { Digest = ContentDigest.Of(result) };
+        // A review for business A must not authorize identical source bytes in business B.
+        // The opaque digest is regenerated under the destination tenant's transaction lock.
+        return result with { Digest = ContentDigest.Of(new { TenantId = tenantId, Preview = result }) };
     }
 }
