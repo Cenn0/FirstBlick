@@ -34,7 +34,7 @@ public sealed class SupplierCostAllocationTests
             OriginalInvoiceId = invoice.Id, Kind = SupplierInvoiceKind.CreditNote,
             Number = "SYN-CREDIT", Title = "Supplier correction", InvoiceDate = new DateOnly(2026, 10, 20),
             DueDate = new DateOnly(2026, 11, 1), Net = 50m, Tax = 9.5m, Gross = 59.5m };
-        var supplier = new Supplier { TenantId = invoice.TenantId, Name = "Synthetic supplier" };
+        var supplier = new Supplier { Id = invoice.SupplierId, TenantId = invoice.TenantId, Name = "Synthetic supplier" };
         PayablesWorkflow.ApproveCredit(credit, invoice, supplier, [], Guid.NewGuid(), actor, DateTimeOffset.UtcNow, false);
         var booked = SupplierCostAllocationRules.Post(credit, project, [], 40m, "Reviewed supplier credit", actor, DateTimeOffset.UtcNow);
         SupplierCostAllocationRules.ValidateCreditProjectBalance(project.Id, 40m, [original], []);
