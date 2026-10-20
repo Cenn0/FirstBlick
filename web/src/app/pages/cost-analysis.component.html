@@ -11,6 +11,59 @@
 @if(capture.report.missing.length){<details class="workflow-detail" open><summary>{{capture.report.missing.length}} offene Prüfschritte</summary><ul>@for(item of capture.report.missing;track $index){<li>{{missingDetail(item)}}</li>}</ul></details>}
 <details class="workflow-detail"><summary>Vertragsgrundlage aus Auftrag und angenommenen Nachträgen</summary><div class="table-wrap"><table><caption>Verbindliche Kalkulationsstände</caption><thead><tr><th>Vorgang</th><th>Vertragsnetto</th><th>Kalkulierte Kosten</th><th>Quellstand</th></tr></thead><tbody>@for(source of capture.report.contractSources;track source.kind+source.id){<tr><td data-label="Vorgang"><a [routerLink]="'/'+source.kind" [queryParams]="{selected:source.id}">{{source.title}}</a><span class="document-date">{{source.kind==='orders'?'Auftrag':'Angenommener Nachtrag'}}</span></td><td data-label="Vertragsnetto">{{money(source.contractNet)}}</td><td data-label="Kalkulierte Kosten">{{money(source.plannedCost)}}</td><td data-label="Quellstand">Revision {{source.revision}}<code class="evidence-code">{{source.digest}}</code></td></tr>}</tbody></table></div></details>
 </section>
+<section class="panel" aria-labelledby="cost-allocation-heading">
+  <p class="eyebrow">GEBUCHTE PROJEKTKOSTEN</p>
+  <h2 id="cost-allocation-heading">Lieferantenkosten verbindlich zuordnen</h2>
+  <p class="small muted">Eine gebuchte Nettoverteilung belegt einen Betrag dauerhaft für dieses Projekt. Mehrere Projektanteile dürfen zusammen das geprüfte Belegnetto nicht überschreiten. Die Buchung ist keine Zahlung. Änderungen erfolgen ausschließlich als dokumentierte Stornierung und neue Buchung.</p>
+  <div class="form-grid">
+    <div class="form-field full-width">
+      <label for="cost-alloc-search">Freigegebene Eingangsbelege durchsuchen</label>
+      <input id="cost-alloc-search" maxlength="200" placeholder="Nummer oder Bezeichnung" (input)="lookupSuppliers($any($event.target).value)" [disabled]="busy()">
+    </div>
+    <div class="form-field full-width">
+      <label for="cost-alloc-source">Beleg zur verbindlichen Verteilung</label>
+      <select id="cost-alloc-source" name="allocationInvoiceId" [ngModel]="allocationSupplierId" (ngModelChange)="allocationSourceChanged($event)" [disabled]="busy()">
+        <option value="">Bitte auswählen</option>
+        @for(invoice of supplierOptions();track invoice.id){<option [value]="invoice.id">{{invoice['number']}} · {{name(invoice)}}</option>}
+      </select>
+    </div>
+  </div>
+  @if(allocationSupplierId){
+    @if(allocationAvailable()!==null){<p class="small muted">Noch nicht verteilter Belegnettoanteil: <strong>{{money(allocationAvailable())}}</strong></p>}
+    <div class="form-grid">
+      <div class="form-field"><label for="cost-alloc-amount">Neuer Netto-Projektanteil (€)</label>
+        <input id="cost-alloc-amount" name="allocationAmount" type="number" [(ngModel)]="allocationNet" min="0.01" step="0.01" max="1000000000000" [disabled]="busy()">
+      </div>
+      <div class="form-field full-width"><label for="cost-alloc-reason">Begründung und Herkunft des Projektanteils</label>
+        <textarea id="cost-alloc-reason" name="allocationReason" [(ngModel)]="allocationReason" rows="2" maxlength="2000" [disabled]="busy()"></textarea>
+      </div>
+    </div>
+    @if(dirty()){<p class="small warning-text">Bitte zunächst die geänderten Kostenansätze neu berechnen. Eine verbindliche Zuordnung ist solange gesperrt.</p>}
+    <div class="detail-actions">
+      <button type="button" class="button primary" [disabled]="busy()||dirty()||!allocationNet||!allocationReason.trim()" (click)="postAllocation()">Projektanteil verbindlich buchen</button>
+    </div>
+    @if(activeAllocations().length){
+      <div class="table-wrap"><table><caption>Aktive gebuchte Verteilungen dieses Eingangsbelegs</caption>
+        <thead><tr><th>Projektbezug</th><th>Nettoanteil</th><th>Nachweis</th><th>Stornierung</th></tr></thead>
+        <tbody>@for(entry of activeAllocations();track entry.id){
+          <tr><td data-label="Projekt">{{entry.projectId===capture.report.projectId?'Aktuelles Projekt':'Anderes Projekt'}}</td>
+            <td data-label="Nettoanteil">{{money(entry.netAmount)}}</td>
+            <td data-label="Nachweis">{{entry.reason}}</td>
+            <td data-label="Stornierung">
+              @if(entry.projectId===capture.report.projectId){
+                <div class="form-field"><label [for]="'cost-alloc-undo-'+entry.id">Begründung</label>
+                  <input [id]="'cost-alloc-undo-'+entry.id" [name]="'cost-alloc-undo-'+entry.id" [(ngModel)]="allocationReverseReason" maxlength="2000" [disabled]="busy()">
+                </div>
+                <button type="button" class="button secondary" [disabled]="busy()||dirty()||!allocationReverseReason.trim()" (click)="reverseAllocation(entry)">Buchung stornieren</button>
+              }@else{<span class="small muted">Nur im zugehörigen Projekt bearbeiten</span>}
+            </td>
+          </tr>
+        }</tbody>
+      </table></div>
+    }
+  }
+  <p class="small muted">Gutschriften können nur im Umfang der ursprünglich gebuchten Kosten desselben Projekts verteilt werden. Ein bereits verrechneter Originalanteil ist gegen Stornierung gesperrt, solange dessen Gutschrift noch besteht. Die nächste Nachkalkulation verwendet die geprüften aktiven Buchungen automatisch.</p>
+</section>
 <form #costForm="ngForm" (ngSubmit)="calculate()">
 <fieldset class="quantity-form" [disabled]="busy()">
 @for(kind of kinds;track kind.key){<section class="panel"><div class="panel-heading"><div><p class="eyebrow">QUELLEN BEWERTEN</p><h2>{{kind.title}} · {{sources(kind.key).length}}</h2></div></div>
