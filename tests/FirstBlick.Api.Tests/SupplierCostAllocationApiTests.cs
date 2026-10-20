@@ -104,6 +104,54 @@ public sealed class SupplierCostAllocationApiTests(PostgresApiFixture fixture) :
             (await Send(owner, HttpMethod.Put, $"/api/v1/supplier-cost-allocations/{valid.Id}", valid, valid.Revision)).StatusCode);
     }
 
+
+    [PostgresApiFact]
+    public async Task Posted_costs_enter_the_report_without_manual_double_booking_and_invalidate_older_forecast_previews()
+    {
+        var g = await Setup(); var client = await fixture.Login(g.User);
+        var quote = new Quote { TenantId = g.User.TenantId, CustomerId = g.Project1.CustomerId,
+            ProjectId = g.Project1.Id, Title = "Synthetic project cost comparison",
+            Lines = [new QuoteLine { Description = "Roof repair", UnitMaterialCost = 1000m, VatPercent = 19m }] };
+        var customer = await fixture.Read<Customer>(g.User.TenantId, g.Project1.CustomerId);
+        CommercialWorkflow.IssueQuote(quote, "SYN-COST-QUOTE");
+        CommercialWorkflow.FreezePresentation(quote, "Synthetic contractor", customer, DateTimeOffset.UtcNow);
+        CommercialWorkflow.AcceptQuote(quote, quote.IssuedDigest, DateTimeOffset.UtcNow, new DateOnly(2026, 10, 20));
+        quote = await fixture.Save(quote, g.User.UserId);
+        var order = await fixture.Save(CommercialWorkflow.CreateOrder(quote, "SYN-COST-ORDER"), g.User.UserId);
+        var allocation = await Ok<SupplierCostAllocation>(Send(client, HttpMethod.Post,
+            $"/api/v1/supplier-invoices/{g.Invoice.Id}/cost-allocations",
+            new PostSupplierProjectCostRequest(g.Project1.Id, 70m, "Direct project booking", g.Invoice.ApprovedDigest)));
+        var reportPath = $"/api/v1/orders/{order.Id}/cost-analysis";
+        var input = new CostAnalysisInput([], [], [], 0m, "All planned work complete", "Reviewed recorded project sources");
+        using var preview = await Send(client, HttpMethod.Post, reportPath, input);
+        Assert.Equal(HttpStatusCode.OK, preview.StatusCode);
+        using var json = JsonDocument.Parse(await preview.Content.ReadAsStringAsync());
+        var report = json.RootElement.GetProperty("report").Deserialize<CostAnalysisResult>(AppJson.Options)!;
+        Assert.Equal(70m, report.ActualCost);
+        Assert.Equal(70m, report.ForecastCost);
+        Assert.Equal(930m, report.ForecastMargin);
+        var basis = Assert.Single(report.ReviewedInputs.SupplierCosts);
+        Assert.Equal(g.Invoice.Id, basis.SupplierInvoiceId);
+        Assert.Equal(70m, basis.ProjectNet);
+        Assert.Contains("Posted allocation journal", basis.Evidence);
+        await ExpectError(Send(client, HttpMethod.Post, reportPath,
+            input with { SupplierCosts = [new(g.Invoice.Id, SupplierCostTreatment.ExternalService, 70m, "Manual override")] }),
+            HttpStatusCode.BadRequest, "cost_allocation_posted");
+        var saved = await Ok<CostForecast>(Send(client, HttpMethod.Post,
+            $"/api/v1/orders/{order.Id}/cost-forecasts",
+            new SaveCostForecastRequest(input, report.Digest, "Approved booked supplier costs")));
+        Assert.Equal(report.Digest, saved.Report.Digest);
+        await Ok<SupplierCostAllocation>(Send(client, HttpMethod.Post,
+            $"/api/v1/supplier-cost-allocations/{allocation.Id}/reverse",
+            new ReverseSupplierProjectCostRequest("Reallocation under review"), allocation.Revision));
+        await ExpectError(Send(client, HttpMethod.Post, $"/api/v1/orders/{order.Id}/cost-forecasts",
+            new SaveCostForecastRequest(input, report.Digest, "Stale recorded costs")),
+            HttpStatusCode.Conflict, "stale_cost_report");
+        var old = await fixture.Read<CostForecast>(g.User.TenantId, saved.Id);
+        Assert.Equal(70m, old.Report.ActualCost);
+        Assert.Equal(report.Digest, old.Report.Digest);
+    }
+
     private async Task<(ApiTestUser User, Project Project1, Project Project2, SupplierInvoice Invoice)> Setup()
     {
         var tenant = await fixture.CreateTenant(); var user = await fixture.CreateUser(tenant.Id);
