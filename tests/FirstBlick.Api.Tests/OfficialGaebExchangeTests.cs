@@ -41,6 +41,7 @@ public sealed class OfficialGaebExchangeTests
         XNamespace ns = "http://www.gaeb.de/GAEB_DA_XML/DA84/3.3";
         Assert.Equal(3, TradeXml.Load(next.Xml).Document.Descendants(ns + "p").Count());
         Assert.All(TradeXml.Load(next.Xml).Document.Descendants(ns + "Totals"), x => Assert.Equal("145.00", x.Element(ns + "Total")!.Value));
+        Assert.Equal("FirstBlick", TradeXml.Load(next.Xml).Document.Root!.Element(ns + "GAEBInfo")!.Element(ns + "ProgSystem")!.Value);
     }
     [Fact]
     public void A_not_offered_decision_is_explicit_and_cannot_also_carry_a_price()
