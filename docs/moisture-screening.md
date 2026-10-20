@@ -35,3 +35,9 @@ Sobald der vollständige Norminhalt und die Rechte an erforderlichen Norm-/Mater
 - ISO, **ISO 13788:2012**: https://www.iso.org/standard/51615.html (vereinfachte Methoden; Ausschluss u.a. kapillarer Vorgänge, Lufttransport und Feuchtespeicherung).
 
 Quellcode: `src/FirstBlick.Core/Technical/MoistureScreening.cs`; Tests: `tests/FirstBlick.Core.Tests/Technical/MoistureScreeningTests.cs`, `tests/FirstBlick.Api.Tests/MoistureApiTests.cs`.
+
+## Zwölf unabhängige Klimamonate (nicht als Periodenbilanz zu verstehen)
+
+Das ergänzende Verfahren `moisture.monthly-screening` verlangt genau zwölf Monate mit je einem expliziten Klima-Datensatz (Innen-/Außentemperatur und relative Feuchte). Es berechnet zwölf **unabhängige stationäre** Dampfdruck- und Temperaturprofile, benennt Monate mit möglicher Schichtgrenz-Übersättigung oder erhöhter Innenoberflächenfeuchte und hält die Input-Provenienz fest. Ungültige oder doppelte Monatskennungen werden abgewiesen. Eine fehlende Zeitreihe darf nicht als Jahresprüfung dargestellt werden.
+
+**Wichtig:** Diese 12 Einzelberechnungen sind ausdrücklich keine DIN-4108-3- oder ISO-13788-Monatsbilanz. Das Verfahren summiert keine Kondensatmassen, rechnet keine Monatsübergänge oder Austrocknungsreserven und trifft deshalb **keine** normative Tauwasser- oder Schimmelfreigabe. Source: `src/FirstBlick.Core/Technical/MonthlyMoistureScreening.cs`, Tests: `tests/FirstBlick.Core.Tests/Technical/MonthlyMoistureScreeningTests.cs`.

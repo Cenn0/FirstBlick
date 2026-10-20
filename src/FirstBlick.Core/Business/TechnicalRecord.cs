@@ -51,6 +51,7 @@ public static class TechnicalRecords
             "thermal" => ThermalCalculator.Calculate(input.Deserialize<ThermalInput>(Options)!),
             "thermal.parallel" => ThermalCalculator.CalculateParallelPaths(input.Deserialize<ParallelThermalInput>(Options)!),
             "moisture.screening" => MoistureScreening.Calculate(input.Deserialize<MoistureScreeningInput>(Options)!),
+            "moisture.monthly-screening" => MonthlyMoistureScreening.Calculate(input.Deserialize<MonthlyMoistureScreeningInput>(Options)!),
             "roof.rectangle" => RoofGeometry.Rectangle(input.Deserialize<RectangularRoofInput>(Options)!),
             "roof.polygon" => RoofGeometry.Calculate(input.Deserialize<PolygonRoofInput>(Options)!),
             "thermal-bridges" => ThermalBridgeCalculator.Aggregate(input.Deserialize<ThermalBridgeInput>(Options)!),

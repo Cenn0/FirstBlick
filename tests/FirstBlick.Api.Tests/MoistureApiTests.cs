@@ -41,6 +41,26 @@ public sealed class MoistureApiTests(PostgresApiFixture fixture) : IClassFixture
     }
 
     [PostgresApiFact]
+    public async Task Monthly_screening_requires_a_complete_synthetic_12_month_series()
+    {
+        var tenant = await fixture.CreateTenant();
+        var user = await fixture.CreateUser(tenant.Id);
+        var client = await fixture.Login(user);
+        var input = new MonthlyMoistureScreeningInput(.13, .04,
+            [new MoistureLayer("Synthetic insulation", .1, .04, 10, "Synthetic")],
+            Enumerable.Range(1, 12).Select(m => new MonthlyMoistureClimate(m, 20, m == 1 ? -10 : 20, 60, 80)).ToArray());
+        using var response = await Send(client, HttpMethod.Post,
+            "/api/v1/technical/moisture/monthly-screening", input);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal(12, json.RootElement.GetProperty("months").GetArrayLength());
+        Assert.False(json.RootElement.GetProperty("provenance").GetProperty("isNormative").GetBoolean());
+        using var invalid = await Send(client, HttpMethod.Post,
+            "/api/v1/technical/moisture/monthly-screening", input with { Months = input.Months.Take(11).ToArray() });
+        Assert.Equal(HttpStatusCode.BadRequest, invalid.StatusCode);
+    }
+
+    [PostgresApiFact]
     public async Task Worker_cannot_use_technical_screening_and_invalid_material_is_rejected()
     {
         var tenant = await fixture.CreateTenant();
