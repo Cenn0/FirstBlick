@@ -6,9 +6,10 @@ import { ApiService, Entity } from '../core/api.service';
 import { AuthService } from '../core/auth.service';
 import { ApiError, errorMessage } from '../core/transport';
 import { downloadBlob, sha256Blob } from '../core/integrations.models';
+import { AdvancedTechnicalComponent } from './advanced-technical.component';
 import { CalculationResult, ClimateDraft, LayerDraft, SavedCalculation, TechnicalMode, asObject, calculationInput, climateFields, emptyClimates, emptyLayer, hasDiffusion, hasLayers, isDigest, monthNames, resultInterfaces, resultMetrics, resultMonths, technicalMethods, technicalModes, validateCalculation, validateSavedCalculation } from '../core/technical-workbench.models';
 
-@Component({ imports: [FormsModule, RouterLink, JsonPipe], templateUrl: './technical.component.html', styleUrl: './technical.component.css' })
+@Component({ imports: [FormsModule, RouterLink, JsonPipe, AdvancedTechnicalComponent], templateUrl: './technical.component.html', styleUrl: './technical.component.css' })
 export class TechnicalComponent {
   readonly auth = inject(AuthService); private readonly api = inject(ApiService);
   readonly mode = signal<TechnicalMode>('roof'); readonly methods = technicalMethods; readonly modes = technicalModes;
