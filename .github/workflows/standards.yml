@@ -14,9 +14,11 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
-      - name: Inspect official versioned validation resources
-        run: python3 scripts/standards-assets.py --inventory
-      - name: Inspect the pinned validator command line
+      - name: Verify official versioned validation resources
+        run: python3 scripts/standards-assets.py
+      - name: Inspect supported original schema particles
+        run: python3 scripts/gaeb-schema-inventory.py
+      - name: Verify the pinned validator command line
         run: java -jar .standards/validator.jar --help
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         if: always()
