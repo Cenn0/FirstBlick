@@ -131,6 +131,7 @@ export class AdvancedTechnicalComponent {
   addBoard(): void { if (this.boards.length < 500) { this.boards.push(emptyBoard()); this.edited(); } }
   removeBoard(index: number): void { if (this.boards.length > 1) { this.boards.splice(index, 1); this.edited(); } }
   needsEquivalent(): boolean { return this.climateTreatment === 'SuppliedEquivalentRoofTemperature' && this.exteriorBoundary === 'OutsideAir'; }
+  monthLabel(value: unknown): string { return typeof value === 'number' && Number.isInteger(value) && value >= 1 && value <= 12 ? labels[value - 1] : 'Ungültiger Monat'; }
   number(value: unknown, digits = 5): string {
     return typeof value === 'number' && Number.isFinite(value)
       ? new Intl.NumberFormat('de-DE', { maximumFractionDigits: digits }).format(value) : '–';
