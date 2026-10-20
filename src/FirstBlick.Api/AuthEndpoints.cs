@@ -120,6 +120,11 @@ public static class AuthEndpoints
         var user = await users.FindByEmailAsync(body.Email);
         if (user is not null && user.EmailConfirmed)
         {
+            // The limiter is per HTTP host/IP. Deduplicate this account across API hosts in PostgreSQL.
+            // Membership and the cooldown are read again after obtaining the lock, before any token is generated.
+            await using var transaction = await db.Database.BeginTransactionAsync(ct);
+            var recoveryLock = $"identity.recovery:{user.Id}";
+            await db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(hashtextextended({recoveryLock}, 0))", ct);
             var membership = await db.Memberships.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == user.Id && x.Active, ct);
             var recent = await db.Jobs.IgnoreQueryFilters().AnyAsync(x => x.Type == "identity.recovery" && x.EntityId == user.Id && x.AvailableAt > DateTimeOffset.UtcNow.AddMinutes(-5), ct);
             if (membership is not null && !recent)
@@ -130,6 +135,7 @@ public static class AuthEndpoints
                     Payload = AppJson.Serialize(new { protectedMessage = protection.CreateProtector("FirstBlick.Identity.Recovery.v1").Protect(message) }) });
                 await db.SaveChangesAsync(ct);
             }
+            await transaction.CommitAsync(ct);
         }
         return Results.Accepted(value: new { message = "If an active account exists, a recovery message has been queued through the configured email channel." });
     }

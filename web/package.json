@@ -7,7 +7,8 @@
     "build": "ng build",
     "test": "vitest run",
     "test:browser": "playwright test",
-    "typecheck": "tsc --noEmit -p tsconfig.app.json"
+    "typecheck": "tsc --noEmit -p tsconfig.app.json",
+    "test:live": "playwright test -c playwright.live.config.ts"
   },
   "engines": {
     "node": "^22.22.3 || ^24.15.0 || >=26.0.0"

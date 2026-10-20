@@ -67,6 +67,8 @@ public static class Pricing
 public enum QuoteStatus { Draft, Issued, Accepted, Rejected, Cancelled }
 public enum DeliveryState { Queued, Processing, Sent, Failed, Uncertain }
 public enum CommunicationChannel { Email, Push, WhatsApp }
+public sealed record QuotePresentationSnapshot(Guid QuoteId, Guid CustomerId, string SellerName, string BuyerName, string BuyerAddress,
+    string Number, string Title, DateOnly? ValidUntil, DateTimeOffset IssuedAt, string PricingDigest, string RendererContractVersion, string Digest);
 public sealed record DeliveryAttempt
 {
     public Guid Id { get; set; } = Guid.NewGuid();
@@ -90,6 +92,8 @@ public sealed class Quote : TenantEntity
     public QuoteStatus Status { get; set; }
     public List<QuoteLine> Lines { get; set; } = [];
     public QuoteSnapshot? Snapshot { get; set; }
+    public QuotePresentationSnapshot? Presentation { get; set; }
+    public string IssuedDigest => Presentation?.Digest ?? "";
     public DateOnly? ValidUntil { get; set; }
     public DateTimeOffset? AcceptedAt { get; set; }
     public List<DeliveryAttempt> Deliveries { get; set; } = [];
@@ -112,6 +116,14 @@ public sealed class Quote : TenantEntity
         {
             Guard.Require(Snapshot is not null, "missing_snapshot", "An issued quote requires a frozen calculation."); Snapshot!.Validate();
             Guard.Require(Pricing.Freeze(Lines, Version, Currency).Digest == Snapshot.Digest, "snapshot_changed", "Issued quote values are immutable; create a new draft version.");
+        }
+        if (Presentation is { } presentation)
+        {
+            Guard.Text(presentation.SellerName, "Seller name"); Guard.Text(presentation.BuyerName, "Buyer name"); Guard.Text(presentation.BuyerAddress, "Buyer address", 2000, false);
+            Guard.Utc(presentation.IssuedAt, "Issue time");
+            Guard.Require(Status != QuoteStatus.Draft && presentation.QuoteId == Id && presentation.CustomerId == CustomerId && presentation.Number == Number && presentation.Title == Title
+                && presentation.ValidUntil == ValidUntil && presentation.PricingDigest == Snapshot?.Digest && presentation.RendererContractVersion == "1.0.0"
+                && presentation.Digest == ContentDigest.Of(presentation with { Digest = "" }), "quote_presentation_changed", "The frozen quote presentation has changed.");
         }
         if (Status == QuoteStatus.Accepted)
         {
@@ -136,6 +148,7 @@ public sealed class Order : TenantEntity
     public string Title { get; set; } = "";
     public OrderStatus Status { get; set; }
     public QuoteSnapshot? Contract { get; set; }
+    public QuotePresentationSnapshot? QuotePresentation { get; set; }
     public DateTimeOffset AcceptedAt { get; set; }
     public override void Validate()
     {
@@ -143,6 +156,11 @@ public sealed class Order : TenantEntity
         Guard.Text(Number, nameof(Number), 80); Guard.Text(Title, nameof(Title)); Guard.Utc(AcceptedAt, nameof(AcceptedAt));
         Guard.Require(Enum.IsDefined(Status), "invalid_status", "Order status is invalid.");
         Guard.Require(Contract is not null, "missing_snapshot", "Order requires its accepted quote snapshot."); Contract!.Validate();
+        if (QuotePresentation is { } presentation)
+            Guard.Require(presentation.QuoteId == QuoteId && presentation.CustomerId == CustomerId && presentation.Title == Title
+                && presentation.PricingDigest == Contract.Digest && presentation.RendererContractVersion == "1.0.0"
+                && presentation.Digest == ContentDigest.Of(presentation with { Digest = "" }),
+                "order_presentation_changed", "The order must preserve its accepted quote's complete presentation.");
     }
     public override IEnumerable<EntityReference> References() => [BusinessRegistry.Reference<Quote>(QuoteId), BusinessRegistry.Reference<Customer>(CustomerId), BusinessRegistry.Reference<Project>(ProjectId)];
 }
@@ -181,11 +199,21 @@ public static class CommercialWorkflow
         quote.Number = number; quote.Snapshot = snapshot; quote.Status = QuoteStatus.Issued;
     }
 
+    public static void FreezePresentation(Quote quote, string sellerName, Customer customer, DateTimeOffset now)
+    {
+        quote.Validate(); customer.Validate(); Guard.Utc(now, nameof(now)); Guard.Text(sellerName, nameof(sellerName));
+        Guard.Require(quote.Status == QuoteStatus.Issued && quote.Presentation is null && quote.Snapshot is not null && customer.TenantId == quote.TenantId && customer.Id == quote.CustomerId,
+            "presentation_mismatch", "Freeze presentation once from the issued quote and its current business/customer context.");
+        var presentation = new QuotePresentationSnapshot(quote.Id, quote.CustomerId, sellerName, customer.Name, customer.Address, quote.Number, quote.Title, quote.ValidUntil,
+            now, quote.Snapshot.Digest, "1.0.0", "");
+        quote.Presentation = presentation with { Digest = ContentDigest.Of(presentation) }; quote.Validate();
+    }
+
     public static void AcceptQuote(Quote quote, string expectedDigest, DateTimeOffset acceptedAt, DateOnly businessDate)
     {
         quote.Validate(); Guard.Utc(acceptedAt, nameof(acceptedAt));
         Guard.Require(quote.Status == QuoteStatus.Issued, "invalid_transition", "Only an issued quote can be accepted.");
-        Guard.Require(quote.Snapshot!.Digest == expectedDigest, "stale_content", "The accepted calculation differs from the current issued version.");
+        Guard.Require((quote.Presentation?.Digest ?? quote.Snapshot!.Digest) == expectedDigest, "stale_content", "The accepted content differs from the current issued version.");
         Guard.Require(!quote.ValidUntil.HasValue || businessDate <= quote.ValidUntil.Value, "quote_expired", "The quote validity date has passed.");
         quote.Status = QuoteStatus.Accepted; quote.AcceptedAt = acceptedAt;
     }
@@ -203,7 +231,7 @@ public static class CommercialWorkflow
         return new()
         {
             TenantId = quote.TenantId, QuoteId = quote.Id, CustomerId = quote.CustomerId, ProjectId = quote.ProjectId,
-            Number = number, Title = quote.Title, Contract = CloneSnapshot(quote.Snapshot!), AcceptedAt = quote.AcceptedAt!.Value
+            Number = number, Title = quote.Title, Contract = CloneSnapshot(quote.Snapshot!), QuotePresentation = quote.Presentation is null ? null : quote.Presentation with { }, AcceptedAt = quote.AcceptedAt!.Value
         };
     }
 

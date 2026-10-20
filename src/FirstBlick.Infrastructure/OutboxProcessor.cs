@@ -228,7 +228,7 @@ public sealed class OutboxProcessor
                 var stored = await LockedQuote(job, ct) ?? throw new PermanentJobFailure("quote_unavailable");
                 var quote = AppJson.Read<Quote>(stored.Data); quote.Validate();
                 if (quote.TenantId != job.TenantId || quote.Id != job.EntityId || quote.Revision != stored.Revision || quote.Archived || stored.Archived
-                    || quote.Status is not (QuoteStatus.Issued or QuoteStatus.Accepted) || quote.Snapshot?.Digest != payload.SnapshotDigest)
+                    || quote.Status is not (QuoteStatus.Issued or QuoteStatus.Accepted) || (quote.Presentation is null || quote.IssuedDigest != payload.SnapshotDigest))
                     throw new PermanentJobFailure("quote_snapshot_changed");
                 var delivery = quote.Deliveries.SingleOrDefault(x => x.Id == payload.DeliveryId)
                                ?? throw new PermanentJobFailure("delivery_unavailable");
@@ -290,7 +290,8 @@ public sealed class OutboxProcessor
     {
         var culture = CultureInfo.GetCultureInfo("de-DE");
         var body = new StringBuilder().AppendLine($"Angebot {quote.Number} – {quote.Title}")
-            .AppendLine($"Version {quote.Version}").AppendLine();
+            .AppendLine($"Version {quote.Version}").AppendLine($"Von: {quote.Presentation!.SellerName}")
+            .AppendLine($"An: {quote.Presentation.BuyerName}").AppendLine(quote.Presentation.BuyerAddress).AppendLine($"Quellen-Digest: {quote.IssuedDigest}").AppendLine();
         foreach (var line in quote.Snapshot!.Lines)
         {
             body.AppendLine(line.Inputs.Description)
@@ -375,7 +376,7 @@ public sealed class OutboxProcessor
         var delivery = quote.Deliveries.SingleOrDefault(x => x.Id == payload.DeliveryId);
         if (quote.TenantId != job.TenantId || quote.Id != job.EntityId || quote.Revision != stored.Revision || delivery is null
             || delivery.Recipient != payload.Recipient || delivery.Channel != payload.Channel) return false;
-        if (state == JobState.Completed && quote.Snapshot?.Digest != payload.SnapshotDigest) return false;
+        if (state == JobState.Completed && (quote.Presentation is null || quote.IssuedDigest != payload.SnapshotDigest)) return false;
         var target = state switch
         {
             JobState.Completed => DeliveryState.Sent,

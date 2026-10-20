@@ -63,12 +63,15 @@ public static class CommercialEndpoints
             {
                 var quote = await c.Current<Quote>(id, ct);
                 CommercialWorkflow.IssueQuote(quote, await c.Store.NextNumber("AN", await c.BusinessDate(ct), ct));
+                var seller = await c.Db.Tenants.SingleAsync(x => x.Id == c.Scope.TenantId, ct);
+                CommercialWorkflow.FreezePresentation(quote, seller.Name, await c.Store.Get<Customer>(quote.CustomerId, ct), DateTimeOffset.UtcNow);
                 await c.Store.Save(quote, "quote.issue", false, ct); return quote;
             })).Produces<Quote>();
         api.MapPost("/quotes/{id:guid}/accept", (Guid id, AcceptQuoteRequest body, [AsParameters] BusinessCommandServices c) =>
             c.Execute("quotes", "quote.accept", body, async ct =>
             {
                 var quote = await c.Current<Quote>(id, ct);
+                Guard.Require(quote.Presentation is not null, "legacy_evidence_incomplete", "This historical quote has no frozen party evidence. Prepare a new reviewed version before acceptance.");
                 CommercialWorkflow.AcceptQuote(quote, body.Digest, DateTimeOffset.UtcNow, await c.BusinessDate(ct));
                 await c.Store.Save(quote, "quote.accept", false, ct); return quote;
             })).Produces<Quote>();
@@ -96,10 +99,11 @@ public static class CommercialEndpoints
             {
                 var quote = await c.Current<Quote>(id, ct);
                 if (body.Channel == CommunicationChannel.Email) Guard.Email(body.Recipient, true);
+                Guard.Require(quote.Presentation is not null, "legacy_evidence_incomplete", "Prepare a reviewed version with frozen parties before sending this quote.");
                 var delivery = CommercialWorkflow.RequestDelivery(quote, body.Channel, body.Recipient, DateTimeOffset.UtcNow);
                 await c.Store.Save(quote, "quote.delivery.request", false, ct);
                 c.Db.Jobs.Add(new OutboxJob { TenantId = c.Scope.TenantId, ActorId = c.Scope.UserId, Type = "quote.delivery", Kind = "quotes", EntityId = quote.Id,
-                    EntityRevision = quote.Revision, Payload = AppJson.Serialize(new { deliveryId = delivery.Id, snapshotDigest = quote.Snapshot!.Digest, channel = body.Channel, recipient = body.Recipient }) });
+                    EntityRevision = quote.Revision, Payload = AppJson.Serialize(new { deliveryId = delivery.Id, snapshotDigest = quote.IssuedDigest, channel = body.Channel, recipient = body.Recipient }) });
                 return quote;
             })).Produces<Quote>();
         api.MapPost("/orders/from-quote/{id:guid}", (Guid id, EmptyBusinessCommand body, [AsParameters] BusinessCommandServices c) =>

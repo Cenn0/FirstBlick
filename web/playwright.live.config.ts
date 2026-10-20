@@ -1,0 +1,11 @@
+import { defineConfig,devices } from '@playwright/test';
+
+export default defineConfig({
+  testDir:'tests/live',workers:1,fullyParallel:false,retries:0,timeout:240000,
+  outputDir:'test-results/live',
+  expect:{timeout:20000},
+  reporter:[['list'],['json',{outputFile:'test-results/live-report.json'}]],
+  use:{baseURL:process.env['FIRSTBLICK_LIVE_URL']||'http://127.0.0.1:4200',actionTimeout:30000,navigationTimeout:45000,trace:'retain-on-failure',launchOptions:process.env['FIRSTBLICK_TEST_CHROME']?{executablePath:process.env['FIRSTBLICK_TEST_CHROME']}:{}},
+  projects:[{name:'desktop',use:{...devices['Desktop Chrome'],viewport:{width:1440,height:1000}}},{name:'tablet',use:{...devices['Desktop Chrome'],viewport:{width:1024,height:768}}},{name:'mobile',use:{...devices['Desktop Chrome'],viewport:{width:390,height:844},isMobile:true,hasTouch:true}}],
+  webServer:process.env['FIRSTBLICK_LIVE_URL']?undefined:{command:'npm start',url:'http://127.0.0.1:4200',reuseExistingServer:true,timeout:120000}
+});

@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { ApiService, Entity, Page } from '../core/api.service';
 import { AuthService } from '../core/auth.service';
 import { ApiError, errorMessage } from '../core/transport';
+import { decimalInput } from '../core/decimal-input';
 import { labelFor, moduleByKind } from '../core/modules';
 
 interface ActionField {
@@ -16,15 +17,17 @@ interface Action {
   permission:string; target?:string; nestedResult?:string; payload?:Record<string,unknown>; approval?:string;
 }
 interface Delivery {id:string;channel:string;recipient:string;state:string;requestedAt:string;resolutionNote:string}
+interface QuotePresentation {sellerName:string;buyerName:string;buyerAddress:string;number:string;title:string;validUntil:string|null;issuedAt:string;digest:string}
 
 @Component({
   selector:'app-workflow-panel', imports:[FormsModule,RouterLink],
   template:`
+    @if(presentation();as issued){<section class="snapshot"><h3>Festgehaltener Angebotsstand</h3><dl class="detail-grid"><div><dt>Angebot</dt><dd>{{issued.number}} · {{issued.title}}</dd></div><div><dt>Anbieter</dt><dd>{{issued.sellerName}}</dd></div><div><dt>Auftraggeber</dt><dd>{{issued.buyerName}}<span class="document-date">{{issued.buyerAddress}}</span></dd></div><div><dt>Ausgegeben am</dt><dd>{{date(issued.issuedAt)}}</dd></div>@if(issued.validUntil){<div><dt>Gültig bis</dt><dd>{{dateOnly(issued.validUntil)}}</dd></div>}</dl><p class="small muted">Annahme, Auftragsübernahme und PDF beziehen sich auf diese festgehaltenen Parteien, Positionen und Angebotsdaten.</p></section>}
     @if(lines().length){<div class="table-wrap detail-lines"><table><caption>Erfasste Positionen</caption><thead><tr><th>Leistung / Material</th><th>Menge</th><th>Einheit</th><th>Einzelpreis netto</th></tr></thead><tbody>@for(line of lines();track $index){<tr><td data-label="Leistung / Material">{{line['description']}}</td><td data-label="Menge">{{line['quantity']}}</td><td data-label="Einheit">{{line['unit']||'–'}}</td><td data-label="Einzelpreis netto">{{line['unitNet']===undefined?'Wird beim Festhalten berechnet':money(line['unitNet'])}}</td></tr>}</tbody></table></div>}
     @if(metrics().length){<section class="snapshot"><h3>{{kind()==='materials'?'Bestand im Hauptlager':'Aktueller Abgleich'}}</h3><dl class="detail-grid">@for(metric of metrics();track metric.key){<div><dt>{{metric.label}}</dt><dd>{{metric.value}}</dd></div>}</dl></section>}
     @if(metricError()){<div class="alert warning" role="status">{{metricError()}}</div>}
     @if(deliveries().length){<section class="snapshot"><h3>Versandverlauf dieser Version</h3>@for(delivery of deliveries();track delivery.id){<div class="activity-row"><div><strong>{{channelName(delivery.channel)}} · {{delivery.recipient}}</strong><span>{{date(delivery.requestedAt)}}{{delivery.resolutionNote?' · '+delivery.resolutionNote:''}}</span></div><span class="badge">{{labelFor(delivery.state)}}</span></div>}</section>}
-    @if(kind()==='orders'){<details class="workflow-detail"><summary>Nachkalkulation & Prognose</summary><form #costForm="ngForm" (ngSubmit)="compareCosts()"><p class="small muted">Geben Sie den tatsächlich angefallenen Aufwand und die verbleibenden Kosten ein. Die Vertragswerte stammen aus dem Auftrag und angenommenen Nachträgen.</p><div class="form-grid"><div class="form-field"><label for="actual-cost">Bisherige Kosten netto (€)</label><input id="actual-cost" name="actual" type="number" [(ngModel)]="actualCost" required min="0" step="0.01"></div><div class="form-field"><label for="forecast-cost">Verbleibende Kosten netto (€)</label><input id="forecast-cost" name="forecast" type="number" [(ngModel)]="forecastCost" required min="0" step="0.01"></div></div><button class="button secondary" [disabled]="busy()||costForm.invalid">Kosten vergleichen</button></form>@if(comparison().length){<dl class="detail-grid">@for(metric of comparison();track metric.key){<div><dt>{{metric.label}}</dt><dd>{{metric.value}}</dd></div>}</dl>}</details>}
+    @if(kind()==='orders'){<details class="workflow-detail"><summary>Nachkalkulation & Prognose</summary><form #costForm="ngForm" (ngSubmit)="compareCosts()"><p class="small muted">Geben Sie den tatsächlich angefallenen Aufwand und die verbleibenden Kosten ein. Die Vertragswerte stammen aus dem Auftrag und angenommenen Nachträgen.</p><div class="form-grid"><div class="form-field"><label for="actual-cost">Bisherige Kosten netto (€)</label><input id="actual-cost" name="actual" [type]="'number'" [(ngModel)]="actualCost" required min="0" step="0.01"></div><div class="form-field"><label for="forecast-cost">Verbleibende Kosten netto (€)</label><input id="forecast-cost" name="forecast" [type]="'number'" [(ngModel)]="forecastCost" required min="0" step="0.01"></div></div><button class="button secondary" [disabled]="busy()||costForm.invalid">Kosten vergleichen</button></form>@if(comparison().length){<dl class="detail-grid">@for(metric of comparison();track metric.key){<div><dt>{{metric.label}}</dt><dd>{{metric.value}}</dd></div>}</dl>}</details>}
     <div class="detail-actions">@for(action of actions();track action.key){<button class="button secondary" (click)="prepare(action)">{{action.title}}</button>}</div>
     <dialog #dialog class="action-dialog" (cancel)="cancel($event)">
       @if(active();as action){<form #actionForm="ngForm" (ngSubmit)="execute()"><header class="dialog-heading"><h2>{{action.title}}</h2><button type="button" class="icon-button" aria-label="Vorgang schließen" (click)="close()" [disabled]="busy()">×</button></header><div class="dialog-body"><p>{{action.description}}</p>
@@ -49,10 +52,11 @@ export class WorkflowPanelComponent {
   readonly metrics=signal<{key:string;label:string;value:string}[]>([]); readonly metricError=signal('');
   readonly comparison=signal<{key:string;label:string;value:string}[]>([]); readonly labelFor=labelFor;
   @ViewChild('dialog') dialog?:ElementRef<HTMLDialogElement>;
-  values:Record<string,unknown>={}; actualCost:number|null=null;forecastCost:number|null=null;
+  values:Record<string,unknown>={}; actualCost='';forecastCost='';
   private actionKey='';private source?:Entity;private sourceScope='';private optionVersions:Record<string,number>={};
   readonly actions=computed(()=>this.availableActions().filter(action=>this.auth.can(action.permission)&&this.auth.hasModule(moduleByKind.get(action.permission.replace(/\.write$/,''))?.module)));
   readonly deliveries=computed(()=>(this.item()['deliveries']||[]) as Delivery[]);
+  readonly presentation=computed(()=>(this.item()['presentation']||this.item()['quotePresentation']||null)as QuotePresentation|null);
   readonly lines=computed<Record<string,unknown>[]>(()=>{
     const item=this.item(); const snapshot=(item['snapshot']||item['contract'])as {lines?:{inputs:Record<string,unknown>;unitNet:number}[]}|undefined;
     if(snapshot?.lines)return snapshot.lines.map(line=>({...line.inputs,unitNet:line.unitNet}));
@@ -62,6 +66,7 @@ export class WorkflowPanelComponent {
   name(item:Entity):string{return String(item['name']||item['title']||item['number']||item['reference']||item.id);}
   channelName(value:string):string{return value==='Email'?'E-Mail':value;}
   date(value:string):string{return new Intl.DateTimeFormat('de-DE',{dateStyle:'short',timeStyle:'short'}).format(new Date(value));}
+  dateOnly(value:string):string{return new Intl.DateTimeFormat('de-DE',{dateStyle:'medium'}).format(new Date(value+'T12:00:00'));}
   money(value:unknown):string{return new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(Number(value));}
   private availableActions():Action[]{
     const kind=this.kind(),item=this.item(),status=String(item['status']),path=`${kind}/${item.id}`;
@@ -134,7 +139,7 @@ export class WorkflowPanelComponent {
     if(this.sourceScope!==this.auth.scope()){this.error.set('Der Betrieb wurde gewechselt. Öffnen Sie den Vorgang im gewünschten Betrieb erneut.');return;}
     this.busy.set(true);this.error.set('');
     try{
-      const payload={...this.values};for(const field of action.fields)if(!field.required&&payload[field.key]===''&&(field.relation||field.type==='date'))payload[field.key]=null;
+      const payload={...this.values};for(const field of action.fields){if(field.type==='number'&&payload[field.key]!=='')payload[field.key]=decimalInput(payload[field.key]);if(!field.required&&payload[field.key]===''&&(field.relation||field.type==='date'))payload[field.key]=null;}
       const result=await this.api.command<Entity&Record<string,Entity>>(action.path,payload,source.revision,this.actionKey);
       const entity=action.nestedResult?result[action.nestedResult]:result;
       this.dialog?.nativeElement.close();this.active.set(null);

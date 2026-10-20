@@ -82,12 +82,42 @@ internal static class GraphRules
         entity.Validate();
         switch (entity)
         {
+            case RoofRevision roof:
+                _ = await store.Get<Building>(roof.BuildingId, ct);
+                if (roof.ProjectId is { } roofProject)
+                    Guard.Require((await store.Get<Project>(roofProject, ct)).BuildingId == roof.BuildingId, "roof_building_mismatch", "The roof and project must refer to the same building.");
+                if (roof.PreviousRevisionId is { } predecessor)
+                {
+                    var previousRoof = await store.Get<RoofRevision>(predecessor, ct);
+                    Guard.Require(previousRoof.BuildingId == roof.BuildingId && previousRoof.Status == RoofRevisionStatus.Published && previousRoof.Version + 1 == roof.Version,
+                        "wrong_predecessor", "The previous published revision must belong to this building and immediately precede the new version.");
+                }
+                break;
+            case Measurement measurement:
+                var measurementRoof = await store.Get<RoofRevision>(measurement.RoofRevisionId, ct);
+                var measurementProject = await store.Get<Project>(measurement.ProjectId, ct);
+                Guard.Require(measurementRoof.Status == RoofRevisionStatus.Published && measurementRoof.BuildingId == measurementProject.BuildingId && (!measurementRoof.ProjectId.HasValue || measurementRoof.ProjectId == measurement.ProjectId),
+                    "wrong_measurement_roof", "The measurement requires a published roof belonging to this project's building."); break;
+            case TechnicalRecord calculation:
+                var calculationProject = await store.Get<Project>(calculation.ProjectId, ct);
+                Guard.Require(calculation.BuildingId == calculationProject.BuildingId, "wrong_calculation_building", "The stored calculation preserves its project's building context.");
+                if (calculation.RoofRevisionId is { } calculationRoofId)
+                {
+                    var calculationRoof = await store.Get<RoofRevision>(calculationRoofId, ct);
+                    Guard.Require(calculationRoof.Status == RoofRevisionStatus.Published && calculationRoof.BuildingId == calculationProject.BuildingId && (!calculationRoof.ProjectId.HasValue || calculationRoof.ProjectId == calculation.ProjectId),
+                        "wrong_calculation_roof", "The calculation requires a published roof of this project's building.");
+                }
+                break;
             case Building building:
                 Guard.Require((await store.All<Project>(ct)).All(p => p.BuildingId != building.Id || p.CustomerId == building.CustomerId), "customer_mismatch", "Existing projects prevent changing this building to another customer."); break;
             case Project project:
                 var projectBuilding = await store.Get<Building>(project.BuildingId, ct);
                 Guard.Require(projectBuilding.CustomerId == project.CustomerId, "customer_mismatch", "The project customer must own its building record.");
                 Guard.Require((await store.All<Quote>(ct)).All(q => q.ProjectId != project.Id || q.CustomerId == project.CustomerId), "customer_mismatch", "Existing quotes prevent this customer change.");
+                Guard.Require((await store.All<RoofRevision>(ct)).All(r => r.ProjectId != project.Id || r.BuildingId == project.BuildingId), "project_roof_mismatch", "Existing roof revisions prevent moving this project to another building.");
+                foreach (var existingMeasurement in (await store.All<Measurement>(ct)).Where(m => m.ProjectId == project.Id))
+                    Guard.Require((await store.Get<RoofRevision>(existingMeasurement.RoofRevisionId, ct)).BuildingId == project.BuildingId, "project_roof_mismatch", "Existing measurements preserve this project's building context.");
+                Guard.Require((await store.All<TechnicalRecord>(ct)).All(c => c.ProjectId != project.Id || c.BuildingId == project.BuildingId), "project_roof_mismatch", "Stored technical results preserve this project's building context.");
                 foreach (var assignment in (await store.All<ScheduleAssignment>(ct)).Where(x => x.ProjectId == project.Id && !x.Cancelled))
                     await ValidateWindow(project, assignment, db, scope, ct);
                 break;

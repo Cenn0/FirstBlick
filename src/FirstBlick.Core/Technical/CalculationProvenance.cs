@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace FirstBlick.Core.Technical;
 
@@ -14,13 +15,20 @@ internal static class CalculationEvidence
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        Converters = { new ZeroNormalizedDoubleConverter() }
     };
 
     public static CalculationProvenance Create<T>(string methodId, T input, params string[] limitations)
         => new(methodId, "1.0.0",
             Convert.ToHexString(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(input, JsonOptions))).ToLowerInvariant(),
             false, Array.AsReadOnly(limitations));
+
+    private sealed class ZeroNormalizedDoubleConverter : JsonConverter<double>
+    {
+        public override double Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => reader.GetDouble();
+        public override void Write(Utf8JsonWriter writer, double value, JsonSerializerOptions options) => writer.WriteNumberValue(value == 0 ? 0d : value);
+    }
 }
 
 internal static class TechnicalInput

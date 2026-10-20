@@ -13,7 +13,7 @@ public static class AppJson
         MaxDepth = 32,
         AllowOutOfOrderMetadataProperties = true,
         UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
-        Converters = { new JsonStringEnumConverter(allowIntegerValues: false) }
+        Converters = { new JsonStringEnumConverter(allowIntegerValues: false), new DecimalStringConverter() }
     };
     public static string Serialize<T>(T value) => JsonSerializer.Serialize(value, value?.GetType() ?? typeof(T), Options);
     public static T Read<T>(string json) => JsonSerializer.Deserialize<T>(json, Options) ?? throw new DomainException("invalid_json", "The request body is required.");
@@ -72,6 +72,7 @@ public sealed class EntityStore(FirstBlickDbContext db, TenantScope scope)
             Employee e when e.UserId.HasValue => $"user:{e.UserId}",
             NotificationPreference p => $"user:{p.UserId}",
             SupplierInvoice i => $"supplier:{i.SupplierId}:number:{i.Number.Trim().ToUpperInvariant()}",
+            RoofRevision r when r.PreviousRevisionId.HasValue => $"previous:{r.PreviousRevisionId}",
             _ => null
         };
         using var doc = JsonDocument.Parse(stored.Data);

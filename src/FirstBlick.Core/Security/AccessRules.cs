@@ -30,7 +30,8 @@ public static class AccessRules
         _ => false
     };
 
-    public static bool CanWrite(BusinessRole role, string kind) => role switch
+    public static bool CanWrite(BusinessRole role, string kind) => kind is "settings" or "memberships" or "approvals" or "jobs" or "audit"
+        ? role == BusinessRole.ManagingDirector : role switch
     {
         BusinessRole.ManagingDirector => true,
         BusinessRole.Office => kind is not "bank-transactions" and not "payment-allocations" and not "supplier-payment-allocations" and not "training-records" and not "employees",

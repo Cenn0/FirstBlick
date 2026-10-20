@@ -55,6 +55,7 @@ builder.Services.AddOpenApi("v1");
 builder.Services.ConfigureHttpJsonOptions(o =>
 {
     o.SerializerOptions.Converters.Add(new JsonStringEnumConverter(allowIntegerValues: false));
+    o.SerializerOptions.Converters.Add(new DecimalStringConverter());
     o.SerializerOptions.UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow;
     o.SerializerOptions.MaxDepth = 32;
     o.SerializerOptions.AllowOutOfOrderMetadataProperties = true;

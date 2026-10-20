@@ -168,7 +168,7 @@ public sealed class WorkerTests : IAsyncLifetime
             await using var transaction = await concurrent.Db.Database.BeginTransactionAsync();
             await concurrent.Db.Database.ExecuteSqlRawAsync("SET LOCAL lock_timeout = '2s'");
             await concurrent.Db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(hashtextextended({quote.TenantId.ToString()}, 0))");
-            CommercialWorkflow.AcceptQuote(quote, quote.Snapshot!.Digest, DateTimeOffset.UtcNow, DateOnly.FromDateTime(DateTime.UtcNow));
+            CommercialWorkflow.AcceptQuote(quote, quote.IssuedDigest, DateTimeOffset.UtcNow, DateOnly.FromDateTime(DateTime.UtcNow));
             quote.Revision++; quote.UpdatedAt = DateTimeOffset.UtcNow;
             var json = AppJson.Serialize(quote);
             await concurrent.Db.Database.ExecuteSqlInterpolatedAsync($"UPDATE \"Entities\" SET \"Data\" = CAST({json} AS jsonb), \"Revision\" = {quote.Revision}, \"UpdatedAt\" = {quote.UpdatedAt} WHERE \"TenantId\" = {quote.TenantId} AND \"Kind\" = 'quotes' AND \"Id\" = {quote.Id}");
@@ -477,9 +477,10 @@ public sealed class WorkerTests : IAsyncLifetime
             var (tenant, user) = await SeedIdentity();
             var quote = new Quote { TenantId = tenant.Id, CustomerId = Guid.NewGuid(), ProjectId = Guid.NewGuid(), Title = "Synthetic roof work", Lines = [new() { Description = "Geplante Dachfläche", Quantity = 2, UnitMaterialCost = 100, MarkupPercent = 25, VatPercent = 19 }] };
             CommercialWorkflow.IssueQuote(quote, "A-TEST-0001");
+            CommercialWorkflow.FreezePresentation(quote, tenant.Name, new Customer { TenantId = tenant.Id, Id = quote.CustomerId, Name = "Synthetic customer", Address = "Synthetic address" }, DateTimeOffset.UtcNow);
             var delivery = CommercialWorkflow.RequestDelivery(quote, CommunicationChannel.Email, "customer@example.test", DateTimeOffset.UtcNow);
             var job = new OutboxJob { TenantId = tenant.Id, ActorId = user.Id, Type = "quote.delivery", Kind = "quotes", EntityId = quote.Id, EntityRevision = quote.Revision,
-                Payload = AppJson.Serialize(new { deliveryId = delivery.Id, snapshotDigest = quote.Snapshot!.Digest, channel = delivery.Channel, recipient = delivery.Recipient }) };
+                Payload = AppJson.Serialize(new { deliveryId = delivery.Id, snapshotDigest = quote.IssuedDigest, channel = delivery.Channel, recipient = delivery.Recipient }) };
             await using var worker = Open(); worker.Db.Entities.Add(Stored(quote)); worker.Db.Jobs.Add(job); await worker.Db.SaveChangesAsync(); return (quote, delivery, job);
         }
         public async Task<OutboxJob> ReadJob(Guid id)

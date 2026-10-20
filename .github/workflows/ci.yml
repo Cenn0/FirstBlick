@@ -31,6 +31,8 @@ jobs:
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
         with:
           global-json-file: global.json
+      - name: Install the report font used by the PDF contract
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends fonts-dejavu-core
       - run: dotnet restore FirstBlick.slnx --locked-mode
       - run: dotnet test FirstBlick.slnx -c Release --no-restore --logger trx --results-directory TestResults
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6

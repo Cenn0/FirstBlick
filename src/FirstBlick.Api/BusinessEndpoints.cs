@@ -75,6 +75,8 @@ public static class BusinessEndpoints
                 var previous = await store.Get<T>(id, ct);
                 CommandExecutor.Match(http, previous.Revision);
                 await RecordPolicy.EnsureVisible(kind, id, scope, store, ct);
+                if (previous is Employee employee && body is Employee changedEmployee && employee.UserId != changedEmployee.UserId)
+                    Guard.Require(scope.Role == BusinessRole.ManagingDirector, "forbidden", "Only a managing director can change or remove a personal-account link.");
                 EditRules.EnsureGenericUpdate(previous, body);
                 body.Id = id; body.TenantId = scope.TenantId; body.Revision = previous.Revision;
                 body.CreatedAt = previous.CreatedAt; body.Archived = previous.Archived;
@@ -128,11 +130,11 @@ internal static class EditRules
 {
     public static void EnsureGenericCreate(TenantEntity e)
     {
-        Guard.Require(e is not Order and not BankTransaction and not PaymentAllocation and not SupplierPaymentAllocation and not StockMovement and not FormSubmission,
+        Guard.Require(e is not Order and not BankTransaction and not PaymentAllocation and not SupplierPaymentAllocation and not StockMovement and not FormSubmission and not TechnicalRecord,
             "command_required", "This record can only be created through its dedicated business command.");
         switch (e)
         {
-            case Quote q: Guard.Require(q.Status == QuoteStatus.Draft && q.Snapshot is null && q.Deliveries.Count == 0 && q.AcceptedAt is null && q.Number == "", "command_required", "Create a draft quote; issue and delivery are separate commands."); break;
+            case Quote q: Guard.Require(q.Status == QuoteStatus.Draft && q.Snapshot is null && q.Presentation is null && q.Deliveries.Count == 0 && q.AcceptedAt is null && q.Number == "", "command_required", "Create a draft quote; issue and delivery are separate commands."); break;
             case Invoice i: Guard.Require(i.Status == InvoiceStatus.Draft && i.Snapshot is null && i.Number == "" && i.Kind != InvoiceKind.CreditNote && i.OriginalInvoiceId is null, "command_required", "Create a draft receivable; corrections and issuance use dedicated commands."); break;
             case ChangeOrder c: Guard.Require(c.Status == ChangeOrderStatus.Draft && c.Snapshot is null && c.AcceptedAt is null, "command_required", "Create a draft change order."); break;
             case PurchaseOrder p: Guard.Require(p.Status == PurchaseOrderStatus.Draft && p.OrderedDigest == "" && p.Number == "", "command_required", "Create a draft purchase order."); break;
@@ -142,12 +144,14 @@ internal static class EditRules
             case TimeEntry t: Guard.Require(!t.Approved, "command_required", "Create unapproved time; approval uses its dedicated command."); break;
             case TrainingRecord t: Guard.Require(t.Status == TrainingRecordStatus.Draft && t.ReviewedAt is null && t.MentorFeedback == "", "command_required", "Create a draft training record without a review."); break;
             case MaintenanceContract m: Guard.Require(m.CompletedOccurrences == 0, "command_required", "A new maintenance contract cannot invent completed occurrences."); break;
+            case RoofRevision r: Guard.Require(r.Status == RoofRevisionStatus.Draft && r.Snapshot is null && r.PublishedAt is null && r.Version == 1 && r.PreviousRevisionId is null, "command_required", "Create a first draft roof; subsequent versions use the revision command."); break;
+            case Measurement m: Guard.Require(m.Status == MeasurementStatus.Draft && m.Snapshot is null && m.FrozenAt is null, "command_required", "Create a draft measurement; freezing uses its dedicated command."); break;
         }
     }
     public static void EnsureGenericUpdate(TenantEntity old, TenantEntity next)
     {
         Guard.Require(old.GetType() == next.GetType() && !old.Archived, "record_immutable", "This record cannot be edited.");
-        Guard.Require(old is not Order and not BankTransaction and not PaymentAllocation and not SupplierPaymentAllocation and not StockMovement and not FormSubmission and not MaterialReservation and not Acceptance,
+        Guard.Require(old is not Order and not BankTransaction and not PaymentAllocation and not SupplierPaymentAllocation and not StockMovement and not FormSubmission and not MaterialReservation and not Acceptance and not TechnicalRecord,
             "command_required", "Use the dedicated auditable command for this record.");
         switch (old)
         {
@@ -164,13 +168,20 @@ internal static class EditRules
             case TrainingRecord t: Guard.Require(t.Status == TrainingRecordStatus.Draft, "training_immutable", "Submitted training records are sealed; review uses its dedicated command."); EnsureGenericCreate(next); break;
             case SupplierInvoice i: Guard.Require(i.Status == SupplierInvoiceStatus.Draft, "supplier_invoice_immutable", "Approved supplier invoices require separate corrections."); EnsureGenericCreate(next); break;
             case MaintenanceContract m: Guard.Require(((MaintenanceContract)next).CompletedOccurrences == m.CompletedOccurrences && (m.CompletedOccurrences == 0 || ((MaintenanceContract)next).StartDate == m.StartDate), "command_required", "Maintenance occurrence history uses the completion command."); break;
+            case RoofRevision r:
+                var nextRoof = (RoofRevision)next;
+                Guard.Require(r.Status == RoofRevisionStatus.Draft && nextRoof.Status == RoofRevisionStatus.Draft && nextRoof.Snapshot is null && nextRoof.PublishedAt is null && r.Version == nextRoof.Version && r.PreviousRevisionId == nextRoof.PreviousRevisionId,
+                    "roof_immutable", "Published roofs require a new draft revision; predecessor and version cannot be edited."); break;
+            case Measurement m: Guard.Require(m.Status == MeasurementStatus.Draft, "measurement_immutable", "Frozen measurements retain their input evidence."); EnsureGenericCreate(next); break;
         }
     }
     public static void EnsureArchivable(TenantEntity e)
     {
-        Guard.Require(e is not Order and not Invoice and not SupplierInvoice and not PaymentAllocation and not SupplierPaymentAllocation and not BankTransaction and not StockMovement and not MaterialReservation and not FormSubmission and not Acceptance,
+        Guard.Require(e is not Order and not Invoice and not SupplierInvoice and not PaymentAllocation and not SupplierPaymentAllocation and not BankTransaction and not StockMovement and not MaterialReservation and not FormSubmission and not Acceptance and not TechnicalRecord,
             "record_immutable", "Business evidence is retained; use a correction or reversal.");
         if (e is Quote q) Guard.Require(q.Status == QuoteStatus.Draft, "quote_immutable", "Issued quote versions are retained.");
         if (e is TimeEntry t) Guard.Require(!t.Approved, "time_immutable", "Approved time is retained.");
+        if (e is RoofRevision r) Guard.Require(r.Status == RoofRevisionStatus.Draft, "roof_immutable", "Published roof evidence is retained.");
+        if (e is Measurement m) Guard.Require(m.Status == MeasurementStatus.Draft, "measurement_immutable", "Frozen measurement evidence is retained.");
     }
 }

@@ -67,6 +67,8 @@ export const modules: ModuleDefinition[] = [
   { kind:'supplier-payment-allocations',title:'Lieferantenzahlungen',singular:'Lieferantenzuordnung',description:'Zahlungen und Erstattungen aus importierten Bankumsätzen nachvollziehen.',group:'Kaufmännisch',icon:'€',fields:[],columns:['supplierInvoiceId','direction','amount','discountAmount','reversedAt'],readonly:true},
   { kind:'form-definitions',title:'Formulare',singular:'Formular',description:'Eigene veröffentlichte Erfassungsvorlagen.',group:'Baustelle',icon:'F',fields:[],columns:['name','version','published'],readonly:true},
   { kind:'form-submissions',title:'Ausgefüllte Formulare',singular:'Formularantwort',description:'Verbindliche Antworten mit Formularversion.',group:'Baustelle',icon:'F',fields:[],columns:['submittedAt','projectId','definitionVersion'],readonly:true},
+  { kind:'roof-revisions',title:'Dachrevisionen',singular:'Dachrevision',description:'Flächen, Öffnungen und Details je Gebäudestand.',group:'Betrieb',module:'technical',icon:'⌂',fields:[],columns:['title','buildingId','version','status'],readonly:true},
+  { kind:'measurements',title:'Aufmaß',singular:'Aufmaß',description:'Maße, Abzüge und Mengen mit Dachbezug.',group:'Betrieb',module:'technical',icon:'↔',fields:[],columns:['title','projectId','status'],readonly:true},
   { kind:'documents',title:'Dokumente',singular:'Dokument',description:'Projektunterlagen, Versionen und sichere Downloads.',group:'Betrieb',icon:'D',fields:[],columns:['fileName','projectId','sizeBytes','createdAt'],readonly:true}
 ];
 

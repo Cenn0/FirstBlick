@@ -70,22 +70,24 @@ test('technical form does not invent material values or present a normative proo
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
 });
 
-test('quote detail fetches the immutable snapshot before accepting its exact digest',async({page})=>{
+test('quote detail fetches frozen parties and prices before accepting the issued digest',async({page})=>{
   await fixtures(page);
   let accepted:unknown;let revision:string|undefined;
   const quote={id:'quote-a',revision:4,title:'Testdach Angebot',status:'Issued',number:'A-2026-00001'};
   await page.route('**/api/v1/quotes**',route=>{
     const req=route.request();const path=new URL(req.url()).pathname;
     if(path.endsWith('/accept')){accepted=req.postDataJSON();revision=req.headers()['if-match'];return route.fulfill({json:{...quote,status:'Accepted'}});}
-    if(path.endsWith('/quote-a'))return route.fulfill({json:{...quote,snapshot:{net:100,tax:19,gross:119,digest:'verified-snapshot'},lines:[]}});
+    if(path.endsWith('/quote-a'))return route.fulfill({json:{...quote,snapshot:{net:'100.00',tax:'19.00',gross:'119.00',digest:'pricing-only-snapshot'},issuedDigest:'verified-issued-presentation',presentation:{sellerName:'Testdach GmbH',buyerName:'Früherer Kundenname',buyerAddress:'Verbindliche Objektanschrift 1',number:quote.number,title:quote.title,validUntil:null,issuedAt:'2026-10-19T07:00:00Z',digest:'verified-issued-presentation'},lines:[]}});
     return route.fulfill({json:{items:[quote],total:1,page:1,pageSize:25}});
   });
   await page.goto('/quotes');await page.getByRole('button',{name:'Testdach Angebot',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Festgehaltene Kalkulation'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Festgehaltener Angebotsstand'})).toBeVisible();
+  await expect(page.getByText('Früherer Kundenname',{exact:false})).toBeVisible();
   await page.getByRole('button',{name:'Annahme dokumentieren',exact:true}).click();
   await page.getByRole('dialog').getByRole('button',{name:'Annahme dokumentieren',exact:true}).click();
   await expect(page.getByRole('dialog')).not.toBeVisible();
-  expect(accepted).toEqual({digest:'verified-snapshot'});expect(revision).toBe('"4"');
+  expect(accepted).toEqual({digest:'verified-issued-presentation'});expect(revision).toBe('"4"');
 });
 
 test('password recovery fragment is consumed into a separate reset form and removed from the URL',async({page})=>{

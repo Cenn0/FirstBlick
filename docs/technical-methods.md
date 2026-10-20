@@ -40,6 +40,61 @@ General polygons use local coordinates in metres on the actual plane and the sig
 
 The polygon validator rejects repeated/degenerate edges, self-intersection, self-touching, adjacent backtracking and areas below `1e-8 m²`. Openings must be strictly inside the outer ring, must not cross its concave boundary, and must not overlap, touch or nest. A maximum of 2,000 vertices across the complete request bounds intersection work. Contractual rules for whether an opening should be deducted must be implemented separately from this geometric quantity.
 
+## Versioned roofs and measured quantities
+
+`RoofRevision` and `Measurement` in `src/FirstBlick.Core/Business/RoofMeasurements.cs` provide the persisted evidence model for the initial DP-10 work. Their registry resource names are `roof-revisions` and `measurements`. They use the same tenant/reference graph as other business records.
+
+### Roof revisions
+
+A roof revision belongs to a building and optionally a project. Its surfaces each have a stable ID, name and typed `PolygonRoofInput`. Each polygon describes coordinates on its **actual surface plane**. Summing the surface results gives gross area, opening area and net area. The aggregate does not infer a second roof side, a common spatial coordinate system, intersections between different planes or shared boundary lengths.
+
+The detail list contains explicit linear annotations (`Ridge`, `Eave`, `Verge`, `Valley`, `Hip`) or point annotations (`Penetration`, `Drain`, `Other`). Linear annotations require a supplied length; point annotations carry a whole count. An optional surface reference must exist in the same revision. These annotations do not alter polygon areas or imply a drainage, structural or material calculation. An opening that affects geometric area belongs in the polygon's opening list.
+
+`RoofWorkflow.Publish` requires a non-empty active draft and creates a frozen `RoofSnapshot`. The snapshot binds the tenant, building, optional project, predecessor, version, title, revision reason, publication time, independently calculated surface results and detail annotations. Its method version is `1.0.0`, and `isNormative` remains `false`. Published data are rechecked against that evidence when validated.
+
+Version 1 has no predecessor. A later version must name the preceding published version for the same tenant and building, increment its version by one and provide a revision reason. `RoofWorkflow.CreateRevision` copies published inputs into a new draft with a new record ID; surface IDs remain stable within the revision chain. Mutable caller collections are detached when publishing or creating a revision. Changing the new draft leaves its predecessor intact. The API controls publication and prevents generic writes from fabricating a published state or downgrading published records to editable drafts.
+
+The domain bounds a revision to 100 surfaces, 4,000 vertices across all surfaces/openings and 200 descriptive details. Each individual polygon remains subject to the stricter kernel limits above. These are explicit implementation budgets, not claims about a building's permitted size.
+
+### Typed measurement inputs
+
+A measurement belongs to a project and a particular published roof revision. Each line states its description, measurement source, typed input, whole number of repetitions and explicitly listed deductions. The API checks the project/building relationship; the core checks the tenant, roof ID and any project association carried by the roof revision.
+
+| JSON input discriminator | Required dimensions | Derived unit | Quantity before repetitions and additional deductions |
+|---|---|---|---|
+| `rectangleArea` | `lengthM`, `widthM` | `m²` | Length × width |
+| `triangleArea` | `baseM`, `heightM` | `m²` | Base × perpendicular height ÷ 2 |
+| `length` | `lengthM` | `m` | Supplied length |
+| `count` | Whole `quantity` | `Stk` | Supplied piece count |
+| `volume` | `lengthM`, `widthM`, `heightM` | `m³` | Length × width × height |
+| `surfaceNetArea` | Published `surfaceId` | `m²` | Net area already calculated for that frozen roof surface |
+
+Inputs use an allowlisted `type` discriminator. There is no expression evaluator or arbitrary unit override. For example, one rectangular work item can be represented as:
+
+```json
+{
+  "description": "Declared rectangular work area",
+  "measurementSource": "Survey record and explicit scope of work",
+  "input": { "type": "rectangleArea", "lengthM": "12", "widthM": "10" },
+  "repetitions": 2,
+  "deductions": [
+    { "reason": "One explicitly excluded 2 by 3 metre item", "quantity": "6" }
+  ]
+}
+```
+
+This line yields `240 m²` before its declared deduction and `234 m²` afterward. The enclosing API record also needs its identifiers and normal record metadata. Decimal API values use the application's string representation to avoid JavaScript money/quantity conversion losses; point coordinates in roof geometry are finite floating-point values.
+
+Primitive dimensions use decimal arithmetic. The base quantity is multiplied by repetitions and then rounded once to six decimal places, with midpoint rounding away from zero. Explicit deduction quantities are subtracted from that rounded amount. A count and its deductions must remain whole pieces. A deduction cannot be negative or exceed the line's available quantity; a full deduction can leave zero. For example, `(1.000001 × 0.5) × 2` yields `1.000001`, because the half-unit intermediate is not rounded before repetition.
+
+For `surfaceNetArea`, polygon openings have **already** been deducted by the geometry kernel. The line's `grossQuantity` means the selected net surface quantity before any *additional declared measurement deductions*. It does not mean the polygon's gross area. Repeating an included opening as another deduction would be a scope-of-work mistake; no contractual rule is silently inferred or enforced.
+
+Dimensions accept at most six non-zero decimal places and lie between `0.000001 m` and `100,000 m`. A resulting line or per-unit total must not exceed `1,000,000,000,000` units. Counts are bounded to one million, repetitions to 10,000, and a measurement to 300 lines and 1,000 explicitly described deductions in total. A positive geometric result that rounds below the supported precision is rejected instead of becoming an unexplained zero quantity.
+
+`MeasurementWorkflow.Preview` calculates an evidence snapshot without changing the draft. `Freeze` stores that snapshot and a freeze date. It binds all line inputs, descriptions, sources, repetitions, deductions, derived quantities and units to the selected roof version and digest. Only referenced surface evidence is copied, so the original quantities remain reproducible even when a newer roof revision is published. Units are totaled separately; square metres, metres, pieces and cubic metres are never added into one combined number.
+
+A snapshot digest is an integrity identifier, not a digital signature, certified survey or proof that the supplied measurements are correct. API authorization and controlled publish/freeze commands protect its provenance. The initial implementation does not generate material requirements, waste factors, catalogue mappings or quote lines automatically. Those steps require their own explicit rules and reviewed linkage to a frozen measurement.
+
 ## Reference checks
 
 `tests/FirstBlick.Core.Tests/Technical` contains independently specified elementary references and adversarial boundary cases:
@@ -54,6 +109,8 @@ The polygon validator rejects repeated/degenerate edges, self-intersection, self
 | Actual-plane rectangle `12 × 10 m`, interior opening `2 × 3 m` | Gross area `120 m²`, opening `6 m²`, net area `114 m²` |
 
 Further checks cover equal/reversed boundary temperatures, splitting a layer, identical parallel paths, input evidence, caller mutation, NaN/infinity, invalid dimensions, signed bridge corrections, polygon orientation/translation, concavity, hole overlap and the request budget. These tests verify the stated models. They are not independent verification of a complete DIN/ISO method or site-specific design.
+
+`tests/FirstBlick.Core.Tests/Business/RoofMeasurementTests.cs` adds 49 domain cases for publication/revision history, independent multi-plane totals, all six measurement types, separate unit totals, repetition/rounding order, explicit deductions, immutable snapshots, caller mutation, tenant/project/predecessor checks, typed JSON round-trips and rejection boundaries. These checks cover the declared geometry and arithmetic; they do not establish site-specific construction suitability or contractual billing compliance.
 
 ## Standards and data boundaries
 

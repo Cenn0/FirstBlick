@@ -24,8 +24,8 @@ public sealed class CommercialApiTests(PostgresApiFixture fixture) : IClassFixtu
         Assert.Equal(119m, frozen.Snapshot.Gross); Assert.Equal(QuoteStatus.Issued, frozen.Status);
         var queued = await Ok<Quote>(Send(client, HttpMethod.Post, $"/api/v1/quotes/{frozen.Id}/delivery", new { channel = "Email", recipient = "customer@example.test" }, frozen.Revision));
         Assert.Equal(QuoteStatus.Issued, queued.Status); Assert.Equal(DeliveryState.Queued, Assert.Single(queued.Deliveries).State);
-        await Error(Send(client, HttpMethod.Post, $"/api/v1/quotes/{frozen.Id}/accept", new { digest = frozen.Snapshot.Digest }, frozen.Revision), HttpStatusCode.Conflict, "revision_conflict");
-        var accepted = await Ok<Quote>(Send(client, HttpMethod.Post, $"/api/v1/quotes/{frozen.Id}/accept", new { digest = frozen.Snapshot.Digest }, queued.Revision));
+        await Error(Send(client, HttpMethod.Post, $"/api/v1/quotes/{frozen.Id}/accept", new { digest = frozen.IssuedDigest }, frozen.Revision), HttpStatusCode.Conflict, "revision_conflict");
+        var accepted = await Ok<Quote>(Send(client, HttpMethod.Post, $"/api/v1/quotes/{frozen.Id}/accept", new { digest = frozen.IssuedDigest }, queued.Revision));
         var order = await Ok<Order>(Send(client, HttpMethod.Post, $"/api/v1/orders/from-quote/{accepted.Id}", new { }, accepted.Revision));
         Assert.Equal(frozen.Snapshot.Digest, order.Contract!.Digest);
         var invoice = await IssueInvoice(client, order);
@@ -103,7 +103,7 @@ public sealed class CommercialApiTests(PostgresApiFixture fixture) : IClassFixtu
         { reason = "Bank return present in imported ledger", returnBankTransactionId = returned.Id }, replacement.Revision));
         var originalBalance = await Ok<JsonElement>(client.GetAsync($"/api/v1/bank-transactions/{bank.Id}/balance"));
         var returnBalance = await Ok<JsonElement>(client.GetAsync($"/api/v1/bank-transactions/{returned.Id}/balance"));
-        Assert.Equal(20m, originalBalance.GetProperty("unallocated").GetDecimal()); Assert.Equal(0m, returnBalance.GetProperty("unallocated").GetDecimal());
+        Assert.Equal(20m, originalBalance.GetProperty("unallocated").Deserialize<decimal>(AppJson.Options)); Assert.Equal(0m, returnBalance.GetProperty("unallocated").Deserialize<decimal>(AppJson.Options));
         await Error(Send(client, HttpMethod.Post, "/api/v1/payments/allocate", new { invoiceId = firstInvoice.Id, bankTransactionId = bank.Id, amount = 80m }, bank.Revision), HttpStatusCode.BadRequest, "bank_overallocated");
         bank.Amount = 1_000_000m;
         await Error(Send(client, HttpMethod.Put, $"/api/v1/bank-transactions/{bank.Id}", bank, bank.Revision), HttpStatusCode.BadRequest, "command_required");
@@ -129,7 +129,7 @@ public sealed class CommercialApiTests(PostgresApiFixture fixture) : IClassFixtu
             Send(client, HttpMethod.Post, "/api/v1/supplier-payments/allocate", new { supplierInvoiceId = payable.Id, bankTransactionId = debit.Id, amount = 80m }, debit.Revision));
         Assert.Single(responses, x => x.IsSuccessStatusCode); Assert.Single(responses, x => x.StatusCode == HttpStatusCode.BadRequest);
         var balance = await Ok<JsonElement>(client.GetAsync($"/api/v1/bank-transactions/{debit.Id}/balance"));
-        Assert.Equal(80m, balance.GetProperty("allocated").GetDecimal()); Assert.Equal(20m, balance.GetProperty("unallocated").GetDecimal());
+        Assert.Equal(80m, balance.GetProperty("allocated").Deserialize<decimal>(AppJson.Options)); Assert.Equal(20m, balance.GetProperty("unallocated").Deserialize<decimal>(AppJson.Options));
         Assert.Equal("read-only", balance.GetProperty("mode").GetString());
     }
 
@@ -239,7 +239,7 @@ public sealed class CommercialApiTests(PostgresApiFixture fixture) : IClassFixtu
     {
         var quote = await DraftQuote(client, graph);
         quote = await Ok<Quote>(Send(client, HttpMethod.Post, $"/api/v1/quotes/{quote.Id}/freeze", new { }, quote.Revision));
-        return await Ok<Quote>(Send(client, HttpMethod.Post, $"/api/v1/quotes/{quote.Id}/accept", new { digest = quote.Snapshot!.Digest }, quote.Revision));
+        return await Ok<Quote>(Send(client, HttpMethod.Post, $"/api/v1/quotes/{quote.Id}/accept", new { digest = quote.IssuedDigest }, quote.Revision));
     }
     private static async Task<Invoice> InvoiceFor(HttpClient client, Graph graph)
     {

@@ -79,7 +79,7 @@ public sealed class TenantAccessFilter(FirstBlickDbContext db, TenantScope scope
     }
 }
 
-public sealed class CommandExecutor(FirstBlickDbContext db, TenantScope scope)
+public sealed class CommandExecutor(FirstBlickDbContext db, TenantScope scope, EntityStore store)
 {
     public async Task Authorize(string kind, bool write, CancellationToken ct)
     {
@@ -109,6 +109,21 @@ public sealed class CommandExecutor(FirstBlickDbContext db, TenantScope scope)
         if (receipt is not null)
         {
             Guard.Require(receipt.RequestDigest == digest, "idempotency_conflict", "This request key was already used for different content.");
+            // A receipt is not an authority token. Personal-role access can change after an earlier successful request.
+            if (scope.Role is BusinessRole.Worker or BusinessRole.Trainer)
+            {
+                using var response = JsonDocument.Parse(receipt.Response);
+                Guard.Require(response.RootElement.TryGetProperty("id", out var property) && property.TryGetGuid(out _), "forbidden", "This result requires a fresh authorization check before replay.");
+                var entityId = property.GetGuid();
+                if (kind == "documents")
+                {
+                    var document = await db.Documents.SingleOrDefaultAsync(x => x.Id == entityId, ct);
+                    Guard.Require(document is not null && document.ProjectId.HasValue, "forbidden", "The document is no longer in an assigned project.");
+                    await RecordPolicy.EnsureVisible("projects", document.ProjectId.Value, scope, store, ct);
+                    Guard.Require(document.SourceKind is null || AccessRules.CanRead(scope.Role, document.SourceKind), "forbidden", "The document source is no longer accessible.");
+                }
+                else await RecordPolicy.EnsureVisible(kind, entityId, scope, store, ct);
+            }
             await transaction.CommitAsync(ct);
             http.Response.Headers["Idempotency-Replayed"] = "true";
             return Results.Content(receipt.Response, "application/json");

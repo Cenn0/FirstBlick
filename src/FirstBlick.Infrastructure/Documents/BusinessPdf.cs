@@ -14,15 +14,16 @@ public static class BusinessPdf
 
     static BusinessPdf() => GlobalFontSettings.FontResolver = new InstalledFontResolver();
 
-    public static byte[] Quote(Quote quote, Customer customer, string businessName)
+    public static byte[] Quote(Quote quote)
     {
-        quote.Validate(); customer.Validate();
-        Guard.Require(quote.Snapshot is not null, "missing_snapshot", "A frozen quote is required for PDF generation.");
-        using var writer = new Report("ANGEBOT", quote.Number, quote.Snapshot.Digest);
-        writer.Text(businessName, true, 15);
-        writer.Space(12); writer.Text(customer.Name, true); writer.Text(customer.Address);
+        quote.Validate();
+        Guard.Require(quote.Snapshot is not null && quote.Presentation is not null, "legacy_evidence_incomplete", "A frozen quote and party presentation are required for PDF generation. Historical missing evidence cannot be inferred from today's master data.");
+        using var writer = new Report("ANGEBOT", quote.Number, quote.IssuedDigest);
+        writer.Text(quote.Presentation.SellerName, true, 15);
+        writer.Space(12); writer.Text(quote.Presentation.BuyerName, true); writer.Text(quote.Presentation.BuyerAddress);
         writer.Space(16); writer.Text(quote.Title, true, 14);
         writer.Text($"Angebotsversion {quote.Version} · {quote.Number}");
+        writer.Text($"Ausgestellt am {quote.Presentation.IssuedAt:dd.MM.yyyy}");
         if (quote.ValidUntil.HasValue) writer.Text($"Gültig bis {quote.ValidUntil.Value:dd.MM.yyyy}");
         writer.Space(18); writer.Lines(quote.Snapshot);
         writer.Space(14); writer.Text("Dieses Dokument enthält die eingefrorenen Preise und Mengen dieser Angebotsversion.", size: 9);
@@ -54,7 +55,7 @@ public static class BusinessPdf
 
     public static byte[] Technical(string title, string digest, IEnumerable<string> lines)
     {
-        using var writer = new Report("TECHNISCHER RECHENBERICHT", title, digest);
+        using var writer = new Report("TECHNISCHER RECHENBERICHT", "Ref. " + digest[..12], digest);
         writer.Text(title, true, 15); writer.Space(12);
         writer.Text("Rechenhilfe – kein normativer oder baurechtlicher Nachweis", true, 11);
         writer.Space(12); foreach (var line in lines) writer.Text(line, size: 9);
