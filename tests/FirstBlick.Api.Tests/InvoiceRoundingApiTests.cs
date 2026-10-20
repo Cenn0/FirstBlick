@@ -113,6 +113,61 @@ public sealed class InvoiceRoundingApiTests(PostgresApiFixture fixture) : IClass
         await Error(Send(other, HttpMethod.Post, $"/api/v1/invoices/{original.Id}/issue", new { }, original.Revision), HttpStatusCode.NotFound, "not_found");
     }
 
+
+    [PostgresApiFact]
+    public async Task Related_invoice_history_excludes_other_orders_and_tenants_without_losing_original_credit_notes()
+    {
+        var (_, client) = await Session();
+        var main = await Order(client); var unrelated = await Order(client);
+        var first = await Draft(client, main, InvoiceKind.Progress, 1m);
+        first = await Ok<Invoice>(Send(client, HttpMethod.Post, $"/api/v1/invoices/{first.Id}/issue", new { }, first.Revision));
+        var otherProgress = await Draft(client, unrelated, InvoiceKind.Progress, 1m);
+        otherProgress = await Ok<Invoice>(Send(client, HttpMethod.Post, $"/api/v1/invoices/{otherProgress.Id}/issue", new { }, otherProgress.Revision));
+        await Correction(client, otherProgress, 1m);
+
+        var (_, otherClient) = await Session();
+        var foreignOrder = await Order(otherClient);
+        var foreign = await Draft(otherClient, foreignOrder, InvoiceKind.Progress, 1m);
+        await Ok<Invoice>(Send(otherClient, HttpMethod.Post, $"/api/v1/invoices/{foreign.Id}/issue", new { }, foreign.Revision));
+
+        var final = await Draft(client, main, InvoiceKind.Final, 2m);
+        final = await Ok<Invoice>(Send(client, HttpMethod.Post, $"/api/v1/invoices/{final.Id}/issue", new { }, final.Revision));
+        Assert.Equal([first.Id], final.Calculation!.PreviousInvoices.Select(x => x.Id).ToArray());
+        Assert.Equal((.02m, .01m, .03m), (final.Snapshot!.Net, final.Snapshot.Tax, final.Snapshot.Gross));
+        var balance = await Ok<OpenInvoice>(client.GetAsync($"/api/v1/invoices/{first.Id}/balance"));
+        Assert.Equal(.01m, balance.Outstanding);
+        Assert.Equal(0m, balance.Credits);
+        await Error(otherClient.GetAsync($"/api/v1/invoices/{final.Id}/balance"), HttpStatusCode.NotFound, "not_found");
+    }
+
+    [PostgresApiFact]
+    public async Task An_issued_history_row_with_mismatched_stored_revision_blocks_further_invoicing_atomically()
+    {
+        var (user, client) = await Session(); var order = await Order(client);
+        var progress = await Draft(client, order, InvoiceKind.Progress, 1m);
+        progress = await Ok<Invoice>(Send(client, HttpMethod.Post, $"/api/v1/invoices/{progress.Id}/issue", new { }, progress.Revision));
+        var final = await Draft(client, order, InvoiceKind.Final, 2m);
+        await fixture.InScope(async services =>
+        {
+            var db = services.GetRequiredService<FirstBlickDbContext>();
+            var row = await db.Entities.IgnoreQueryFilters().SingleAsync(x => x.TenantId == user.TenantId && x.Kind == "invoices" && x.Id == progress.Id);
+            var body = AppJson.Read<Invoice>(row.Data);
+            body.Revision++;
+            row.Data = AppJson.Serialize(body);
+            await db.SaveChangesAsync();
+        });
+        await Error(Send(client, HttpMethod.Post, $"/api/v1/invoices/{final.Id}/issue", new { }, final.Revision),
+            HttpStatusCode.BadRequest, "financial_source_metadata");
+        var unchanged = await fixture.Read<Invoice>(user.TenantId, final.Id);
+        Assert.Equal(InvoiceStatus.Draft, unchanged.Status);
+        Assert.Null(unchanged.Calculation);
+        await fixture.InScope(async services =>
+        {
+            var db = services.GetRequiredService<FirstBlickDbContext>();
+            Assert.Equal(1, await db.Counters.IgnoreQueryFilters().Where(x => x.TenantId == user.TenantId && x.Kind == "RE").Select(x => x.Value).SingleAsync());
+        });
+    }
+
     private async Task<(ApiTestUser User, HttpClient Client)> Session()
     {
         var tenant = await fixture.CreateTenant(); var user = await fixture.CreateUser(tenant.Id); return (user, await fixture.Login(user));

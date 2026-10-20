@@ -126,7 +126,7 @@ public static class CommercialEndpoints
         api.MapGet("/orders/{id:guid}/cost-comparison", async (Guid id, decimal actualCost, decimal remainingForecastCost, [AsParameters] BusinessCommandServices c, CancellationToken ct) =>
         {
             await c.Commands.Authorize("orders", false, ct); var order = await c.Current<Order>(id, ct, false);
-            return Results.Ok(CommercialWorkflow.CompareCosts(order, await c.Store.All<ChangeOrder>(ct), actualCost, remainingForecastCost));
+            return Results.Ok(CommercialWorkflow.CompareCosts(order, await FinancialSources.ChangesForOrder(c, order.Id, ct), actualCost, remainingForecastCost));
         });
     }
 
@@ -147,10 +147,18 @@ public static class CommercialEndpoints
                 var invoice = await c.Current<Invoice>(id, ct);
                 await c.Approvals.Require(c.Http, "invoice.issue", "invoices", id, invoice.Revision, "{}", ct);
                 var day = await c.BusinessDate(ct); var number = await c.Store.NextNumber(invoice.Kind == InvoiceKind.CreditNote ? "KO" : "RE", day, ct);
-                var existing = await c.Store.All<Invoice>(ct);
                 if (invoice.Kind == InvoiceKind.CreditNote)
-                    InvoiceWorkflow.IssueCreditNote(invoice, await c.Store.Get<Invoice>(invoice.OriginalInvoiceId!.Value, ct), existing, number, day);
-                else InvoiceWorkflow.IssueForOrder(invoice, await c.Store.Get<Order>(invoice.OrderId, ct), existing, await c.Store.All<ChangeOrder>(ct), number, day);
+                {
+                    var original = await c.Store.Get<Invoice>(invoice.OriginalInvoiceId!.Value, ct);
+                    var related = await FinancialSources.ForOriginalInvoice(c, original.Id, ct);
+                    InvoiceWorkflow.IssueCreditNote(invoice, original, related, number, day);
+                }
+                else
+                {
+                    var related = await FinancialSources.ForOrder(c, invoice.OrderId, ct);
+                    var changes = await FinancialSources.ChangesForOrder(c, invoice.OrderId, ct);
+                    InvoiceWorkflow.IssueForOrder(invoice, await c.Store.Get<Order>(invoice.OrderId, ct), related, changes, number, day);
+                }
                 await c.Store.Save(invoice, "invoice.issue", false, ct); return invoice;
             })).Produces<Invoice>();
         api.MapPost("/invoices/{id:guid}/correction", (Guid id, CorrectionRequest body, [AsParameters] BusinessCommandServices c) =>
@@ -162,7 +170,9 @@ public static class CommercialEndpoints
         api.MapGet("/invoices/{id:guid}/balance", async (Guid id, [AsParameters] BusinessCommandServices c, CancellationToken ct) =>
         {
             await c.Commands.Authorize("invoices", false, ct); var invoice = await c.Current<Invoice>(id, ct, false);
-            return Results.Ok(PaymentWorkflow.Balance(invoice, await c.Store.All<PaymentAllocation>(ct), await c.Store.All<Invoice>(ct), await c.BusinessDate(ct)));
+            var allocations = await FinancialSources.AllocationsForInvoice(c, invoice.Id, ct);
+            var relatedInvoices = await FinancialSources.ForOriginalInvoice(c, invoice.Id, ct);
+            return Results.Ok(PaymentWorkflow.Balance(invoice, allocations, relatedInvoices, await c.BusinessDate(ct)));
         });
     }
 
