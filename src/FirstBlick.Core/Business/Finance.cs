@@ -144,7 +144,9 @@ public static class InvoiceWorkflow
         Guard.Text(invoice.SellerName, "SellerName"); Guard.Text(invoice.SellerAddress, "SellerAddress", 2000);
         Guard.Text(invoice.BuyerName, "BuyerName"); Guard.Text(invoice.BuyerAddress, "BuyerAddress", 2000);
         var snapshot = calculation is null ? Pricing.Freeze(invoice.Lines, allowPartialMeasurement: true) : InvoiceArithmetic.Snapshot(invoice, calculation);
-        Guard.Require(snapshot.Gross > 0, "zero_invoice", "An issued invoice must have a positive absolute amount.");
+        Guard.Require(snapshot.Gross > 0m || (calculation is not null
+            && InvoiceArithmetic.IsZeroCentFinalSettlement(invoice, calculation, snapshot)),
+            "zero_invoice", "Only an evidenced final quantity settlement may be issued with zero additional cents.");
         invoice.Number = number; invoice.IssueDate = issueDate; invoice.Snapshot = snapshot; invoice.Status = InvoiceStatus.Issued;
         invoice.Calculation = calculation;
         invoice.IssuedDigest = Digest(invoice);

@@ -40,6 +40,40 @@ public sealed class InvoiceRoundingApiTests(PostgresApiFixture fixture) : IClass
     }
 
     [PostgresApiFact]
+    public async Task Zero_cent_final_quantity_settlement_is_issued_once_and_has_no_receivable()
+    {
+        var (user, client) = await Session(); var order = await Order(client, 1m);
+        var progress = await Draft(client, order, InvoiceKind.Progress, .5m);
+        progress = await Ok<Invoice>(Send(client, HttpMethod.Post,
+            $"/api/v1/invoices/{progress.Id}/issue", new { }, progress.Revision));
+        Assert.Equal(.01m, progress.Snapshot!.Gross);
+        var final = await Draft(client, order, InvoiceKind.Final, .5m);
+        var key = "zero-final-" + Guid.NewGuid().ToString("N");
+        var revision = final.Revision;
+        final = await Ok<Invoice>(Send(client, HttpMethod.Post,
+            $"/api/v1/invoices/{final.Id}/issue", new { }, revision, key));
+        Assert.Equal(0m, final.Snapshot!.Gross);
+        Assert.Equal(InvoiceStatus.Issued, final.Status);
+        Assert.Single(final.Calculation!.PreviousInvoices);
+        using var replay = await Send(client, HttpMethod.Post,
+            $"/api/v1/invoices/{final.Id}/issue", new { }, revision, key);
+        Assert.Equal(HttpStatusCode.OK, replay.StatusCode);
+        Assert.Equal("true", replay.Headers.GetValues("Idempotency-Replayed").Single());
+        var balance = await Ok<OpenInvoice>(client.GetAsync($"/api/v1/invoices/{final.Id}/balance"));
+        Assert.Equal(0m, balance.Outstanding);
+        Assert.Equal(0m, balance.Collectible);
+        var stored = await fixture.Read<Invoice>(user.TenantId, final.Id); stored.Validate();
+        Assert.Equal(0m, stored.Snapshot!.Net);
+        await fixture.InScope(async services =>
+        {
+            var db = services.GetRequiredService<FirstBlickDbContext>();
+            Assert.Equal(2, await db.Counters.IgnoreQueryFilters()
+                .Where(x => x.TenantId == user.TenantId && x.Kind == "RE")
+                .Select(x => x.Value).SingleAsync());
+        });
+    }
+
+    [PostgresApiFact]
     public async Task Competing_final_invoices_serialize_against_current_quantities_and_cannot_bill_the_same_remaining_cent_twice()
     {
         var (user, client) = await Session(); var order = await Order(client);
@@ -173,13 +207,13 @@ public sealed class InvoiceRoundingApiTests(PostgresApiFixture fixture) : IClass
         var tenant = await fixture.CreateTenant(); var user = await fixture.CreateUser(tenant.Id); return (user, await fixture.Login(user));
     }
 
-    private static async Task<Order> Order(HttpClient client)
+    private static async Task<Order> Order(HttpClient client, decimal quantity = 3m)
     {
         var customer = await Create(client, "customers", new Customer { Name = "Synthetic cent-rounding customer", Address = "Synthetic address" });
         var building = await Create(client, "buildings", new Building { CustomerId = customer.Id, Name = "Synthetic building", Address = "Synthetic address" });
         var project = await Create(client, "projects", new Project { CustomerId = customer.Id, BuildingId = building.Id, Name = "Synthetic rounding project" });
         var quote = await Create(client, "quotes", new Quote { CustomerId = customer.Id, ProjectId = project.Id, Title = "Synthetic 3-cent contract",
-            Lines = [new QuoteLine { Description = "Synthetic roofing work", Quantity = 3m, UnitMaterialCost = .01m, VatPercent = 19m }] });
+            Lines = [new QuoteLine { Description = "Synthetic roofing work", Quantity = quantity, UnitMaterialCost = .01m, VatPercent = 19m }] });
         quote = await Ok<Quote>(Send(client, HttpMethod.Post, $"/api/v1/quotes/{quote.Id}/freeze", new { }, quote.Revision));
         quote = await Ok<Quote>(Send(client, HttpMethod.Post, $"/api/v1/quotes/{quote.Id}/accept", new AcceptQuoteRequest(quote.IssuedDigest), quote.Revision));
         return await Ok<Order>(Send(client, HttpMethod.Post, $"/api/v1/orders/from-quote/{quote.Id}", new { }, quote.Revision));

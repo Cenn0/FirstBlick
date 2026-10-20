@@ -107,10 +107,27 @@ public static class InvoiceArithmetic
         Guard.Require(IsDigest(calculation.Digest) && calculation.Digest == ContentDigest.Of(calculation with { Digest = "" }),
             "invoice_calculation_changed", "Frozen invoice calculation evidence has changed.");
         var (snapshot, lines) = Rebuild(invoice, calculation);
+        Guard.Require(snapshot.Gross > 0m || IsZeroCentFinalSettlement(invoice, calculation, snapshot),
+            "zero_invoice", "A zero-cent issued document is allowed only for a fully evidenced final quantity settlement.");
         Guard.Require(ContentDigest.Of(lines) == ContentDigest.Of(calculation.Lines)
             && ContentDigest.Of(snapshot) == ContentDigest.Of(invoice.Snapshot),
             "invoice_calculation_changed", "Invoice amounts no longer follow the frozen cumulative calculation.");
     }
+
+    /// <summary>
+    /// A final invoice may settle the last physical quantities without another cent being owed.
+    /// This is not permission to issue a stand-alone zero-value invoice, a zero-value advance,
+    /// or a zero-value correction. All accepted quantities are checked by Rebuild first.
+    /// </summary>
+    internal static bool IsZeroCentFinalSettlement(Invoice invoice, InvoiceCalculation calculation, QuoteSnapshot snapshot)
+        => invoice.Kind == InvoiceKind.Final
+            && calculation.Basis == InvoiceCalculationBasis.Contract
+            && snapshot.Net == 0m && snapshot.Tax == 0m && snapshot.Gross == 0m
+            && calculation.PreviousInvoices.Count > 0
+            && calculation.PreviousBalances.Any(x => x.Net > 0m || x.Tax > 0m)
+            && calculation.Lines.Count == invoice.Lines.Count
+            && calculation.Lines.All(x => x.AfterQuantity > x.BeforeQuantity
+                && x.AfterNet == x.BeforeNet && x.AfterTax == x.BeforeTax);
 
     private sealed record Position(int SourceIndex, int PositionIndex, PricedLine Line);
 

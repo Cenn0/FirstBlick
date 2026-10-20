@@ -54,7 +54,9 @@ Der PDF-Renderer `firstblick-business-pdf/1.1` zeigt für neue Belege den Einzel
 
 ## Grenzen und Fehlerverhalten
 
-Ein Null-Euro-Beleg und eine Position mit negativem Rundungsdifferenzbetrag werden derzeit ausdrücklich abgewiesen. Bei sehr kleinen Mengen kann daher eine Restmenge verbleiben, deren Betrag bereits durch eine frühere Rundung vollständig beansprucht wurde. Die Anwendung erzeugt dafür keinen erfundenen Rechnungsbetrag. Der Fall benötigt eine überprüfte Korrektur und Neuausstellung oder einen künftig gesondert implementierten Nullbetrag-Abschluss.
+Eine **Schlussrechnung mit 0,00 EUR** kann nun ausschließlich als technisch belegter Mengenabschluss ausgegeben werden, wenn alle folgenden Voraussetzungen gleichzeitig vorliegen: Die kumulative Berechnung ist an den angenommenen Auftrag gebunden; es existiert bereits mindestens ein berücksichtigter früherer Beleg mit tatsächlich positiv abgerechneten Centbeträgen; die Schlussrechnung erfasst positive verbleibende Mengen und schließt *alle* angenommenen Vertragsmengen vollständig ab; für jede neue Position sind die zusätzlichen Netto- und Steuerbeträge genau null. Die Herleitung, die vorherigen Belege, die vollständigen Mengen und der unveränderliche Rechnungsdigest werden gespeichert. Das PDF kennzeichnet den Mengenabschluss und den fehlenden zusätzlichen Zahlbetrag ausdrücklich. Eine solche Schlussrechnung erzeugt eine neue Belegnummer, aber keine zusätzliche Forderung.
+
+Eine eigenständige Null-Euro-Erstrechnung, eine Null-Euro-Teilrechnung und eine Null-Euro-Korrektur bleiben verboten. Ebenso bleiben negative Centdifferenzen, Übermengen und unvollständig abgerechnete Schlussmengen unzulässig. Das Verfahren entscheidet weder über die rechtliche Notwendigkeit noch die umsatzsteuerliche Anerkennung eines Null-Euro-Schlussbelegs; diese Abnahme bleibt ausstehend.
 
 Überschreiten historische Rechnungen oder Korrekturen die verfügbaren ursprünglichen Mengen oder Centbeträge, wird die Folge ebenfalls abgewiesen. Wiederholte Quellen, doppelte Belege und Korrekturen ohne ihren Originalbeleg dürfen die Berechnungsgrundlage nicht verändern.
 
@@ -67,7 +69,7 @@ Dieses Verfahren definiert die implementierte kaufmännische Arithmetik. Es beha
 ## Prüfstellen
 
 - [Kumulativer Rechenkern](../src/FirstBlick.Core/Business/InvoiceArithmetic.cs) und [Rechnungsworkflow](../src/FirstBlick.Core/Business/Finance.cs)
-- [Domänenregressionen](../tests/FirstBlick.Core.Tests/Business/InvoiceCumulativeRoundingTests.cs): Centüberträge, getrennte Quellpositionen, Steuersätze, Korrekturen, Altrechnungen, Nullbetrag, Duplikate, Änderungen und Budgets
+- [Domänenregressionen](../tests/FirstBlick.Core.Tests/Business/InvoiceCumulativeRoundingTests.cs): Centüberträge, getrennte Quellpositionen, Steuersätze, Korrekturen, Altrechnungen, Null-Euro-Mengenabschluss mit Negativabgrenzung, Duplikate, Änderungen und Budgets
 - [Echte HTTP-/PostgreSQL-Fälle](../tests/FirstBlick.Api.Tests/InvoiceRoundingApiTests.cs): JSONB, Idempotenz, konkurrierende Schlussrechnungen, Korrekturen, Manipulation und Mandantengrenze
 - [PDF-Regressionsfälle](../tests/FirstBlick.Api.Tests/InvoicePdfTests.cs): Aufmaßherkunft, Netto-/Steuerübertrag und Ablehnung veränderter ausgestellter Werte
 

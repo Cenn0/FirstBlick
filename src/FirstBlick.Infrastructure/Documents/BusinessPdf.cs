@@ -52,6 +52,11 @@ public static class BusinessPdf
         // Invoice.Validate already checks the invoice-specific frozen contract,
         // including partial quantities with their complete measurement evidence.
         writer.Space(18); writer.Lines(invoice.Snapshot, validateQuote: false, invoice.Calculation);
+        if (invoice.Kind == InvoiceKind.Final && invoice.Snapshot.Gross == 0m)
+        {
+            writer.Space(8);
+            writer.Text("Mengenabschluss: Die verbliebenen Auftragsmengen sind vollständig nachgewiesen und abgerechnet. Für diesen Beleg entsteht kein zusätzlicher Zahlbetrag.", true, 9);
+        }
         if (invoice.Calculation is { } calculation)
         {
             writer.Space(14);

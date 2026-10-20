@@ -179,12 +179,50 @@ public sealed class InvoiceCumulativeRoundingTests
     }
 
     [Fact]
-    public void Zero_cent_remaining_invoice_is_explicitly_rejected_without_mutation()
+    public void Final_quantity_settlement_preserves_zero_cents_and_closes_the_full_contract()
     {
-        var order = BusinessFixture.Order(.01m, 1m, 0m); var first = Issue(order, InvoiceKind.Progress, .5m, [], "P1");
-        var final = BusinessFixture.Draft(order); final.Lines[0].Quantity = .5m;
-        Assert.Equal("zero_invoice", Assert.Throws<DomainException>(() => InvoiceWorkflow.IssueForOrder(final, order, [first], [], "F1", Day)).Code);
-        Assert.Equal(InvoiceStatus.Draft, final.Status); Assert.Null(final.Calculation); Assert.Null(final.Snapshot); Assert.Equal("", final.IssuedDigest);
+        var order = BusinessFixture.Order(.01m, 1m, 0m);
+        var first = Issue(order, InvoiceKind.Progress, .5m, [], "P1");
+        var final = Issue(order, InvoiceKind.Final, .5m, [first], "F1");
+        Assert.Equal((.01m, 0m), (first.Snapshot!.Net, first.Snapshot.Tax));
+        Assert.Equal((0m, 0m, 0m), (final.Snapshot!.Net, final.Snapshot.Tax, final.Snapshot.Gross));
+        Assert.Equal(.5m, final.Calculation!.Lines.Single().AfterQuantity - final.Calculation.Lines.Single().BeforeQuantity);
+        Assert.Equal(first.IssuedDigest, final.Calculation.PreviousInvoices.Single().Digest);
+        Assert.NotEmpty(final.IssuedDigest); final.Validate();
+    }
+
+    [Fact]
+    public void Zero_value_advance_and_credit_cannot_be_issued()
+    {
+        var order = BusinessFixture.Order(.01m, 1m, 0m);
+        var tinyAdvance = BusinessFixture.Draft(order, InvoiceKind.Progress); tinyAdvance.Lines[0].Quantity = .1m;
+        Assert.Equal("zero_invoice", Assert.Throws<DomainException>(() =>
+            InvoiceWorkflow.IssueForOrder(tinyAdvance, order, [], [], "P0", Day)).Code);
+        Assert.Equal(InvoiceStatus.Draft, tinyAdvance.Status);
+        var original = Issue(order, InvoiceKind.Final, 1m, [], "I1");
+        var tinyCredit = InvoiceWorkflow.DraftCreditNote(original, "Small correction without a cent");
+        tinyCredit.DueDate = Day; tinyCredit.Lines[0].Quantity = .1m;
+        Assert.Equal("zero_invoice", Assert.Throws<DomainException>(() =>
+            InvoiceWorkflow.IssueCreditNote(tinyCredit, original, [], "C0", Day)).Code);
+        Assert.Equal(InvoiceStatus.Draft, tinyCredit.Status);
+        Assert.Null(tinyCredit.Calculation);
+    }
+
+    [Fact]
+    public void A_standalone_zero_contract_and_an_overbilled_final_are_still_rejected()
+    {
+        var zeroOrder = BusinessFixture.Order(0m, 1m, 0m);
+        var draft = BusinessFixture.Draft(zeroOrder);
+        Assert.Equal("zero_invoice", Assert.Throws<DomainException>(() =>
+            InvoiceWorkflow.IssueForOrder(draft, zeroOrder, [], [], "F0", Day)).Code);
+
+        var order = BusinessFixture.Order(.01m, 1m, 0m);
+        var first = Issue(order, InvoiceKind.Progress, .5m, [], "P1");
+        var close = Issue(order, InvoiceKind.Final, .5m, [first], "F1");
+        var extra = BusinessFixture.Draft(order, InvoiceKind.Final); extra.Lines[0].Quantity = .1m;
+        Assert.Equal("order_overbilled", Assert.Throws<DomainException>(() =>
+            InvoiceWorkflow.IssueForOrder(extra, order, [first, close], [], "F2", Day)).Code);
+        Assert.Equal(InvoiceStatus.Draft, extra.Status);
     }
 
     [Fact]
