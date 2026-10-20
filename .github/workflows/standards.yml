@@ -1,0 +1,26 @@
+name: Official standards validation
+on:
+  push:
+    branches: [main, 'work/**']
+  pull_request:
+permissions:
+  contents: read
+concurrency:
+  group: standards-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  reference-assets:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - name: Inspect official versioned validation resources
+        run: python3 scripts/standards-assets.py --inventory
+      - name: Inspect the pinned validator command line
+        run: java -jar .standards/validator.jar --help
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        if: always()
+        with:
+          name: official-validation-resource-inventory
+          path: .standards/inventory.json
+          include-hidden-files: true
