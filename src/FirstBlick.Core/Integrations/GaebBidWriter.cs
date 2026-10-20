@@ -79,7 +79,13 @@ public static class GaebBidWriter
         if (preview.ExchangePhase == "X84")
         {
             root = new XElement(source.Root);
-            root.Element(Target + "GAEBInfo")!.SetElementValue(Target + "Date", Date(input.BidDate));
+            var gaebInfo = root.Element(Target + "GAEBInfo")!;
+            gaebInfo.SetElementValue(Target + "Date", Date(input.BidDate));
+            // GAEB 3.3 requires information about the software ACTUALLY exporting this X84.
+            // Copying the original tender/bid producer into GAEBInfo would misstate provenance.
+            var producer = gaebInfo.Element(Target + "ProgSystem");
+            Guard.Require(producer is not null, "gaeb_missing_producer", "The original X84 lacks a producer field required for a truthful re-export.");
+            producer!.Value = "FirstBlick";
             var award = root.Element(Target + "Award")!;
             award.Element(Target + "CTR")!.ReplaceWith(Contractor(input.Bidder));
             UpdateBody(award.Element(Target + "BoQ")!.Element(Target + "BoQBody")!, byId);
