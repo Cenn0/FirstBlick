@@ -164,8 +164,10 @@ public static class OfficialGaebExchangeEndpoints
         var digest = ContentDigest.Of(new
         {
             contract = "firstblick.gaeb-bid-preview/2.0.0", c.Scope.TenantId, project.Id, project.Revision,
-            source.SourceSha256, source.SchemaBundleSha256, source.SchemaEdition, output.MappingDigest,
-            output.XmlSha256, export.SchemaBundleSha256, export.SchemaEdition, export.Valid,
+            sourceSha256 = source.SourceSha256, sourceSchemaBundleSha256 = source.SchemaBundleSha256,
+            sourceSchemaEdition = source.SchemaEdition, output.MappingDigest,
+            output.XmlSha256, exportSchemaBundleSha256 = export.SchemaBundleSha256,
+            exportSchemaEdition = export.SchemaEdition, export.Valid,
             excluded = output.PhaseExcludedSourceFields
         });
         var preview = new OfficialGaebBidPreview("firstblick.gaeb-bid-preview/2.0.0", c.Scope.TenantId,
