@@ -118,8 +118,9 @@ export class CostAnalysisComponent{
    // A stale manual supplier estimate cannot be silently used after an allocation.
    const inputs=this.capture()!.report.reviewedInputs;
    const value=await this.api.command<CostCapture>(`orders/${id}/cost-analysis`,{
-     ...inputs,supplierCosts:inputs.supplierCosts.filter(item=>!this.allocationJournal()
-       .some(entry=>this.allocationActive().includes(entry.id)&&entry.supplierInvoiceId===item.supplierInvoiceId))
+     ...inputs,supplierCosts:inputs.supplierCosts.filter(item=>!item.evidence.startsWith('Posted allocation journal ')
+       && !this.allocationJournal().some(entry=>this.allocationActive().includes(entry.id)
+         && entry.supplierInvoiceId===item.supplierInvoiceId))
    });
    if(this.current(generation,access)&&this.orderId===id)this.accept(value);
  }
