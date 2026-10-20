@@ -1,4 +1,5 @@
 using FirstBlick.Core.Business;
+using System.Text.Json.Serialization;
 
 namespace FirstBlick.Core.Technical;
 
@@ -11,7 +12,7 @@ public enum TaperedFlowAxis { AlongLength, AlongWidth }
 /// All dimensions and thicknesses are vertical/metres, not rounded catalogue millimetres.
 /// </summary>
 public sealed record TaperedBoardSku(string Sku, double ThinEdgeM, double ThickEdgeM,
-    int UnitsPerPack, decimal? PricePerBoardEur);
+    int UnitsPerPack, [property: JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)] decimal? PricePerBoardEur);
 
 public sealed record TaperedBoardCatalog(string Manufacturer, string ProductRange, string CatalogRevision,
     string SourceReference, double BoardRunM, double BoardCrossM, IReadOnlyList<TaperedBoardSku> Boards);
