@@ -11,7 +11,7 @@ const forecastId='21000000-0000-4000-8000-000000000006';
 const order={id:orderId,revision:4,title:'Synthetische Nachkalkulation',number:'AU-TEST-01'};
 const initial={
   capturedAt:'2026-10-20T08:00:00Z',scope:'Synthetic source review fixture',
-  report:{orderId,projectId:'project-a',contractNet:'1190.00',plannedCost:'800.00',knownActualCost:'0.00',actualCost:null,forecastCost:null,forecastMargin:null,marginPercent:null,markupPercent:null,
+  report:{orderId,projectId:'21000000-0000-4000-8000-000000000009',contractNet:'1190.00',plannedCost:'800.00',knownActualCost:'0.00',actualCost:null,forecastCost:null,forecastMargin:null,marginPercent:null,markupPercent:null,
     contractSources:[{kind:'orders',id:orderId,revision:4,digest,title:order.title,contractNet:'1190.00',plannedCost:'800.00'}],
     sources:[
       {kind:'time-entries',id:timeId,revision:2,digest,title:'Freigegebene Montage',netCost:null,basis:'',missing:'hourly_cost_missing'},
@@ -23,14 +23,39 @@ const initial={
   }
 };
 
-async function fixture(page:Page,options:{role?:string;late?:Promise<void>;recalculationError?:boolean;recalculationForbidden?:boolean;extraOrder?:boolean;largeAggregate?:boolean;staleForecast?:boolean}={}){
+async function fixture(page:Page,options:{role?:string;late?:Promise<void>;recalculationError?:boolean;recalculationForbidden?:boolean;extraOrder?:boolean;largeAggregate?:boolean;staleForecast?:boolean;allocations?:boolean}={}){
   const requests:{path:string;body:any;headers:Record<string,string>}[]=[];
   const savedForecasts:Record<string,any>[]=[];
+  const supplierAllocations:Record<string,any>[]=[];
+  let activeAllocationIds:string[]=[];
+  let allocationSequence=0;
   let lastReport=structuredClone(initial.report);
   await page.route('**/api/v1/**',async route=>{
     const request=route.request(),path=new URL(request.url()).pathname.slice('/api/v1/'.length);
     if(path==='auth/me')return route.fulfill({json:{user:{id:'user-a',displayName:'Synthetische Verwaltung',email:'office@example.test'},activeTenantId:'tenant-a',tenants:['a','b'].map(id=>({id:'tenant-'+id,name:'Testbetrieb '+id.toUpperCase(),role:options.role||'Office',modules:['core','commercial','finance'],capabilities:['*']}))}});
     if(path==='auth/csrf')return route.fulfill({json:{ready:true},headers:{'Set-Cookie':'XSRF-TOKEN=cost-test-token; Path=/; SameSite=Strict'}});
+
+    if(options.allocations && path==='supplier-invoices' && request.method()==='GET')
+      return route.fulfill({json:{items:[{id:supplierId,revision:3,status:'Approved',title:'Synthetischer Eingangsbeleg',number:'ER-TEST-01',approvedDigest:digest}],total:1,page:1,pageSize:100}});
+    if(options.allocations && path===`supplier-invoices/${supplierId}` && request.method()==='GET')
+      return route.fulfill({json:{id:supplierId,revision:3,status:'Approved',title:'Synthetischer Eingangsbeleg',number:'ER-TEST-01',approvedDigest:digest}});
+    if(options.allocations && path===`supplier-invoices/${supplierId}/cost-allocations`){
+      if(request.method()==='GET')return route.fulfill({json:{items:supplierAllocations,active:activeAllocationIds,allocatedNet:activeAllocationIds.length?'70':'0',availableNet:activeAllocationIds.length?'30':'100'}});
+      const body=request.postDataJSON();
+      requests.push({path,body,headers:request.headers()});
+      const entry={id:`21000000-0000-4000-8000-${String(++allocationSequence).padStart(12,'0')}`,revision:1,
+        supplierInvoiceId:supplierId,projectId:body.projectId,netAmount:body.netAmount,reason:body.reason,reversesAllocationId:null};
+      supplierAllocations.push(entry);activeAllocationIds=[entry.id];
+      return route.fulfill({json:entry});
+    }
+    if(options.allocations && path.includes('/reverse') && path.startsWith('supplier-cost-allocations/')){
+      const id=path.split('/')[1],original=supplierAllocations.find(item=>item.id===id);
+      if(!original)return route.fulfill({status:404,json:{code:'not_found'}});
+      requests.push({path,body:request.postDataJSON(),headers:request.headers()});
+      const result={...original,id:'21000000-0000-4000-8000-000000009999',reversesAllocationId:id,reason:request.postDataJSON().reason};
+      supplierAllocations.push(result);activeAllocationIds=[];
+      return route.fulfill({json:result});
+    }
     if(path===`orders/${orderId}/cost-analysis`){
       requests.push({path,body:request.postDataJSON(),headers:request.headers()});
       if(options.late)await options.late;
@@ -226,3 +251,28 @@ test('a stale forecast is not persisted and the original reviewed report remains
   await expect(page.getByRole('heading',{name:order.title,exact:true})).toBeVisible();
 });
 
+
+
+test('approved supplier cost is explicitly posted and reversed with separate evidence, keeping unreviewed edits blocked',async({page})=>{
+  const api=await fixture(page,{allocations:true});await openReport(page);
+  await page.getByLabel('Beleg zur verbindlichen Verteilung').selectOption(supplierId);
+  await expect(page.getByText('Noch nicht verteilter Belegnettoanteil:')).toBeVisible();
+  await page.getByLabel('Neuer Netto-Projektanteil (€)').fill('70');
+  await page.getByLabel('Begründung und Herkunft des Projektanteils').fill('Reviewed synthetic invoice share');
+  await page.getByLabel('Abgleich der erfassten Kosten',{exact:true}).fill('Unreviewed change');
+  await expect(page.getByRole('button',{name:'Projektanteil verbindlich buchen'})).toBeDisabled();
+  await page.getByLabel('Abgleich der erfassten Kosten',{exact:true}).fill('');
+  // A recalculation closes the edited state before binding a financial posting.
+  await page.getByRole('button',{name:'Bericht mit diesen Ansätzen berechnen'}).click();
+  await page.getByRole('button',{name:'Projektanteil verbindlich buchen'}).click();
+  await expect(page.getByRole('table',{name:'Aktive gebuchte Verteilungen dieses Eingangsbelegs'})).toContainText('70,00');
+  expect(api.requests.filter(item=>item.path.endsWith('/cost-allocations'))).toHaveLength(1);
+  expect(api.requests.find(item=>item.path.endsWith('/cost-allocations'))?.body).toMatchObject({
+    projectId:'21000000-0000-4000-8000-000000000009',netAmount:'70',expectedSourceDigest:digest,
+    reason:'Reviewed synthetic invoice share'
+  });
+  await page.getByLabel('Begründung',{exact:true}).fill('Review found wrong allocation');
+  await page.getByRole('button',{name:'Buchung stornieren'}).click();
+  await expect(page.getByRole('table',{name:'Aktive gebuchte Verteilungen dieses Eingangsbelegs'})).toHaveCount(0);
+  expect(api.requests.some(item=>item.path.endsWith('/reverse')&&item.body.reason==='Review found wrong allocation')).toBe(true);
+});
