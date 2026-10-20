@@ -129,7 +129,7 @@ public static class BusinessRegistry
         ["notification-preferences"] = typeof(NotificationPreference), ["training-records"] = typeof(TrainingRecord),
         ["form-definitions"] = typeof(FormDefinition), ["form-submissions"] = typeof(FormSubmission),
         ["equipment"] = typeof(Equipment), ["supplier-invoices"] = typeof(SupplierInvoice),
-        ["supplier-payment-allocations"] = typeof(SupplierPaymentAllocation),
+        ["supplier-payment-allocations"] = typeof(SupplierPaymentAllocation), ["supplier-cost-allocations"] = typeof(SupplierCostAllocation),
         ["roof-revisions"] = typeof(RoofRevision), ["measurements"] = typeof(Measurement), ["technical-results"] = typeof(TechnicalRecord),
         ["portal-shares"] = typeof(PortalShare), ["portal-feedback"] = typeof(PortalFeedback), ["material-demands"] = typeof(MaterialDemand)
     };
