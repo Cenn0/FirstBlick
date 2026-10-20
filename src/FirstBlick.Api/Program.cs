@@ -121,6 +121,7 @@ TechnicalEndpoints.Map(api);
 PortalEndpoints.Map(api);
 IntegrationEndpoints.Map(api);
 TradePreviewEndpoints.Map(api);
+GaebCatalogEndpoints.Map(api);
 QuantityEndpoints.Map(api);
 CostEndpoints.Map(api);
 SupplierCostAllocationEndpoints.Map(api);

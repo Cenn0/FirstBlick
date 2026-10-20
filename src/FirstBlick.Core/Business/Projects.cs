@@ -76,8 +76,13 @@ public sealed class TaskItem : TenantEntity
     }
 }
 
+public sealed record GaebCatalogOrigin(string SourceSha256, string PositionKey, string ItemDigest,
+    string ExchangePhase, string PriceEvidence);
+
 public sealed class CatalogItem : TenantEntity
 {
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public GaebCatalogOrigin? GaebOrigin { get; set; }
     public string Name { get; set; } = "";
     public string Unit { get; set; } = "m²";
     public decimal UnitMaterialCost { get; set; }
@@ -88,6 +93,17 @@ public sealed class CatalogItem : TenantEntity
     public override void Validate()
     {
         ValidateCommon(); ToLine().Validate();
+        if (GaebOrigin is { } origin)
+        {
+            Guard.Require(origin.SourceSha256.Length == 64
+                && origin.SourceSha256.All(x => x is >= '0' and <= '9' or >= 'a' and <= 'f')
+                && origin.ItemDigest.Length == 64
+                && origin.ItemDigest.All(x => x is >= '0' and <= '9' or >= 'a' and <= 'f'),
+                "gaeb_origin", "GAEB origins require stable lowercase SHA-256 values.");
+            Guard.Text(origin.PositionKey, "GAEB position", 240);
+            Guard.Require(origin.ExchangePhase is "X83" or "X84", "gaeb_origin", "Unsupported GAEB phase.");
+            Guard.Text(origin.PriceEvidence, "GAEB price basis", 2000);
+        }
     }
     public QuoteLine ToLine(decimal quantity = 1m) => new()
     {

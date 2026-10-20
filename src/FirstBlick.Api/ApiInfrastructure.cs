@@ -43,7 +43,7 @@ public sealed class ErrorMiddleware(RequestDelegate next, ILogger<ErrorMiddlewar
             var (status, code, detail) = e switch
             {
                 DomainException d => (d.Code switch { "not_found" => 404, "forbidden" or "module_disabled" => 403, "unauthorized" => 401,
-                    "revision_required" => 428, "revision_conflict" or "idempotency_conflict" or "approval_required" or "approval_invalid" or "duplicate" or "stale_cost_report" => 409,
+                    "revision_required" => 428, "revision_conflict" or "idempotency_conflict" or "approval_required" or "approval_invalid" or "duplicate" or "stale_cost_report" or "gaeb_preview_changed" => 409,
                     "payload_too_large" => 413, "recovery_hold" => 423, "storage_unconfigured" or "provider_unconfigured" => 503, _ => 400 }, d.Code, d.Message),
                 AntiforgeryValidationException => (400, "csrf_invalid", "The session verification token is missing or expired. Reload the page."),
                 DbUpdateConcurrencyException => (409, "revision_conflict", "The record changed. Reload it before saving."),

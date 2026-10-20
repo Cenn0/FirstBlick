@@ -18,6 +18,7 @@ public static class EntityProjection
         SupplierInvoice i => $"supplier:{i.SupplierId}:number:{i.Number.Trim().ToUpperInvariant()}",
         RoofRevision r when r.PreviousRevisionId.HasValue => $"previous:{r.PreviousRevisionId}",
         MaterialDemand d when d.Status != MaterialDemandStatus.Cancelled => $"measurement:{d.Evidence.MeasurementId}:line:{d.Evidence.MeasurementLineId}:material:{d.MaterialId}",
+        CatalogItem c when c.GaebOrigin is { } origin => $"gaeb:{origin.SourceSha256}:line:{ContentDigest.Of(origin.PositionKey)}",
         _ => null
     };
 
