@@ -78,6 +78,16 @@ public static class SupplierCostAllocationEndpoints
                 allocatedNet = active.Sum(x => x.NetAmount), availableNet = invoice.Net - active.Sum(x => x.NetAmount) });
         }).WithTags("reports");
 
+        api.MapGet("/supplier-cost-allocations/{id:guid}", async (Guid id,
+            [AsParameters] BusinessCommandServices c, CancellationToken ct) =>
+        {
+            await Authorize(c, false, ct);
+            var record = await c.Current<SupplierCostAllocation>(id, ct, false);
+            record.Validate();
+            c.Http.Response.Headers.CacheControl = "no-store, private";
+            return Results.Ok(record);
+        }).Produces<SupplierCostAllocation>().WithTags("reports");
+
         api.MapGet("/projects/{id:guid}/supplier-cost-allocations", async (Guid id,
             [AsParameters] BusinessCommandServices c, CancellationToken ct) =>
         {
