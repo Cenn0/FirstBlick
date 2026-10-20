@@ -1,22 +1,101 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, DestroyRef, computed, effect, inject, signal, untracked } from '@angular/core';
+import { JsonPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ApiService } from '../core/api.service';
-import { errorMessage } from '../core/transport';
+import { RouterLink } from '@angular/router';
+import { ApiService, Entity } from '../core/api.service';
+import { AuthService } from '../core/auth.service';
+import { ApiError, errorMessage } from '../core/transport';
+import { downloadBlob, sha256Blob } from '../core/integrations.models';
+import { CalculationResult, ClimateDraft, LayerDraft, SavedCalculation, TechnicalMode, asObject, calculationInput, climateFields, emptyClimates, emptyLayer, hasDiffusion, hasLayers, isDigest, monthNames, resultInterfaces, resultMetrics, resultMonths, technicalMethods, technicalModes, validateCalculation, validateSavedCalculation } from '../core/technical-workbench.models';
 
-interface Provenance { methodId: string; inputDigest: string; isNormative: boolean; limitations: string[] }
-interface ThermalResult { uValueWm2K:number; totalResistanceM2KW:number; heatFluxWm2:number; interfaces:{name:string;temperatureC:number}[]; provenance:Provenance }
-interface RoofResult { surfaceAreaM2:number; projectedAreaM2:number; slopingLengthM:number; pitchDegrees:number; perimeterM:number; provenance:Provenance }
-
-@Component({imports:[FormsModule],template:`<header class="page-heading"><div><p class="eyebrow">FACHWERKZEUGE</p><h1>Dach & Berechnung</h1><p>Geometrie und stationäre Wärmeleitung mit nachvollziehbaren Eingaben.</p></div></header><div class="alert information"><strong>Rechenhilfe mit klaren Grenzen.</strong> Diese Ergebnisse sind keine normativen Wärme-, Feuchte- oder Standsicherheitsnachweise. Materialkennwerte und Randbedingungen müssen zu Ihrem Bauteil passen.</div><div class="section-tabs" role="tablist" aria-label="Rechenverfahren"><button role="tab" [attr.aria-selected]="mode()==='roof'" [class.active]="mode()==='roof'" (click)="mode.set('roof')">Dachgeometrie</button><button role="tab" [attr.aria-selected]="mode()==='thermal'" [class.active]="mode()==='thermal'" (click)="mode.set('thermal')">Schichtaufbau & Wärme</button></div>@if(error()){<div class="alert error" role="alert">{{error()}}</div>}
-    @if(mode()==='roof'){<div class="technical-grid"><section class="panel"><form #roofForm="ngForm" (ngSubmit)="calculateRoof()"><h2>Eine rechteckige Dachfläche</h2><p class="muted">Alle Maße in Metern. Für ein Satteldach berechnen Sie jede Dachseite einzeln.</p><div class="roof-illustration" aria-hidden="true"><svg viewBox="0 0 380 150"><path d="M75 116 145 37 310 53 240 132Z" fill="#e7b58b" stroke="#75492b" stroke-width="2"/><path d="M75 116 240 116 240 132M240 116 310 37 310 53" fill="none" stroke="#77858a" stroke-dasharray="5 5"/><path d="M89 102 254 119M104 85 269 103M121 65 286 86M138 46 303 67" fill="none" stroke="#f7eadf"/><text x="150" y="146" fill="#42535b" font-size="12">Länge entlang des Firsts</text></svg></div><div class="form-grid"><div class="form-field"><label for="ridge">Länge parallel zum First (m)</label><input id="ridge" name="ridge" type="number" [(ngModel)]="roof.ridgeLengthM" min="0.000001" max="100000" step="any" required></div><div class="form-field"><label for="run">Waagerechte Breite (m)</label><input id="run" name="run" type="number" [(ngModel)]="roof.horizontalRunM" min="0.000001" max="100000" step="any" required></div><div class="form-field"><label for="rise">Höhenunterschied (m)</label><input id="rise" name="rise" type="number" [(ngModel)]="roof.riseM" min="0" max="100000" step="any" required></div><div class="form-field full-width"><label for="measurement">Quelle der Maße</label><input id="measurement" name="source" [(ngModel)]="roof.measurementSource" required maxlength="500" placeholder="z. B. Aufmaß vor Ort, Planstand …"></div></div><button class="button primary" [disabled]="busy()||roofForm.invalid">{{busy()?'Berechnung läuft …':'Dachfläche berechnen'}}</button></form></section><section class="panel result-panel" aria-live="polite"><p class="eyebrow">ERGEBNIS</p>@if(roofResult();as result){<h2>{{decimal(result.surfaceAreaM2)}} m²</h2><p>Tatsächliche geneigte Dachfläche</p><dl class="result-list"><div><dt>Horizontale Projektionsfläche</dt><dd>{{decimal(result.projectedAreaM2)}} m²</dd></div><div><dt>Geneigte Länge</dt><dd>{{decimal(result.slopingLengthM)}} m</dd></div><div><dt>Dachneigung</dt><dd>{{decimal(result.pitchDegrees)}} °</dd></div><div><dt>Umfang</dt><dd>{{decimal(result.perimeterM)}} m</dd></div></dl><div class="alert warning">Öffnungen, Überstände und Verschnitt sind in dieser einzelnen Rechteckfläche nicht separat berücksichtigt.</div>}@else{<div class="empty-state compact"><span class="empty-icon" aria-hidden="true">△</span><h3>Die Maße machen den Unterschied.</h3><p>Geben Sie Länge, waagerechte Breite, Höhenunterschied und die Messquelle ein.</p></div>}</section></div>}
-    @if(mode()==='thermal'){<div class="technical-grid"><section class="panel"><form #thermalForm="ngForm" (ngSubmit)="calculateThermal()"><h2>Schichten von innen nach außen</h2><p class="muted">Homogene feste Schichten, ohne Luftströmung oder seitlichen Wärmefluss. Widerstände und Wärmeleitfähigkeiten sind explizite Eingaben.</p><div class="form-grid"><div class="form-field"><label for="inside">Temperatur innen (°C)</label><input id="inside" name="inside" type="number" [(ngModel)]="thermal.insideTemperatureC" min="-80" max="120" step="any" required></div><div class="form-field"><label for="outside">Temperatur außen (°C)</label><input id="outside" name="outside" type="number" [(ngModel)]="thermal.outsideTemperatureC" min="-80" max="120" step="any" required></div><div class="form-field"><label for="rsi">Innerer Oberflächenwiderstand (m²K/W)</label><input id="rsi" name="rsi" type="number" [(ngModel)]="thermal.insideSurfaceResistanceM2KW" min="0" step="any" required></div><div class="form-field"><label for="rse">Äußerer Oberflächenwiderstand (m²K/W)</label><input id="rse" name="rse" type="number" [(ngModel)]="thermal.outsideSurfaceResistanceM2KW" min="0" step="any" required></div></div>@for(layer of thermal.layers;track $index;let index=$index){<section class="line-row"><div class="line-heading"><h3>Schicht {{index+1}}</h3><button type="button" class="text-button danger-text" (click)="thermal.layers.splice(index,1)" [disabled]="thermal.layers.length<=1">Entfernen</button></div><div class="form-grid"><div class="form-field"><label [for]="'layer-'+index">Material</label><input [id]="'layer-'+index" [name]="'layer-'+index" [(ngModel)]="layer.name" required maxlength="200"></div><div class="form-field"><label [for]="'thickness-'+index">Dicke (m)</label><input [id]="'thickness-'+index" [name]="'thickness-'+index" type="number" [(ngModel)]="layer.thicknessM" min="0.000001" max="100" step="any" required></div><div class="form-field"><label [for]="'conductivity-'+index">Wärmeleitfähigkeit (W/mK)</label><input [id]="'conductivity-'+index" [name]="'conductivity-'+index" type="number" [(ngModel)]="layer.conductivityWmK" min="0.000001" step="any" required></div><div class="form-field"><label [for]="'source-'+index">Quelle des Kennwerts</label><input [id]="'source-'+index" [name]="'source-'+index" [(ngModel)]="layer.valueSource" required maxlength="500"></div></div></section>}<div class="detail-actions"><button type="button" class="button secondary" (click)="addLayer()" [disabled]="thermal.layers.length>=60">+ Schicht ergänzen</button><button class="button primary" [disabled]="busy()||thermalForm.invalid">{{busy()?'Berechnung läuft …':'Aufbau berechnen'}}</button></div></form></section><section class="panel result-panel" aria-live="polite"><p class="eyebrow">ERGEBNIS</p>@if(thermalResult();as result){<h2>{{decimal(result.uValueWm2K,4)}} W/(m²K)</h2><p>Stationärer Wärmedurchgangskoeffizient</p><dl class="result-list"><div><dt>Gesamtwiderstand</dt><dd>{{decimal(result.totalResistanceM2KW,4)}} m²K/W</dd></div><div><dt>Wärmestromdichte</dt><dd>{{decimal(result.heatFluxWm2)}} W/m²</dd></div></dl><h3>Temperaturen an den Grenzflächen</h3>@for(point of result.interfaces;track $index){<div class="temperature-row"><span>{{point.name}}</span><strong>{{decimal(point.temperatureC)}} °C</strong></div>}<div class="alert warning">Aus dem Temperaturverlauf allein folgt keine Aussage zu Tauwasser, Schimmel oder zur Zulässigkeit des Bauteils.</div>}@else{<div class="empty-state compact"><h3>Aufbau erfassen und berechnen.</h3><p>Die Ergebnisansicht zeigt Widerstand, U-Wert, Wärmestrom und die Temperaturen zwischen den Schichten.</p></div>}</section></div>}
-  `})
+@Component({ imports: [FormsModule, RouterLink, JsonPipe], templateUrl: './technical.component.html', styleUrl: './technical.component.css' })
 export class TechnicalComponent {
-  private readonly api=inject(ApiService);readonly mode=signal<'roof'|'thermal'>('roof');readonly busy=signal(false);readonly error=signal('');readonly roofResult=signal<RoofResult|null>(null);readonly thermalResult=signal<ThermalResult|null>(null);
-  roof={ridgeLengthM:null as number|null,horizontalRunM:null as number|null,riseM:null as number|null,measurementSource:''};
-  thermal={insideTemperatureC:null as number|null,outsideTemperatureC:null as number|null,insideSurfaceResistanceM2KW:null as number|null,outsideSurfaceResistanceM2KW:null as number|null,layers:[{name:'',thicknessM:null as number|null,conductivityWmK:null as number|null,valueSource:''}]};
-  addLayer():void{this.thermal.layers.push({name:'',thicknessM:null,conductivityWmK:null,valueSource:''});}
-  decimal(value:number,digits=2):string{return new Intl.NumberFormat('de-DE',{maximumFractionDigits:digits}).format(value);}
-  async calculateRoof():Promise<void>{this.busy.set(true);this.error.set('');try{this.roofResult.set(await this.api.command<RoofResult>('technical/roof/rectangle',this.roof));}catch(error){this.error.set(errorMessage(error));}finally{this.busy.set(false);}}
-  async calculateThermal():Promise<void>{this.busy.set(true);this.error.set('');try{this.thermalResult.set(await this.api.command<ThermalResult>('technical/thermal',this.thermal));}catch(error){this.error.set(errorMessage(error));}finally{this.busy.set(false);}}
+  readonly auth = inject(AuthService); private readonly api = inject(ApiService);
+  readonly mode = signal<TechnicalMode>('roof'); readonly methods = technicalMethods; readonly modes = technicalModes;
+  readonly fields = computed(() => technicalMethods[this.mode()].fields);
+  readonly allowed = computed(() => !!this.auth.scope() && this.auth.can('technical-results.write'));
+  readonly busy = signal(false); readonly error = signal(''); readonly notice = signal('');
+  readonly result = signal<CalculationResult | null>(null); readonly saved = signal<SavedCalculation | null>(null);
+  readonly projects = signal<Entity[]>([]); readonly projectTotal = signal(0); projectPage = 1; projectSearch = ''; projectId = ''; title = '';
+  values: Record<string, number | null> = {}; source = ''; layers: LayerDraft[] = [emptyLayer()]; months: ClimateDraft[] = emptyClimates();
+  readonly climateFields = climateFields; readonly monthNames = monthNames; readonly hasLayers = hasLayers; readonly hasDiffusion = hasDiffusion;
+  readonly metrics = resultMetrics; readonly interfaces = resultInterfaces; readonly monthlyResults = resultMonths;
+  private generation = 0;
+  constructor() {
+    inject(DestroyRef).onDestroy(() => { this.generation++; });
+    effect(() => { this.auth.accessSignature(); untracked(() => this.reset()); });
+  }
+  private current(generation: number, access: string): boolean { return generation === this.generation && access === this.auth.accessSignature(); }
+  private reset(): void { this.generation++; this.busy.set(false); this.error.set(''); this.notice.set(''); this.result.set(null); this.saved.set(null); this.values = {}; this.source = ''; this.layers = [emptyLayer()]; this.months = emptyClimates(); this.projects.set([]); this.projectTotal.set(0); this.projectPage = 1; this.projectId = ''; this.projectSearch = ''; this.title = ''; }
+  chooseMode(mode: TechnicalMode): void { if (this.mode() === mode) return; this.mode.set(mode); this.reset(); }
+  edited(): void { this.generation++; this.busy.set(false); this.result.set(null); this.saved.set(null); this.notice.set(''); this.error.set(''); }
+  attachmentEdited(): void { this.generation++; this.saved.set(null); this.notice.set(''); }
+  addLayer(): void { if (this.layers.length < 60) { this.layers.push(emptyLayer()); this.edited(); } }
+  removeLayer(index: number): void { if (this.layers.length > 1) { this.layers.splice(index, 1); this.edited(); } }
+  changeClimate(month: ClimateDraft, key: string, value: number | null): void { (month as unknown as Record<string, number | null>)[key] = value; this.edited(); }
+  climateValue(month: ClimateDraft, key: string): number | null { return month[key as keyof ClimateDraft]; }
+  decimal(value: unknown, digits = 4): string { return typeof value === 'number' && Number.isFinite(value) ? new Intl.NumberFormat('de-DE', { maximumFractionDigits: digits }).format(value) : '–'; }
+  corners(value: CalculationResult): { x: number; y: number; thicknessM: number }[] { return value['corners'] as { x: number; y: number; thicknessM: number }[] || []; }
+  flag(value: CalculationResult, key: string): boolean { return value[key] === true; }
+  private failed(error: unknown, generation: number, access: string): void {
+    if (!this.current(generation, access)) return;
+    if (error instanceof ApiError && [401, 403, 423].includes(error.status)) { this.result.set(null); this.saved.set(null); this.projects.set([]); this.projectId = ''; }
+    this.error.set(errorMessage(error));
+  }
+  async calculate(): Promise<void> {
+    if (!this.allowed() || this.busy()) return;
+    const generation = ++this.generation, access = this.auth.accessSignature(), mode = this.mode();
+    this.busy.set(true); this.error.set(''); this.notice.set(''); this.result.set(null); this.saved.set(null);
+    try {
+      const input = calculationInput(mode, this.values, this.source, this.layers, this.months);
+      const response = await this.api.command<unknown>(technicalMethods[mode].endpoint, input);
+      if (this.current(generation, access)) this.result.set(validateCalculation(response, mode, input));
+    } catch (error) { this.failed(error, generation, access); }
+    finally { if (this.current(generation, access)) this.busy.set(false); }
+  }
+  async searchProjects(page = 1): Promise<void> {
+    if (!this.allowed() || !this.auth.can('projects.read') || this.busy()) return;
+    const generation = ++this.generation, access = this.auth.accessSignature();
+    this.busy.set(true); this.error.set(''); this.projects.set([]); this.projectId = ''; this.saved.set(null);
+    try {
+      const response = await this.api.list('projects', this.projectSearch, page);
+      if (!this.current(generation, access)) return;
+      if (!Array.isArray(response.items) || !Number.isInteger(response.total)) throw new Error('Die Projektliste ist unvollständig.');
+      this.projects.set(response.items.filter(item => !item.archived)); this.projectTotal.set(response.total); this.projectPage = page;
+    } catch (error) { this.failed(error, generation, access); }
+    finally { if (this.current(generation, access)) this.busy.set(false); }
+  }
+  async save(): Promise<void> {
+    const result = this.result();
+    if (!result || !this.allowed() || this.busy() || this.saved()) return;
+    const generation = ++this.generation, access = this.auth.accessSignature(), tenant = this.auth.activeTenantId(), project = this.projectId, mode = this.mode();
+    this.busy.set(true); this.error.set(''); this.notice.set('');
+    try {
+      if (!this.projects().some(p => p.id === project)) throw new Error('Ein Projekt aus der aktuellen Suche auswählen.');
+      if (!this.title.trim() || this.title.length > 240) throw new Error('Eine Berichtsbezeichnung mit höchstens 240 Zeichen eingeben.');
+      const response = await this.api.command<unknown>('technical/runs', { projectId: project, roofRevisionId: null, title: this.title.trim(), method: technicalMethods[mode].method, input: result.input });
+      if (!this.current(generation, access)) return;
+      this.saved.set(validateSavedCalculation(response, mode, result.input, tenant, project));
+      this.notice.set('Berechnung mit Eingaben und Ergebnis im Projektverlauf gespeichert.');
+    } catch (error) { this.failed(error, generation, access); }
+    finally { if (this.current(generation, access)) this.busy.set(false); }
+  }
+  exportJson(): void {
+    const result = this.result(); if (!result || !this.allowed() || this.busy()) return;
+    downloadBlob(new Blob([JSON.stringify(this.saved() || result, null, 2)], { type: 'application/json' }), `FirstBlick-${technicalMethods[this.mode()].method}-${result.provenance.inputSha256.slice(0, 12)}.json`);
+  }
+  async pdf(): Promise<void> {
+    const record = this.saved(); if (!record || !this.allowed() || this.busy()) return;
+    const generation = ++this.generation, access = this.auth.accessSignature(); this.busy.set(true); this.error.set('');
+    try {
+      const response = asObject(await this.api.command<unknown>(`technical-results/${record.id}/pdf`, {}, record.revision));
+      if (!this.current(generation, access)) return;
+      if (typeof response['id'] !== 'string' || !/^[a-f0-9-]{36}$/i.test(response['id']) || response['sourceId'] !== record.id || response['sourceDigest'] !== record.digest || response['sourceKind'] !== 'technical-results' || response['projectId'] !== record.projectId || response['state'] !== 'Ready' || response['contentType'] !== 'application/pdf' || !isDigest(response['sha256'])) throw new Error('Der erzeugte Bericht ist nicht eindeutig an die gespeicherte Berechnung gebunden.');
+      const blob = await this.api.download(`documents/${response['id']}/content`);
+      if (!this.current(generation, access)) return;
+      if (blob.size !== response['size'] || blob.size <= 0 || blob.size > 25 * 1024 * 1024 || await blob.slice(0, 5).text() !== '%PDF-' || await sha256Blob(blob) !== response['sha256']) throw new Error('Größe, PDF-Kennung oder Prüfsumme des Berichts stimmt nicht.');
+      if (this.current(generation, access)) downloadBlob(blob, `FirstBlick-Berechnung-${record.id}.pdf`);
+    } catch (error) { this.failed(error, generation, access); }
+    finally { if (this.current(generation, access)) this.busy.set(false); }
+  }
 }
