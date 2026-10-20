@@ -1,0 +1,11 @@
+{
+  "name":"FirstBlick – Ihr Betrieb im Blick",
+  "short_name":"FirstBlick",
+  "id":"/",
+  "start_url":"/overview",
+  "display":"standalone",
+  "background_color":"#f6f6f2",
+  "theme_color":"#142832",
+  "lang":"de",
+  "icons":[{"src":"/icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
+}
