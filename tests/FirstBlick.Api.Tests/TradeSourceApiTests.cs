@@ -94,7 +94,7 @@ public sealed class TradeSourceApiTests(PostgresApiFixture fixture) : IClassFixt
             Ok<TradeSourceReceipt>(Send(first, HttpMethod.Post, Root + "gaeb", Body("gaeb"), key: key)),
             Ok<TradeSourceReceipt>(Send(second, HttpMethod.Post, Root + "gaeb", Body("gaeb") with { FileName = "renamed.xml" })));
         Assert.Equal(pending[0].Source.Id, pending[1].Source.Id);
-        Assert.Single(pending.Where(x => !x.AlreadyStored)); Assert.Single(pending.Where(x => x.AlreadyStored));
+        Assert.Single(pending, x => !x.AlreadyStored); Assert.Single(pending, x => x.AlreadyStored);
         using var replay = await Send(first, HttpMethod.Post, Root + "gaeb", Body("gaeb"), key: key);
         Assert.Equal(HttpStatusCode.OK, replay.StatusCode); Assert.Equal("true", replay.Headers.GetValues("Idempotency-Replayed").Single());
         Assert.Equal(1, objects.PutCount);
