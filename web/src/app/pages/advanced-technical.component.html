@@ -159,7 +159,7 @@
             </dl>
             <h4>Monatliche Kondensation und Verdunstung</h4>
             <div class="table-scroll"><table><thead><tr><th>Monat</th><th>Kondensat (kg/m²)</th><th>Verdunstung (kg/m²)</th><th>Rest (kg/m²)</th><th>Massenbilanzfehler</th></tr></thead><tbody>
-              @for (m of responseEntries(value,'months'); track $index) {<tr><td>{{monthsLabels[+m['month']-1]}}</td><td>{{number(m['condensedKgM2'],8)}}</td><td>{{number(m['evaporatedKgM2'],8)}}</td><td>{{number(m['endStoredMassKgM2'],8)}}</td><td>{{number(m['massConservationErrorKgM2'],10)}}</td></tr>}
+              @for (m of responseEntries(value,'months'); track $index) {<tr><td>{{monthLabel(m['month'])}}</td><td>{{number(m['condensedKgM2'],8)}}</td><td>{{number(m['evaporatedKgM2'],8)}}</td><td>{{number(m['endStoredMassKgM2'],8)}}</td><td>{{number(m['massConservationErrorKgM2'],10)}}</td></tr>}
             </tbody></table></div>
             <div class="alert warning">Normative Rechenmethode ≠ nationale Bauteilzulassung. Grenzflächenhöchstwerte, Schadensrisiko und nationale Verfahrensgrenzen gesondert prüfen.</div>
           }
