@@ -1,0 +1,106 @@
+<section class="panel">
+  <header class="page-heading">
+    <div><p class="eyebrow">OFFIZIELLER GAEB-ARBEITSABLAUF</p><h2>X83/X84 prüfen, anbieten und X84 zurückgeben</h2>
+      <p>Dieser separate Austauschweg prüft Original und Ausgabe gegen die unveränderten GAEB-XSD 3.3/2021-05.</p></div>
+  </header>
+  @if (!allowed()) {
+    <p>Nur mit Schreibrecht für Leistungskataloge verfügbar.</p>
+  } @else {
+    <div class="alert warning">Der Export akzeptiert reguläre Mengen-/Einzelpreispositionen; besondere LV-Preisstrukturen werden nicht stillschweigend umgerechnet.
+      XSD-Erfolg ist weder eine Vergabefreigabe noch eine Empfangsbestätigung. Keine automatische Abgabe.</div>
+    @if (error()) {<div class="alert error" role="alert">{{error()}}</div>}
+    @if (notice()) {<div class="alert information" role="status">{{notice()}}</div>}
+    <div class="form-field">
+      <label for="gb-original">1 · Unveränderte GAEB-X83/X84-Datei (maximal 1 MiB)</label>
+      <input id="gb-original" type="file" accept=".x83,.x84,.xml,application/xml" [disabled]="busy()" (change)="chooseFile($event)">
+    </div>
+    @if (file(); as selected) {<p>{{selected.name}} – {{selected.size}} Bytes</p>}
+    <button type="button" class="button secondary" [disabled]="!file() || busy()" (click)="inspect()">Originaldatei strukturell und gegen offizielle XSD prüfen</button>
+    @if (official(); as schema) {
+      <div class="alert information">Original-GAEB-XSD {{schema.validation.schemaEdition}}:
+        <strong>{{schema.validation.valid ? 'Bestanden' : 'Nicht bestanden'}}</strong>.
+        Die Prüfvorschau allein archiviert keine Originalbytes.</div>
+      @for (issue of schema.validation.issues; track $index) {<p class="review-issue">{{issue.severity}} / {{issue.code}}: {{issue.message}}</p>}
+    }
+    @if (structural(); as tender) {
+      <p><strong>LV:</strong> {{tender.scheduleName}} · {{tender.exchangePhase}} · {{tender.items.length}} Positionen · Original-SHA-256:
+        <code>{{tender.sourceSha256}}</code></p>
+      @if (official()?.validation?.valid) {
+        <div class="form-grid">
+          <div class="form-field"><label for="gb-project-search">2 · Projekt suchen</label><input id="gb-project-search" [(ngModel)]="projectSearch" maxlength="200"></div>
+          <div class="form-field"><button type="button" class="button secondary" [disabled]="busy()" (click)="searchProjects()">Projekte anzeigen</button></div>
+        </div>
+        @if (projects().length) {
+          <div class="form-field"><label for="gb-project">Projekt für Dokumentenablage</label><select id="gb-project" [(ngModel)]="projectId" (ngModelChange)="edited()"><option value="">Projekt auswählen</option>@for (p of projects(); track p.id) {<option [value]="p.id">{{p['name']}}</option>}</select></div>
+        }
+        @if (projectCount() > 25) {
+          <div class="detail-actions"><button type="button" class="button secondary" [disabled]="page<=1 || busy()" (click)="searchProjects(page-1)">Vorherige Projektseite</button>
+            <span>{{page}}</span><button type="button" class="button secondary" [disabled]="page*25>=projectCount() || busy()" (click)="searchProjects(page+1)">Nächste Projektseite</button></div>
+        }
+        <form #gaebBidForm="ngForm" (ngSubmit)="checkBid()">
+          <fieldset [disabled]="busy()">
+            <h3>3 · Bieter und Angebotsdatum</h3>
+            <div class="form-grid">
+              <div class="form-field"><label for="gb-date">Angebotsdatum</label><input id="gb-date" name="gb-date" type="date" required [(ngModel)]="bidDate" (ngModelChange)="edited()"></div>
+              <div class="form-field"><label for="gb-name">Offizieller Bietername</label><input id="gb-name" name="gb-name" required maxlength="240" [(ngModel)]="bidder.name" (ngModelChange)="edited()"></div>
+              <div class="form-field"><label for="gb-street">Straße, Hausnummer</label><input id="gb-street" name="gb-street" required maxlength="240" [(ngModel)]="bidder.street" (ngModelChange)="edited()"></div>
+              <div class="form-field"><label for="gb-postcode">Postleitzahl</label><input id="gb-postcode" name="gb-postcode" required maxlength="30" [(ngModel)]="bidder.postalCode" (ngModelChange)="edited()"></div>
+              <div class="form-field"><label for="gb-city">Ort</label><input id="gb-city" name="gb-city" required maxlength="240" [(ngModel)]="bidder.city" (ngModelChange)="edited()"></div>
+              <div class="form-field"><label for="gb-country">Ländercode</label><input id="gb-country" name="gb-country" required maxlength="2" [(ngModel)]="bidder.country" (ngModelChange)="edited()"></div>
+              <div class="form-field"><label for="gb-contact">Kontaktperson</label><input id="gb-contact" name="gb-contact" required maxlength="240" [(ngModel)]="bidder.contact" (ngModelChange)="edited()"></div>
+              <div class="form-field"><label for="gb-email">Kontakt-E-Mail</label><input id="gb-email" name="gb-email" type="email" required maxlength="240" [(ngModel)]="bidder.email" (ngModelChange)="edited()"></div>
+              <div class="form-field full-width"><label for="gb-review">Prüfbeleg für Bieter, Umfang und Einheitspreise</label><textarea id="gb-review" name="gb-review" rows="2" required maxlength="2000" [(ngModel)]="reviewEvidence" (ngModelChange)="edited()"></textarea></div>
+            </div>
+            <h3>4 · Jede LV-Position explizit anbieten oder ablehnen</h3>
+            <p>Die quellgebundenen Positionsdigests verhindern den Preisübertrag auf später geänderte Dateien. Ein fehlender Preis wird nicht als Nullpreis interpretiert.</p>
+            @for (item of rows(); track item.positionKey; let i = $index) {
+              <section class="line-row">
+                <h4>{{item.positionKey}}: {{item.description}}</h4>
+                <p>Menge {{item.tenderQuantity || 'Unbestimmt'}} {{item.unit}}</p>
+                @for (problem of item.reviewIssues; track $index) {<small class="review-issue">{{problem}}</small>}
+                <div class="form-grid">
+                  <div class="form-field"><label [for]="'gb-skip-'+i"><input type="checkbox" [id]="'gb-skip-'+i" [name]="'gb-skip-'+i" [(ngModel)]="item.price.notOffered" (ngModelChange)="edited()"> Position ausdrücklich nicht angeboten</label></div>
+                  @if (!item.price.notOffered) {<div class="form-field"><label [for]="'gb-price-'+i">Einheitspreis in EUR</label><input type="text" inputmode="decimal" [id]="'gb-price-'+i" [name]="'gb-price-'+i" required maxlength="22" [(ngModel)]="item.price.unitPrice" (ngModelChange)="edited()" placeholder="0,00 ist nur bei bewusstem Nullpreis zulässig"></div>}
+                  <div class="form-field full-width"><label [for]="'gb-evidence-'+i">Preisgrundlage / Freigabe</label><input [id]="'gb-evidence-'+i" [name]="'gb-evidence-'+i" required maxlength="2000" [(ngModel)]="item.price.priceEvidence" (ngModelChange)="edited()"></div>
+                </div>
+              </section>
+            }
+            <button type="submit" class="button primary" [disabled]="gaebBidForm.invalid || busy() || !projectId || !official()?.validation?.valid">X84 bilden und nach Original-XSD prüfen</button>
+          </fieldset>
+        </form>
+      }
+    }
+    @if (preview(); as planned) {
+      <section class="panel">
+        <h3>5 · X84-Ausgabe kontrollieren</h3>
+        <p><strong>Original:</strong> {{planned.sourcePhase}} · <strong>Ausgabe:</strong> {{planned.outputPhase}} ·
+          <strong>Summe netto:</strong> {{planned.totalNet}} EUR</p>
+        <p>X84 SHA-256: <code>{{planned.xmlSha256}}</code></p>
+        <p>Quell- und Ausgabe-XSD {{planned.originalSchema.valid && planned.exportSchema.valid ? 'bestanden' : 'nicht bestanden'}}.</p>
+        @if (planned.phaseExcludedSourceFields.length) {
+          <details><summary>{{planned.phaseExcludedSourceFields.length}} X83-Felder beim Phasenwechsel ausgeschlossen</summary>
+            @for (excluded of planned.phaseExcludedSourceFields; track $index) {<p>{{excluded}}</p>}
+          </details>
+        }
+        <div class="table-scroll"><table><thead><tr><th>Position</th><th>Menge</th><th>Einzelpreis</th><th>Zeilensumme</th></tr></thead>
+          <tbody>@for (item of planned.lines; track item.positionKey) {<tr><td>{{item.positionKey}}</td><td>{{item.quantity}}</td>
+            <td>{{item.notOffered ? 'Nicht angeboten' : item.unitPrice}}</td><td>{{item.lineNet}} €</td></tr>}</tbody></table></div>
+        @if (!receipt()) {
+          <label class="checkbox-field"><input type="checkbox" [(ngModel)]="consent" [disabled]="busy()">
+            X84-Preise, ausgelassene Felder, Absender, Projekt und Prüfstatus fachlich geprüft. Die Ausgabe wird nur gespeichert, nicht automatisch versendet.</label>
+          <button type="button" class="button primary" [disabled]="busy() || !consent || !planned.canExport" (click)="exportBid()">Freigegebene X84 und Prüfbelege unveränderlich ablegen</button>
+        }
+      </section>
+    }
+    @if (receipt(); as exported) {
+      <section class="panel"><h3>6 · Unveränderliche Austauschdateien</h3><p>Vorgang: {{exported.id}}</p>
+        <p>Keine automatische Übertragung an den Ausschreibenden und keine Empfängerbestätigung.</p>
+        <div class="detail-actions">
+          @for (artifact of exported.documents; track artifact.id) {
+            <button type="button" class="button secondary" [disabled]="busy()" (click)="download(artifact)">{{artifact.name}} (SHA-256-geprüft) herunterladen</button>
+          }
+        </div>
+      </section>
+    }
+  }
+</section>
