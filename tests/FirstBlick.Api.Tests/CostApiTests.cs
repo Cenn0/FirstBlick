@@ -44,6 +44,35 @@ public sealed class CostApiTests(PostgresApiFixture fixture) : IClassFixture<Pos
     }
 
     [PostgresApiFact]
+    public async Task Modified_stored_time_source_metadata_blocks_a_preview_and_a_forecast_commit()
+    {
+        var g = await Setup(); var client = await fixture.Login(g.User);
+        var path = $"/api/v1/orders/{g.Order.Id}/cost-analysis";
+        var report = await Report(client, path, Empty());
+        var before = await Counts(g.User.TenantId);
+        await fixture.InScope(async services =>
+        {
+            var db = services.GetRequiredService<FirstBlickDbContext>();
+            var row = await db.Entities.IgnoreQueryFilters().SingleAsync(x => x.TenantId == g.User.TenantId
+                && x.Kind == "time-entries" && x.Id == g.Time.Id);
+            var value = AppJson.Read<TimeEntry>(row.Data);
+            value.Revision++;
+            row.Data = AppJson.Serialize(value);
+            await db.SaveChangesAsync();
+        });
+        using var preview = await Send(client, HttpMethod.Post, path, Empty());
+        Assert.Equal(HttpStatusCode.BadRequest, preview.StatusCode);
+        using (var problem = JsonDocument.Parse(await preview.Content.ReadAsStringAsync()))
+            Assert.Equal("cost_source_metadata", problem.RootElement.GetProperty("code").GetString());
+        using var save = await Send(client, HttpMethod.Post, $"/api/v1/orders/{g.Order.Id}/cost-forecasts",
+            new SaveCostForecastRequest(Empty(), report.Digest, "Reject changed source metadata"));
+        Assert.Equal(HttpStatusCode.BadRequest, save.StatusCode);
+        using (var problem = JsonDocument.Parse(await save.Content.ReadAsStringAsync()))
+            Assert.Equal("cost_source_metadata", problem.RootElement.GetProperty("code").GetString());
+        Assert.Equal(before, await Counts(g.User.TenantId));
+    }
+
+    [PostgresApiFact]
     public async Task Sensitive_source_reports_recheck_role_withdrawal_after_waiting_for_the_tenant_lock()
     {
         var g = await Setup(); var client = await fixture.Login(g.User);

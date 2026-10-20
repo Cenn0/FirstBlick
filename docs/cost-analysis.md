@@ -19,6 +19,8 @@ Beispiel für einen bewusst noch unvollständigen ersten Bericht:
 }
 ```
 
+Zusätzlich zum globalen EF-Mandantenfilter begrenzen die Datenbankabfragen die Mandanten-ID ausdrücklich auf beiden Seiten jedes Links. Jede geladene Quelle wird auf übereinstimmende gespeicherte ID, Revision, Archivzustand, Entitätstyp und Mandant geprüft. Projekt- und Auftragslinks müssen auch in der gespeicherten Entität vorkommen. Widersprüche führen zu `cost_source_metadata` bzw. `cost_source_reference`, nicht zu einem möglicherweise falschen Gesamtbetrag. Das gilt auch beim erneuten Berechnen vor einer gespeicherten Prognose.
+
 Die Antwort enthält `capturedAt`, `report` und eine Scope-Erklärung. `contractSources` nennt Auftrag und angenommene Nachträge mit Art, ID, Revision, Inhaltsdigest, Titel, Vertragsnetto und kalkulierten Kosten. `sources` nennt die Kostenbelege mit denselben Herkunftskennungen, dem ermittelten Nettoansatz oder `null`, dem benannten Bewertungsbeleg und einem gegebenenfalls fehlenden Prüfschritt. Die Antwort bewahrt sämtliche `reviewedInputs`; ihr eigener Digest umfasst Bericht, Quelle und Bewertungen, aber nicht die separat ausgegebene Abrufzeit.
 
 ## Kostenbewertung
@@ -61,7 +63,7 @@ Die Betrachtung umfasst aktuelle, nicht archivierte Projektquellen und hat pro Q
 ## Nachweise
 
 - `tests/FirstBlick.Core.Tests/Business/CostAnalysisTests.cs`: unabhängig vorgegebene Summen, exakte Zeitrechnung, Rückgaben, Teilzuordnungen, Kosten null, fehlende Bewertungen, doppelte und fremde Quellen, Marge/Zuschlag und Quellverweise für Nachträge.
-- `tests/FirstBlick.Api.Tests/CostApiTests.cs`: tatsächliche HTTP-/PostgreSQL-Abfragen, alle sieben Geschäftsrollen, Mandantengrenzen, unveränderte Daten-/Audit-/Job-/Idempotenzbestände und Rollenentzug während eines beobachteten PostgreSQL-Sperrwartens.
+- `tests/FirstBlick.Api.Tests/CostApiTests.cs`: tatsächliche HTTP-/PostgreSQL-Abfragen, alle sieben Geschäftsrollen, Mandantengrenzen, Ablehnung manipulierter Quellenrevisionen ohne Audit-/Prognosebuchung, unveränderte Daten-/Audit-/Job-/Idempotenzbestände und Rollenentzug während eines beobachteten PostgreSQL-Sperrwartens.
 
 ## Revisionsfeste, bewusst gespeicherte Prognoseversionen
 

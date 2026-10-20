@@ -108,29 +108,42 @@ public static class CostEndpoints
     private static async Task<CostAnalysisResult> Evaluate(BusinessCommandServices c, Order order, CostAnalysisInput input, CancellationToken ct)
     {
         Guard.Require(input is not null, "invalid_forecast_input", "An explicit cost basis is required.");
-        var time = await Linked<TimeEntry>("projects", order.ProjectId, c.Db, ct);
-        var stock = await Linked<StockMovement>("projects", order.ProjectId, c.Db, ct);
-        var changes = await Linked<ChangeOrder>("orders", order.Id, c.Db, ct);
-        var purchases = await Linked<PurchaseOrder>("projects", order.ProjectId, c.Db, ct);
+        var time = await Linked<TimeEntry>("projects", order.ProjectId, c, ct);
+        var stock = await Linked<StockMovement>("projects", order.ProjectId, c, ct);
+        var changes = await Linked<ChangeOrder>("orders", order.Id, c, ct);
+        var purchases = await Linked<PurchaseOrder>("projects", order.ProjectId, c, ct);
         var purchaseIds = purchases.Select(x => x.Id).ToArray();
         Guard.Items(input.SupplierCosts, nameof(input.SupplierCosts), 5000);
 
         // Bind the current report to immutable, approved project-cost postings. Manual
         // allocations remain previews only and must not override amounts already booked
         // anywhere in the tenant for the same supplier invoice.
-        var projectJournal = await Linked<SupplierCostAllocation>("projects", order.ProjectId, c.Db, ct);
+        var projectJournal = await Linked<SupplierCostAllocation>("projects", order.ProjectId, c, ct);
         Guard.Require(projectJournal.All(x => x.TenantId == order.TenantId && x.ProjectId == order.ProjectId),
             "cost_allocation_metadata", "Project cost journal references do not match their tenant and project.");
         var projectActive = SupplierCostAllocationRules.Active(projectJournal);
         var postedInvoiceIds = projectActive.Select(x => x.SupplierInvoiceId).Distinct().ToArray();
         var explicitInvoiceIds = input.SupplierCosts.Select(x => x.SupplierInvoiceId).ToArray();
-        var linkedInvoiceIds = c.Db.Links.Where(x => x.SourceKind == "supplier-invoices" && x.TargetKind == "purchase-orders"
+        var tenantId = c.Scope.TenantId;
+        var linkedInvoiceIds = c.Db.Links.Where(x => x.TenantId == tenantId
+            && x.SourceKind == "supplier-invoices" && x.TargetKind == "purchase-orders"
             && purchaseIds.Contains(x.TargetId)).Select(x => x.SourceId);
-        var rows = await c.Db.Entities.Where(x => x.Kind == "supplier-invoices" && !x.Archived
+        var rows = await c.Db.Entities.AsNoTracking().Where(x => x.TenantId == tenantId
+                && x.Kind == "supplier-invoices" && !x.Archived
                 && (linkedInvoiceIds.Contains(x.Id) || explicitInvoiceIds.Contains(x.Id) || postedInvoiceIds.Contains(x.Id)))
-            .OrderBy(x => x.Id).Take(5001).Select(x => x.Data).ToListAsync(ct);
+            .OrderBy(x => x.Id).Take(5001).ToListAsync(ct);
         Guard.Require(rows.Count <= 5000, "cost_report_budget", "This source report exceeds 5,000 supplier documents.");
-        var invoices = rows.Select(AppJson.Read<SupplierInvoice>).ToList();
+        var invoices = new List<SupplierInvoice>(rows.Count);
+        foreach (var row in rows)
+        {
+            var source = AppJson.Read<SupplierInvoice>(row.Data);
+            Guard.Require(row.TenantId == tenantId && source.TenantId == tenantId && row.Id == source.Id
+                && row.Kind == "supplier-invoices" && row.Revision == source.Revision
+                && row.Archived == source.Archived && !source.Archived,
+                "cost_source_metadata", "The stored supplier invoice metadata does not match its cost source.");
+            source.Validate();
+            invoices.Add(source);
+        }
         Guard.Require(invoices.All(x => !x.PurchaseOrderId.HasValue || purchaseIds.Contains(x.PurchaseOrderId.Value)
                 || postedInvoiceIds.Contains(x.Id)),
             "wrong_cost_project", "A supplier invoice belongs to another project's purchase order without a posted project allocation.");
@@ -140,14 +153,27 @@ public static class CostEndpoints
             "cost_allocation_source_changed", "A posted cost allocation does not match an approved supplier invoice.");
 
         var invoiceIds = invoices.Select(x => x.Id).ToArray();
-        var allocationIds = c.Db.Links.Where(x => x.SourceKind == "supplier-cost-allocations"
+        var allocationIds = c.Db.Links.Where(x => x.TenantId == tenantId
+            && x.SourceKind == "supplier-cost-allocations"
             && x.TargetKind == "supplier-invoices" && invoiceIds.Contains(x.TargetId)).Select(x => x.SourceId);
-        var ledgerRows = await c.Db.Entities.Where(x => x.Kind == "supplier-cost-allocations"
+        var ledgerRows = await c.Db.Entities.AsNoTracking().Where(x => x.TenantId == tenantId
+            && x.Kind == "supplier-cost-allocations"
             && !x.Archived && allocationIds.Contains(x.Id)).OrderBy(x => x.Id)
-            .Take(5001).Select(x => x.Data).ToListAsync(ct);
+            .Take(5001).ToListAsync(ct);
         Guard.Require(ledgerRows.Count <= 5000, "cost_report_budget",
             "A supplier document's project distribution exceeds the supported evidence budget.");
-        var allJournal = ledgerRows.Select(AppJson.Read<SupplierCostAllocation>).ToList();
+        var allJournal = new List<SupplierCostAllocation>(ledgerRows.Count);
+        foreach (var row in ledgerRows)
+        {
+            var allocation = AppJson.Read<SupplierCostAllocation>(row.Data);
+            Guard.Require(row.TenantId == tenantId && allocation.TenantId == tenantId && row.Id == allocation.Id
+                && row.Kind == "supplier-cost-allocations" && row.Revision == allocation.Revision
+                && row.Archived == allocation.Archived && !allocation.Archived,
+                "cost_source_metadata", "The stored supplier-cost journal metadata does not match its source.");
+            Guard.Require(invoiceIds.Contains(allocation.SupplierInvoiceId),
+                "cost_source_reference", "The stored supplier-cost journal references an unrelated supplier document.");
+            allJournal.Add(allocation);
+        }
         Guard.Require(allJournal.All(x => x.TenantId == order.TenantId && invoiceIds.Contains(x.SupplierInvoiceId)),
             "cost_allocation_metadata", "The supplier allocation journal does not match this business and these sources.");
         var allActive = SupplierCostAllocationRules.Active(allJournal);
@@ -163,12 +189,30 @@ public static class CostEndpoints
         return ProjectCosting.Calculate(order, changes, time, stock, invoices, evaluatedInput);
     }
 
-    private static async Task<List<T>> Linked<T>(string targetKind, Guid id, FirstBlickDbContext db, CancellationToken ct) where T : TenantEntity
+    private static async Task<List<T>> Linked<T>(string targetKind, Guid id, BusinessCommandServices c, CancellationToken ct)
+        where T : TenantEntity
     {
+        var tenantId = c.Scope.TenantId;
         var kind = BusinessRegistry.KindOf<T>();
-        var ids = db.Links.Where(x => x.SourceKind == kind && x.TargetKind == targetKind && x.TargetId == id).Select(x => x.SourceId);
-        var rows = await db.Entities.Where(x => x.Kind == kind && !x.Archived && ids.Contains(x.Id)).OrderBy(x => x.Id).Take(5001).Select(x => x.Data).ToListAsync(ct);
+        var ids = c.Db.Links.Where(x => x.TenantId == tenantId && x.SourceKind == kind
+            && x.TargetKind == targetKind && x.TargetId == id).Select(x => x.SourceId);
+        var rows = await c.Db.Entities.AsNoTracking()
+            .Where(x => x.TenantId == tenantId && x.Kind == kind && !x.Archived && ids.Contains(x.Id))
+            .OrderBy(x => x.Id).Take(5001).ToListAsync(ct);
         Guard.Require(rows.Count <= 5000, "cost_report_budget", "This source report exceeds 5,000 records in one category.");
-        return rows.Select(AppJson.Read<T>).ToList();
+        var sources = new List<T>(rows.Count);
+        foreach (var row in rows)
+        {
+            var value = AppJson.Read<T>(row.Data);
+            Guard.Require(row.TenantId == tenantId && value.TenantId == tenantId && row.Id == value.Id
+                && row.Kind == kind && row.Revision == value.Revision
+                && row.Archived == value.Archived && !value.Archived,
+                "cost_source_metadata", "The linked cost source identity or revision has changed.");
+            value.Validate();
+            Guard.Require(value.References().Any(x => x.Kind == targetKind && x.Id == id),
+                "cost_source_reference", "The linked cost source no longer refers to its retained project or order.");
+            sources.Add(value);
+        }
+        return sources;
     }
 }
