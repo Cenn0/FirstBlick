@@ -1,0 +1,81 @@
+{
+  "checkpoint": 13,
+  "date": "2026-10-20",
+  "repository": "Cenn0/FirstBlick",
+  "branch": "work/roadmap-implementation-2026-10-20",
+  "baseCommit": "b811fdb0dce7495a5a0768f6a49b2857daae8831",
+  "implementationCommit": "fa61a46566124a8d0eb490b2c1420bbe85e2e35e",
+  "pullRequestCheckoutCommit": "a32035b81cd3a3a79390df0b0fc4ed313b7a1349",
+  "implementationCommits": [
+    "5e67f892308d666ba6bcd8243c54280588af94ed",
+    "bfb6e2933930c9d7b0514a388a90f61cf6edd8c8",
+    "fa61a46566124a8d0eb490b2c1420bbe85e2e35e"
+  ],
+  "executionEnvironment": "GitHub Actions; no additional local execution claimed",
+  "ci": {
+    "runId": 39486070941,
+    "url": "https://github.com/Cenn0/FirstBlick/actions/runs/39486070941",
+    "conclusion": "success",
+    "serverJobId": 118846695748,
+    "webJobId": 118846696260,
+    "core": { "passed": 293, "failed": 0, "skipped": 0 },
+    "httpPostgresWorker": { "passed": 152, "failed": 0, "skipped": 0, "addedHttpPostgresFacts": 6 },
+    "frontendUnit": { "passed": 100, "failed": 0, "added": 55, "technicalAdded": 26, "tradeAdded": 29 },
+    "frontendBuild": "success",
+    "browserFixtures": {
+      "passed": 291,
+      "failed": 0,
+      "distinctTestIdentities": 97,
+      "addedTestIdentities": 22,
+      "addedViewportCombinations": 66,
+      "viewports": [
+        { "name": "desktop", "width": 1440, "height": 1000 },
+        { "name": "tablet", "width": 1024, "height": 768 },
+        { "name": "mobile", "width": 390, "height": 844 }
+      ],
+      "usesControlledHttpFixtures": true,
+      "newLiveBrowserRunsClaimed": 0,
+      "finalLogSummary": "291 passed (3.2m)"
+    }
+  },
+  "operations": {
+    "runId": 39486070896,
+    "jobId": 118846698004,
+    "url": "https://github.com/Cenn0/FirstBlick/actions/runs/39486070896",
+    "conclusion": "success",
+    "verifiedSteps": [
+      "Build pinned images, migrate, bootstrap and start the actual stack",
+      "Verify the actual API, Identity cookies and tenant CRUD",
+      "Real PostgreSQL 18.6 and versioned S3 backup/restore drill",
+      "Canonical legacy migration, exact comparison and blocked-source cases",
+      "Verify the running application backup and restart without data loss"
+    ]
+  },
+  "newServerEvidence": [
+    "GAEB review digest differs across tenants for identical original bytes and cost mapping",
+    "Every documented numeric mapping field is required in HTTP JSON; explicit zero remains supported",
+    "Null, blank and overlong source position keys are rejected without partial data",
+    "Duplicate later in a batch rolls back the entire new import",
+    "Monthly screening is normalized, persisted and replayed idempotently in PostgreSQL",
+    "Another tenant cannot attach a calculation to or read the first tenant's project/report"
+  ],
+  "compatibility": [
+    "Uncommitted GAEB previews from the prior unbound digest calculation need to be recreated",
+    "Omitted numeric GAEB mapping values now fail instead of implicitly becoming zero",
+    "Existing successful imported catalogue records are not rewritten"
+  ],
+  "scopeBoundaries": [
+    "No ISO/DIN normative claim added to the existing calculation kernels",
+    "Twelve independent moisture climates are not a condensation/evaporation annual balance",
+    "Tapered insulation remains a rectangular affine-volume aid, not a manufacturer laying plan",
+    "E-invoice workbench remains read-only with externalValidationPerformed=false and mayPostAutomatically=false",
+    "GAEB workbench remains a bounded structural/catalogue adapter, not an XSD-certified roundtrip converter",
+    "Original GAEB XML bytes are transmitted and hashed, not newly archived as a retained document",
+    "No new complete live-browser-to-PostgreSQL business workflow claimed",
+    "No merge into main or external certification implied by these checks"
+  ],
+  "historicalFailuresNotAddedToPassedCounts": [
+    { "commit": "5e67f892308d666ba6bcd8243c54280588af94ed", "ciRunId": 39482427377, "reason": "Three existing UI smoke checks required preserved wording and tab semantics" },
+    { "commit": "bfb6e2933930c9d7b0514a388a90f61cf6edd8c8", "ciRunId": 39484766719, "browserPassed": 289, "browserFailed": 2, "reason": "Tablet horizontal overflow in the calculation workbench; fixed without weakening tests" }
+  ]
+}

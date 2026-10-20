@@ -1,16 +1,21 @@
 # FirstBlick – Rework-Roadmap
 
-> Übernommen aus der Projektanalyse „DachPlaner Rework Roadmap“, 19.10.2026 (34 Seiten). Dies ist eine strukturierte Arbeitsfassung, **kein Nachweis bereits umgesetzter Funktionen**. Der Originalbericht umfasst 100 Aufgaben in 15 Epics. Aufgaben gelten bis zur belegten Abnahme als offen.
+> Übernommen aus der Projektanalyse „DachPlaner Rework Roadmap“, 19.10.2026 (34 Seiten). Der Originalbericht umfasst 100 Aufgaben in 15 Epics. Diese Fassung erhält alle Aufgabenkennungen und ursprünglichen Abnahmekriterien. Ein implementierter Teilablauf bedeutet nicht automatisch, dass das gesamte Epic abgeschlossen ist.
 
-## Aktueller Arbeitsstand – Checkpoints 9 bis 11
+## Aktueller Arbeitsstand – Checkpoint 13
 
-Die [Nachweismatrix](roadmap-evidence.md) unterscheidet weiterhin **49 technische Kerne mit Beleg, 42 Teilumfänge und 9 offene Fachfunktionen**. Das sind historische Inventarkategorien, **kein Fertigstellungsprozentsatz**. Ihre Einzelbelege wurden um die späteren Schritte ergänzt; die ursprünglichen Abnahmekriterien gelten unverändert.
+[Checkpoint 13](checkpoint13.md) beschreibt die neuen durchgängigen Bedienabläufe und ihre konkreten Testbelege. Die [Bedienungs- und Vertragsdokumentation](calculation-and-trade-workbenches.md) erklärt Eingaben, Speicherung, Importbestätigung und bewusst nicht unterstützte Fälle.
 
-Die neue [begrenzte Mengenhilfe für lineare Gefälledämmung](tapered-insulation.md) deckt eine rechteckige Volumenberechnung ab, nicht die fehlende herstellergebundene Verlegeplanung. Die aktuelle technische Testevidenz wird auf Commit-Ebene über GitHub Actions geprüft.
+- **DP-11-02/03/04/05:** Fünf vorhandene Rechenverfahren sind über einen gemeinsamen Angular-Arbeitsplatz bedienbar: Dachgeometrie, Wärme, Einzelklima- und Zwölfmonats-Feuchtescreening sowie lineare Gefälledämmung. Ergebnisprüfung, ausdrückliche Projektablage, JSON-Export und quellen-/prüfsummengebundener PDF-Download bilden einen zusammenhängenden Ablauf.
+- **DP-12-02:** GAEB-Datei → unveränderte Originalbytes → Positionsauswahl → ausdrücklich eingegebene eigene Kosten → geprüfte Zuordnung → bestätigte atomare Katalogübernahme. Der Prüfstand ist serverseitig an den Betrieb gebunden; fehlende Kostenfelder werden nicht als Nullwerte erfunden.
+- **DP-08-03:** Eine lesende UBL-/CII-XML-Oberfläche zeigt Angaben, Positionen und Prüfhinweise. Eine vollständige Profilvalidierung, steuerliche Verarbeitung oder strukturierte Ausgabe ist weiterhin nicht vorhanden.
+- **DP-03-06/07 und DP-06-08:** Zusätzliche Browserfälle decken Desktop, Tablet und Mobil, Betriebswechsel, verspätete Antworten, Rechteentzug, fehlerhafte Antworten und explizite Bestätigung ab. Die neuen HTTP-/PostgreSQL-Fälle prüfen reale serverseitige Mandanten-, Pflichtfeld- und Transaktionsgrenzen.
 
-[Checkpoint 9](checkpoint9.md) dokumentiert den früheren Gesamtstand mit 377 Serverfällen, 45 Frontend-Unitfällen, 216 Clientfixtures und 30 echten Online-/Offline-Browserkombinationen aus getrennten Läufen. [Checkpoint 10](checkpoint10.md) ergänzt begrenzte, mandatenspezifische Rechnungsquellen und unveränderliche, versionierte Projektkostenprognosen. [Checkpoint 11](checkpoint11.md) ergänzt den nur bei belegter Restmengenabwicklung zulässigen Null-Euro-Schlussbeleg und stärkere Mandanten-, Revisions- und Referenzprüfungen für Kostenquellen. Ein separat gebuchtes [Lieferanten-Kostenjournal](supplier-cost-allocations.md) schützt explizit zugeordnete Rechnungsnettoanteile projektübergreifend vor Überbuchung. Die beiden neuen Funktionsstände sind jeweils mit erfolgreichen CI- und Operations-Läufen für ihren eigenen Commit verbunden.
+Die [ältere vollständige Nachweismatrix](roadmap-evidence.md) bleibt als historisches Inventar erhalten. **Für die hier berührten Aufgaben ergänzt und berichtigt die Tabelle in Checkpoint 13 den älteren Stand**, insbesondere die früher als vollständig offen beschriebenen XML-/Feuchte-Teilfunktionen. Die historischen Kategorien 49 K / 42 T / 9 O werden nicht als aktualisierte Gesamtzählung oder Fertigstellungsprozentsatz ausgegeben. Die gesamte 100-Aufgaben-Matrix wurde in diesem Checkpoint nicht neu abgenommen.
 
-Offen bleiben insbesondere sichere XRechnung-/ZUGFeRD-Profile, Steuer-/Buchhaltungsabnahme, automatisierter Providerbetrieb, repräsentative Datenbank-/Last-/SLO-Nachweise, reale D1-/R2-Altbestände, lizenzierte Norm-/Herstellerdaten und die unabhängige fachliche Prüfung der bautechnischen Verfahren. Die originalen Aufgabenkennungen und Checkboxen werden nicht aus rein synthetischen Tests auf erledigt gesetzt.
+[Checkpoint 9](checkpoint9.md) dokumentiert den damaligen Gesamtstand; [Checkpoint 10](checkpoint10.md) ergänzt begrenzte Rechnungsquellen und versionierte Kostenprognosen; [Checkpoint 11](checkpoint11.md) ergänzt den Null-Euro-Mengenabschluss und abgesicherte Kostenquellen. Die [lineare Gefälledämmungs-Mengenhilfe](tapered-insulation.md) bleibt von einer herstellergebundenen Verlegeplanung getrennt. Jeder Testbeleg gilt ausschließlich für seinen angegebenen Quellstand.
+
+Weiter offen bleiben vollständige E-Rechnungsprofile und Import-/Exportketten, normative Feuchteschutzverfahren, Hersteller-Verlegeplanung, weitere technische Fachmodule, automatisierter Providerbetrieb, repräsentative Last-/SLO-Nachweise und reale Migrationsquellen. Eine erfolgreiche Softwareprüfung ersetzt keine unabhängige Prüfung der Fachverfahren. Open-Source-Weiterentwicklung ist kein formaler Produktionsfreigabeprozess.
 
 ## Zielarchitektur
 
@@ -184,10 +189,10 @@ Offen bleiben insbesondere sichere XRechnung-/ZUGFeRD-Profile, Steuer-/Buchhaltu
 3. Die Open-Source-Lizenz ist vom Rechteinhaber festzulegen; nicht automatisch annehmen.
 4. Normdaten, Herstellerkennwerte, Fachprüfung und Nutzungsrechte sind vor normativen Nachweisen zu klären.
 5. E-Rechnungsprofile, Steuerfälle, DATEV-/GAEB-/Bank-/WhatsApp-Verträge müssen versionsbezogen geprüft werden.
-6. Ein grüner Build allein ist keine Fachabnahme oder Produktionsfreigabe.
+6. Ein grüner Build allein ist kein Nachweis vollständiger Fachkonformität.
 
-## Erste Reihenfolge
+## Historische erste Reihenfolge
 
-DP-00-01 bis 03, DP-01-01 und DP-11-01 beginnen; danach DP-01-02 bis 06 schließen. Parallel DP-02-01 (Serverbasis), Identität und Dokumentmodell vorbereiten. Erst nach überprüften Grundlagen Finanz- und Freigabeabläufe ausweiten.
+DP-00-01 bis 03, DP-01-01 und DP-11-01 beginnen; danach DP-01-02 bis 06 schließen. Parallel DP-02-01 (Serverbasis), Identität und Dokumentmodell vorbereiten. Erst nach überprüften Grundlagen Finanz- und Freigabeabläufe ausweiten. Der aktuelle Entwicklungsstand steht oben und in den Checkpoints; diese ursprüngliche Reihenfolge behauptet nicht, dass bereits implementierte Grundlagen erneut fehlen.
 
 **Quelle:** DachPlaner – Projektanalyse und Rework Roadmap, 19.10.2026, insbesondere Seiten 17–32. Diese Markdown-Fassung übernimmt Aufgabenkennungen und Titel und verdichtet die Abnahmebedingungen. Für die vollständigen individuellen Aufgabenbeschreibungen gilt der Originalbericht.
