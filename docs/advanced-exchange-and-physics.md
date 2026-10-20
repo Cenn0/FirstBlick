@@ -16,7 +16,7 @@ Grenzen: Es handelt sich um eine implementierte technische Prozesskette, nicht u
 Die GAEB-Webanwendung unterscheidet **v1 strukturelle Katalogübernahme (ohne XSD)** von **v2 offizieller XSD-/X84-Exportkette**:
 
 1. `POST /api/v1/integrations/v2/gaeb/validate` mit originaler UTF-8-Datei `application/xml` prüft die unveränderten offiziellen X83- oder X84-XSD; Prüffehler werden ohne automatische Katalogänderung zurückgegeben.
-2. `POST /api/v1/integrations/v2/gaeb/bid-preview` mit `{ projectId, expectedProjectRevision, sourceBase64, mapping }` prüft zuerst das Original gegen XSD, dann jede Angebotsposition auf Quelle-/Positionsdigest, Menge, Währung, Einzelpreis oder `notOffered`. Der X83→X84-Writer erhält Hierarchie und unterstützte Textauszeichnung. Besondere GAEB-Preis- und Positionsformen werden ausdrücklich abgelehnt. Auch die resultierende X84 muss die passende Original-X84-XSD bestehen.
+2. `POST /api/v1/integrations/v2/gaeb/bid-preview` mit `{ projectId, expectedProjectRevision, sourceBase64, mapping }` prüft zuerst das Original gegen XSD, dann jede Angebotsposition auf Quelle-/Positionsdigest, Menge, Währung, Einzelpreis oder `notOffered`. Der X83→X84-Writer erhält Hierarchie und vollständige Zeichenketten; das in X84 unzulässige X83-Inlineelement `span` wird unter expliziter Dokumentation des Verlusts seiner Formatierung in gewöhnlichen Paragraphentext umgewandelt. Das Original bleibt unverändert archiviert. Nicht sicher darstellbare verschachtelte Inhalte werden abgewiesen. Besondere GAEB-Preis- und Positionsformen werden ausdrücklich abgelehnt. Auch die resultierende X84 muss die passende Original-X84-XSD bestehen.
 3. `POST /api/v1/integrations/v2/gaeb/bid-export` verlangt **identische** Preis-/Projekt-/Original-/Validierungsdaten und den durch den Bearbeiter bestätigten `previewDigest`. Der idempotente Auftrag speichert drei getrennte, read-back-verifizierte, **versionierte** Artefakte: Original-XML, X84-XML und JSON-Evidenz. Die Buchung ist auf Projekt, Mandant und Prüfbelege festgelegt.
 4. `GET /api/v1/integrations/v2/gaeb/exports/{exchangeId}` und `.../documents/{documentId}/download` erfordern **erneut** aktuelle Katalog-Schreibberechtigung sowie Projektzugriff. Standard-Dokumentenendpunkte verweigern diese spezialisierte, preisvertrauliche `gaeb-exchanges`-Quelle. HTTP-Antwort und gespeicherte Objekte tragen SHA-256-Prüfsummen.
 
@@ -36,7 +36,7 @@ Die ISO-13788:2012-Implementierung verfügt bereits über monatliche Grenzfläch
 
 **Normative Trennung**: Das implementierte **ISO-Verfahren** ist nicht gleichbedeutend mit einem **normativ abgenommenen Feuchteschutznachweis** nach DIN 4108-3:2024-03. National geforderte Bauartbedingungen, schadensrelevante Feuchtegrenzen und Verfahrensanwendungsbereiche sowie reale Schichten-/Klimawerte müssen gesondert geprüft werden. Der ISO-13788-Kern selbst nennt offen ein ungeklärtes Zahlenbeispiel aus dem informativen Anhang C.4/C.5; das darf nicht als bestandene Referenz behauptet werden. Keine Zertifizierungskennzeichnung.
 
-Normbasis: https://www.iso.org/standard/51615.html und https://www.dinmedia.de/de/norm/din-4108-3/372803267 (offizielle Normmetadaten, nicht Verbreitung lizenzierter Normtexte).
+Normbasis: https://www.iso.org/standard/51615.html und https://www.dinmedia.de/de/norm/din-4108-3/373925063 (offizielle Normmetadaten, nicht Verbreitung lizenzierter Normtexte).
 
 ## Rechteckige, einachsige herstellerbezogene Gefälleplattenplanung
 
