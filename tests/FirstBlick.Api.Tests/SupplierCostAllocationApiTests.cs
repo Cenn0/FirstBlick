@@ -76,7 +76,7 @@ public sealed class SupplierCostAllocationApiTests(PostgresApiFixture fixture) :
     {
         var g = await Setup(); var owner = await fixture.Login(g.User);
         var path = $"/api/v1/supplier-invoices/{g.Invoice.Id}/cost-allocations";
-        await Ok<SupplierCostAllocation>(Send(owner, HttpMethod.Post, path,
+        var originalAllocation = await Ok<SupplierCostAllocation>(Send(owner, HttpMethod.Post, path,
             new PostSupplierProjectCostRequest(g.Project1.Id, 40m, "Original portion", g.Invoice.ApprovedDigest)));
         var credit = new SupplierInvoice
         {
@@ -94,6 +94,10 @@ public sealed class SupplierCostAllocationApiTests(PostgresApiFixture fixture) :
         var valid = await Ok<SupplierCostAllocation>(Send(owner, HttpMethod.Post, creditPath,
             new PostSupplierProjectCostRequest(g.Project1.Id, 40m, "Credit against same project", credit.ApprovedDigest)));
         Assert.Equal(40m, valid.NetAmount);
+        await ExpectError(Send(owner, HttpMethod.Post,
+            $"/api/v1/supplier-cost-allocations/{originalAllocation.Id}/reverse",
+            new ReverseSupplierProjectCostRequest("Cannot abandon credited project"), originalAllocation.Revision),
+            HttpStatusCode.BadRequest, "credit_allocation_exceeded");
         var unauthorized = await fixture.Login(await fixture.CreateUser(g.User.TenantId, BusinessRole.Accounting));
         Assert.Equal(HttpStatusCode.Forbidden, (await Send(unauthorized, HttpMethod.Post, path,
             new PostSupplierProjectCostRequest(g.Project2.Id, 1m, "Unauthorized", g.Invoice.ApprovedDigest))).StatusCode);
