@@ -52,6 +52,16 @@ public static class SupplierCostAllocationEndpoints
                 var journal = await Journal(c, [original.SupplierInvoiceId], ct);
                 var reversal = SupplierCostAllocationRules.Reverse(original, journal,
                     body.Reason, c.Scope.UserId, DateTimeOffset.UtcNow);
+                // An original invoice cannot lose its project allocation while a linked,
+                // approved credit still reduces that project's posted costs.
+                var supplierInvoice = await c.Current<SupplierInvoice>(original.SupplierInvoiceId, ct, false);
+                if (supplierInvoice.Kind == SupplierInvoiceKind.Invoice)
+                {
+                    var creditIds = await ApprovedCreditIds(c, supplierInvoice.Id, ct);
+                    var creditJournal = await Journal(c, creditIds, ct);
+                    SupplierCostAllocationRules.ValidateCreditProjectBalance(original.ProjectId, 0m,
+                        [..journal, reversal], creditJournal);
+                }
                 return await c.SaveNew(reversal, "supplier-cost.reverse", ct);
             })).Produces<SupplierCostAllocation>();
 
