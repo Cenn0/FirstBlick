@@ -10,7 +10,7 @@ import { decimalDisplay } from '../core/decimal-format';
 import { downloadBlob } from '../core/integrations.models';
 import { CatalogPreview, CatalogReceipt, CatalogRequest, CatalogSelection, GaebPreview, InvoicePreview, TradeKind, TradeSource, canSelect, catalogRequest, costFields, emptySelection, readTradeSource, sameCatalogRequest, sourceBudget, validateCatalogPreview, validateCatalogReceipt, validateGaebPreview, validateInvoicePreview } from '../core/trade-import.models';
 
-@Component({ imports: [FormsModule, RouterLink], templateUrl: './trade-imports.component.html', styleUrl: './trade-imports.component.css' })
+@Component({ imports: [FormsModule, RouterLink, GaebBidExchangeComponent], templateUrl: './trade-imports.component.html', styleUrl: './trade-imports.component.css' })
 export class TradeImportsComponent {
   readonly auth = inject(AuthService); private readonly api = inject(ApiService); private readonly previews = inject(TradePreviewService);
   readonly canGaeb = computed(() => !!this.auth.scope() && this.auth.can('catalog-items.write'));
