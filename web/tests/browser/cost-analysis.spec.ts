@@ -7,6 +7,7 @@ const timeId='21000000-0000-4000-8000-000000000002';
 const stockId='21000000-0000-4000-8000-000000000003';
 const supplierId='21000000-0000-4000-8000-000000000004';
 const digest='d'.repeat(64);
+const forecastId='21000000-0000-4000-8000-000000000006';
 const order={id:orderId,revision:4,title:'Synthetische Nachkalkulation',number:'AU-TEST-01'};
 const initial={
   capturedAt:'2026-10-20T08:00:00Z',scope:'Synthetic source review fixture',
@@ -22,8 +23,10 @@ const initial={
   }
 };
 
-async function fixture(page:Page,options:{role?:string;late?:Promise<void>;recalculationError?:boolean;recalculationForbidden?:boolean;extraOrder?:boolean;largeAggregate?:boolean}={}){
+async function fixture(page:Page,options:{role?:string;late?:Promise<void>;recalculationError?:boolean;recalculationForbidden?:boolean;extraOrder?:boolean;largeAggregate?:boolean;staleForecast?:boolean}={}){
   const requests:{path:string;body:any;headers:Record<string,string>}[]=[];
+  const savedForecasts:Record<string,any>[]=[];
+  let lastReport=structuredClone(initial.report);
   await page.route('**/api/v1/**',async route=>{
     const request=route.request(),path=new URL(request.url()).pathname.slice('/api/v1/'.length);
     if(path==='auth/me')return route.fulfill({json:{user:{id:'user-a',displayName:'Synthetische Verwaltung',email:'office@example.test'},activeTenantId:'tenant-a',tenants:['a','b'].map(id=>({id:'tenant-'+id,name:'Testbetrieb '+id.toUpperCase(),role:options.role||'Office',modules:['core','commercial','finance'],capabilities:['*']}))}});
@@ -39,7 +42,30 @@ async function fixture(page:Page,options:{role?:string;late?:Promise<void>;recal
         Object.assign(value.report,{knownActualCost:'80.00',actualCost:'80.00',forecastCost:'120.00',forecastMargin:'1070.00',marginPercent:'89.915966',markupPercent:'891.666667',missing:[],reviewedInputs:request.postDataJSON(),digest:'e'.repeat(64)});
         value.report.sources.forEach(source=>Object.assign(source,{netCost:source.id===timeId?'80.00':'0.00',basis:'Synthetisch geprüfter Ansatz',missing:null}));
       }
+      lastReport=structuredClone(value.report);
       return route.fulfill({json:value});
+    }
+    if(path===`orders/${orderId}/cost-forecasts`){
+      if(request.method()==='GET')return route.fulfill({json:{items:savedForecasts.slice().reverse().map(item=>({
+        id:item.id,version:item.version,capturedAt:item.capturedAt,capturedByUserId:item.capturedByUserId,
+        previousForecastId:item.previousForecastId,reason:item.reason,digest:item.digest,
+        reportDigest:item.report.digest,actualCost:item.report.actualCost,forecastCost:item.report.forecastCost,
+        forecastMargin:item.report.forecastMargin,missingCount:item.report.missing.length
+      })),total:savedForecasts.length}});
+      const input=request.postDataJSON();
+      if(options.staleForecast||input.expectedReportDigest!==lastReport.digest)
+        return route.fulfill({status:409,json:{status:409,code:'stale_cost_report',detail:'Die geprüfte Berechnung ist veraltet. Quellen neu prüfen.'}});
+      const record={
+        id:forecastId,tenantId:'tenant-a',orderId,projectId:lastReport.projectId,version:1,
+        previousForecastId:null,capturedAt:'2026-10-20T11:30:00Z',capturedByUserId:'user-a',
+        reason:input.reason,report:structuredClone(lastReport),digest:'f'.repeat(64)
+      };
+      savedForecasts.push(record);
+      return route.fulfill({json:record});
+    }
+    if(path===`cost-forecasts/${forecastId}`){
+      const saved=savedForecasts.find(item=>item.id===forecastId);
+      return saved?route.fulfill({json:saved}):route.fulfill({status:404,json:{code:'not_found'}});
     }
     if(path==='orders'){const items=request.headers()['x-tenant-id']==='tenant-b'?[]:options.extraOrder?[order,{...order,id:otherOrderId,title:'Anderer Auftrag',number:'AU-TEST-02'}]:[order];return route.fulfill({json:{items,total:items.length,page:1,pageSize:100}});}
     if(path==='orders/'+orderId)return route.fulfill({json:order});
@@ -160,3 +186,43 @@ test('contract aggregates preserve their exact cents beyond binary-float precisi
   const total=page.locator('.cost-result .totals').first().locator('span').filter({hasText:'Angenommener Vertragswert'}).locator('strong');
   await expect(total).toHaveText('100.000.000.000.000,01 €');
 });
+
+
+test('a reviewed cost report can be saved, browsed and exported with its immutable version',async({page},testInfo)=>{
+  await fixture(page);
+  await openReport(page);
+  const save=page.getByRole('button',{name:'Geprüften Stand dauerhaft speichern',exact:true});
+  await expect(save).toBeDisabled();
+  await page.getByLabel('Abgleich der erfassten Kosten',{exact:true}).fill('Synthetic source completeness reviewed');
+  await page.getByLabel('Begründung für die neue Prognoseversion',{exact:true}).fill('Reviewed synthetic checkpoint one');
+  await expect(save).toBeDisabled();
+  await page.getByRole('button',{name:'Bericht mit diesen Ansätzen berechnen',exact:true}).click();
+  await expect(page.locator('.cost-completeness')).toContainText('1.070,00');
+  await expect(save).toBeEnabled();
+  await save.click();
+  await expect(page.locator('table').filter({hasText:'Gespeicherte Prognoseversionen'})).toContainText('v1');
+  await expect(page.getByText('Reviewed synthetic checkpoint one')).toBeVisible();
+  await page.getByRole('button',{name:'Prüfstand öffnen'}).click();
+  await expect(page.getByText('Gespeicherter Prüfstand v1',{exact:false})).toBeVisible();
+  const downloaded=page.waitForEvent('download');
+  await page.getByRole('button',{name:'Diese Version als JSON herunterladen'}).click();
+  const item=await downloaded;
+  const text=await readFile((await item.path())!,'utf8');
+  const archived=JSON.parse(text);
+  expect(archived.schema).toBe('firstblick.cost-forecast/1.0.0');
+  expect(archived.report.digest).toBe('e'.repeat(64));
+  expect(archived.version).toBe(1);
+  const screenshot=testInfo.outputPath('saved-cost-forecast.png');
+  await page.screenshot({path:screenshot,fullPage:true});
+  await testInfo.attach('saved-cost-forecast',{path:screenshot,contentType:'image/png'});
+});
+
+test('a stale forecast is not persisted and the original reviewed report remains visible',async({page})=>{
+  await fixture(page,{staleForecast:true});await openReport(page);
+  await page.getByLabel('Begründung für die neue Prognoseversion',{exact:true}).fill('Outdated synthetic sources');
+  await page.getByRole('button',{name:'Geprüften Stand dauerhaft speichern'}).click();
+  await expect(page.getByRole('alert')).toContainText('veraltet');
+  await expect(page.getByText('Für diesen Auftrag wurde noch keine Prognose dauerhaft gespeichert.')).toBeVisible();
+  await expect(page.getByRole('heading',{name:order.title,exact:true})).toBeVisible();
+});
+
