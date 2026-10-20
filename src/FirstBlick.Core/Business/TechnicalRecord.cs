@@ -41,7 +41,8 @@ public sealed class TechnicalRecord : TenantEntity
 public static class TechnicalRecords
 {
     private static readonly JsonSerializerOptions Options = new(JsonSerializerDefaults.Web)
-    { MaxDepth = 32, UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow };
+    { MaxDepth = 32, UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
+        Converters = { new JsonStringEnumConverter(allowIntegerValues: false) } };
 
     public static JsonElement Evaluate(string method, JsonElement input)
     {
