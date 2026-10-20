@@ -25,6 +25,12 @@ public static class TechnicalEndpoints
         { await commands.Authorize("technical-results", true, ct); return Results.Ok(ThermalCalculator.CalculateParallelPaths(input)); }).WithTags("technical");
         api.MapPost("/technical/roof/rectangle", async (RectangularRoofInput input, CommandExecutor commands, CancellationToken ct) =>
         { await commands.Authorize("technical-results", true, ct); return Results.Ok(RoofGeometry.Rectangle(input)); }).WithTags("technical");
+        api.MapPost("/technical/roof/tapered-board-layout", async (TaperedBoardLayoutInput input, CommandExecutor commands, CancellationToken ct) =>
+        { await commands.Authorize("technical-results", true, ct); return Results.Ok(TaperedBoardLayout.Calculate(input)); }).WithTags("technical");
+        api.MapPost("/technical/moisture/iso13788/balance", async (Iso13788BalanceInput input, CommandExecutor commands, CancellationToken ct) =>
+        { await commands.Authorize("technical-results", true, ct); return Results.Ok(Iso13788Balance.Calculate(input)); }).WithTags("technical");
+        api.MapPost("/technical/moisture/iso13788/drying", async (Iso13788DryingInput input, CommandExecutor commands, CancellationToken ct) =>
+        { await commands.Authorize("technical-results", true, ct); return Results.Ok(Iso13788Balance.Dry(input)); }).WithTags("technical");
         api.MapPost("/technical/roof/tapered-insulation", async (TaperedInsulationInput input, CommandExecutor commands, CancellationToken ct) =>
         { await commands.Authorize("technical-results", true, ct); return Results.Ok(TaperedInsulationCalculator.Calculate(input)); }).WithTags("technical");
         api.MapPost("/technical/roof/polygon", async (PolygonRoofInput input, CommandExecutor commands, CancellationToken ct) =>
