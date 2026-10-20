@@ -11,7 +11,7 @@ concurrency:
 jobs:
   server:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 25
     services:
       postgres:
         image: postgres:16.15
@@ -26,16 +26,19 @@ jobs:
     env:
       FIRSTBLICK_TEST_POSTGRES: Host=localhost;Port=5432;Database=firstblick_test;Username=firstblick_test;Password=ci-isolated-test-password
       FIRSTBLICK_REQUIRE_POSTGRES: 'true'
+      FIRSTBLICK_STANDARDS_PATH: ${{ github.workspace }}/.standards
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68
         with:
           global-json-file: global.json
-      - name: Install the report font used by the PDF contract
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends fonts-dejavu-core
+      - name: Install fonts and the local validator runtime
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends fonts-dejavu-core openjdk-21-jre-headless
+      - name: Install original hash-pinned XSD and Schematron resources
+        run: python3 scripts/standards-assets.py
       - run: dotnet restore FirstBlick.slnx --locked-mode
       - run: dotnet test FirstBlick.slnx -c Release --no-restore --logger trx --results-directory TestResults
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         if: always()
         with:
           name: server-test-results
@@ -47,8 +50,8 @@ jobs:
       run:
         working-directory: web
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
         with:
           node-version: '24.19.0'
           cache: npm
@@ -58,7 +61,7 @@ jobs:
       - run: npm run build
       - run: npx playwright install --with-deps chromium
       - run: npm run test:browser
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         if: failure()
         with:
           name: browser-failure-evidence
