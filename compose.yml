@@ -39,10 +39,13 @@ services:
       - seaweed-data:/data
       - ./secrets/s3.json:/etc/seaweedfs/s3.json:ro
     healthcheck:
-      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:9333/cluster/status"]
+      # S3 intentionally requires signed requests; its unauthenticated HTTP
+      # response proves the listener is ready. init-storage verifies signed API.
+      test: ["CMD-SHELL", "curl --fail --silent --show-error --max-time 3 http://127.0.0.1:9333/cluster/status >/dev/null && test \"$$(curl --silent --show-error --max-time 3 --output /dev/null --write-out '%{http_code}' http://127.0.0.1:8333/)\" = 403"]
       interval: 5s
-      timeout: 5s
+      timeout: 8s
       retries: 30
+      start_period: 30s
     restart: unless-stopped
 
   storage-init:
@@ -108,7 +111,10 @@ services:
       dockerfile: deploy/Dockerfile.operations
       args: { RELEASE: "${FIRSTBLICK_RELEASE:-unversioned-local}" }
     profiles: [operations]
-    environment: *app-environment
+    environment:
+      <<: *app-environment
+      Operations__OperatorEmail: ${OPERATIONS_OPERATOR_EMAIL:-}
+      Operations__OperatorPassword: ${OPERATIONS_OPERATOR_PASSWORD:-}
     user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
     volumes:
       - ./backups:/backups

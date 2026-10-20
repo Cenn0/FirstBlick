@@ -214,6 +214,7 @@ public sealed class OutboxProcessor
         var now = await DatabaseNow(ct);
         var tenant = await db.Tenants.AsNoTracking().SingleOrDefaultAsync(x => x.Id == job.TenantId, ct)
                      ?? throw new PermanentJobFailure("tenant_unavailable");
+        if (await RecoveryBarrier.IsHeld(db, job.TenantId, ct)) throw new PermanentJobFailure("recovery_hold", true);
         OutboxEmail message;
         switch (job.Type)
         {
@@ -547,6 +548,7 @@ public sealed class OutboxProcessor
             {
                 await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
                 await TenantLock(candidate.TenantId, cancellationToken);
+                if (await RecoveryBarrier.IsHeld(db, candidate.TenantId, cancellationToken)) continue;
                 var current = await db.Entities.IgnoreQueryFilters().AsNoTracking().SingleOrDefaultAsync(
                     x => x.TenantId == candidate.TenantId && x.Kind == candidate.Kind && x.Id == candidate.Id && !x.Archived, cancellationToken);
                 if (current is null) continue;

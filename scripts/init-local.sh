@@ -8,6 +8,7 @@ if [[ -e .env || -e secrets/s3.json || -e secrets/data-protection.pfx ]]; then
   exit 1
 fi
 mkdir -p secrets backups
+chmod 700 secrets
 fb_db_secret=$(openssl rand -hex 32)
 fb_s3_access=$(openssl rand -hex 16)
 fb_s3_secret=$(openssl rand -hex 32)
@@ -28,6 +29,8 @@ LOCAL_GID=$(id -g)
 Bootstrap__Email=owner@example.invalid
 Bootstrap__Password=$fb_bootstrap_password
 Bootstrap__TenantName='Mein Dachdeckerbetrieb'
+OPERATIONS_OPERATOR_EMAIL=recovery-operator@example.invalid
+OPERATIONS_OPERATOR_PASSWORD=Aa1!$(openssl rand -hex 24)
 EOF
 cat > secrets/s3.json <<EOF
 {"identities":[{"name":"firstblick-local","credentials":[{"accessKey":"$fb_s3_access","secretKey":"$fb_s3_secret"}],"actions":["Admin","Read","Write","List","Tagging"]}]}
@@ -39,6 +42,7 @@ openssl req -x509 -newkey rsa:3072 -sha256 -days 3650 -nodes -subj '/CN=FirstBli
 export FIRSTBLICK_PFX_PASSWORD="$fb_dp_password"
 openssl pkcs12 -export -inkey "$fb_key" -in "$fb_cert" -out secrets/data-protection.pfx -passout env:FIRSTBLICK_PFX_PASSWORD
 unset FIRSTBLICK_PFX_PASSWORD
-# Container app UID 1654 can read the encrypted PFX; its password remains in the private .env.
-chmod 644 secrets/data-protection.pfx
+# Bind mounts retain file modes: the app UID 1654 and Seaweed UID 1000 must read
+# these files. The host secrets directory stays 0700; .env stays 0600.
+chmod 644 secrets/data-protection.pfx secrets/s3.json
 echo 'Local configuration created. Edit Bootstrap__Email and Bootstrap__TenantName in .env, then run scripts/start-local.sh.'

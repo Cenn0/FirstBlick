@@ -1,6 +1,6 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { AuthService } from './auth.service';
-import { ApiError, request, requestResponse } from './transport';
+import { ApiError, request, requestResponse, recoveryHoldMessage } from './transport';
 import { OfflineKind, QueuedMutation, flushQueue } from './offline-store';
 import { CommandIdentities } from './command-identities';
 
@@ -16,7 +16,7 @@ export class ApiService {
 
   async get<T>(path: string): Promise<T> { return this.call<T>(path); }
   async upload<T>(path:string,body:Blob,contentType:string,revision:number,key:string):Promise<T>{return this.mutate<T>(path,'PUT',body,revision,undefined,key,contentType);}
-  async download(path:string):Promise<Blob>{try{const response=await requestResponse(`/api/v1/${path}`,{},this.auth.activeTenantId(),'application/octet-stream');return await response.blob();}catch(error){if(error instanceof ApiError&&error.status===401)await this.auth.clear();throw error;}}
+  async download(path:string):Promise<Blob>{try{const response=await requestResponse(`/api/v1/${path}`,{},this.auth.activeTenantId(),'application/octet-stream');return await response.blob();}catch(error){if(error instanceof ApiError&&error.status===401)await this.auth.clear();if(error instanceof ApiError&&error.status===423&&error.problem.code==='recovery_hold')this.auth.markRecoveryHold();throw error;}}
   async command<T>(path: string, body: unknown, revision?: number, key: string = crypto.randomUUID(), approvalId?: string): Promise<T> {
     return this.mutate<T>(path,'POST',body,revision,approvalId,key);
   }
@@ -24,8 +24,10 @@ export class ApiService {
   async update<T>(path:string,body:unknown,revision:number,approvalId?:string):Promise<T>{return this.mutate<T>(path,'PUT',body,revision,approvalId);}
 
   private async mutate<T>(path:string,method:string,body:unknown,revision?:number,approvalId?:string,preferredKey?:string,contentType?:string):Promise<T>{
+    if(this.auth.recoveryHold())throw new Error(recoveryHoldMessage);
     const scope=this.auth.scope();const identity=await this.identities.acquire(scope,method,path,body,revision,approvalId,preferredKey);
     if(scope!==this.auth.scope())throw new Error('Der Betrieb wurde gewechselt. Öffnen Sie den Vorgang im gewünschten Betrieb erneut.');
+    if(this.auth.recoveryHold())throw new Error(recoveryHoldMessage);
     const headers:Record<string,string>={'Idempotency-Key':identity.key};if(revision)headers['If-Match']=`"${revision}"`;if(approvalId)headers['X-Approval-Id']=approvalId;if(contentType)headers['Content-Type']=contentType;
     try{const result=await this.call<T>(path,{method,body:body instanceof Blob?body:body===undefined?undefined:JSON.stringify(body),headers});this.identities.complete(identity);if(scope!==this.auth.scope())throw new Error('Der Vorgang wurde im vorherigen Betrieb gespeichert. Öffnen Sie ihn dort zur Prüfung.');return result;}
     catch(error){if(error instanceof ApiError&&error.status>=400&&error.status<500)this.identities.complete(identity);throw error;}
@@ -35,20 +37,22 @@ export class ApiService {
     try { return await request<T>(`/api/v1/${path}`, options, this.auth.activeTenantId()); }
     catch (error) {
       if (error instanceof ApiError && error.status === 401) await this.auth.clear();
+      if(error instanceof ApiError&&error.status===423&&error.problem.code==='recovery_hold')this.auth.markRecoveryHold();
       throw error;
     }
   }
 
   async list(kind: string, search = '', page = 1, status = '', filters:Record<string,string> = {}): Promise<Page> {
-    const scope=this.auth.scope();
+    const scope=this.auth.scope(),access=this.auth.accessSignature();
     const query = new URLSearchParams({ ...filters, search, page: String(page), pageSize: '25' });
     if (status) query.set('status', status);
     const value = await this.get<Page>(`${kind}?${query}`);
-    if (['time-entries', 'diary-entries'].includes(kind) && !search && page === 1) await this.auth.store.cache(scope, kind as OfflineKind, value);
+    if (scope===this.auth.scope()&&access===this.auth.accessSignature()&&['time-entries', 'diary-entries'].includes(kind) && !search && page === 1) await this.auth.store.cache(scope, kind as OfflineKind, value);
     return value;
   }
 
   async save(kind: string, body: Record<string, unknown>, existing?: Entity): Promise<Entity | null> {
+    if(this.auth.recoveryHold())throw new Error(recoveryHoldMessage);
     const key = crypto.randomUUID();
     const method = existing ? 'PUT' : 'POST';
     const headers: Record<string, string> = { 'Idempotency-Key': key };
@@ -79,12 +83,13 @@ export class ApiService {
       try {
         // Verify current identity, membership, capabilities and enabled modules before every replay.
         await this.auth.refresh();
-        if (this.auth.scope() !== scope) return;
+        if (this.auth.scope() !== scope||this.auth.recoveryHold()) return;
         await flushQueue(this.auth.store, scope, async item => {
           const headers: Record<string, string> = { 'Idempotency-Key': item.key };
           if (item.revision) headers['If-Match'] = `"${item.revision}"`;
-          await request(`/api/v1/${item.kind}${item.id ? `/${item.id}` : ''}`, { method: item.method, headers, body: JSON.stringify(item.body) }, tenantId);
-        }, () => this.auth.scope() === scope);
+          try{await request(`/api/v1/${item.kind}${item.id ? `/${item.id}` : ''}`, { method: item.method, headers, body: JSON.stringify(item.body) }, tenantId);}
+          catch(error){if(error instanceof ApiError&&error.status===423&&error.problem.code==='recovery_hold')this.auth.markRecoveryHold();throw error;}
+        }, () => this.auth.scope() === scope&&!this.auth.recoveryHold());
       } catch (error) {
         if (error instanceof ApiError && (error.status === 401 || error.status === 403)) await this.auth.clear();
       } finally { this.syncing.set(false); await this.reloadQueue(); }

@@ -2,9 +2,9 @@ import { Injectable, computed, signal } from '@angular/core';
 import { ApiError, request } from './transport';
 import { OfflineStore } from './offline-store';
 import { purgeCommandIdentities } from './command-identities';
+import { Session, accessWasRevoked, rememberRecoveryAccess } from './session-access';
+export type { TenantAccess, Session } from './session-access';
 
-export interface TenantAccess { id: string; name: string; role: string; modules: string[]; capabilities: string[]; employeeId?: string }
-export interface Session { user: { id: string; email: string; displayName: string }; tenants: TenantAccess[]; activeTenantId?: string }
 const sessionKey = 'firstblick-last-session';
 const logoutKey = 'firstblick-pending-logout';
 
@@ -18,6 +18,8 @@ export class AuthService {
   readonly offlineSession = signal(false);
   readonly bootstrapError = signal('');
   readonly tenant = computed(() => this.session()?.tenants.find(t => t.id === this.activeTenantId()));
+  readonly recoveryHold = computed(() => this.tenant()?.recoveryHold===true);
+  readonly accessSignature = computed(() => {const tenant=this.tenant();return JSON.stringify([this.scope(),tenant?.role,tenant?.employeeId,tenant?.modules,tenant?.capabilities,tenant?.recoveryHold]);});
   readonly scope = computed(() => this.session() ? `${this.session()!.user.id}|${this.activeTenantId()}` : '');
   private booting?: Promise<void>;
   readonly store = new OfflineStore();
@@ -46,12 +48,20 @@ export class AuthService {
   }
 
   async refresh(): Promise<void> {
-    const previous=this.session();
-    const value = await request<Session>('/api/v1/auth/me');
-    if(previous && (previous.user.id!==value.user.id || previous.tenants.some(t=>{const next=value.tenants.find(n=>n.id===t.id);return !next||t.capabilities.some(c=>!next.capabilities.includes(c))||t.modules.some(m=>!next.modules.includes(m));}))){purgeCommandIdentities(localStorage,previous.user.id);await this.store.purgeUser(previous.user.id);}
+    // Compare the saved access after a reload as well; it is evidence for cleanup, never authorization.
+    let previous=this.session();
+    if(!previous){try{const cached=JSON.parse(localStorage.getItem(sessionKey)||'null')as Session|null;if(cached?.user?.id&&Array.isArray(cached.tenants))previous=cached;}catch{/* Invalid UI-only metadata is ignored. */}}
+    const value = rememberRecoveryAccess(previous,await request<Session>('/api/v1/auth/me'));
+    const revoked=accessWasRevoked(previous,value);
     this.accept(value);
+    if(previous&&revoked){purgeCommandIdentities(localStorage,previous.user.id);await this.store.purgeUser(previous.user.id);}
     this.offlineSession.set(false);
     this.bootstrapError.set('');
+  }
+
+  markRecoveryHold():void{
+    const previous=this.session();if(!previous)return;
+    this.accept(rememberRecoveryAccess(previous,{...previous,tenants:previous.tenants.map(tenant=>tenant.id===this.activeTenantId()?{...tenant,recoveryHold:true,capabilities:[]}:tenant)}));
   }
 
   private accept(value: Session): void {
@@ -96,6 +106,7 @@ export class AuthService {
   }
 
   can(capability?: string): boolean {
+    if(this.recoveryHold())return false;
     if (!capability) return true;
     const rights = this.tenant()?.capabilities || [];
     return rights.includes('*') || rights.includes(capability);

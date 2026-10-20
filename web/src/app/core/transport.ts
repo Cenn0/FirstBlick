@@ -6,6 +6,8 @@ export interface ApiProblem {
   errors?: Record<string, string[]>;
 }
 
+export const recoveryHoldMessage='Dieser Betrieb ist nach einer Wiederherstellung vorübergehend gesperrt. Neue Änderungen und Übertragungen sind erst nach Freigabe durch die Betriebsverwaltung möglich.';
+
 export class ApiError extends Error {
   constructor(public readonly status: number, public readonly problem: ApiProblem) {
     super(problem.detail || problem.title || 'Die Anfrage konnte nicht verarbeitet werden.');
@@ -48,6 +50,8 @@ export async function requestResponse(path: string, init: RequestInit = {}, tena
 
 export function errorMessage(error: unknown): string {
   if (error instanceof ApiError) {
+    if(error.status===423&&error.problem.code==='recovery_hold')return recoveryHoldMessage;
+    if(error.problem.code==='migration_activation_required')return 'Dieses übernommene Konto benötigt eine neue persönliche Einladung. Erstellen Sie unter „Persönliche Zugänge“ eine Einladung an dieselbe E-Mail-Adresse; die Person aktiviert den Zugang anschließend selbst.';
     if (error.problem.code === 'approval_required') return 'Für diesen Vorgang ist eine zweite Freigabe erforderlich.';
     if (error.status === 412 || ['revision_conflict','concurrency_conflict','stale_revision'].includes(error.problem.code || '')) return 'Dieser Eintrag wurde zwischenzeitlich geändert. Bitte neu laden und Ihre Angaben mit dem aktuellen Stand abgleichen.';
     if (error.status === 401) return 'Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.';

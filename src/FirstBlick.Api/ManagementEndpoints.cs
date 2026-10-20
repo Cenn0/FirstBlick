@@ -46,6 +46,12 @@ public static class ManagementEndpoints
                 Director(scope); Guard.Require(Enum.IsDefined(body.Role), "invalid_role", "The role is unknown.");
                 var member = await db.Memberships.SingleOrDefaultAsync(x => x.TenantId == scope.TenantId && x.UserId == id, ct) ?? throw new DomainException("not_found", "The membership is unavailable.");
                 CommandExecutor.Match(http, member.Revision);
+                if (body.Active && !member.Active)
+                {
+                    var account = await db.Users.SingleAsync(x => x.Id == id, ct);
+                    Guard.Require(await MigrationAccounts.FindPending(db, scope.TenantId, id, account.Email, ct) is null,
+                        "migration_activation_required", "Send a fresh personal invitation to activate an imported or restored account with reviewed permissions.");
+                }
                 if (member.Active && member.Role == BusinessRole.ManagingDirector && (!body.Active || body.Role != BusinessRole.ManagingDirector))
                     Guard.Require(await db.Memberships.CountAsync(x => x.TenantId == scope.TenantId && x.Active && x.Role == BusinessRole.ManagingDirector, ct) > 1,
                         "last_director", "The last managing director cannot be removed or downgraded.");
@@ -56,12 +62,18 @@ public static class ManagementEndpoints
         api.MapPost("/members/invitations", (InvitationRequest body, HttpContext http, FirstBlickDbContext db, TenantScope scope, CommandExecutor commands, ApprovalService approvals) =>
             commands.Execute(http, "memberships", "membership.invite", body, async ct =>
             {
-                Director(scope); Guard.Email(body.Email, true); Guard.Require(Enum.IsDefined(body.Role) && body.Role != BusinessRole.Partner, "invalid_role", "Use scoped portal grants for external partners.");
+                Director(scope); Guard.Email(body.Email, true); Guard.Require(Enum.IsDefined(body.Role), "invalid_role", "The role is unknown.");
                 var tenant = await db.Tenants.SingleAsync(x => x.Id == scope.TenantId, ct);
+                Guard.Require(body.Role != BusinessRole.Partner || tenant.Modules.Contains("portal"), "module_disabled", "Enable the portal before inviting a partner. A partner receives no content until individually granted access.");
                 await approvals.Require(http, "membership.invite", "settings", tenant.Id, tenant.PolicyRevision, AppJson.Serialize(body), ct);
                 var normalized = body.Email.ToUpperInvariant();
                 var user = await db.Users.SingleOrDefaultAsync(x => x.NormalizedEmail == normalized, ct);
-                Guard.Require(user is null || !await db.Memberships.AnyAsync(x => x.TenantId == scope.TenantId && x.UserId == user.Id, ct), "membership_exists", "Use membership management for an existing member.");
+                if (user is not null)
+                {
+                    var member = await db.Memberships.SingleOrDefaultAsync(x => x.TenantId == scope.TenantId && x.UserId == user.Id, ct);
+                    Guard.Require(member is null || (!member.Active && await MigrationAccounts.FindPending(db, scope.TenantId, user.Id, user.Email, ct) is not null),
+                        "membership_exists", "Use membership management for an existing member. Pending migrated accounts require a fresh invitation.");
+                }
                 var token = AuthEndpoints.NewToken();
                 var invitation = new Invitation { TenantId = scope.TenantId, InvitedBy = scope.UserId, Email = body.Email, Role = body.Role, TokenHash = ContentDigest.OfUtf8(token), ExpiresAt = DateTimeOffset.UtcNow.AddDays(2) };
                 db.Invitations.Add(invitation); Audit(db, scope, "membership.invite", "invitation", invitation.Id, 1, new { body.Email, body.Role });

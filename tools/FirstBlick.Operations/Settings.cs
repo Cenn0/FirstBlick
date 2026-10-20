@@ -14,7 +14,8 @@ internal static class Require
 }
 
 internal sealed record Settings(string ConnectionString, string Endpoint, string Bucket, string AccessKey, string SecretKey,
-    string Region, string? CertificatePath, string? CertificatePassword, string Release, bool Local)
+    string Region, string? CertificatePath, string? CertificatePassword, string Release, bool Local,
+    string? OperatorEmail = null, string? OperatorPassword = null, string OperatorDisplayName = "Recovery operator")
 {
     public static Settings FromEnvironment()
     {
@@ -25,7 +26,8 @@ internal sealed record Settings(string ConnectionString, string Endpoint, string
         var environment = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT") ?? "Production";
         return new(Required("ConnectionStrings__Database"), endpoint, Required("Storage__Bucket"), Required("Storage__AccessKey"), Required("Storage__SecretKey"),
             Environment.GetEnvironmentVariable("Storage__Region") ?? "us-east-1", Environment.GetEnvironmentVariable("DataProtection__CertificatePath"),
-            Environment.GetEnvironmentVariable("DataProtection__CertificatePassword"), Environment.GetEnvironmentVariable("FIRSTBLICK_RELEASE") ?? "unversioned-local", environment is "Development" or "Testing");
+            Environment.GetEnvironmentVariable("DataProtection__CertificatePassword"), Environment.GetEnvironmentVariable("FIRSTBLICK_RELEASE") ?? "unversioned-local", environment is "Development" or "Testing",
+            Environment.GetEnvironmentVariable("Operations__OperatorEmail"), Environment.GetEnvironmentVariable("Operations__OperatorPassword"), Environment.GetEnvironmentVariable("Operations__OperatorDisplayName") ?? "Recovery operator");
     }
 
     public AmazonS3Client S3() => new(new BasicAWSCredentials(AccessKey, SecretKey), new AmazonS3Config

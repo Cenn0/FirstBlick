@@ -137,6 +137,20 @@ public sealed class WorkerTests : IAsyncLifetime
     }
 
     [WorkerPostgresFact]
+    public async Task A_recovery_hold_prevents_external_effects_and_quarantines_a_pending_attempt()
+    {
+        var sender = new SyntheticSender(); var seeded = await database.SeedQuote();
+        await using var worker = database.Open(sender);
+        worker.Db.Receipts.Add(new CommandReceipt { TenantId = seeded.Quote.TenantId, ActorId = Guid.Empty, Key = OperationsRecoveryHold.Key, RequestDigest = new string('a', 64),
+            Response = AppJson.Serialize(new OperationsRecoveryHold(Guid.NewGuid(), "Held", DateTimeOffset.UtcNow, "synthetic-release", "Restore reconciliation", null, null)) });
+        await worker.Db.SaveChangesAsync();
+        Assert.True(await worker.Processor.ProcessNext()); Assert.Empty(sender.Messages);
+        var result = await database.ReadJob(seeded.Job.Id);
+        Assert.Equal(JobState.Uncertain, result.State); Assert.Equal("recovery_hold", result.LastError); Assert.False(result.ExternalAttemptStarted);
+        Assert.False(await worker.Processor.ProcessNext());
+    }
+
+    [WorkerPostgresFact]
     public async Task A_cross_tenant_quote_identifier_cannot_dispatch_or_modify_the_other_tenants_delivery()
     {
         var sender = new SyntheticSender();

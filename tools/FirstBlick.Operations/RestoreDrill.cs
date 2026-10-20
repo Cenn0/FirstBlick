@@ -31,7 +31,8 @@ internal static class RestoreDrill
             File.SetUnixFileMode(pfx, UnixFileMode.UserRead | UnixFileMode.UserWrite);
             File.SetUnixFileMode(Path.Combine(directory, "drill-secrets.env"), UnixFileMode.UserRead | UnixFileMode.UserWrite);
         }
-        var settings = original with { ConnectionString = original.Connection(sourceDatabase), Bucket = sourceBucket, CertificatePath = pfx, CertificatePassword = password, Release = $"restore-drill-{nonce}", Local = false };
+        var settings = original with { ConnectionString = original.Connection(sourceDatabase), Bucket = sourceBucket, CertificatePath = pfx, CertificatePassword = password, Release = $"restore-drill-{nonce}", Local = false,
+            OperatorEmail = $"operator-{nonce}@example.invalid", OperatorPassword = "Aa1!Fresh-Recovery-" + nonce, OperatorDisplayName = "Isolated drill recovery operator" };
         await PostgresFiles.CreateDatabase(original, sourceDatabase, true);
         using var client = settings.S3(); await StorageFiles.EnableVersioning(client, sourceBucket, true);
         await using (var db = settings.Db()) await db.Database.MigrateAsync();
@@ -71,15 +72,22 @@ internal static class RestoreDrill
             var quote = AppJson.Read<Quote>((await db.Entities.IgnoreQueryFilters().SingleAsync(x => x.Id == seed.QuoteId)).Data);
             Require.That(quote.Status == QuoteStatus.Accepted && quote.Snapshot!.Digest == seed.QuoteDigest && quote.Deliveries.Single().State == DeliveryState.Uncertain,
                 "Restore changed accepted commercial values or did not quarantine delivery state.");
+            Require.That(quote.Presentation!.Digest == seed.PresentationDigest, "Restore changed frozen contractual parties.");
             Require.That(await db.Tenants.CountAsync() == 2, "Restore included writes committed after the backup.");
             Require.That(await db.Links.IgnoreQueryFilters().CountAsync() == seed.LinkCount, "Restore lost tenant-qualified references.");
             Require.That(await db.Counters.IgnoreQueryFilters().SingleAsync(x => x.Kind == "AN") is { Value: 7 }, "Restore lost the commercial numbering counter.");
             Require.That(await db.Receipts.IgnoreQueryFilters().AnyAsync(x => x.Key == "drill-command" && x.Response == "{\"number\": \"AN-2026-000007\"}"), "Restore changed idempotency evidence.");
             Require.That(await db.Jobs.IgnoreQueryFilters().CountAsync(x => x.Type != "entity.changed" && x.State == JobState.Uncertain) == 2, "Restore can automatically re-send a pre-backup external job.");
             Require.That(await db.Jobs.IgnoreQueryFilters().AnyAsync(x => x.Type == "entity.changed" && x.State == JobState.Pending), "Restore unnecessarily removed an internal event.");
-            var user = await db.Users.SingleAsync();
-            Require.That(user.SecurityStamp != seed.SecurityStamp && new PasswordHasher<ApplicationUser>().VerifyHashedPassword(user, user.PasswordHash!, seed.LoginPassword) != PasswordVerificationResult.Failed,
-                "Restore failed to invalidate old sessions or preserve the login credential.");
+            var user = await db.Users.SingleAsync(x => x.Id == seed.UserId);
+            Require.That(user.SecurityStamp != seed.SecurityStamp && user.PasswordHash is null && !user.EmailConfirmed && await db.Memberships.Where(x => x.UserId == user.Id).AllAsync(x => !x.Active),
+                "Restore allowed old password/login or role state to become active.");
+            var pending = AppJson.Read<MigrationAccountMarker>((await db.Receipts.IgnoreQueryFilters().SingleAsync(x => x.Key == MigrationAccountMarker.Key(user.Id))).Response);
+            Require.That(pending.State == "Pending" && pending.SourceActive && pending.SourceRole == BusinessRole.ManagingDirector, "Restore lost original account takeover evidence.");
+            var recoveryOperator = await db.Users.SingleAsync(x => x.Id == restored.OperatorUserId);
+            Require.That(recoveryOperator.EmailConfirmed && new PasswordHasher<ApplicationUser>().VerifyHashedPassword(recoveryOperator, recoveryOperator.PasswordHash!, settings.OperatorPassword!) != PasswordVerificationResult.Failed,
+                "Explicitly provisioned recovery operator credential is invalid.");
+            Require.That(AppJson.Read<PortalShare>((await db.Entities.IgnoreQueryFilters().SingleAsync(x => x.Kind == "portal-shares")).Data).RevokedAt is not null, "Restore resurrected an old portal grant.");
             Require.That(await db.Invitations.AllAsync(x => x.UsedAt != null), "Restore resurrected an outstanding invitation.");
             Require.That(await db.Approvals.IgnoreQueryFilters().AllAsync(x => x.ExpiresAt < DateTimeOffset.UtcNow), "Restore resurrected a privileged approval token.");
             var oldVersionDoc = await db.Documents.IgnoreQueryFilters().SingleAsync(x => x.Id == seed.OldVersionDocument);
@@ -88,6 +96,7 @@ internal static class RestoreDrill
             Require.That(await reader.ReadToEndAsync() == seed.OldVersionContents, "Restore retrieved an overwritten latest object instead of the stored historical version.");
             Require.That(oldVersionDoc.VersionId != seed.OldVersionId && restored.Versions.All(x => x.RestoredVersionId.Length > 0), "Restore did not bind the newly created S3 versions.");
         }
+        await VerifyResume(target, directory, restored);
         // Do not retain live duplicate synthetic databases/buckets after a successful drill. The verified bundle/report remain.
         await PostgresFiles.DropDrillDatabase(original, sourceDatabase, nonce); await PostgresFiles.DropDrillDatabase(original, targetDatabase, nonce);
         await StorageFiles.DeleteDrillBucket(client, sourceBucket, nonce); await StorageFiles.DeleteDrillBucket(client, targetBucket, nonce);
@@ -96,14 +105,43 @@ internal static class RestoreDrill
             manifest.SnapshotAt, verifiedTables = restored.VerifiedTables, verifiedRows = restored.VerifiedRows, verifiedObjectVersions = restored.VerifiedObjects,
             historicalVersionRestored = true, archivedDocumentRestored = true, corruptionRejectedBeforeTargetCreation = true, exactDatabaseRowsBeforeRecoveryBarrier = true,
             wrongCertificatePasswordRejectedBeforeTargetCreation = true, existingTargetOverwriteRejected = true,
-            encryptedDataProtectionVerified = restored.DataProtectionVerified, sessionsInvalidated = true, invitationsInvalidated = true, privilegedApprovalsInvalidated = true,
+            encryptedDataProtectionVerified = restored.DataProtectionVerified, sessionsInvalidated = true, oldPasswordsDisabled = true, oldMembershipsInactive = true,
+            pendingAccountTakeoverPreserved = true, explicitNewOperatorCredentialVerified = true, invitationsInvalidated = true, privilegedApprovalsInvalidated = true,
+            portalGrantsRevoked = true, persistentRecoveryHoldVerified = true, incompleteResumeRejected = true, evidenceBoundResumeVerified = true,
             restored.QuarantinedJobs, restored.QuarantinedDeliveries, postBackupWritesExcluded = true, sourceAndTargetCleaned = true,
             restored.RestoreSeconds, totalSeconds = watch.Elapsed.TotalSeconds, workload = "small synthetic two-tenant fixture; production RPO/RTO require a representative drill" };
         await File.WriteAllTextAsync(Path.Combine(directory, "drill-report.json"), JsonSerializer.Serialize(report, BundleFiles.Json));
         return report;
     }
 
-    private sealed record SeedResult(Guid QuoteId, string QuoteDigest, int LinkCount, Guid OldVersionDocument, string OldVersionId, string OldVersionContents, string SecurityStamp, string LoginPassword);
+    private static async Task VerifyResume(Settings settings, string directory, RestoreReport restored)
+    {
+        await using var db = settings.Db(); var tenants = await db.Tenants.ToListAsync();
+        foreach (var tenant in tenants) Require.That(await RecoveryBarrier.IsHeld(db, tenant.Id), "Completed restore lacks its persistent API/worker hold.");
+        var incomplete = Path.Combine(directory, "incomplete-reconciliation.json");
+        await File.WriteAllTextAsync(incomplete, JsonSerializer.Serialize(new ReconciliationDocument { TenantId = tenants[0].Id, OperationId = restored.RecoveryOperationId, SnapshotAt = restored.SnapshotAt,
+            Release = restored.Release, ReviewedAt = DateTimeOffset.UtcNow, Reviewer = "Synthetic recovery drill" }, BundleFiles.Json));
+        var rejected = false;
+        try { await RecoveryResume.Run(settings, incomplete, Path.Combine(directory, "must-not-resume.json")); }
+        catch (OperationsException) { rejected = true; }
+        Require.That(rejected && await RecoveryBarrier.IsHeld(db, tenants[0].Id), "Incomplete review released a recovery hold.");
+        const string evidenceFile = "synthetic-reconciliation.txt";
+        await File.WriteAllTextAsync(Path.Combine(directory, evidenceFile), "Synthetic drill verified: old credentials absent; memberships inactive; fresh operator supplied; grants revoked; snapshots/counters match; no outbound provider invoked; no real offline devices exist.\n");
+        var proof = await BundleFiles.Proof(directory, evidenceFile);
+        foreach (var tenant in tenants)
+        {
+            var document = new ReconciliationDocument { TenantId = tenant.Id, OperationId = restored.RecoveryOperationId, SnapshotAt = restored.SnapshotAt, Release = restored.Release,
+                ReviewedAt = DateTimeOffset.UtcNow, Reviewer = "Synthetic recovery drill", EvidenceFiles = [proof],
+                Checks = new[] { "accounts_and_memberships", "passwords_and_session_revocations", "invitations_and_portal_grants", "commercial_numbering_and_post_snapshot_writes", "external_messages_and_payments", "offline_devices_and_revisions" }
+                    .Select(area => new ReconciliationCheck(area, "The isolated synthetic fixture was checked against the original snapshot and the explicit recovery barrier assertions.", evidenceFile)).ToList() };
+            var path = Path.Combine(directory, $"reconciliation-{tenant.Id:N}.json"); await File.WriteAllTextAsync(path, JsonSerializer.Serialize(document, BundleFiles.Json));
+            await RecoveryResume.Run(settings, path, Path.Combine(directory, $"resume-{tenant.Id:N}.json"));
+            Require.That(!await RecoveryBarrier.IsHeld(db, tenant.Id), "Valid evidence-bound resume did not release this tenant.");
+        }
+        Require.That(await db.Jobs.IgnoreQueryFilters().CountAsync(x => x.State == JobState.Uncertain) == 2, "Resume restarted unresolved external jobs.");
+    }
+
+    private sealed record SeedResult(Guid QuoteId, string QuoteDigest, string PresentationDigest, int LinkCount, Guid OldVersionDocument, string OldVersionId, string OldVersionContents, Guid UserId, string SecurityStamp);
     private static async Task<SeedResult> Seed(Settings settings, X509Certificate2 certificate)
     {
         var tenant = new BusinessTenant { Name = "Restore drill A" }; var otherTenant = new BusinessTenant { Name = "Restore drill B" };
@@ -116,17 +154,20 @@ internal static class RestoreDrill
         var scope = new TenantScope { TenantId = tenant.Id, UserId = user.Id, Role = BusinessRole.ManagingDirector };
         await using var tenantDb = new FirstBlickDbContext(new DbContextOptionsBuilder<FirstBlickDbContext>().UseNpgsql(settings.ConnectionString).Options, scope);
         var store = new EntityStore(tenantDb, scope);
-        var customer = new Customer { TenantId = tenant.Id, Name = "Snapshot customer", Email = "customer@example.invalid" };
+        var customer = new Customer { TenantId = tenant.Id, Name = "Snapshot customer", Email = "customer@example.invalid", Address = "Synthetic buyer address" };
         var building = new Building { TenantId = tenant.Id, CustomerId = customer.Id, Name = "Archive roof", Address = "Synthetic address" };
         var project = new Project { TenantId = tenant.Id, CustomerId = customer.Id, BuildingId = building.Id, Name = "Immutable reference chain" };
         var quote = new Quote { TenantId = tenant.Id, CustomerId = customer.Id, ProjectId = project.Id, Title = "Accepted snapshot", Lines = [new QuoteLine { Description = "Restore line", Quantity = 3, UnitMaterialCost = 21.13m, VatPercent = 19 }] };
-        CommercialWorkflow.IssueQuote(quote, "AN-2026-000007"); CommercialWorkflow.AcceptQuote(quote, quote.Snapshot!.Digest, DateTimeOffset.UtcNow, DateOnly.FromDateTime(DateTime.UtcNow));
+        CommercialWorkflow.IssueQuote(quote, "AN-2026-000007"); CommercialWorkflow.FreezePresentation(quote, tenant.Name, customer, DateTimeOffset.UtcNow);
+        CommercialWorkflow.AcceptQuote(quote, quote.IssuedDigest, DateTimeOffset.UtcNow, DateOnly.FromDateTime(DateTime.UtcNow));
         var delivery = CommercialWorkflow.RequestDelivery(quote, CommunicationChannel.Email, "customer@example.invalid", DateTimeOffset.UtcNow);
         await store.Save(customer, "drill.seed", true); await store.Save(building, "drill.seed", true); await store.Save(project, "drill.seed", true); await store.Save(quote, "drill.seed", true);
+        await store.Save(new PortalShare { TenantId = tenant.Id, RecipientUserId = user.Id, GrantedBy = user.Id, ProjectId = project.Id, Title = "Previously granted quote",
+            SourceKind = "quotes", SourceId = quote.Id, SourceDigest = quote.IssuedDigest, ExpiresAt = DateTimeOffset.UtcNow.AddDays(1) }, "drill.seed", true);
         tenantDb.Counters.Add(new NumberCounter { TenantId = tenant.Id, Kind = "AN", Year = 2026, Value = 7 });
         tenantDb.Receipts.Add(new CommandReceipt { TenantId = tenant.Id, ActorId = user.Id, Key = "drill-command", RequestDigest = ContentDigest.Of("drill"), Response = "{\"number\":\"AN-2026-000007\"}" });
         tenantDb.Jobs.Add(new OutboxJob { TenantId = tenant.Id, ActorId = user.Id, Type = "quote.delivery", Kind = "quotes", EntityId = quote.Id, EntityRevision = quote.Revision,
-            Payload = AppJson.Serialize(new { deliveryId = delivery.Id, snapshotDigest = quote.Snapshot.Digest, channel = "Email", recipient = "customer@example.invalid" }), State = JobState.Pending });
+            Payload = AppJson.Serialize(new { deliveryId = delivery.Id, snapshotDigest = quote.IssuedDigest, channel = "Email", recipient = "customer@example.invalid" }), State = JobState.Pending });
         tenantDb.Jobs.Add(new OutboxJob { TenantId = tenant.Id, ActorId = user.Id, Type = "identity.recovery", State = JobState.Leased, ExternalAttemptStarted = true, LeaseToken = Guid.NewGuid(), LeaseUntil = DateTimeOffset.UtcNow.AddMinutes(2) });
         tenantDb.Invitations.Add(new Invitation { TenantId = tenant.Id, InvitedBy = user.Id, Email = "pending@example.invalid", TokenHash = ContentDigest.Of("not-a-real-invitation"), Role = BusinessRole.Office, ExpiresAt = DateTimeOffset.UtcNow.AddDays(1) });
         tenantDb.Approvals.Add(new ApprovalRequest { TenantId = tenant.Id, RequestedBy = user.Id, ApprovedBy = Guid.NewGuid(), ApprovedAt = DateTimeOffset.UtcNow,
@@ -136,13 +177,13 @@ internal static class RestoreDrill
             _ = provider.GetRequiredService<IDataProtectionProvider>().CreateProtector("drill.keyring").Protect("pre-backup encrypted payload");
         using var client = settings.S3();
         const string historical = "%PDF-1.7\nSynthetic historical accepted version.\n%%EOF\n";
-        var ready = await AddDocument(tenant.Id, historical, "Ready", project.Id, quote.Id, quote.Snapshot.Digest);
+        var ready = await AddDocument(tenant.Id, historical, "Ready", project.Id, quote.Id, quote.IssuedDigest);
         _ = await AddDocument(otherTenant.Id, "%PDF-1.7\nSynthetic archived document.\n%%EOF\n", "Archived", null, null, "");
         // Latest bytes are deliberately wrong for the DB reference; only GET with the stored version can pass.
         await using (var overwrite = new MemoryStream(Encoding.UTF8.GetBytes("Overwritten latest: never part of the accepted snapshot.")))
             await client.PutObjectAsync(new PutObjectRequest { BucketName = settings.Bucket, Key = ready.ObjectKey, InputStream = overwrite, ContentType = "application/pdf", AutoCloseStream = false });
         await db.SaveChangesAsync();
-        return new(quote.Id, quote.Snapshot.Digest, await tenantDb.Links.CountAsync(), ready.Id, ready.VersionId!, historical, user.SecurityStamp!, loginPassword);
+        return new(quote.Id, quote.Snapshot!.Digest, quote.Presentation!.Digest, await tenantDb.Links.CountAsync(), ready.Id, ready.VersionId!, historical, user.Id, user.SecurityStamp!);
 
         async Task<DocumentObject> AddDocument(Guid tenantId, string text, string state, Guid? projectId, Guid? sourceId, string digest)
         {

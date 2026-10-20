@@ -68,9 +68,6 @@ public static class DocumentEndpoints
             await commands.Authorize("documents", false, ct);
             var doc = await Find(db, id, ct); await EnsureVisible(doc, scope, store, ct);
             Guard.Require(doc.State is "Ready" or "Archived", "document_not_ready", "The document upload has not been verified.");
-            var metadata = await objects.Head(doc.ObjectKey, doc.VersionId, ct);
-            Guard.Require(metadata is not null && metadata.Size == doc.Size && metadata.VersionId == doc.VersionId,
-                "document_integrity", "The stored document version is missing or its size differs. Restore or investigate it before download.");
             var bytes = await ReadVerified(objects, doc, ct);
             http.Response.Headers["X-Content-SHA256"] = doc.Sha256;
             return Results.File(bytes, doc.ContentType, fileDownloadName: doc.Name, lastModified: doc.CreatedAt);
@@ -158,9 +155,12 @@ public static class DocumentEndpoints
 
     public static object View(DocumentObject d) => new { d.Id, d.TenantId, d.Name, d.ContentType, d.Size, d.Sha256, d.VersionId, d.State, d.Revision, d.ProjectId, d.SourceKind, d.SourceId, d.SourceDigest, d.RendererVersion, d.CreatedAt };
 
-    private static async Task<byte[]> ReadVerified(IObjectStore objects, DocumentObject doc, CancellationToken ct)
+    internal static async Task<byte[]> ReadVerified(IObjectStore objects, DocumentObject doc, CancellationToken ct)
     {
         Guard.Require(doc.Size is > 0 and <= MaximumBytes, "document_integrity", "The stored document size is outside the verified limit.");
+        var metadata = await objects.Head(doc.ObjectKey, doc.VersionId, ct);
+        Guard.Require(metadata is not null && metadata.Size == doc.Size && metadata.VersionId == doc.VersionId,
+            "document_integrity", "The stored document version is missing or its size differs. Restore or investigate it before download.");
         var (source, _) = await objects.Get(doc.ObjectKey, doc.VersionId, ct);
         await using var stream = source;
         using var buffer = new MemoryStream((int)doc.Size);

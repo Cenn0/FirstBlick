@@ -46,7 +46,7 @@ jobs:
         run: |
           mkdir -p artifacts/operations
           docker compose ps --format json > artifacts/operations/containers.json
-          docker compose logs --no-color --tail=100 api worker migrate storage-init > artifacts/operations/compose.log
+          python3 scripts/container-diagnostics.py > artifacts/operations/diagnostics.json
           python3 - <<'PY'
           import json, pathlib, subprocess
           refs = subprocess.check_output(['docker', 'compose', 'images', '-q'], text=True).split()

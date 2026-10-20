@@ -130,7 +130,7 @@ internal static class EditRules
 {
     public static void EnsureGenericCreate(TenantEntity e)
     {
-        Guard.Require(e is not Order and not BankTransaction and not PaymentAllocation and not SupplierPaymentAllocation and not StockMovement and not FormSubmission and not TechnicalRecord,
+        Guard.Require(e is not Order and not BankTransaction and not PaymentAllocation and not SupplierPaymentAllocation and not StockMovement and not FormSubmission and not TechnicalRecord and not PortalShare and not PortalFeedback,
             "command_required", "This record can only be created through its dedicated business command.");
         switch (e)
         {
@@ -151,7 +151,7 @@ internal static class EditRules
     public static void EnsureGenericUpdate(TenantEntity old, TenantEntity next)
     {
         Guard.Require(old.GetType() == next.GetType() && !old.Archived, "record_immutable", "This record cannot be edited.");
-        Guard.Require(old is not Order and not BankTransaction and not PaymentAllocation and not SupplierPaymentAllocation and not StockMovement and not FormSubmission and not MaterialReservation and not Acceptance and not TechnicalRecord,
+        Guard.Require(old is not Order and not BankTransaction and not PaymentAllocation and not SupplierPaymentAllocation and not StockMovement and not FormSubmission and not MaterialReservation and not Acceptance and not TechnicalRecord and not PortalShare and not PortalFeedback,
             "command_required", "Use the dedicated auditable command for this record.");
         switch (old)
         {
@@ -177,7 +177,7 @@ internal static class EditRules
     }
     public static void EnsureArchivable(TenantEntity e)
     {
-        Guard.Require(e is not Order and not Invoice and not SupplierInvoice and not PaymentAllocation and not SupplierPaymentAllocation and not BankTransaction and not StockMovement and not MaterialReservation and not FormSubmission and not Acceptance and not TechnicalRecord,
+        Guard.Require(e is not Order and not Invoice and not SupplierInvoice and not PaymentAllocation and not SupplierPaymentAllocation and not BankTransaction and not StockMovement and not MaterialReservation and not FormSubmission and not Acceptance and not TechnicalRecord and not PortalShare and not PortalFeedback,
             "record_immutable", "Business evidence is retained; use a correction or reversal.");
         if (e is Quote q) Guard.Require(q.Status == QuoteStatus.Draft, "quote_immutable", "Issued quote versions are retained.");
         if (e is TimeEntry t) Guard.Require(!t.Approved, "time_immutable", "Approved time is retained.");

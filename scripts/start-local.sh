@@ -2,8 +2,16 @@
 set -euo pipefail
 cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.."
 [[ -f .env ]] || { echo 'Run scripts/init-local.sh first.' >&2; exit 1; }
+fb_start_failure() {
+  local fb_exit=$?
+  trap - ERR
+  echo 'Local startup failed. Bounded service and health diagnostics follow.' >&2
+  python3 scripts/container-diagnostics.py >&2 || true
+  return "$fb_exit"
+}
+trap fb_start_failure ERR
 docker compose build
-docker compose up -d db s3
+docker compose up -d --wait --wait-timeout 180 db s3
 docker compose run --rm storage-init
 docker compose run --rm migrate
 set -a

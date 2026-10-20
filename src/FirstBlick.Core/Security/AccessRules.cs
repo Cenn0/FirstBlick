@@ -15,10 +15,12 @@ public static class AccessRules
         "training-records" => "training",
         "maintenance-contracts" or "notification-preferences" => "maintenance",
         "roof-revisions" or "measurements" or "technical-results" => "technical",
+        "portal-access" or "portal-shares" or "portal-feedback" => "portal",
         _ => "core"
     };
 
-    public static bool CanRead(BusinessRole role, string kind) => role switch
+    public static bool CanRead(BusinessRole role, string kind) => kind is "portal-access" ? role == BusinessRole.Partner
+        : kind is "portal-shares" or "portal-feedback" ? role is BusinessRole.ManagingDirector or BusinessRole.Office : role switch
     {
         BusinessRole.ManagingDirector => true,
         BusinessRole.Office => kind is not "training-records",
@@ -30,7 +32,9 @@ public static class AccessRules
         _ => false
     };
 
-    public static bool CanWrite(BusinessRole role, string kind) => kind is "settings" or "memberships" or "approvals" or "jobs" or "audit"
+    public static bool CanWrite(BusinessRole role, string kind) => kind is "portal-access" ? role == BusinessRole.Partner
+        : kind is "portal-shares" or "portal-feedback" ? role is BusinessRole.ManagingDirector or BusinessRole.Office
+        : kind is "settings" or "memberships" or "approvals" or "jobs" or "audit"
         ? role == BusinessRole.ManagingDirector : role switch
     {
         BusinessRole.ManagingDirector => true,

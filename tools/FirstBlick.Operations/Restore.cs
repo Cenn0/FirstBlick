@@ -11,7 +11,8 @@ namespace FirstBlick.Operations;
 internal sealed record VersionMapping(Guid DocumentId, string SourceVersionId, string RestoredVersionId);
 internal sealed record RestoreReport(DateTimeOffset SnapshotAt, DateTimeOffset RestoredAt, string Release, string Database, string Bucket,
     int VerifiedTables, long VerifiedRows, int VerifiedObjects, bool DataProtectionVerified, int QuarantinedJobs, int QuarantinedDeliveries,
-    int InvalidatedUsers, int InvalidatedInvitations, int InvalidatedApprovals, double RestoreSeconds, string Activation, List<VersionMapping> Versions);
+    int InvalidatedUsers, int InvalidatedInvitations, int InvalidatedApprovals, int RevokedPortalGrants, Guid RecoveryOperationId, Guid OperatorUserId,
+    double RestoreSeconds, string Activation, List<VersionMapping> Versions);
 
 internal static class Restore
 {
@@ -20,6 +21,7 @@ internal static class Restore
         var watch = Stopwatch.StartNew();
         // Verify every file and configuration precondition before creating any target resource.
         var manifest = await BundleFiles.Verify(input);
+        RecoveryAccounts.ValidateOperator(settings);
         Require.That(Regex.IsMatch(bucket, "^firstblick-restore-[a-z0-9][a-z0-9-]{1,42}$", RegexOptions.CultureInvariant), "Restore requires a new bucket named firstblick-restore-NAME.");
         Require.That(!Path.Exists(reportPath), "Restore report already exists; choose a new report path.");
         Require.That(!Path.GetFullPath(reportPath).StartsWith(Path.GetFullPath(input).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar, StringComparison.Ordinal), "Restore report must be outside the immutable backup directory.");
@@ -40,33 +42,44 @@ internal static class Restore
             Require.That(manifest.Tables.SequenceEqual(actual), "Restored table counts or row SHA-256 differ from the exported snapshot. Keep the isolated target disabled.");
         }
         await KeyProtection.VerifyProbe(restoredSettings, certificate, manifest.KeyProbe);
+        var operationId = Guid.NewGuid(); var bundleDigest = await BundleFiles.Hash(BundleFiles.SafePath(input, "manifest.json"));
+        // Commit the fail-closed hold before any further object transfer/account processing can fail.
+        await EstablishHolds(restoredSettings, manifest, operationId);
+        var quarantine = await ApplyRecoveryBarrier(restoredSettings, manifest, operationId, bundleDigest);
         var versions = new List<VersionMapping>();
         foreach (var obj in manifest.Objects)
             versions.Add(new(obj.DocumentId, obj.VersionId, await StorageFiles.Upload(client, bucket, obj, BundleFiles.SafePath(input, obj.File))));
-        var quarantine = await ApplyRecoveryBarrier(restoredSettings, manifest, versions);
+        await ApplyVersionsAndPrepare(restoredSettings, manifest, versions, operationId);
         watch.Stop();
         var report = new RestoreReport(manifest.SnapshotAt, DateTimeOffset.UtcNow, manifest.Release, database, bucket, manifest.Tables.Count,
             manifest.Tables.Sum(x => x.Rows), versions.Count, manifest.KeyProbe is not null, quarantine.Jobs, quarantine.Deliveries,
-            quarantine.Users, quarantine.Invitations, quarantine.Approvals, watch.Elapsed.TotalSeconds, "isolated; reconcile external effects and post-snapshot writes before API/worker activation", versions);
+            quarantine.Users, quarantine.Invitations, quarantine.Approvals, quarantine.PortalGrants, operationId, quarantine.OperatorId,
+            watch.Elapsed.TotalSeconds, "persistent Held barrier; legacy credentials disabled; explicit evidence-bound resume required", versions);
         Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(reportPath))!);
         await using (var output = new FileStream(reportPath, FileMode.CreateNew, FileAccess.Write, FileShare.None)) await JsonSerializer.SerializeAsync(output, report, BundleFiles.Json);
         if (!OperatingSystem.IsWindows()) File.SetUnixFileMode(reportPath, UnixFileMode.UserRead | UnixFileMode.UserWrite);
         return report;
     }
 
-    private static async Task<(int Jobs, int Deliveries, int Users, int Invitations, int Approvals)> ApplyRecoveryBarrier(Settings settings, BackupManifest manifest, List<VersionMapping> versions)
+    private static async Task EstablishHolds(Settings settings, BackupManifest manifest, Guid operationId)
     {
         await using var db = settings.Db(); await using var transaction = await db.Database.BeginTransactionAsync();
-        var now = DateTimeOffset.UtcNow; var correlation = $"restore:{Guid.NewGuid():N}";
-        var documents = await db.Documents.IgnoreQueryFilters().ToDictionaryAsync(x => x.Id);
-        foreach (var mapping in versions)
+        foreach (var tenant in await db.Tenants.ToListAsync())
         {
-            var doc = documents[mapping.DocumentId]; var proof = manifest.Objects.Single(x => x.DocumentId == mapping.DocumentId);
-            Require.That(doc.VersionId == mapping.SourceVersionId && doc.ObjectKey == proof.Key && doc.TenantId == proof.TenantId && doc.Sha256.Equals(proof.Sha256, StringComparison.OrdinalIgnoreCase), "Restored document reference differs from backup metadata.");
-            doc.VersionId = mapping.RestoredVersionId; doc.Revision = checked(doc.Revision + 1);
-            db.Audit.Add(new AuditEntry { TenantId = doc.TenantId, ActorId = Guid.Empty, Action = "operations.restore.version", Kind = "documents", EntityId = doc.Id,
-                Revision = doc.Revision, ContentDigest = ContentDigest.Of(mapping), CorrelationId = correlation, At = now });
+            var receipt = await db.Receipts.IgnoreQueryFilters().SingleOrDefaultAsync(x => x.TenantId == tenant.Id && x.ActorId == Guid.Empty && x.Key == RecoveryResume.HoldKey);
+            if (receipt is null) { receipt = new CommandReceipt { TenantId = tenant.Id, ActorId = Guid.Empty, Key = RecoveryResume.HoldKey }; db.Receipts.Add(receipt); }
+            var hold = new OperationsRecoveryHold(operationId, "Held", manifest.SnapshotAt, manifest.Release, "restored_snapshot_requires_reconciliation", null, null);
+            receipt.RequestDigest = ContentDigest.Of(hold); receipt.Response = AppJson.Serialize(hold); receipt.CreatedAt = DateTimeOffset.UtcNow;
+            var prepared = await db.Receipts.IgnoreQueryFilters().SingleOrDefaultAsync(x => x.TenantId == tenant.Id && x.ActorId == Guid.Empty && x.Key == RecoveryResume.PreparedKey);
+            if (prepared is not null) db.Receipts.Remove(prepared);
         }
+        await db.SaveChangesAsync(); await transaction.CommitAsync();
+    }
+
+    private static async Task<(int Jobs, int Deliveries, int Users, int Invitations, int Approvals, int PortalGrants, Guid OperatorId)> ApplyRecoveryBarrier(Settings settings, BackupManifest manifest, Guid operationId, string bundleDigest)
+    {
+        await using var db = settings.Db(); await using var transaction = await db.Database.BeginTransactionAsync();
+        var now = DateTimeOffset.UtcNow; var correlation = operationId.ToString("N");
         var jobs = await db.Jobs.IgnoreQueryFilters().Where(x => x.Type != "entity.changed" && (x.State == JobState.Pending || x.State == JobState.Leased)).ToListAsync();
         foreach (var job in jobs)
         {
@@ -86,14 +99,40 @@ internal static class Restore
             db.Audit.Add(new AuditEntry { TenantId = row.TenantId, ActorId = Guid.Empty, Action = "operations.restore.delivery", Kind = row.Kind, EntityId = row.Id,
                 Revision = row.Revision, ContentDigest = ContentDigest.OfUtf8(row.Data), CorrelationId = correlation, At = now });
         }
-        // A snapshot may predate a logout, password reset or invitation revocation. Require fresh sessions and fresh invitations.
-        var users = await db.Users.ToListAsync(); foreach (var user in users) user.SecurityStamp = Guid.NewGuid().ToString();
+        var grants = 0;
+        foreach (var row in await db.Entities.IgnoreQueryFilters().Where(x => x.Kind == "portal-shares").ToListAsync())
+        {
+            var share = AppJson.Read<PortalShare>(row.Data); if (share.RevokedAt is not null) continue;
+            share.RevokedAt = now; share.UpdatedAt = now; share.Revision = checked(share.Revision + 1); share.Validate();
+            row.Data = AppJson.Serialize(share); row.Revision = share.Revision; row.UpdatedAt = now; grants++;
+            db.Audit.Add(new AuditEntry { TenantId = row.TenantId, ActorId = Guid.Empty, Action = "operations.restore.portal-revoke", Kind = row.Kind,
+                EntityId = row.Id, Revision = row.Revision, ContentDigest = ContentDigest.OfUtf8(row.Data), CorrelationId = correlation, At = now });
+        }
+        var users = await RecoveryAccounts.QuarantineExisting(db, operationId, bundleDigest);
         var invitations = await db.Invitations.Where(x => x.UsedAt == null).ToListAsync(); foreach (var invitation in invitations) invitation.UsedAt = now;
         var approvals = await db.Approvals.IgnoreQueryFilters().Where(x => x.ConsumedAt == null && x.ExpiresAt > now).ToListAsync();
         foreach (var approval in approvals) { approval.ExpiresAt = now.AddTicks(-1); approval.Revision = checked(approval.Revision + 1); }
         foreach (var tenant in await db.Tenants.ToListAsync()) db.Audit.Add(new AuditEntry { TenantId = tenant.Id, ActorId = Guid.Empty, Action = "operations.restore.authentication", Kind = "tenants", EntityId = tenant.Id,
-            Revision = tenant.PolicyRevision, ContentDigest = ContentDigest.Of(new { invalidatedSessions = true, invalidatedInvitations = true, invalidatedApprovals = true, manifest.SnapshotAt }), CorrelationId = correlation, At = now });
+            Revision = tenant.PolicyRevision, ContentDigest = ContentDigest.Of(new { invalidatedSessions = true, invalidatedOldPasswords = true, invalidatedInvitations = true, invalidatedApprovals = true, revokedPortalGrants = true, manifest.SnapshotAt }), CorrelationId = correlation, At = now });
+        var operatorId = await RecoveryAccounts.ProvisionOperator(db, settings, await db.Tenants.Select(x => x.Id).ToListAsync(), operationId);
         await db.SaveChangesAsync(); await transaction.CommitAsync();
-        return (jobs.Count, deliveryCount, users.Count, invitations.Count, approvals.Count);
+        return (jobs.Count, deliveryCount, users, invitations.Count, approvals.Count, grants, operatorId);
+    }
+
+    private static async Task ApplyVersionsAndPrepare(Settings settings, BackupManifest manifest, List<VersionMapping> versions, Guid operationId)
+    {
+        await using var db = settings.Db(); await using var transaction = await db.Database.BeginTransactionAsync();
+        var documents = await db.Documents.IgnoreQueryFilters().ToDictionaryAsync(x => x.Id);
+        foreach (var mapping in versions)
+        {
+            var doc = documents[mapping.DocumentId]; var proof = manifest.Objects.Single(x => x.DocumentId == mapping.DocumentId);
+            Require.That(doc.VersionId == mapping.SourceVersionId && doc.ObjectKey == proof.Key && doc.TenantId == proof.TenantId && doc.Sha256.Equals(proof.Sha256, StringComparison.OrdinalIgnoreCase), "Restored document reference differs from backup metadata.");
+            doc.VersionId = mapping.RestoredVersionId; doc.Revision = checked(doc.Revision + 1);
+            db.Audit.Add(new AuditEntry { TenantId = doc.TenantId, ActorId = Guid.Empty, Action = "operations.restore.version", Kind = "documents", EntityId = doc.Id,
+                Revision = doc.Revision, ContentDigest = ContentDigest.Of(mapping), CorrelationId = operationId.ToString("N") });
+        }
+        foreach (var tenant in await db.Tenants.ToListAsync()) db.Receipts.Add(new CommandReceipt { TenantId = tenant.Id, ActorId = Guid.Empty, Key = RecoveryResume.PreparedKey,
+            RequestDigest = operationId.ToString("N"), Response = AppJson.Serialize(new { operationId, preparedAt = DateTimeOffset.UtcNow, objects = versions.Count, legacyCredentialsDisabled = true }) });
+        await db.SaveChangesAsync(); await transaction.CommitAsync();
     }
 }

@@ -50,6 +50,11 @@ public static class AuthEndpoints
             var memberships = await db.Memberships.AsNoTracking().Where(x => x.UserId == user.Id && x.Active).ToListAsync(ct);
             var ids = memberships.Select(x => x.TenantId).ToList();
             var tenants = await db.Tenants.AsNoTracking().Where(x => ids.Contains(x.Id)).ToListAsync(ct);
+            var heldTenants = new HashSet<Guid>();
+            foreach (var tenant in tenants) if (await RecoveryBarrier.IsHeld(db, tenant.Id, ct)) heldTenants.Add(tenant.Id);
+            var personalUserId = user.Id.ToString(); var personalTenants = ids.ToArray();
+            var staffData = await db.Database.SqlQuery<string>($"SELECT \"Data\"::text AS \"Value\" FROM \"Entities\" WHERE \"TenantId\"=ANY({personalTenants}) AND \"Kind\"='employees' AND NOT \"Archived\" AND \"Data\"->>'userId'={personalUserId} AND \"Data\"->>'active'='true'").ToListAsync(ct);
+            var staffByTenant = staffData.Select(AppJson.Read<Employee>).ToDictionary(x => x.TenantId, x => x.Id);
             var selected = Guid.TryParse(http.Request.Headers["X-Tenant-Id"], out var requested) && ids.Contains(requested) ? requested : ids.FirstOrDefault();
             return Results.Ok(new
             {
@@ -57,11 +62,12 @@ public static class AuthEndpoints
                 tenants = tenants.Select(t =>
                 {
                     var role = memberships.Single(m => m.TenantId == t.Id).Role;
-                    var capabilities = BusinessRegistry.Entities.Keys.Append("documents").SelectMany(k =>
-                        (AccessRules.CanRead(role, k) ? new[] { $"{k}.read" } : Array.Empty<string>()).Concat(
+                    var capabilities = BusinessRegistry.Entities.Keys.Append("documents").Append("portal-access").SelectMany(k =>
+                        (AccessRules.CanRead(role, k) && (k != "portal-access" || t.Modules.Contains("portal")) ? new[] { $"{k}.read" } : Array.Empty<string>()).Concat(
                         AccessRules.CanWrite(role, k) && t.Modules.Contains(AccessRules.ModuleFor(k)) ? new[] { $"{k}.write" } : Array.Empty<string>())).ToList();
                     if (role == BusinessRole.ManagingDirector) capabilities.AddRange(["settings.manage", "members.manage", "approvals.manage"]);
-                    return new { t.Id, t.Name, role, t.Modules, capabilities };
+                    var recoveryHold = heldTenants.Contains(t.Id); if (recoveryHold) capabilities.Clear();
+                    return new { t.Id, t.Name, role, t.Modules, capabilities, recoveryHold, employeeId = staffByTenant.TryGetValue(t.Id, out var staffId) ? (Guid?)staffId : null };
                 })
             });
         }).RequireAuthorization();
@@ -85,16 +91,43 @@ public static class AuthEndpoints
         var invitation = await db.Invitations.AsNoTracking().SingleOrDefaultAsync(x => x.TokenHash == hash, ct);
         Guard.Require(invitation is not null, "invalid_invitation", "The invitation is invalid or expired.");
         await using var tx = await db.Database.BeginTransactionAsync(ct);
+        // Serialize first credential claims across different businesses for the same personal identity.
+        var identityLock = "identity.activation:" + users.NormalizeEmail(body.Email);
+        await db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(hashtextextended({identityLock}, 0))", ct);
         await db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(hashtextextended({invitation!.TenantId.ToString()}, 0))", ct);
+        await RecoveryBarrier.EnsureAvailable(db, invitation.TenantId, ct);
         invitation = await db.Invitations.SingleAsync(x => x.Id == invitation.Id, ct);
         Guard.Require(invitation.UsedAt is null && invitation.ExpiresAt > DateTimeOffset.UtcNow && string.Equals(invitation.Email, body.Email, StringComparison.OrdinalIgnoreCase),
             "invalid_invitation", "The invitation is invalid or expired.");
-        // An invitation cannot restore passwords, change an existing person's identity, or silently overwrite membership.
+        Guard.Require(await db.Memberships.AnyAsync(x => x.TenantId == invitation.TenantId && x.UserId == invitation.InvitedBy && x.Active && x.Role == BusinessRole.ManagingDirector, ct),
+            "invalid_invitation", "The invitation has been revoked by a change of responsibility.");
+        // Only a trusted operator's pending import marker permits first credential creation
+        // on an unconfirmed identity without credentials or active memberships. Ordinary invitations cannot reset accounts.
         var user = await users.FindByEmailAsync(body.Email);
+        CommandReceipt? migrationReceipt = null; MigrationAccountMarker? migration = null;
         if (user is not null)
         {
-            Guard.Require(http.User.FindFirstValue(ClaimTypes.NameIdentifier) == user.Id.ToString(), "existing_account_login_required", "Sign in to your existing personal account before accepting this invitation.");
-            Guard.Require(string.IsNullOrEmpty(body.Password), "invitation_not_recovery", "An invitation cannot change an existing account password.");
+            var pending = await MigrationAccounts.FindPending(db, invitation.TenantId, user.Id, user.Email, ct);
+            migration = pending?.Marker; migrationReceipt = pending?.Receipt;
+        }
+        if (user is not null)
+        {
+            var firstCredential = migration is not null && string.IsNullOrEmpty(user.PasswordHash) && !user.EmailConfirmed
+                && !await db.Memberships.AnyAsync(x => x.UserId == user.Id && x.Active, ct);
+            if (firstCredential)
+            {
+                Guard.Text(body.Password, "Password", 1024);
+                var credential = await users.AddPasswordAsync(user, body.Password!);
+                if (!credential.Succeeded) throw new DomainException("invalid_account", string.Join(" ", credential.Errors.Select(e => e.Description)));
+                user.EmailConfirmed = true; user.DisplayName = body.DisplayName; user.LockoutEnd = null; user.AccessFailedCount = 0;
+                var updated = await users.UpdateAsync(user);
+                if (!updated.Succeeded) throw new DomainException("invalid_account", string.Join(" ", updated.Errors.Select(e => e.Description)));
+            }
+            else
+            {
+                Guard.Require(http.User.FindFirstValue(ClaimTypes.NameIdentifier) == user.Id.ToString(), "existing_account_login_required", "Sign in to your existing personal account before accepting this invitation.");
+                Guard.Require(string.IsNullOrEmpty(body.Password), "invitation_not_recovery", "An invitation cannot change an existing account password.");
+            }
         }
         else
         {
@@ -103,11 +136,16 @@ public static class AuthEndpoints
             var result = await users.CreateAsync(user, body.Password!);
             if (!result.Succeeded) throw new DomainException("invalid_account", string.Join(" ", result.Errors.Select(e => e.Description)));
         }
-        Guard.Require(!await db.Memberships.AnyAsync(x => x.TenantId == invitation.TenantId && x.UserId == user.Id, ct), "membership_exists", "Membership already exists; use the explicit membership-management workflow.");
-        // The inviter must still be a director when the token is redeemed.
-        Guard.Require(await db.Memberships.AnyAsync(x => x.TenantId == invitation.TenantId && x.UserId == invitation.InvitedBy && x.Active && x.Role == BusinessRole.ManagingDirector, ct),
-            "invalid_invitation", "The invitation has been revoked by a change of responsibility.");
-        db.Memberships.Add(new Membership { TenantId = invitation.TenantId, UserId = user.Id, Role = invitation.Role });
+        var previousMembership = await db.Memberships.SingleOrDefaultAsync(x => x.TenantId == invitation.TenantId && x.UserId == user.Id, ct);
+        Guard.Require(previousMembership is null || (migration is not null && !previousMembership.Active), "membership_exists", "Membership already exists; use the explicit membership-management workflow.");
+        if (previousMembership is null) db.Memberships.Add(new Membership { TenantId = invitation.TenantId, UserId = user.Id, Role = invitation.Role });
+        else { previousMembership.Active = true; previousMembership.Role = invitation.Role; previousMembership.Revision++; }
+        if (migration is not null)
+        {
+            migrationReceipt!.Response = AppJson.Serialize(migration with { State = "Claimed" });
+            db.Audit.Add(new AuditEntry { TenantId = invitation.TenantId, ActorId = user.Id, Action = "migration.account_claimed", Kind = "identity", EntityId = user.Id,
+                Revision = 1, ContentDigest = ContentDigest.Of(new { migration.BundleId, migration.SourceAccountId, invitationId = invitation.Id, invitation.Role, userId = user.Id }) });
+        }
         invitation.UsedAt = DateTimeOffset.UtcNow;
         db.Audit.Add(new AuditEntry { TenantId = invitation.TenantId, ActorId = user.Id, Action = "invitation.redeemed", Kind = "membership", EntityId = invitation.Id, Revision = 1, ContentDigest = ContentDigest.Of(new { invitation.InvitedBy, user.Id, invitation.Role }) });
         await db.SaveChangesAsync(ct); await tx.CommitAsync(ct);
@@ -125,7 +163,9 @@ public static class AuthEndpoints
             await using var transaction = await db.Database.BeginTransactionAsync(ct);
             var recoveryLock = $"identity.recovery:{user.Id}";
             await db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(hashtextextended({recoveryLock}, 0))", ct);
-            var membership = await db.Memberships.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == user.Id && x.Active, ct);
+            Membership? membership = null;
+            foreach (var candidate in await db.Memberships.AsNoTracking().Where(x => x.UserId == user.Id && x.Active).OrderBy(x => x.TenantId).ToListAsync(ct))
+                if (!await RecoveryBarrier.IsHeld(db, candidate.TenantId, ct)) { membership = candidate; break; }
             var recent = await db.Jobs.IgnoreQueryFilters().AnyAsync(x => x.Type == "identity.recovery" && x.EntityId == user.Id && x.AvailableAt > DateTimeOffset.UtcNow.AddMinutes(-5), ct);
             if (membership is not null && !recent)
             {

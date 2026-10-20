@@ -1,0 +1,71 @@
+<header class="page-heading">
+  <div><p class="eyebrow">{{partner()?'IHR PERSÖNLICHER ZUGANG':'ZUSAMMENARBEIT'}}</p><h1>{{partner()?'Freigegebene Unterlagen':'Kundenportal'}}</h1><p>{{partner()?'Ihre Angebote, Dokumente und Rückmeldungen an einem Ort.':'Einzelne Unterlagen gezielt und befristet für persönlich angemeldete Personen freigeben.'}}</p></div>
+  @if(canManage()){<button class="button primary" (click)="prepareGrant()">+ Unterlage freigeben</button>}
+</header>
+@if(!allowed()){
+  <section class="panel empty-state"><h2>Das Kundenportal ist derzeit nicht verfügbar.</h2><p>Ihre Betriebsverwaltung kann das Modul aktivieren und persönliche Zugänge freigeben.</p><a routerLink="/settings">Persönlichen Zugang ansehen</a></section>
+}@else{
+  @if(error()){<div class="alert error" role="alert">{{error()}}</div>}@if(notice()){<div class="alert success" role="status">{{notice()}}</div>}
+  <section class="panel collection-panel">
+    <div class="collection-toolbar">
+      @if(!partner()){<form class="search-form" (ngSubmit)="search()"><label class="sr-only" for="portal-search">Freigaben durchsuchen</label><input id="portal-search" name="search" [(ngModel)]="searchText" maxlength="200" placeholder="Freigaben durchsuchen …"><button class="text-button">Suchen</button></form>}
+      <span class="small muted">{{page().total}} {{partner()?'verfügbare Unterlagen':'Freigaben'}}</span><button class="text-button" (click)="load()" [disabled]="loading()">Aktualisieren</button>
+    </div>
+    @if(loading()){<div class="loading-state" role="status">Freigaben werden geladen …</div>}
+    @else if(page().items.length){<div class="table-wrap"><table><thead><tr><th>Unterlage</th><th>Art</th>@if(!partner()){<th>Person</th>}<th>Verfügbar bis</th><th>Status</th></tr></thead><tbody>@for(share of page().items;track share.id){<tr [class.selected]="selected()?.share?.id===share.id"><td data-label="Unterlage"><button class="row-title" (click)="viewId(share.id)">{{share.title}}</button></td><td data-label="Art">{{sourceLabel(share.sourceKind)}}</td>@if(!partner()){<td data-label="Person">{{recipientName(share.recipientUserId)}}</td>}<td data-label="Verfügbar bis">{{date(share.expiresAt)}}</td><td data-label="Status"><span class="badge">{{status(share)}}</span></td></tr>}</tbody></table></div>}
+    @else{<div class="empty-state"><span class="empty-icon" aria-hidden="true">▤</span><h2>{{partner()?'Hier erscheinen Ihre freigegebenen Unterlagen.':'Noch keine Unterlagen freigegeben.'}}</h2><p>{{partner()?'Sobald der Betrieb eine Unterlage persönlich für Sie freigibt, können Sie diese hier öffnen. Abgelaufene oder beendete Freigaben sind nicht mehr verfügbar.':'Wählen Sie eine aktive Person mit Portalzugang, ein ausgegebenes Angebot oder eine geprüfte Projektdatei und ein konkretes Ablaufdatum.'}}</p></div>}
+    @if(page().total>page().pageSize){<div class="pagination"><button class="button secondary" (click)="paginate(-1)" [disabled]="pageNumber===1||loading()">← Zurück</button><span>Seite {{pageNumber}} von {{totalPages()}}</span><button class="button secondary" (click)="paginate(1)" [disabled]="pageNumber>=totalPages()||loading()">Weiter →</button></div>}
+  </section>
+  @if(detailLoading()){<div class="panel loading-state" role="status">Die freigegebene Version wird geöffnet …</div>}
+  @if(selected();as detail){
+    <section class="panel portal-detail">
+      <div class="panel-heading"><div><p class="eyebrow">{{sourceLabel(detail.share.sourceKind)}} · {{status(detail.share)}}</p><h2 id="portal-detail-title" tabindex="-1">{{detail.share.title}}</h2></div><button class="icon-button" aria-label="Freigabedetails schließen" (click)="closeDetails()">×</button></div>
+      <p class="small muted">Persönlich freigegeben bis {{date(detail.share.expiresAt)}}.@if(!partner()){<br>Portalzugang: {{recipientName(detail.share.recipientUserId)}}}</p>
+      @if(detailNotice()){<div class="alert warning">{{detailNotice()}}</div>}
+      @if(detail.quote;as quote){
+        <div class="portal-quote-header"><div><p class="eyebrow">{{quote.number}} · VERSION {{quote.version}}</p><h3>{{quote.title}}</h3></div><span class="badge">{{quote.status==='Accepted'?'Angenommen':'Angebot'}}</span></div>
+        <dl class="detail-grid"><div><dt>Anbieter</dt><dd>{{quote.presentation.sellerName}}</dd></div><div><dt>Auftraggeber</dt><dd>{{quote.presentation.buyerName}}<span class="document-date">{{quote.presentation.buyerAddress}}</span></dd></div><div><dt>Ausgegeben am</dt><dd>{{date(quote.presentation.issuedAt)}}</dd></div>@if(quote.validUntil){<div><dt>Angebot gültig bis</dt><dd>{{dateOnly(quote.validUntil)}}</dd></div>}</dl>
+        <div class="table-wrap detail-lines"><table><caption>Freigegebene Angebotspositionen</caption><thead><tr><th>Leistung</th><th>Menge</th><th>Einzelpreis netto</th><th>Umsatzsteuer</th><th>Gesamt netto</th></tr></thead><tbody>@for(line of quote.lines;track $index){<tr><td data-label="Leistung">{{line.description}}</td><td data-label="Menge">{{quantity(line.quantity)}} {{line.unit}}</td><td data-label="Einzelpreis netto">{{money(line.unitNet)}}</td><td data-label="Umsatzsteuer">{{quantity(line.vatPercent)}} %</td><td data-label="Gesamt netto">{{money(line.net)}}</td></tr>}</tbody></table></div>
+        <div class="totals"><span>Netto<strong>{{money(quote.net)}}</strong></span><span>Umsatzsteuer<strong>{{money(quote.tax)}}</strong></span><span class="grand-total">Gesamtbetrag<strong>{{money(quote.gross)}}</strong></span></div>
+        @if(quote.status==='Accepted'){<div class="alert success" role="status">Diese Angebotsversion wurde verbindlich angenommen.</div>}
+        @else if(canAccept(detail)){<div class="portal-accept"><p>Prüfen Sie die Leistungen, Mengen, Preise und Angebotsdaten. Im nächsten Schritt bestätigen Sie ausdrücklich die verbindliche Annahme genau dieser Version.</p><button class="button primary" (click)="prepareAcceptance(detail)">Angebot annehmen</button></div>}
+        @else if(partner()){<p class="small muted">Für diese Freigabe ist derzeit keine Angebotsannahme im Portal vorgesehen. Sie können eine Rückfrage zur Unterlage hinterlassen.</p>}
+      }
+      @if(detail.document;as file){
+        <div class="portal-file"><span class="empty-icon" aria-hidden="true">▤</span><div><h3>{{file.name}}</h3><p class="small muted">{{file.contentType}} · {{size(file.size)}} · Geprüfte Dateiversion</p></div><button class="button primary" (click)="download()" [disabled]="busy()">{{busy()?'Wird verarbeitet …':'Datei herunterladen'}}</button></div>
+        <p class="small muted">Der Download wird mit der freigegebenen Dateiprüfsumme abgeglichen.</p>
+      }
+      @if(canManage()&&active(detail.share)){<div class="detail-actions portal-revoke"><button class="text-button danger-text" (click)="revoke(detail.share)" [disabled]="busy()">Zugriff beenden</button></div>}
+    </section>
+    <section class="panel portal-conversation"><p class="eyebrow">ZU DIESER UNTERLAGE</p><h2>Rückfragen & Antworten</h2>
+      @if(detail.feedback.total){<div class="portal-messages">@for(entry of feedbackItems();track entry.id){<article class="portal-message" [class.from-business]="entry.fromBusiness"><div class="portal-message-heading"><strong>{{entry.fromBusiness?'Antwort des Betriebs':'Rückmeldung aus dem Portal'}}</strong><time [attr.datetime]="entry.createdAt">{{date(entry.createdAt)}}</time></div><p>{{entry.message}}</p></article>}</div>}
+      @else{<p class="muted">Zu dieser freigegebenen Version gibt es noch keine Rückmeldungen.</p>}
+      @if(detail.feedback.total>detail.feedback.pageSize){<div class="pagination"><button class="button secondary" (click)="loadFeedback(detail.feedback.page-1)" [disabled]="detail.feedback.page<=1||busy()">Neuere</button><span>Seite {{detail.feedback.page}} von {{feedbackPages()}}</span><button class="button secondary" (click)="loadFeedback(detail.feedback.page+1)" [disabled]="detail.feedback.page>=feedbackPages()||busy()">Ältere</button></div>}
+      @if(canRespond()){<form #feedbackForm="ngForm" (ngSubmit)="sendFeedback()"><label for="portal-message">{{partner()?'Ihre Rückfrage oder Rückmeldung':'Antwort an den freigegebenen Portalzugang'}}</label><textarea id="portal-message" name="message" [(ngModel)]="message" required maxlength="4000" rows="4" [disabled]="busy()"></textarea><p class="small muted">Die Nachricht bleibt dieser freigegebenen Unterlagenversion zugeordnet.</p><button class="button primary" [disabled]="busy()||feedbackForm.invalid||!message.trim()">{{partner()?'Rückmeldung speichern':'Antwort speichern'}}</button></form>}
+      @else{<p class="small muted">Weitere Rückmeldungen benötigen eine aktive Freigabe.</p>}
+    </section>
+  }
+}
+
+<dialog #acceptDialog class="action-dialog" (cancel)="cancel($event)">
+  @if(acceptanceQuote();as quote){<form #acceptForm="ngForm" (ngSubmit)="accept()"><header class="dialog-heading"><h2>Angebot verbindlich annehmen</h2><button class="icon-button" type="button" aria-label="Annahme schließen" (click)="closeAcceptance()" [disabled]="busy()">×</button></header><div class="dialog-body">
+    <p><strong>{{quote.number}} · {{quote.title}}</strong><br>Version {{quote.version}} · {{quote.presentation.sellerName}}</p><p class="portal-accept-total">Gesamtbetrag einschließlich Umsatzsteuer <strong>{{money(quote.gross)}}</strong></p>
+    <label class="checkbox-label"><input name="consent" type="checkbox" [(ngModel)]="consent" required>Ich habe diese Angebotsversion geprüft und nehme die aufgeführten Leistungen zum angegebenen Gesamtbetrag verbindlich an.</label>
+    @if(formError()){<div class="alert error" role="alert">{{formError()}}</div>}
+  </div><footer class="dialog-footer"><button class="button secondary" type="button" (click)="closeAcceptance()" [disabled]="busy()">Abbrechen</button><button class="button primary" [disabled]="busy()||acceptForm.invalid||!consent">{{busy()?'Wird gespeichert …':'Verbindlich annehmen'}}</button></footer></form>}
+</dialog>
+
+<dialog #grantDialog class="editor-dialog" (cancel)="cancel($event)">
+  <form #grantForm="ngForm" (ngSubmit)="grant()"><header class="dialog-heading"><div><p class="eyebrow">PERSÖNLICHE FREIGABE</p><h2>Unterlage freigeben</h2></div><button class="icon-button" type="button" aria-label="Freigabe schließen" (click)="closeGrant()" [disabled]="busy()">×</button></header><div class="dialog-body">
+    @if(formError()){<div class="alert error" role="alert">{{formError()}}</div>}
+    @if(!recipients().length){<div class="alert information">Es ist noch kein aktiver Portalzugang hinterlegt. Die Geschäftsführung kann eine Person mit der Rolle „Partner“ einladen.@if(auth.can('members.manage')){<a routerLink="/management" (click)="closeGrant()">Betriebszugänge verwalten →</a>}</div>}
+    <div class="form-grid"><div class="form-field full-width"><label for="grant-recipient">Persönlich angemeldete Person *</label><select id="grant-recipient" name="recipient" [(ngModel)]="recipientUserId" required><option value="">Bitte Person auswählen</option>@for(recipient of recipients();track recipient.userId){<option [value]="recipient.userId">{{recipient.displayName}} · {{recipient.email}}</option>}</select></div>
+      <div class="form-field"><label for="grant-kind">Art der Unterlage</label><select id="grant-kind" name="kind" [(ngModel)]="sourceKind" (ngModelChange)="changeSourceKind()"><option value="quotes">Ausgegebenes Angebot</option><option value="documents">Geprüfte Projektdatei</option></select></div>
+      <div class="form-field"><label for="grant-source">Konkrete Unterlage *</label><input name="sourceSearch" aria-label="Unterlagen für Freigabe suchen" placeholder="Unterlagen durchsuchen" (input)="loadSources($any($event.target).value)"><select id="grant-source" name="source" [(ngModel)]="sourceId" (ngModelChange)="selectSource($event)" required><option value="">Bitte Unterlage auswählen</option>@for(option of sources();track option.id){<option [value]="option.id">{{name(option)}}{{option['number']?' · '+option['number']:''}}</option>}</select></div>
+      <div class="form-field"><label for="grant-title">Bezeichnung im Portal *</label><input id="grant-title" name="title" [(ngModel)]="grantTitle" required maxlength="240"></div><div class="form-field"><label for="grant-expiry">Zugriff endet am *</label><input id="grant-expiry" name="expires" type="datetime-local" [(ngModel)]="expiresAt" [min]="minExpiry()" [max]="maxExpiry()" required><small class="muted">Spätestens 90 Tage nach der Freigabe. Anzeige in Ihrer Gerätezeitzone.</small></div>
+    </div>
+    @if(grantQuote();as quote){<section class="portal-grant-review"><h3>{{quote.number}} · {{quote.title}}</h3><p>{{quote.presentation.sellerName}} → {{quote.presentation.buyerName}}<br>{{quote.presentation.buyerAddress}}</p><p>Version {{quote.version}} · Gesamtbetrag {{money(quote.gross)}}</p>@if(quote.status==='Issued'){<label class="checkbox-label"><input name="allowAcceptance" type="checkbox" [(ngModel)]="allowAcceptance">Diese Person darf genau diese Angebotsversion verbindlich annehmen.</label>}@else{<p class="small muted">Dieses Angebot ist bereits angenommen.</p>}</section>}
+    @else if(source();as file){<section class="portal-grant-review"><h3>{{name(file)}}</h3><p class="small muted">Diese geprüfte Dateiversion wird für die ausgewählte Person zum Download verfügbar.</p></section>}
+    <p class="small muted">Die Freigabe gilt ausschließlich für die ausgewählte Unterlage und Person bis zum angegebenen Zeitpunkt. Sie können den Zugriff früher beenden.</p>
+  </div><footer class="dialog-footer"><button class="button secondary" type="button" (click)="closeGrant()" [disabled]="busy()">Abbrechen</button><button class="button primary" [disabled]="busy()||grantForm.invalid||!source()||!canManage()">{{busy()?'Wird gespeichert …':'Zugriff freigeben'}}</button></footer></form>
+</dialog>

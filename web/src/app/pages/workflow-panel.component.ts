@@ -28,7 +28,7 @@ interface QuotePresentation {sellerName:string;buyerName:string;buyerAddress:str
     @if(metricError()){<div class="alert warning" role="status">{{metricError()}}</div>}
     @if(deliveries().length){<section class="snapshot"><h3>Versandverlauf dieser Version</h3>@for(delivery of deliveries();track delivery.id){<div class="activity-row"><div><strong>{{channelName(delivery.channel)}} · {{delivery.recipient}}</strong><span>{{date(delivery.requestedAt)}}{{delivery.resolutionNote?' · '+delivery.resolutionNote:''}}</span></div><span class="badge">{{labelFor(delivery.state)}}</span></div>}</section>}
     @if(kind()==='orders'){<details class="workflow-detail"><summary>Nachkalkulation & Prognose</summary><form #costForm="ngForm" (ngSubmit)="compareCosts()"><p class="small muted">Geben Sie den tatsächlich angefallenen Aufwand und die verbleibenden Kosten ein. Die Vertragswerte stammen aus dem Auftrag und angenommenen Nachträgen.</p><div class="form-grid"><div class="form-field"><label for="actual-cost">Bisherige Kosten netto (€)</label><input id="actual-cost" name="actual" [type]="'number'" [(ngModel)]="actualCost" required min="0" step="0.01"></div><div class="form-field"><label for="forecast-cost">Verbleibende Kosten netto (€)</label><input id="forecast-cost" name="forecast" [type]="'number'" [(ngModel)]="forecastCost" required min="0" step="0.01"></div></div><button class="button secondary" [disabled]="busy()||costForm.invalid">Kosten vergleichen</button></form>@if(comparison().length){<dl class="detail-grid">@for(metric of comparison();track metric.key){<div><dt>{{metric.label}}</dt><dd>{{metric.value}}</dd></div>}</dl>}</details>}
-    <div class="detail-actions">@for(action of actions();track action.key){<button class="button secondary" (click)="prepare(action)">{{action.title}}</button>}</div>
+    <div class="detail-actions">@for(action of actions();track action.key){<button class="button secondary" (click)="prepare(action)">{{action.title}}</button>}@if(canShare()){<a class="button secondary" routerLink="/portal" [queryParams]="{new:1,kind:'quotes',sourceId:item().id}">Im Kundenportal freigeben</a>}</div>
     <dialog #dialog class="action-dialog" (cancel)="cancel($event)">
       @if(active();as action){<form #actionForm="ngForm" (ngSubmit)="execute()"><header class="dialog-heading"><h2>{{action.title}}</h2><button type="button" class="icon-button" aria-label="Vorgang schließen" (click)="close()" [disabled]="busy()">×</button></header><div class="dialog-body"><p>{{action.description}}</p>
         @if(error()){<div class="alert error" role="alert">{{error()}}</div>}
@@ -68,6 +68,7 @@ export class WorkflowPanelComponent {
   date(value:string):string{return new Intl.DateTimeFormat('de-DE',{dateStyle:'short',timeStyle:'short'}).format(new Date(value));}
   dateOnly(value:string):string{return new Intl.DateTimeFormat('de-DE',{dateStyle:'medium'}).format(new Date(value+'T12:00:00'));}
   money(value:unknown):string{return new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(Number(value));}
+  canShare():boolean{return this.kind()==='quotes'&&['Issued','Accepted'].includes(String(this.item()['status']))&&!!this.item()['issuedDigest']&&this.auth.hasModule('portal')&&this.auth.can('portal-shares.write');}
   private availableActions():Action[]{
     const kind=this.kind(),item=this.item(),status=String(item['status']),path=`${kind}/${item.id}`;
     const actions:Action[]=[];
@@ -103,7 +104,7 @@ export class WorkflowPanelComponent {
     }
     if(kind==='training-records'){
       if(status==='Draft'&&['ManagingDirector','Worker'].includes(this.auth.tenant()?.role||''))add('submit','Wochenbericht einreichen','Der Wochenbericht wird dem zugeordneten Ausbilder zur Prüfung vorgelegt.','submit');
-      if(status==='Submitted'&&['ManagingDirector','Trainer','Worker'].includes(this.auth.tenant()?.role||''))add('review','Ausbildungsnachweis prüfen','Nur der zugeordnete Ausbilder kann diesen Bericht abschließend prüfen. Halten Sie die konkrete Rückmeldung fest.','review',[{key:'mentorFeedback',label:'Rückmeldung des Ausbilders',type:'textarea',required:true}]);
+      if(status==='Submitted'&&this.auth.tenant()?.employeeId===item['mentorEmployeeId'])add('review','Ausbildungsnachweis prüfen','Prüfen Sie als zugeordneter Ausbilder diesen Bericht und halten Sie die konkrete Rückmeldung fest.','review',[{key:'mentorFeedback',label:'Rückmeldung des Ausbilders',type:'textarea',required:true}]);
     }
     if(kind==='maintenance-contracts'&&item['active']!==false)add('complete','Wartung abschließen',`Dokumentieren Sie die erledigte Fälligkeit ${String(item['nextDueDate'])}. Wählen Sie das abgeschlossene Wartungsprojekt für denselben Kunden und dasselbe Gebäude. Der nächste Termin folgt dem vertraglichen Intervall.`,'complete',[project],{nestedResult:'contract',payload:{expectedDueDate:item['nextDueDate']}});
     if(kind==='payment-allocations'&&!item['reversedAt']){

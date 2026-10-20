@@ -118,6 +118,8 @@ BusinessEndpoints.Map(api);
 ManagementEndpoints.Map(api);
 DocumentEndpoints.Map(api);
 TechnicalEndpoints.Map(api);
+PortalEndpoints.Map(api);
+IntegrationEndpoints.Map(api);
 app.MapOpenApi().RequireAuthorization();
 app.UseDefaultFiles();
 app.UseStaticFiles();

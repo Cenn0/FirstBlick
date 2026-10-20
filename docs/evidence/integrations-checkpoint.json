@@ -1,0 +1,93 @@
+{
+  "recordedAtUtc": "2026-10-20T05:49:26.922831+00:00",
+  "scope": "Focused integration adapters in the local shared worktree. Full-suite CI and deployment approval are separate. All identities, transactions and payroll times in tests are synthetic. No provider, bank API or external communications were used.",
+  "baseCommit": "b27e04826289ec334901911602a74ccdb1aa53d3",
+  "environment": {
+    "sdk": "10.0.402",
+    "runtime": "10.0.13",
+    "postgres": "16.15"
+  },
+  "suites": [
+    {
+      "project": "tests/FirstBlick.Core.Tests/FirstBlick.Core.Tests.csproj",
+      "filter": "FullyQualifiedName~Integrations",
+      "passed": 51,
+      "failed": 0,
+      "skipped": 0,
+      "scope": "UTF-8/CSV exactness, cents, text encoding, duplicate conflicts, current ledger evidence, ZIP integrity, local midnight and DST UTC durations"
+    },
+    {
+      "project": "tests/FirstBlick.Api.Tests/FirstBlick.Api.Tests.csproj",
+      "filter": "FullyQualifiedName~IntegrationApiTests",
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0,
+      "durationSeconds": 16,
+      "scope": "Real HTTP/Identity/CSRF/PostgreSQL: atomic import, raw-body idempotency, six concurrent imports, tenants/roles/modules, CSV ZIP hashes and connected financial/payroll evidence"
+    }
+  ],
+  "files": [
+    {
+      "path": "docs/integrations.md",
+      "sha256": "6337e5f2cc854c1dc1ba53276f953534a6f374c5edd06cc3c52e43f3ef87000e",
+      "bytes": 23039
+    },
+    {
+      "path": "src/FirstBlick.Api/IntegrationEndpoints.cs",
+      "sha256": "9aee8ca2c7169c5c9c27f4cd662498cae433adf547f06a45c49b4cdf2b4cf4cd",
+      "bytes": 14495
+    },
+    {
+      "path": "src/FirstBlick.Core/Integrations/BankCsvV1.cs",
+      "sha256": "953111c81f9d5b0ed3e4fa33507739df565c27f0ecb3276d4fed512ce2a47faf",
+      "bytes": 6632
+    },
+    {
+      "path": "src/FirstBlick.Core/Integrations/CsvV1.cs",
+      "sha256": "2cdf1c40e5046c333afe61f8cf7071863d6c460a09268ec645ab9f8b070f415b",
+      "bytes": 7678
+    },
+    {
+      "path": "src/FirstBlick.Core/Integrations/ExportContracts.cs",
+      "sha256": "0ae9da899c8c53ad6623a351ade074e4a76e68f597b6c5c7c67dece3ceb397ad",
+      "bytes": 5673
+    },
+    {
+      "path": "src/FirstBlick.Core/Integrations/LedgerExport.cs",
+      "sha256": "d8dc184d60aab268046d8e783935ff4c0f54a59c0697c4cd56c9b6ebe9805a66",
+      "bytes": 21333
+    },
+    {
+      "path": "src/FirstBlick.Core/Integrations/PayrollTimeExport.cs",
+      "sha256": "5f59c354d160f93f8f886ac85d83f6fb0ad169803092dcfb597f95b747fedf1f",
+      "bytes": 5261
+    },
+    {
+      "path": "tests/FirstBlick.Api.Tests/IntegrationApiTests.cs",
+      "sha256": "f5ffd76f73016aec9dab194306b6f9a462c7165b59a3b96b652d50f8140f97ba",
+      "bytes": 20344
+    },
+    {
+      "path": "tests/FirstBlick.Core.Tests/Integrations/CsvAdapterTests.cs",
+      "sha256": "923a0077dc8db6c1ba6fe1fb3e8e9baf6b4fc6c29b83cac50e9a7238083e86a1",
+      "bytes": 6980
+    },
+    {
+      "path": "tests/FirstBlick.Core.Tests/Integrations/LedgerExportTests.cs",
+      "sha256": "0d7afe74ab37abd5cd2daa82d89e128cd9f45803eb9963481dde47693e2c7225",
+      "bytes": 9406
+    },
+    {
+      "path": "tests/FirstBlick.Core.Tests/Integrations/PayrollExportTests.cs",
+      "sha256": "96d1cbf2a8c0ae0bb4d4e2a8b121628a524b354bd47c73e015588fe34573da89",
+      "bytes": 6496
+    }
+  ],
+  "limits": [
+    "No named bookkeeping/payroll provider certification or general-ledger tax mapping",
+    "No live bank/provider transmission or automatic payment allocation",
+    "Open-item exports capture current balance state and do not implement historic as-of reconstruction",
+    "No catalog/GAEB/e-invoice adapter",
+    "No production payroll or statutory working-time validation"
+  ]
+}

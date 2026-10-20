@@ -1,6 +1,6 @@
 import { Component, ElementRef, ViewChild, effect, inject, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ApiService, Entity, Page } from '../core/api.service';
 import { AuthService } from '../core/auth.service';
@@ -10,14 +10,14 @@ interface DocumentEntry extends Entity {name:string;contentType:string;size:numb
 const maximumBytes=25*1024*1024;
 const fileTypes:Record<string,string>={pdf:'application/pdf',png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',txt:'text/plain',csv:'text/csv'};
 
-@Component({imports:[FormsModule],template:`
+@Component({imports:[FormsModule,RouterLink],template:`
   <header class="page-heading"><div><p class="eyebrow">PROJEKTUNTERLAGEN</p><h1>Dokumente</h1><p>Geprüfte Dateiversionen, Belege und Baustellenfotos im richtigen Projekt.</p></div>@if(auth.can('documents.write')){<button class="button primary" (click)="openUpload()">+ Datei hochladen</button>}</header>
   @if(!auth.can('documents.read')){<div class="alert warning">Für diesen Bereich fehlt die Leseberechtigung.</div>}@else{
     @if(error()){<div class="alert error" role="alert">{{error()}} <button class="text-button" (click)="load()">Erneut laden</button></div>}
     @if(notice()){<div class="alert success" role="status">{{notice()}}</div>}
     <section class="panel collection-panel"><div class="collection-toolbar"><form class="search-form" (ngSubmit)="search()"><label for="document-search" class="sr-only">Dokumente durchsuchen</label><input id="document-search" name="search" [(ngModel)]="searchText" placeholder="Dokumente durchsuchen …" maxlength="200"><button class="text-button">Suchen</button></form><span class="small muted">{{page().total}} Dateien</span></div>
       @if(loading()){<div class="loading-state" role="status">Dokumente werden geladen …</div>}
-      @else if(page().items.length){<div class="table-wrap"><table><thead><tr><th>Name</th><th>Projekt</th><th>Größe</th><th>Status</th><th>Aktion</th></tr></thead><tbody>@for(doc of page().items;track doc.id){<tr><td data-label="Name"><strong>{{doc.name}}</strong><span class="document-date">{{date(doc.createdAt)}}</span></td><td data-label="Projekt">{{projectName(doc.projectId)}}</td><td data-label="Größe">{{size(doc.size)}}</td><td data-label="Status"><span class="badge">{{state(doc.state)}}</span></td><td data-label="Aktion">@if(doc.state==='Ready'){<button class="text-button" (click)="download(doc)" [disabled]="busy()">Herunterladen</button>@if(canArchive()){<button class="text-button danger-text" (click)="archive(doc)" [disabled]="busy()">Archivieren</button>}}@else if(doc.state==='Staged'&&auth.can('documents.write')){<button class="text-button" (click)="resume(doc)">Upload fortsetzen</button>}</td></tr>}</tbody></table></div>}
+      @else if(page().items.length){<div class="table-wrap"><table><thead><tr><th>Name</th><th>Projekt</th><th>Größe</th><th>Status</th><th>Aktion</th></tr></thead><tbody>@for(doc of page().items;track doc.id){<tr><td data-label="Name"><strong>{{doc.name}}</strong><span class="document-date">{{date(doc.createdAt)}}</span></td><td data-label="Projekt">{{projectName(doc.projectId)}}</td><td data-label="Größe">{{size(doc.size)}}</td><td data-label="Status"><span class="badge">{{state(doc.state)}}</span></td><td data-label="Aktion">@if(doc.state==='Ready'){<button class="text-button" (click)="download(doc)" [disabled]="busy()">Herunterladen</button>@if(canShare(doc)){<a class="text-button" routerLink="/portal" [queryParams]="{new:1,kind:'documents',sourceId:doc.id}">Im Kundenportal freigeben</a>}@if(canArchive()){<button class="text-button danger-text" (click)="archive(doc)" [disabled]="busy()">Archivieren</button>}}@else if(doc.state==='Staged'&&auth.can('documents.write')){<button class="text-button" (click)="resume(doc)">Upload fortsetzen</button>}</td></tr>}</tbody></table></div>}
       @else{<div class="empty-state"><span class="empty-icon" aria-hidden="true">D</span><h2>{{searchText?'Keine passenden Dokumente.':'Noch keine Dokumente vorhanden.'}}</h2><p>Fügen Sie Projektunterlagen und Fotos hinzu. Angebots- und Rechnungs-PDFs erstellen Sie direkt am Beleg.</p></div>}
       @if(page().total>page().pageSize){<div class="pagination"><button class="button secondary" (click)="paginate(-1)" [disabled]="pageNumber===1||loading()">← Zurück</button><span>Seite {{pageNumber}} von {{totalPages()}}</span><button class="button secondary" (click)="paginate(1)" [disabled]="pageNumber>=totalPages()||loading()">Weiter →</button></div>}
     </section>
@@ -43,6 +43,7 @@ export class DocumentsComponent {
   size(bytes:number):string{return bytes>=1024*1024?`${new Intl.NumberFormat('de-DE',{maximumFractionDigits:2}).format(bytes/(1024*1024))} MiB`:`${new Intl.NumberFormat('de-DE',{maximumFractionDigits:1}).format(bytes/1024)} KiB`;}
   projectName(id?:string):string{return id?String(this.projects().find(x=>x.id===id)?.['name']||'Projektunterlage'):'Betriebsunterlage';}
   canArchive():boolean{return this.auth.can('documents.write')&&['ManagingDirector','Office'].includes(this.auth.tenant()?.role||'');}
+  canShare(doc:DocumentEntry):boolean{return doc.state==='Ready'&&!!doc.projectId&&this.auth.hasModule('portal')&&this.auth.can('portal-shares.write');}
   totalPages():number{return Math.ceil(this.page().total/this.page().pageSize);}
   search():void{this.pageNumber=1;void this.load();}paginate(delta:number):void{this.pageNumber+=delta;void this.load();}
   async load():Promise<void>{if(!this.auth.scope()||!this.auth.can('documents.read'))return;const scope=this.auth.scope(),version=++this.loadVersion;this.loading.set(true);this.error.set('');try{const result=await this.api.get<Page<DocumentEntry>>(`documents?${new URLSearchParams({page:String(this.pageNumber),pageSize:'25',search:this.searchText,...(this.filterProject?{projectId:this.filterProject}:{})})}`);if(scope===this.auth.scope()&&version===this.loadVersion){this.page.set(result);if(this.selectedId){const doc=await this.api.get<DocumentEntry>(`documents/${encodeURIComponent(this.selectedId)}`);if(scope===this.auth.scope()&&version===this.loadVersion&&!result.items.some(x=>x.id===doc.id))this.page.update(page=>({...page,items:[doc,...page.items]}));this.selectedId='';}}}catch(error){if(scope===this.auth.scope())this.error.set(errorMessage(error));}finally{if(version===this.loadVersion)this.loading.set(false);}}

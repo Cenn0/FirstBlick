@@ -42,7 +42,7 @@ public sealed class ErrorMiddleware(RequestDelegate next, ILogger<ErrorMiddlewar
             {
                 DomainException d => (d.Code switch { "not_found" => 404, "forbidden" or "module_disabled" => 403, "unauthorized" => 401,
                     "revision_required" => 428, "revision_conflict" or "idempotency_conflict" or "approval_required" or "approval_invalid" or "duplicate" => 409,
-                    "payload_too_large" => 413, "storage_unconfigured" or "provider_unconfigured" => 503, _ => 400 }, d.Code, d.Message),
+                    "payload_too_large" => 413, "recovery_hold" => 423, "storage_unconfigured" or "provider_unconfigured" => 503, _ => 400 }, d.Code, d.Message),
                 AntiforgeryValidationException => (400, "csrf_invalid", "The session verification token is missing or expired. Reload the page."),
                 DbUpdateConcurrencyException => (409, "revision_conflict", "The record changed. Reload it before saving."),
                 DbUpdateException { InnerException: PostgresException { SqlState: "23505" } } => (409, "duplicate", "An equivalent record or number already exists."),
@@ -74,6 +74,7 @@ public sealed class TenantAccessFilter(FirstBlickDbContext db, TenantScope scope
             throw new DomainException("tenant_required", "Select a business before continuing.");
         var member = await db.Memberships.AsNoTracking().SingleOrDefaultAsync(x => x.TenantId == tenant && x.UserId == actor && x.Active, http.RequestAborted);
         if (member is null) throw new DomainException("forbidden", "You no longer have access to this business.");
+        await RecoveryBarrier.EnsureAvailable(db, tenant, http.RequestAborted);
         scope.TenantId = tenant; scope.UserId = actor; scope.Role = member.Role;
         return await next(context);
     }
@@ -87,6 +88,7 @@ public sealed class CommandExecutor(FirstBlickDbContext db, TenantScope scope, E
         var membership = await db.Memberships.AsNoTracking().SingleOrDefaultAsync(x => x.TenantId == scope.TenantId && x.UserId == scope.UserId && x.Active, ct);
         Guard.Require(membership is not null, "forbidden", "Business access has been revoked.");
         scope.Role = membership!.Role;
+        await RecoveryBarrier.EnsureAvailable(db, scope.TenantId, ct);
         Guard.Require(write ? AccessRules.CanWrite(scope.Role, kind) : AccessRules.CanRead(scope.Role, kind), "forbidden", "Your role does not allow this operation.");
         if (write)
         {
@@ -95,7 +97,8 @@ public sealed class CommandExecutor(FirstBlickDbContext db, TenantScope scope, E
         }
     }
 
-    public async Task<IResult> Execute(HttpContext http, string kind, string action, object? input, Func<CancellationToken, Task<object>> mutation)
+    public async Task<IResult> Execute(HttpContext http, string kind, string action, object? input, Func<CancellationToken, Task<object>> mutation,
+        Func<CancellationToken, Task>? authorizeCurrent = null)
     {
         var ct = http.RequestAborted;
         var key = http.Request.Headers["Idempotency-Key"].ToString();
@@ -105,6 +108,8 @@ public sealed class CommandExecutor(FirstBlickDbContext db, TenantScope scope, E
         await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, ct);
         await db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(hashtextextended({scope.TenantId.ToString()}, 0))", ct);
         await Authorize(kind, true, ct);
+        // Explicitly scoped grants must also be current when an earlier result is replayed.
+        if (authorizeCurrent is not null) await authorizeCurrent(ct);
         var receipt = await db.Receipts.SingleOrDefaultAsync(x => x.ActorId == scope.UserId && x.Key == key, ct);
         if (receipt is not null)
         {
