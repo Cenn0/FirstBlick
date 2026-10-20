@@ -4,6 +4,7 @@ using FirstBlick.Api;
 using FirstBlick.Core.Business;
 using FirstBlick.Core.Security;
 using FirstBlick.Core.Technical;
+using FirstBlick.Infrastructure.Persistence;
 using static FirstBlick.Api.Tests.PostgresApiFixture;
 
 namespace FirstBlick.Api.Tests;
