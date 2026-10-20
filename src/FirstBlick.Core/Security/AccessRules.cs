@@ -8,8 +8,8 @@ public static class AccessRules
     public static readonly string[] DefaultModules = ["core", "commercial", "field", "purchasing", "finance", "maintenance", "technical"];
     public static string ModuleFor(string kind) => kind switch
     {
-        "quotes" or "orders" or "change-orders" or "catalog-items" or "cost-forecasts" => "commercial",
-        "invoices" or "collection-cases" or "bank-transactions" or "payment-allocations" or "supplier-invoices" or "supplier-payment-allocations" or "supplier-cost-allocations" => "finance",
+        "quotes" or "orders" or "change-orders" or "catalog-items" or "cost-forecasts" or "gaeb-sources" => "commercial",
+        "invoices" or "collection-cases" or "bank-transactions" or "payment-allocations" or "supplier-invoices" or "supplier-payment-allocations" or "supplier-cost-allocations" or "e-invoice-sources" => "finance",
         "suppliers" or "purchase-orders" or "materials" or "stock-movements" or "material-reservations" or "material-demands" or "equipment" => "purchasing",
         "employees" or "time-entries" or "absences" or "schedule-assignments" or "diary-entries" or "defects" or "acceptances" or "form-definitions" or "form-submissions" => "field",
         "training-records" => "training",
@@ -32,7 +32,11 @@ public static class AccessRules
         _ => false
     };
 
-    public static bool CanWrite(BusinessRole role, string kind) => kind is "portal-access" ? role == BusinessRole.Partner
+    // Original XML evidence can only be captured by the dedicated source command,
+    // authorized against its commercial/finance parent capability. Even directors
+    // cannot fabricate, edit or delete these receipts through generic entity routes.
+    public static bool CanWrite(BusinessRole role, string kind) => kind is "gaeb-sources" or "e-invoice-sources" ? false
+        : kind is "portal-access" ? role == BusinessRole.Partner
         : kind is "portal-shares" or "portal-feedback" ? role is BusinessRole.ManagingDirector or BusinessRole.Office
         : kind is "settings" or "memberships" or "approvals" or "jobs" or "audit"
         ? role == BusinessRole.ManagingDirector : role switch
