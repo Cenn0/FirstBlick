@@ -25,6 +25,8 @@ public static class TechnicalEndpoints
         { await commands.Authorize("technical-results", true, ct); return Results.Ok(ThermalCalculator.CalculateParallelPaths(input)); }).WithTags("technical");
         api.MapPost("/technical/roof/rectangle", async (RectangularRoofInput input, CommandExecutor commands, CancellationToken ct) =>
         { await commands.Authorize("technical-results", true, ct); return Results.Ok(RoofGeometry.Rectangle(input)); }).WithTags("technical");
+        api.MapPost("/technical/roof/tapered-insulation", async (TaperedInsulationInput input, CommandExecutor commands, CancellationToken ct) =>
+        { await commands.Authorize("technical-results", true, ct); return Results.Ok(TaperedInsulationCalculator.Calculate(input)); }).WithTags("technical");
         api.MapPost("/technical/roof/polygon", async (PolygonRoofInput input, CommandExecutor commands, CancellationToken ct) =>
         { await commands.Authorize("technical-results", true, ct); return Results.Ok(RoofGeometry.Calculate(input)); }).WithTags("technical");
         api.MapPost("/technical/thermal-bridges", async (ThermalBridgeInput input, CommandExecutor commands, CancellationToken ct) =>

@@ -4,7 +4,9 @@
 
 ## Aktueller Arbeitsstand – Checkpoints 9 bis 11
 
-Die [Nachweismatrix](roadmap-evidence.md) unterscheidet weiterhin **49 technische Kerne mit Beleg, 41 Teilumfänge und 10 offene Fachfunktionen**. Das sind historische Inventarkategorien, **kein Fertigstellungsprozentsatz**. Ihre Einzelbelege wurden um die späteren Schritte ergänzt; die ursprünglichen Abnahmekriterien gelten unverändert.
+Die [Nachweismatrix](roadmap-evidence.md) unterscheidet weiterhin **49 technische Kerne mit Beleg, 42 Teilumfänge und 9 offene Fachfunktionen**. Das sind historische Inventarkategorien, **kein Fertigstellungsprozentsatz**. Ihre Einzelbelege wurden um die späteren Schritte ergänzt; die ursprünglichen Abnahmekriterien gelten unverändert.
+
+Die neue [begrenzte Mengenhilfe für lineare Gefälledämmung](tapered-insulation.md) deckt eine rechteckige Volumenberechnung ab, nicht die fehlende herstellergebundene Verlegeplanung. Die aktuelle technische Testevidenz wird auf Commit-Ebene über GitHub Actions geprüft.
 
 [Checkpoint 9](checkpoint9.md) dokumentiert den früheren Gesamtstand mit 377 Serverfällen, 45 Frontend-Unitfällen, 216 Clientfixtures und 30 echten Online-/Offline-Browserkombinationen aus getrennten Läufen. [Checkpoint 10](checkpoint10.md) ergänzt begrenzte, mandatenspezifische Rechnungsquellen und unveränderliche, versionierte Projektkostenprognosen. [Checkpoint 11](checkpoint11.md) ergänzt den nur bei belegter Restmengenabwicklung zulässigen Null-Euro-Schlussbeleg und stärkere Mandanten-, Revisions- und Referenzprüfungen für Kostenquellen. Ein separat gebuchtes [Lieferanten-Kostenjournal](supplier-cost-allocations.md) schützt explizit zugeordnete Rechnungsnettoanteile projektübergreifend vor Überbuchung. Die beiden neuen Funktionsstände sind jeweils mit erfolgreichen CI- und Operations-Läufen für ihren eigenen Commit verbunden.
 
