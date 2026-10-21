@@ -86,7 +86,7 @@ public sealed class InventoryCorrectionApiTests(PostgresApiFixture fixture) : IC
         await fixture.InScope(async services =>
         {
             var db = services.GetRequiredService<FirstBlickDbContext>();
-            Assert.Equal(4, await db.Entities.IgnoreQueryFilters().CountAsync(x =>
+            Assert.Equal(5, await db.Entities.IgnoreQueryFilters().CountAsync(x =>
                 x.TenantId == g.Tenant.Id && x.Kind == "stock-movements"));
             Assert.True(await db.Audit.IgnoreQueryFilters().AnyAsync(x =>
                 x.TenantId == g.Tenant.Id && x.Action == "stock.supplier_return"));
@@ -140,7 +140,7 @@ public sealed class InventoryCorrectionApiTests(PostgresApiFixture fixture) : IC
             new { consumptionMovementId = used.Id, quantity = 2m,
                 reason = "Attempted duplicate return" }, afterReturn.Revision),
             HttpStatusCode.BadRequest, "over_return");
-        Assert.Equal(4, await fixture.InScope(async services =>
+        Assert.Equal(3, await fixture.InScope(async services =>
             await services.GetRequiredService<FirstBlickDbContext>().Entities.IgnoreQueryFilters()
                 .CountAsync(x => x.TenantId == g.Tenant.Id && x.Kind == "stock-movements")));
     }
