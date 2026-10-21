@@ -1,0 +1,154 @@
+<header class="page-heading">
+  <div><p class="eyebrow">MATERIAL & GERÄTE</p><h1>Lagerbewegungen prüfen</h1>
+    <p>Inventurdifferenzen, Umlagerungen und Rückgaben mit unveränderlicher Buchungshistorie.</p></div>
+  <a class="button secondary" routerLink="/stock-movements">Lagerbewegungen ansehen</a>
+</header>
+@if (!allowed()) {
+  <section class="panel empty-state"><h2>Zugriff eingeschränkt</h2>
+    <p>Für Bestandskorrekturen benötigt die zuständige Lagerverwaltung eine aktuelle Berechtigung im Einkaufsmodul.</p></section>
+} @else {
+  <div class="alert information">Jede Korrektur benötigt einen ausdrücklichen Beleg und wird dem Betrieb und der ausführenden Person zugeordnet. Inventur und Lagerumlagerung prüfen den zuletzt abgerufenen Buchbestand. Projekt-Rückgaben verwenden den ursprünglichen Verbrauchspreis. Lieferanten-Gutschriften gehören in die Finanzvorgänge und werden hier nicht automatisch erzeugt.</div>
+  <div class="section-tabs" role="tablist" aria-label="Materialbewegung wählen">
+    @for (entry of modes; track entry.key) {
+      <button type="button" role="tab" [attr.aria-selected]="mode()===entry.key" [class.active]="mode()===entry.key"
+        [id]="'inventory-tab-'+entry.key" (click)="choose(entry.key)">{{entry.label}}</button>
+    }
+  </div>
+  @if (error()) { <div class="alert error" role="alert">{{error()}}</div> }
+  @if (notice()) { <div class="alert information" role="status">{{notice()}}</div> }
+  @if (mode()==='count' || mode()==='transfer') {
+    <section class="panel">
+      <h2>Material und Buchbestand</h2>
+      <div class="form-grid">
+        <div class="form-field"><label for="inventory-search">Material suchen</label>
+          <input id="inventory-search" maxlength="200" [(ngModel)]="materialSearch"></div>
+        <div class="form-field"><label>Materialliste</label>
+          <button type="button" class="button secondary" [disabled]="busy()" (click)="loadMaterials()">Materialstamm durchsuchen</button></div>
+      </div>
+      @if(materials().length){
+        <div class="form-field"><label for="inventory-material">Material für die Korrektur</label>
+          <select id="inventory-material" [(ngModel)]="materialId" (ngModelChange)="selectMaterial()">
+            <option value="">Material wählen</option>
+            @for (item of materials(); track item.id) { <option [value]="item.id">{{item['name']}} – {{item['sku'] || item.id}}</option> }
+          </select></div>
+      }
+      @if(total()>25){
+        <div class="detail-actions">
+          <button type="button" class="button secondary" [disabled]="busy() || materialPage<=1" (click)="loadMaterials(materialPage-1)">Zurück</button>
+          <span>Seite {{materialPage}}</span>
+          <button type="button" class="button secondary" [disabled]="busy() || materialPage*25>=total()" (click)="loadMaterials(materialPage+1)">Weiter</button>
+        </div>
+      }
+      <div class="form-grid">
+        <div class="form-field"><label for="inventory-location">Quelllagerort</label>
+          <input id="inventory-location" [(ngModel)]="location" (ngModelChange)="changedLocation()" maxlength="120" required></div>
+        <div class="form-field"><label>Aktuellen Stand prüfen</label>
+          <button type="button" class="button secondary" [disabled]="busy() || !materialId" (click)="loadBalance()">Lagerbilanz abrufen</button></div>
+      </div>
+      @if(balance(); as stock) {
+        <dl class="result-list">
+          <div><dt>Buchbestand</dt><dd>{{number(stock.onHand)}}</dd></div>
+          <div><dt>Reserviert</dt><dd>{{number(stock.reserved)}}</dd></div>
+          <div><dt>Frei verfügbar</dt><dd>{{number(stock.available)}}</dd></div>
+        </dl>
+      }
+    </section>
+  }
+  @if(mode()==='count') {
+    <section class="panel"><h2>Inventurdifferenz buchen</h2>
+      <p>Eine erneute Buchung gegen einen inzwischen geänderten Buchbestand wird abgewiesen. Der Zählbeleg muss aus einer tatsächlich durchgeführten Inventur stammen.</p>
+      <form #countForm="ngForm" (ngSubmit)="submitCount()">
+        <fieldset [disabled]="busy()">
+          <div class="form-grid">
+            <div class="form-field"><label for="inventory-counted">Physisch gezählter Bestand</label>
+              <input id="inventory-counted" name="counted" type="number" step="0.000001" min="0" max="1000000" required [(ngModel)]="countedOnHand"></div>
+            <div class="form-field"><label for="inventory-unit-cost">Bewerteter Einzelpreis (€)</label>
+              <input id="inventory-unit-cost" name="unitCost" type="number" step="0.000001" min="0" max="1000000" required [(ngModel)]="unitCost"></div>
+            <div class="form-field full-width"><label for="inventory-evidence">Inventurbeleg / Referenz</label>
+              <input id="inventory-evidence" name="evidence" required maxlength="240" [(ngModel)]="evidenceReference"></div>
+            <div class="form-field full-width"><label for="inventory-reason">Grund der Abweichung</label>
+              <textarea id="inventory-reason" name="reason" rows="3" maxlength="2000" required [(ngModel)]="reason"></textarea></div>
+          </div>
+          <div class="detail-actions"><button type="submit" class="button primary"
+            [disabled]="countForm.invalid || !balance() || busy()">Geprüfte Inventurdifferenz buchen</button></div>
+        </fieldset>
+      </form>
+    </section>
+  }
+  @if(mode()==='transfer') {
+    <section class="panel"><h2>Zwischen Lagerorten umlagern</h2>
+      <p>Das Ziellager erhält exakt die aus dem Quelllager ausgebuchte Menge. Reservierte Bestände dürfen nicht verschoben werden.</p>
+      <form #transferForm="ngForm" (ngSubmit)="submitTransfer()">
+        <fieldset [disabled]="busy()">
+          <div class="form-grid">
+            <div class="form-field"><label for="transfer-target">Ziellagerort</label>
+              <input id="transfer-target" name="target" maxlength="120" required [(ngModel)]="targetLocation"></div>
+            <div class="form-field"><label for="transfer-quantity">Menge</label>
+              <input id="transfer-quantity" name="quantity" type="number" step="0.000001" min="0.000001" max="1000000" required [(ngModel)]="quantity"></div>
+            <div class="form-field"><label for="transfer-unit-cost">Bewerteter Einzelpreis (€)</label>
+              <input id="transfer-unit-cost" name="unitCost" type="number" step="0.000001" min="0" max="1000000" required [(ngModel)]="unitCost"></div>
+            <div class="form-field full-width"><label for="transfer-reason">Lieferschein / Umlagerungsgrund</label>
+              <textarea id="transfer-reason" name="reason" maxlength="2000" required [(ngModel)]="reason"></textarea></div>
+          </div>
+          <div class="detail-actions"><button type="submit" class="button primary"
+            [disabled]="transferForm.invalid || !balance() || busy()">Ausgang und Eingang gemeinsam buchen</button></div>
+        </fieldset>
+      </form>
+    </section>
+  }
+  @if(mode()==='projectReturn') {
+    <section class="panel"><h2>Projektverbrauch zurückgeben</h2>
+      <p>Aus der <a routerLink="/material-reservations">Reservierung</a> und dem ursprünglichen <a routerLink="/stock-movements">Verbrauchsbeleg</a> stammen beide IDs. Nur noch nicht zurückgegebener Verbrauch darf ausgeglichen werden.</p>
+      <div class="form-grid">
+        <div class="form-field"><label for="return-reservation">Reservierungs-ID</label>
+          <input id="return-reservation" maxlength="36" [(ngModel)]="reservationId"></div>
+        <div class="form-field"><label>Reservierung prüfen</label>
+          <button type="button" class="button secondary" [disabled]="busy()" (click)="loadReservation()">Reservierung laden</button></div>
+      </div>
+      @if(reservation(); as r){ <p>Reservierung für Projekt {{r.projectId}} · verbraucht: {{number(r.consumedQuantity)}} · freigegeben: {{number(r.releasedQuantity)}} · Revision {{r.revision}}</p> }
+      <form #projectForm="ngForm" (ngSubmit)="submitProjectReturn()"><fieldset [disabled]="busy()">
+        <div class="form-grid">
+          <div class="form-field"><label for="return-consumption">ID der ursprünglichen Verbrauchsbuchung</label>
+            <input id="return-consumption" name="source" maxlength="36" required [(ngModel)]="consumptionMovementId"></div>
+          <div class="form-field"><label for="return-quantity">Rückgabemenge</label>
+            <input id="return-quantity" name="quantity" type="number" step="0.000001" min="0.000001" max="1000000" required [(ngModel)]="quantity"></div>
+          <div class="form-field full-width"><label for="return-reason">Rückgabebeleg und Begründung</label>
+            <textarea id="return-reason" name="reason" maxlength="2000" required [(ngModel)]="reason"></textarea></div>
+        </div>
+        <div class="detail-actions"><button type="submit" class="button primary"
+          [disabled]="projectForm.invalid || !reservation() || busy()">Projekt-Rückgabe buchen</button></div>
+      </fieldset></form>
+    </section>
+  }
+  @if(mode()==='supplierReturn') {
+    <section class="panel"><h2>Lieferantenretoure erfassen</h2>
+      <p>Eine <a routerLink="/purchase-orders">Bestellung</a> muss bereits Warenzugänge enthalten. Die Bestellposition wird auf ihren ursprünglichen Netto-Einzelpreis gebunden. Die Finanzgutschrift und deren Prüfung sind ein separater Vorgang.</p>
+      <div class="form-grid">
+        <div class="form-field"><label for="supplier-order">Bestellungs-ID</label>
+          <input id="supplier-order" maxlength="36" [(ngModel)]="purchaseId"></div>
+        <div class="form-field"><label>Bestellung prüfen</label>
+          <button type="button" class="button secondary" [disabled]="busy()" (click)="loadPurchase()">Bestellung laden</button></div>
+      </div>
+      @if(purchase(); as p){<p>Bestellung {{p.number || p.title}} · {{p.status}} · Revision {{p.revision}}</p>}
+      <form #supplierForm="ngForm" (ngSubmit)="submitSupplierReturn()"><fieldset [disabled]="busy()">
+        <div class="form-grid">
+          <div class="form-field"><label for="supplier-line">Bestellposition</label>
+            <select id="supplier-line" name="line" required [(ngModel)]="purchaseLineId">
+              <option value="">Position wählen</option>
+              @if(purchase(); as p){@for(line of p.lines;track line.id){<option [value]="line.id">{{line.description}} – bestellt: {{number(line.quantity)}}</option>}}
+            </select></div>
+          <div class="form-field"><label for="supplier-return-quantity">Retourenmenge</label>
+            <input id="supplier-return-quantity" name="quantity" type="number" step="0.000001" min="0.000001" max="1000000" required [(ngModel)]="quantity"></div>
+          <div class="form-field"><label for="supplier-return-location">Lagerort</label>
+            <input id="supplier-return-location" name="location" maxlength="120" required [(ngModel)]="location"></div>
+          <div class="form-field"><label for="supplier-return-reference">RMA / Gutschriftbezug</label>
+            <input id="supplier-return-reference" name="reference" maxlength="240" required [(ngModel)]="evidenceReference"></div>
+          <div class="form-field full-width"><label for="supplier-return-reason">Retourengrund</label>
+            <textarea id="supplier-return-reason" name="reason" maxlength="2000" required [(ngModel)]="reason"></textarea></div>
+        </div>
+        <div class="detail-actions"><button type="submit" class="button primary"
+          [disabled]="supplierForm.invalid || !purchase() || busy()">Lieferantenretoure buchen</button></div>
+      </fieldset></form>
+    </section>
+  }
+}
