@@ -1,5 +1,6 @@
 using FirstBlick.Core.Business;
 using FirstBlick.Core.Security;
+using FirstBlick.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FirstBlick.Api;
