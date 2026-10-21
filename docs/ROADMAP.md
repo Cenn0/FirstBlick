@@ -2,7 +2,17 @@
 
 > Übernommen aus der Projektanalyse „DachPlaner Rework Roadmap“, 19.10.2026 (34 Seiten). Der Originalbericht umfasst 100 Aufgaben in 15 Epics. Diese Fassung erhält alle Aufgabenkennungen und ursprünglichen Abnahmekriterien. Ein implementierter Teilablauf bedeutet nicht automatisch, dass das gesamte Epic abgeschlossen ist.
 
-## Fortsetzung – Wochenplanung, Tagesrapporte, Lager und Wartungsfolge (21.10.2026)
+## Aktuelle Fortsetzung – Geräteprüfungen und mehrstufige Lagerketten (21.10.2026)
+
+**Entwicklungsziel ist ausschließlich FirstBlick. DachPlaner bleibt Referenz und wird nicht weiterentwickelt.**
+
+- **DP-07-05 / Anbindung an DP-06-01:** Der neue [Geräteprüfungsarbeitsplatz](equipment-inspections.md) bietet Fälligkeits- und Sperrfilter, geplante Prüfung/Wartung/Reparatur, unveränderliche Ergebnis- und Absagebelege sowie manuelle Folgetermine. Negative Ergebnisse sperren neue Einsatzzuordnungen und zeigen betroffene bestehende Einsätze. Eine ausdrücklich dokumentierte positive Einsatzbeurteilung kann die Ressource wieder freigeben. Geräterevision, Vorgangsrevision, aktuelles Recht und Betriebszeitzone werden serverseitig geprüft. Fahrtenbuch, Kilometerkosten, Originalprüfbericht-Uploads und unabhängige Prüfkalender je Prüfart bleiben offen.
+- **DP-07-03 / DP-07-06:** [Beleggebundene Transferketten](warehouse-adjustments.md) verbinden den ursprünglichen Wareneingang über bis zu 32 Umlagerungen mit einer Lieferantenrückgabe. Jeder Schritt benötigt eine ausdrückliche Quelle. Teilmengen, Verzweigungen, Wert, Zeitfolge, Transferpaare und freier Lagerbestand werden geprüft; fremder zusätzlicher Bestand vergrößert keine belegte Quellmenge. Die Lageroberfläche zeigt den vollständigen Pfad und seine noch nicht zugeordnete Menge. Alte direkte Transferbelege und deren Digests bleiben kompatibel; eine nachträglich erfundene Herkunft wird nicht ergänzt.
+- **Durchgängige Betriebsprüfung:** Der [Containerablauf](../scripts/equipment_inventory_smoke.py) prüft beide Funktionen über die echte API und liest ihre Nachweise nach dem Neustart erneut. Der [Migrationsdrill](../tools/FirstBlick.Operations/MigrationDrill.cs) enthält vollständige Lager- und Prüfakten sowie negative Varianten. Die Migrationsprüfung akzeptiert jetzt gültige Lieferanten-/Baustellenrückgaben und prüft deren Originalbezug; bisher wären diese vorhandenen Buchungsarten dort fälschlich abgewiesen worden.
+
+Die [Nachweismatrix](roadmap-evidence.md) und [JSON-Fassung](evidence/roadmap-matrix.json) sind für diese drei Aufgaben synchronisiert. Die Erweiterung umfasst Core, HTTP-/PostgreSQL-Verträge, Angular-Bedienung und passende Regressionen. Ein bestandener Ausführungsnachweis gilt jeweils für den konkret geprüften Commit; Testdateien allein behaupten keinen erfolgreichen Lauf. Die ursprünglichen 100 Aufgaben und ihre Abnahmekriterien bleiben erhalten.
+
+## Vorherige Fortsetzung – Wochenplanung, Tagesrapporte, Lager und Wartungsfolge (21.10.2026)
 
 Die folgenden durchgängigen Abläufe ergänzen die bestehenden Fachkerne. Die [Nachweismatrix](roadmap-evidence.md) und ihre [maschinenlesbare Fassung](evidence/roadmap-matrix.json) führen für die acht berührten Aufgaben dieselben aktuellen Quell-/Testbelege und Restgrenzen.
 

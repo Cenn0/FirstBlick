@@ -6,10 +6,13 @@ internal static class EditRules
 {
     public static void EnsureGenericCreate(TenantEntity e, bool retainPurchaseLinks = false, bool retainElectronicOrigin = false)
     {
-        Guard.Require(e is not Order and not BankTransaction and not PaymentAllocation and not SupplierPaymentAllocation and not StockMovement and not FormSubmission and not TechnicalRecord and not PortalShare and not PortalFeedback and not MaterialDemand and not CollectionCase and not MaintenanceVisit,
+        Guard.Require(e is not Order and not BankTransaction and not PaymentAllocation and not SupplierPaymentAllocation and not StockMovement and not FormSubmission and not TechnicalRecord and not PortalShare and not PortalFeedback and not MaterialDemand and not CollectionCase and not MaintenanceVisit and not EquipmentInspection,
             "command_required", "This record can only be created through its dedicated business command.");
         switch (e)
         {
+            case Equipment equipment:
+                Guard.Require(equipment.PendingInspectionId is null && equipment.LastInspectionId is null && equipment.LastInspectionOn is null && !equipment.InspectionBlocked,
+                    "command_required", "Equipment inspection evidence must be created by its dedicated workflow."); break;
             case CatalogItem { GaebOrigin: not null }: throw new DomainException("command_required", "GAEB origins may only be created by reviewed catalogue import.");
             case Quote q: Guard.Require(q.Status == QuoteStatus.Draft && q.Snapshot is null && q.Presentation is null && q.Deliveries.Count == 0 && q.AcceptedAt is null && q.Number == "", "command_required", "Create a draft quote; issue and delivery are separate commands."); break;
             case Invoice i: Guard.Require(i.Status == InvoiceStatus.Draft && i.Snapshot is null && i.Number == "" && i.Kind != InvoiceKind.CreditNote && i.OriginalInvoiceId is null, "command_required", "Create a draft receivable; corrections and issuance use dedicated commands."); break;
@@ -33,10 +36,22 @@ internal static class EditRules
     public static void EnsureGenericUpdate(TenantEntity old, TenantEntity next)
     {
         Guard.Require(old.GetType() == next.GetType() && !old.Archived, "record_immutable", "This record cannot be edited.");
-        Guard.Require(old is not Order and not BankTransaction and not PaymentAllocation and not SupplierPaymentAllocation and not StockMovement and not FormSubmission and not MaterialReservation and not Acceptance and not TechnicalRecord and not PortalShare and not PortalFeedback and not MaterialDemand and not CollectionCase and not MaintenanceVisit,
+        Guard.Require(old is not Order and not BankTransaction and not PaymentAllocation and not SupplierPaymentAllocation and not StockMovement and not FormSubmission and not MaterialReservation and not Acceptance and not TechnicalRecord and not PortalShare and not PortalFeedback and not MaterialDemand and not CollectionCase and not MaintenanceVisit and not EquipmentInspection,
             "command_required", "Use the dedicated auditable command for this record.");
         switch (old)
         {
+            case Equipment equipment:
+                var changedEquipment = (Equipment)next;
+                Guard.Require(changedEquipment.PendingInspectionId == equipment.PendingInspectionId && changedEquipment.LastInspectionId == equipment.LastInspectionId
+                    && changedEquipment.LastInspectionOn == equipment.LastInspectionOn && changedEquipment.InspectionBlocked == equipment.InspectionBlocked,
+                    "inspection_evidence_immutable", "Equipment inspection history cannot be removed, replaced or fabricated by a generic edit.");
+                Guard.Require(!equipment.LastInspectionId.HasValue || changedEquipment.NextInspectionOn == equipment.NextInspectionOn,
+                    "command_required", "The next inspection date of inspected equipment is changed through a new recorded inspection.");
+                Guard.Require(!equipment.InspectionBlocked || !changedEquipment.Available,
+                    "inspection_blocked", "A failed inspection requires a new successful inspection before equipment can be made available.");
+                Guard.Require(!equipment.PendingInspectionId.HasValue
+                    || (EquipmentInspectionWorkflow.Snapshot(changedEquipment) with { Id = equipment.Id }) == EquipmentInspectionWorkflow.Snapshot(equipment),
+                    "inspection_equipment_changed", "Cancel the outstanding inspection before changing its equipment identity."); break;
             case CatalogItem catalog:
                 Guard.Require(((CatalogItem)next).GaebOrigin == catalog.GaebOrigin,
                     "gaeb_origin_immutable", "GAEB source evidence cannot be changed by editing a catalogue item."); break;
@@ -71,7 +86,7 @@ internal static class EditRules
     }
     public static void EnsureArchivable(TenantEntity e)
     {
-        Guard.Require(e is not Order and not Invoice and not SupplierInvoice and not PaymentAllocation and not SupplierPaymentAllocation and not BankTransaction and not StockMovement and not MaterialReservation and not FormSubmission and not Acceptance and not TechnicalRecord and not PortalShare and not PortalFeedback and not MaterialDemand and not CollectionCase and not MaintenanceVisit,
+        Guard.Require(e is not Order and not Invoice and not SupplierInvoice and not PaymentAllocation and not SupplierPaymentAllocation and not BankTransaction and not StockMovement and not MaterialReservation and not FormSubmission and not Acceptance and not TechnicalRecord and not PortalShare and not PortalFeedback and not MaterialDemand and not CollectionCase and not MaintenanceVisit and not EquipmentInspection,
             "record_immutable", "Business evidence is retained; use a correction or reversal.");
         if (e is Quote q) Guard.Require(q.Status == QuoteStatus.Draft, "quote_immutable", "Issued quote versions are retained.");
         if (e is ChangeOrder c) Guard.Require(c.Status != ChangeOrderStatus.Accepted, "change_immutable", "Accepted changes remain part of the contract and its financial history.");
