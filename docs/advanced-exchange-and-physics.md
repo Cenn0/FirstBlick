@@ -49,3 +49,25 @@ Normbasis: https://www.iso.org/standard/51615.html und https://www.dinmedia.de/d
 In GitHub: `dotnet test FirstBlick.slnx -c Release`, `npm run build`, Angular-/API-Tests, Original-XSD-/KoSIT-Validierung, PostgreSQL-/S3-Integration und Operations-/Container-Stack-Tests. Neue Regressionen verwenden ausschließlich synthetische GAEB-/Hersteller-/Feuchtedaten; echte Herstellerfreigaben oder bauaufsichtliche Konformität lassen sich daraus nicht ableiten.
 
 Die Implementierung ist erst dann technisch belastbar, wenn **CI, Operations und Original-Standards-Validierung auf demselben endgültigen Commit erfolgreich abgeschlossen** sind. Ein grüner CI-Status ist dabei eine notwendige technische Prüfung, nicht die fachliche Freigabe durch Hersteller, Fachplaner oder Auftraggeber.
+
+## Ergänzung: mehrfeldrige Gefälleplanung (21.10.2026)
+
+Für rechteckige Dächer mit mehreren angrenzenden **einachsigen** Gefällefeldern steht außerdem
+`POST /api/v1/technical/roof/tapered-assembly` bzw. das persistierbare Verfahren
+`roof.tapered-assembly` bereit. Jedes Feld enthält den explizit erfassten Herstellerkatalog,
+die nominalen SKU-Kanten und ein eigenes gerichtetes Gefälle. Gemeinsame Dachkoordinaten,
+Planrevision und Quellenbelege sind Bestandteil des Eingabedigest. Überlappungen, Lücken,
+Dachüberschreitungen und Unstetigkeiten der Dicke an gemeinsamen Feldgrenzen werden abgewiesen.
+Der Server erzeugt je Feld eine überprüfbare Positionierung und eine **gemeinsame**
+Bestellmengenrechnung, die identische Hersteller-, Produkt-, Katalogversions-, Quellen- und
+SKU-Kombinationen vor der Packungsrundung zusammenführt. Unterschiedliche Quellen oder
+Widersprüche bei Artikelmaßen, Preisen und Packungsgrößen werden nicht still vereinheitlicht;
+fehlende Preise bleiben unbekannt. Die responsive Angular-Fachoberfläche erlaubt bis zu 32
+Felder und eine Projektablage mit serverseitiger Neuberechnung, Audit und PDF-Bericht.
+
+**Keine zertifizierte Verlegeplanung:** Das Modell deckt nur lückenlose rechteckige
+Gesamtgrundrisse mit aneinanderliegenden linearen Gefällefeldern ab, ohne innenliegende
+Abläufe, Kehlen, Durchdringungen, Oberflächenstrukturen oder Verschnittoptimierung.
+Auch die theoretisch stetige Fugendicke garantiert keine geeignete Dachentwässerung.
+Eingetragene Hersteller-/SKU-Kennwerte sind ohne unabhängig verifizierte Katalogquellen
+und Herstellerfreigabe keine ausführungs- oder bestellverbindliche Vorgabe.
