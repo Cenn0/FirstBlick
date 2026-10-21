@@ -161,8 +161,10 @@ export class InventoryControlComponent {
   destination = '';
   sourceId = '';
   page = 1;
-  readonly sourceMovements = computed(() => this.movements().filter(x =>
-    this.mode === 'supplierReturn' ? x.kind === 'Receipt' : x.kind === 'Consumption'));
+  sourceMovements(): Movement[] {
+    return this.movements().filter(x => this.mode === 'supplierReturn'
+      ? x.kind === 'Receipt' : x.kind === 'Consumption');
+  }
 
   constructor() {
     inject(DestroyRef).onDestroy(() => { this.generation++; });
