@@ -9,6 +9,15 @@ function calculation(mode: TechnicalMode, input: Record<string, unknown>): Recor
   const provenance = { methodId: technicalMethods[mode].provenance, methodVersion: '1.0.0', inputSha256: 'a'.repeat(64), isNormative: false, limitations: ['Synthetic transport fixture; no normative result.'] };
   if (mode === 'tapered') return { input, provenance, projectedAreaM2: 120, minimumThicknessM: .08, maximumThicknessM: .28, averageThicknessM: .18, calculatedVolumeM3: 21.6, corners: [{ x: 0, y: 0, thicknessM: .08 }, { x: 12, y: 0, thicknessM: .08 }, { x: 12, y: 10, thicknessM: .28 }, { x: 0, y: 10, thicknessM: .28 }] };
   if (mode === 'roof') return { input, provenance, surfaceAreaM2: 60, projectedAreaM2: 48, slopingLengthM: 5, pitchDegrees: 36.8698976, perimeterM: 34 };
+  if (mode === 'inhomogeneous') return {
+    input, provenance, upperResistanceM2KW: 4.5, lowerResistanceM2KW: 4.2,
+    estimatedResistanceM2KW: 4.35, uValueWm2K: 1 / 4.35, heatFluxWm2: 40 / 4.35,
+    upperToLowerRatio: 4.5 / 4.2, halfSpreadPercent: 100 * .3 / 8.7,
+    metalBridgingModelled: false, constructionComplianceAssessed: false,
+    sections: (input['sections'] as { name: string; areaFraction: number }[]).map(section => ({
+      name: section.name, areaFraction: section.areaFraction, path: { totalResistanceM2KW: 4.3 }
+    }))
+  };
   if (mode === 'thermal') return { input, provenance, uValueWm2K: .3, totalResistanceM2KW: 3.3333333, heatFluxWm2: 6, interfaces: [{ name: 'After synthetic layer', temperatureC: 1 }] };
   if (mode === 'moisture') return { input, provenance, uValueWm2K: .3, totalSdM: 2, insideSurfaceTemperatureC: 19, insideSurfaceRelativeHumidityPercent: 65, anyInterfaceSupersaturated: true, insideSurfaceAboveEightyPercentRh: false, requiresDetailedAssessment: true, interfaces: [{ name: 'Synthetic cold interface', temperatureC: 0, vapourPressurePa: 700, saturationPressurePa: 610.5, relativeHumidityPercent: 114.66, exceedsSaturation: true }] };
   const months = (input['months'] as Record<string, unknown>[]).map(m => { const { month, ...climate } = m; return { month, screening: calculation('moisture', { ...climate, insideSurfaceResistanceM2KW: input['insideSurfaceResistanceM2KW'], outsideSurfaceResistanceM2KW: input['outsideSurfaceResistanceM2KW'], layers: input['layers'] }) }; });
@@ -137,4 +146,44 @@ test('technical methods are keyboard navigable and no default calculation is sen
 
 test('a worker without technical capability cannot open calculator controls', async ({ page }) => {
   const f = await fixture(page, 'Worker'); await page.goto('/technical'); await expect(page.getByRole('heading', { name: 'Zugriff eingeschränkt' })).toBeVisible(); await expect(page.getByRole('tab')).toHaveCount(0); expect(f.requests).toEqual([]); expect(f.errors).toEqual([]);
+});
+
+test('inhomogeneous rafter workbench validates area sections, displays non-normative bounds and persists a bound snapshot', async ({ page }) => {
+  const f = await fixture(page); await page.goto('/technical');
+  await page.getByRole('tab', { name: 'Sparrendach – Widerstandsgrenzen' }).click();
+  await expect(page.getByRole('button', { name: 'Berechnen', exact: true })).toBeDisabled();
+  for (const [id, value] of Object.entries({
+    insideTemperatureC: '20', outsideTemperatureC: '-20',
+    insideSurfaceResistanceM2KW: '.13', outsideSurfaceResistanceM2KW: '.04'
+  })) await page.locator(`#${id}`).fill(value);
+  await page.locator('#inhomogeneous-source').fill('Synthetic material reference');
+  for (const [i, section] of [{ name: 'Rafter', fraction: '.15', conductivity: '.12' }, { name: 'Insulation', fraction: '.85', conductivity: '.04' }].entries()) {
+    await page.locator(`#section-name-${i}`).fill(section.name);
+    await page.locator(`#section-fraction-${i}`).fill(section.fraction);
+    await page.locator(`#section-material-${i}-0`).fill(section.name);
+    await page.locator(`#section-thickness-${i}-0`).fill('.2');
+    await page.locator(`#section-conductivity-${i}-0`).fill(section.conductivity);
+    await page.locator(`#section-source-${i}-0`).fill('Synthetic manufacturer values');
+  }
+  await expect(page.getByRole('button', { name: 'Berechnen', exact: true })).toBeDisabled();
+  await page.getByLabel('Ich bestätige, dass in diesem Modell keine metallischen Wärmebrücken').check();
+  await page.getByRole('button', { name: 'Berechnen', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Berechnungsergebnis' })).toBeVisible();
+  await expect(page.getByText('Oberer Widerstandsgrenze', { exact: true })).toHaveCount(0);
+  await expect(page.getByText('Obere Widerstandsgrenze', { exact: true })).toBeVisible();
+  await expect(page.getByText('kein normativer Nachweis', { exact: false }).first()).toBeVisible();
+  const call = f.requests.find(r => r.path === 'technical/thermal/inhomogeneous')!;
+  const input = call.body;
+  expect(input['noMetalBridgingConfirmed']).toBe(true);
+  expect((input['sections'] as { name: string; areaFraction: number }[]).map(x => x.name)).toEqual(['Insulation', 'Rafter']);
+  await page.getByRole('button', { name: 'Projekte suchen', exact: true }).click();
+  await page.getByLabel('Projekt für den Bericht').selectOption(projectId);
+  await page.getByLabel('Berichtsbezeichnung').fill('Synthetic roof assessment');
+  await page.getByRole('button', { name: 'Berechnung im Projekt speichern', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'PDF erzeugen und herunterladen' })).toBeEnabled();
+  expect(f.requests.find(r => r.path === 'technical/runs')?.body['method']).toBe('thermal.inhomogeneous');
+  await page.locator('#section-fraction-0').fill('.2');
+  await expect(page.getByRole('heading', { name: 'Berechnungsergebnis' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'PDF erzeugen und herunterladen' })).toHaveCount(0);
+  expect(f.errors).toEqual([]);
 });
