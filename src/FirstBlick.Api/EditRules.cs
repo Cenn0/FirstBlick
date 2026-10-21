@@ -24,6 +24,7 @@ internal static class EditRules
                 Guard.Require(retainElectronicOrigin || i.ElectronicSource is null, "command_required", "Electronic source evidence requires original validation, review and archival through the dedicated import command."); break;
             case TimeEntry t: Guard.Require(!t.Approved, "command_required", "Create unapproved time; approval uses its dedicated command."); break;
             case TrainingRecord t: Guard.Require(t.Status == TrainingRecordStatus.Draft && t.ReviewedAt is null && t.MentorFeedback == "", "command_required", "Create a draft training record without a review."); break;
+            case DiaryEntry d: Guard.Require(d.Status == DiaryStatus.Draft && d.Submission is null && d.Review is null, "command_required", "Create a draft diary report; submission and review use dedicated commands."); break;
             case MaintenanceContract m: Guard.Require(m.CompletedOccurrences == 0, "command_required", "A new maintenance contract cannot invent completed occurrences."); break;
             case RoofRevision r: Guard.Require(r.Status == RoofRevisionStatus.Draft && r.Snapshot is null && r.PublishedAt is null && r.Version == 1 && r.PreviousRevisionId is null, "command_required", "Create a first draft roof; subsequent versions use the revision command."); break;
             case Measurement m: Guard.Require(m.Status == MeasurementStatus.Draft && m.Snapshot is null && m.FrozenAt is null, "command_required", "Create a draft measurement; freezing uses its dedicated command."); break;
@@ -50,6 +51,11 @@ internal static class EditRules
             case FormDefinition f: Guard.Require(!f.Published, "form_immutable", "Published forms require a new version."); EnsureGenericCreate(next); break;
             case TimeEntry t: Guard.Require(!t.Approved && !((TimeEntry)next).Approved, "time_immutable", "Approved time requires an explicit correction; approval uses its dedicated command."); break;
             case TrainingRecord t: Guard.Require(t.Status == TrainingRecordStatus.Draft, "training_immutable", "Submitted training records are sealed; review uses its dedicated command."); EnsureGenericCreate(next); break;
+            case DiaryEntry diary:
+                var changedDiary = (DiaryEntry)next;
+                Guard.Require(diary.Status is DiaryStatus.Draft or DiaryStatus.Returned, "diary_immutable", "Submitted and approved diary reports retain their exact contents.");
+                Guard.Require(changedDiary.Status == diary.Status && changedDiary.Submission == diary.Submission && changedDiary.Review == diary.Review,
+                    "command_required", "Diary submission and review evidence cannot be altered by an edit."); break;
             case SupplierInvoice i:
                 Guard.Require(i.Status == SupplierInvoiceStatus.Draft, "supplier_invoice_immutable", "Approved supplier invoices require separate corrections.");
                 Guard.Require(i.ElectronicSource == ((SupplierInvoice)next).ElectronicSource,
@@ -72,6 +78,7 @@ internal static class EditRules
         if (e is PurchaseOrder p) Guard.Require(p.Status == PurchaseOrderStatus.Draft, "purchase_immutable", "Issued purchase evidence is retained.");
         if (e is MaintenanceContract contract) Guard.Require(contract.CompletedOccurrences == 0, "maintenance_immutable", "Completed maintenance history is retained; deactivate the contract to stop future work.");
         if (e is TimeEntry t) Guard.Require(!t.Approved, "time_immutable", "Approved time is retained.");
+        if (e is DiaryEntry d) Guard.Require(d.Status == DiaryStatus.Draft, "diary_immutable", "Submitted and reviewed diary reports are retained.");
         if (e is RoofRevision r) Guard.Require(r.Status == RoofRevisionStatus.Draft, "roof_immutable", "Published roof evidence is retained.");
         if (e is Measurement m) Guard.Require(m.Status == MeasurementStatus.Draft, "measurement_immutable", "Frozen measurement evidence is retained.");
     }

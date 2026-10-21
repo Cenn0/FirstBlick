@@ -163,6 +163,8 @@ internal static class GraphRules
                 PlanningRules.EnsureAssignment(assignment, await store.All<ScheduleAssignment>(ct), await store.All<Absence>(ct)); break;
             case Absence absence:
                 PlanningRules.EnsureAbsence(absence, await store.All<ScheduleAssignment>(ct), await store.All<Absence>(ct)); break;
+            case DiaryEntry diary:
+                Guard.Require((await store.Get<Employee>(diary.EmployeeId, ct)).Active, "inactive_employee", "An inactive employee cannot record new diary work."); break;
             case TimeEntry entry:
                 Guard.Require((await store.Get<Employee>(entry.EmployeeId, ct)).Active, "inactive_employee", "An inactive employee cannot record new time.");
                 PlanningRules.EnsureTimeEntry(entry, await store.All<TimeEntry>(ct)); break;

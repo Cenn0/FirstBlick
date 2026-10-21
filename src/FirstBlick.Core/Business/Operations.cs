@@ -9,11 +9,15 @@ public sealed class DiaryEntry : TenantEntity
     public string Weather { get; set; } = "";
     public string Obstructions { get; set; } = "";
     public string SafetyNotes { get; set; } = "";
+    public DiaryStatus Status { get; set; }
+    public DiarySubmission? Submission { get; set; }
+    public DiaryReview? Review { get; set; }
     public override void Validate()
     {
         ValidateCommon(); Guard.Id(ProjectId, nameof(ProjectId)); Guard.Id(EmployeeId, nameof(EmployeeId)); Guard.Require(Date != default, "required", "Diary date is required.");
         Guard.Text(Work, nameof(Work), 20_000); Guard.Text(Weather, nameof(Weather), 2000, false);
         Guard.Text(Obstructions, nameof(Obstructions), 8000, false); Guard.Text(SafetyNotes, nameof(SafetyNotes), 8000, false);
+        DiaryWorkflow.ValidateState(this);
     }
     public override IEnumerable<EntityReference> References() => [BusinessRegistry.Reference<Project>(ProjectId), BusinessRegistry.Reference<Employee>(EmployeeId)];
 }
