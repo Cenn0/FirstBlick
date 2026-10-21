@@ -7,7 +7,7 @@ import { AuthService } from '../core/auth.service';
 import { ApiError, errorMessage } from '../core/transport';
 import { downloadBlob, sha256Blob } from '../core/integrations.models';
 
-type Workflow = 'balance' | 'drying' | 'boards';
+type Workflow = 'balance' | 'drying' | 'boards' | 'assembly';
 type HeatFlow = 'Upward' | 'Horizontal' | 'Downward';
 type Exterior = 'OutsideAir' | 'WellVentilatedCavity';
 type ClimateTreatment = 'WallAir' | 'RoofMinusTwoKelvin' | 'SuppliedEquivalentRoofTemperature';
@@ -17,6 +17,9 @@ interface Layer { name: string; resistanceM2KW: number | null; sdM: number | nul
 interface Month { month: number; insideTemperatureC: number | null; outsideAirTemperatureC: number | null;
   insideRelativeHumidityPercent: number | null; outsideRelativeHumidityPercent: number | null; equivalentOutsideTemperatureC: number | null }
 interface Board { sku: string; thinEdgeM: number | null; thickEdgeM: number | null; unitsPerPack: number | null; price: string }
+interface RoofFieldDraft { fieldId: string; originX: number | null; originY: number | null;
+  roofLengthM: number | null; roofWidthM: number | null; lowEdgeThicknessM: number | null;
+  slopePercent: number | null; flowAxis: FlowAxis; lowEdgeAtCoordinateZero: boolean }
 type Result = Record<string, unknown> & { input: Record<string, unknown>; provenance: { methodId: string; methodVersion: string; inputSha256: string; isNormative: false; limitations: string[] } };
 type Saved = { id: string; revision: number; tenantId: string; projectId: string; method: string; methodVersion: string; input: unknown; result: Result; digest: string; isNormative: false };
 const hex = (value: unknown): value is string => typeof value === 'string' && /^[a-f0-9]{64}$/.test(value);
@@ -41,6 +44,9 @@ function label(value: string, description: string, limit = 500): string {
 }
 const emptyLayer = (): Layer => ({ name: '', resistanceM2KW: null, sdM: null, kind: 'HomogeneousLayer', designValueSource: '' });
 const emptyBoard = (): Board => ({ sku: '', thinEdgeM: null, thickEdgeM: null, unitsPerPack: null, price: '' });
+const emptyRoofField = (): RoofFieldDraft => ({ fieldId: '', originX: null, originY: null,
+  roofLengthM: null, roofWidthM: null, lowEdgeThicknessM: null, slopePercent: null,
+  flowAxis: 'AlongLength', lowEdgeAtCoordinateZero: true });
 const emptyMonths = (): Month[] => Array.from({ length: 12 }, (_, index) => ({
   month: index + 1, insideTemperatureC: null, outsideAirTemperatureC: null,
   insideRelativeHumidityPercent: null, outsideRelativeHumidityPercent: null, equivalentOutsideTemperatureC: null
@@ -51,7 +57,9 @@ const methods: Record<Workflow, { name: string; method: string; endpoint: string
   drying: { name: 'Austrocknung (ISO 13788, Abschnitt 7)', method: 'moisture.iso13788.drying',
     endpoint: 'technical/moisture/iso13788/drying', provenance: 'iso13788-excess-water-drying' },
   boards: { name: 'Gefälleplatten aus Herstellerkatalog', method: 'roof.tapered-board-layout',
-    endpoint: 'technical/roof/tapered-board-layout', provenance: 'manufacturer-catalog-tapered-board-layout' }
+    endpoint: 'technical/roof/tapered-board-layout', provenance: 'manufacturer-catalog-tapered-board-layout' },
+  assembly: { name: 'Mehrfeld-Verlegeplanung', method: 'roof.tapered-assembly',
+    endpoint: 'technical/roof/tapered-assembly', provenance: 'manufacturer-catalog-multifield-tapered-board-layout' }
 };
 const labels = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
 
@@ -66,7 +74,7 @@ export class AdvancedTechnicalComponent {
   readonly auth = inject(AuthService);
   readonly allowed = computed(() => !!this.auth.scope() && this.auth.can('technical-results.write'));
   readonly mode = signal<Workflow>('balance');
-  readonly modes: Workflow[] = ['balance', 'drying', 'boards'];
+  readonly modes: Workflow[] = ['balance', 'drying', 'boards', 'assembly'];
   readonly methods = methods; readonly monthsLabels = labels;
   readonly busy = signal(false); readonly error = signal(''); readonly notice = signal('');
   readonly result = signal<Result | null>(null); readonly saved = signal<Saved | null>(null);
@@ -89,7 +97,7 @@ export class AdvancedTechnicalComponent {
   wettedLayerIndex: number | null = null; startingMonth: number | null = null; initialAssessmentReview = '';
   roofLengthM: number | null = null; roofWidthM: number | null = null; lowEdgeThicknessM: number | null = null;
   slopePercent: number | null = null; flowAxis: FlowAxis = 'AlongLength'; lowEdgeAtCoordinateZero = true;
-  measuredRoofSource = ''; drainageDesignReview = '';
+  measuredRoofSource = ''; drainageDesignReview = ''; planRevision = ''; roofFields: RoofFieldDraft[] = [emptyRoofField()];
   manufacturer = ''; productRange = ''; catalogRevision = ''; catalogSource = '';
   boardRunM: number | null = null; boardCrossM: number | null = null; boards: Board[] = [emptyBoard()];
   projectSearch = ''; projectPage = 1; projectId = ''; reportTitle = '';
@@ -130,6 +138,10 @@ export class AdvancedTechnicalComponent {
   removeLayer(index: number): void { if (this.layers.length > 1) { this.layers.splice(index, 1); this.edited(); } }
   addBoard(): void { if (this.boards.length < 500) { this.boards.push(emptyBoard()); this.edited(); } }
   removeBoard(index: number): void { if (this.boards.length > 1) { this.boards.splice(index, 1); this.edited(); } }
+  addRoofField(): void { if (this.roofFields.length < 32) { this.roofFields.push(emptyRoofField()); this.edited(); } }
+  removeRoofField(index: number): void { if (this.roofFields.length > 1) { this.roofFields.splice(index, 1); this.edited(); } }
+  boardOrder(row: Record<string, unknown>): Record<string, unknown> { return this.mode() === 'assembly' ? object(row['quantity']) : row; }
+  boardPanel(row: Record<string, unknown>): Record<string, unknown> { return this.mode() === 'assembly' ? object(row['panel']) : row; }
   needsEquivalent(): boolean { return this.climateTreatment === 'SuppliedEquivalentRoofTemperature' && this.exteriorBoundary === 'OutsideAir'; }
   monthLabel(value: unknown): string { return typeof value === 'number' && Number.isInteger(value) && value >= 1 && value <= 12 ? labels[value - 1] : 'Ungültiger Monat'; }
   number(value: unknown, digits = 5): string {
@@ -141,38 +153,59 @@ export class AdvancedTechnicalComponent {
     return Array.isArray(raw) ? raw.map(object) : [];
   }
   private buildInput(): Record<string, unknown> {
-    if (this.mode() === 'boards') {
+    if (this.mode() === 'boards' || this.mode() === 'assembly') {
       if (this.boards.length < 1 || this.boards.length > 500) throw new Error('1 bis 500 Herstellerartikel angeben.');
       const seen = new Set<string>();
-      return {
-        roofLengthM: num(this.roofLengthM, 'Dachlänge', .01, 1000),
-        roofWidthM: num(this.roofWidthM, 'Dachbreite', .01, 1000),
-        lowEdgeThicknessM: num(this.lowEdgeThicknessM, 'Mindestdicke', .01, 2),
-        slopePercent: num(this.slopePercent, 'Gefälle', .01, 10), flowAxis: this.flowAxis,
-        lowEdgeAtCoordinateZero: this.lowEdgeAtCoordinateZero,
-        measuredRoofSource: label(this.measuredRoofSource, 'Aufmaßquelle'),
-        drainageDesignReview: label(this.drainageDesignReview, 'Entwässerungsvorgabe', 1000),
-        catalog: {
-          manufacturer: label(this.manufacturer, 'Hersteller', 200),
-          productRange: label(this.productRange, 'Produktreihe', 200),
-          catalogRevision: label(this.catalogRevision, 'Katalogrevision', 200),
-          sourceReference: label(this.catalogSource, 'Katalogquelle', 1000),
-          boardRunM: num(this.boardRunM, 'Plattenlauflänge', .2, 3),
-          boardCrossM: num(this.boardCrossM, 'Plattenquerbreite', .2, 3),
-          boards: this.boards.map((board, i) => {
-            const sku = label(board.sku, 'Artikelnummer', 100);
-            if (seen.has(sku)) throw new Error(`Artikelnummer ${sku} mehrfach eingegeben.`);
-            seen.add(sku);
-            const price = board.price.trim().replace(',', '.');
-            if (price && (!/^(?:0|[1-9]\d{0,6})(?:\.\d{1,2})?$/.test(price) || Number(price) <= 0))
-              throw new Error(`Herstellerartikel ${i + 1}: positiven Preis in Euro mit höchstens zwei Nachkommastellen angeben oder leer lassen.`);
-            return { sku, thinEdgeM: num(board.thinEdgeM, 'Anfangsdicke', .01, 2),
-              thickEdgeM: num(board.thickEdgeM, 'Enddicke', .01, 2),
-              unitsPerPack: integer(board.unitsPerPack, 'Stück je Pack', 1, 200),
-              pricePerBoardEur: price || null };
-          })
-        }
+      const catalog = {
+        manufacturer: label(this.manufacturer, 'Hersteller', 200),
+        productRange: label(this.productRange, 'Produktreihe', 200),
+        catalogRevision: label(this.catalogRevision, 'Katalogrevision', 200),
+        sourceReference: label(this.catalogSource, 'Katalogquelle', 1000),
+        boardRunM: num(this.boardRunM, 'Plattenlauflänge', .2, 3),
+        boardCrossM: num(this.boardCrossM, 'Plattenquerbreite', .2, 3),
+        boards: this.boards.map((board, i) => {
+          const sku = label(board.sku, 'Artikelnummer', 100);
+          if (seen.has(sku)) throw new Error('Artikelnummer ' + sku + ' mehrfach eingegeben.');
+          seen.add(sku);
+          const price = board.price.trim().replace(',', '.');
+          if (price && (!/^(?:0|[1-9]\d{0,6})(?:\.\d{1,2})?$/.test(price) || Number(price) <= 0))
+            throw new Error('Herstellerartikel ' + (i + 1) + ': positiven Preis in Euro mit höchstens zwei Nachkommastellen angeben oder leer lassen.');
+          return { sku, thinEdgeM: num(board.thinEdgeM, 'Anfangsdicke', .01, 2),
+            thickEdgeM: num(board.thickEdgeM, 'Enddicke', .01, 2),
+            unitsPerPack: integer(board.unitsPerPack, 'Stück je Pack', 1, 200),
+            pricePerBoardEur: price || null };
+        })
       };
+      const roofLengthM = num(this.roofLengthM, 'Dachlänge', .01, 1000);
+      const roofWidthM = num(this.roofWidthM, 'Dachbreite', .01, 1000);
+      const measuredRoofSource = label(this.measuredRoofSource, 'Aufmaßquelle', 500);
+      const drainageDesignReview = label(this.drainageDesignReview, 'Entwässerungsvorgabe', 1000);
+      if (this.mode() === 'assembly') {
+        if (this.roofFields.length < 1 || this.roofFields.length > 32) throw new Error('1 bis 32 getrennte Dachfelder erfassen.');
+        const ids = new Set<string>();
+        const fields = this.roofFields.map((field, i) => {
+          const fieldId = label(field.fieldId, 'Feld ' + (i + 1) + ': Kennung', 100);
+          if (ids.has(fieldId)) throw new Error('Dachfeld ' + fieldId + ' wurde mehrfach angegeben.');
+          ids.add(fieldId);
+          return {
+            fieldId, originX: num(field.originX, 'Feldursprung x', 0, roofLengthM),
+            originY: num(field.originY, 'Feldursprung y', 0, roofWidthM),
+            layout: {
+              roofLengthM: num(field.roofLengthM, 'Feldlänge', .01, 1000),
+              roofWidthM: num(field.roofWidthM, 'Feldbreite', .01, 1000),
+              lowEdgeThicknessM: num(field.lowEdgeThicknessM, 'Feld-Tiefkantendicke', .01, 2),
+              slopePercent: num(field.slopePercent, 'Feldgefälle', .01, 10),
+              flowAxis: field.flowAxis, lowEdgeAtCoordinateZero: field.lowEdgeAtCoordinateZero,
+              measuredRoofSource, drainageDesignReview, catalog
+            }
+          };
+        });
+        return { roofLengthM, roofWidthM, planRevision: label(this.planRevision, 'Dachplanrevision', 200),
+          surveySource: measuredRoofSource, drainageReview: drainageDesignReview, fields };
+      }
+      return { roofLengthM, roofWidthM, lowEdgeThicknessM: num(this.lowEdgeThicknessM, 'Mindestdicke', .01, 2),
+        slopePercent: num(this.slopePercent, 'Gefälle', .01, 10), flowAxis: this.flowAxis,
+        lowEdgeAtCoordinateZero: this.lowEdgeAtCoordinateZero, measuredRoofSource, drainageDesignReview, catalog };
     }
     if (!Object.values(this.applicability).every(x => x))
       throw new Error('Das ISO-Verfahren ist erst zulässig, wenn alle sechs Anwendungsannahmen fachlich bestätigt sind.');
@@ -219,11 +252,15 @@ export class AdvancedTechnicalComponent {
         !(provenance['limitations'] as unknown[]).every(x => typeof x === 'string') ||
         (provenance['limitations'] as unknown[]).length < 1) throw new Error('Der Server hat keine passende, überprüfbar begrenzte Rechenantwort geliefert.');
     object(item['input']);
-    if (method === 'boards') {
+    if (method === 'boards' || method === 'assembly') {
       if (!Array.isArray(item['placements']) || !Array.isArray(item['orders']) ||
           item['catalogIndependentlyVerified'] !== false || item['drainageOrStructureApproved'] !== false ||
           typeof item['installedVolumeM3'] !== 'number' || !Number.isFinite(item['installedVolumeM3']))
         throw new Error('Der Plattennachweis enthält keine gültige Mengen- und Zulassungstrennung.');
+      if (method === 'assembly' && (!Array.isArray(item['fields']) ||
+          !(item['orders'] as unknown[]).every(x => typeof x === 'object' && x !== null && !Array.isArray(x) &&
+            typeof (x as Record<string, unknown>)['quantity'] === 'object')))
+        throw new Error('Die Feld-/Packmengen-Abstimmung des Gesamtplans ist nicht vorhanden.');
     } else {
       const standard = object(item['standardProcedure']);
       if (standard['constructionComplianceAssessed'] !== false ||

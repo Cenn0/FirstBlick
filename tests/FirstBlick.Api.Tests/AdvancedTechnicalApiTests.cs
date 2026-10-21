@@ -56,6 +56,45 @@ public sealed class AdvancedTechnicalApiTests(PostgresApiFixture fixture) : ICla
     }
 
     [PostgresApiFact]
+    public async Task Multi_field_roof_has_verified_geometry_shared_pack_rounding_project_digest_and_role_boundary()
+    {
+        var tenant = await fixture.CreateTenant(); var director = await fixture.CreateUser(tenant.Id);
+        using var client = await fixture.Login(director);
+        var west = Boards() with { RoofLengthM = 2, LowEdgeAtCoordinateZero = true };
+        var east = Boards() with { RoofLengthM = 2, LowEdgeAtCoordinateZero = false };
+        var assembly = new TaperedRoofAssemblyInput(4, 1, "Synthetic revision 1",
+            "Measured test geometry", "External review of outer eaves and central ridge",
+            [new("west", 0, 0, west), new("east", 2, 0, east)]);
+        using var response = await Send(client, HttpMethod.Post, "/api/v1/technical/roof/tapered-assembly", assembly);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal(2, json.RootElement.GetProperty("fields").GetArrayLength());
+        Assert.Equal(8, json.RootElement.GetProperty("installedBoards").GetInt32());
+        Assert.Equal(4, json.RootElement.GetProperty("roofAreaM2").GetDouble(), 8);
+        Assert.Equal(.4, json.RootElement.GetProperty("installedVolumeM3").GetDouble(), 8);
+        Assert.False(json.RootElement.GetProperty("provenance").GetProperty("isNormative").GetBoolean());
+        Assert.False(json.RootElement.GetProperty("catalogIndependentlyVerified").GetBoolean());
+        var customer = await fixture.Save(new Customer { TenantId = tenant.Id, Name = "Synthetic customer" }, director.UserId);
+        var building = await fixture.Save(new Building { TenantId = tenant.Id, CustomerId = customer.Id,
+            Name = "Synthetic building", Address = "Synthetic" }, director.UserId);
+        var project = await fixture.Save(new Project { TenantId = tenant.Id, CustomerId = customer.Id,
+            BuildingId = building.Id, Name = "Synthetic multiple drainage fields" }, director.UserId);
+        using var saved = await Send(client, HttpMethod.Post, "/api/v1/technical/runs",
+            new { projectId = project.Id, roofRevisionId = (Guid?)null,
+                title = "Non-approved multi-field calculation", method = "roof.tapered-assembly", input = assembly });
+        Assert.Equal(HttpStatusCode.OK, saved.StatusCode);
+        var record = AppJson.Read<TechnicalRecord>(await saved.Content.ReadAsStringAsync());
+        record.Validate(); Assert.False(record.IsNormative);
+        Assert.Equal(record.Digest, (await fixture.Read<TechnicalRecord>(tenant.Id, record.Id)).Digest);
+        using var tampered = await Send(client, HttpMethod.Post, "/api/v1/technical/roof/tapered-assembly",
+            assembly with { Fields = [new("west", 0, 0, west), new("east", 1.99, 0, east)] });
+        Assert.Equal(HttpStatusCode.BadRequest, tampered.StatusCode);
+        var worker = await fixture.Login(await fixture.CreateUser(tenant.Id, BusinessRole.Worker));
+        using var denied = await Send(worker, HttpMethod.Post, "/api/v1/technical/roof/tapered-assembly", assembly);
+        Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);
+    }
+
+    [PostgresApiFact]
     public async Task Monthly_iso_water_balance_and_drying_have_explicit_non_approval_flags()
     {
         var tenant = await fixture.CreateTenant(); var user = await fixture.CreateUser(tenant.Id);
