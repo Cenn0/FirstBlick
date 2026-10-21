@@ -205,7 +205,7 @@ public static class InventoryRules
             OccurredAt = now, Reference = order.Number
         };
         receipt.Validate(); receipt.PostedDigest = MovementDigest(receipt);
-        order.Status = ReceiptStatus(order, movements.Append(receipt));
+        order.Status = ReceiptStatus(order, movements.Append(receipt).ToArray());
         return receipt;
     }
 
