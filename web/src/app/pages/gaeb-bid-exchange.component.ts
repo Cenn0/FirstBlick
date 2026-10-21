@@ -6,8 +6,12 @@ import { ApiError, errorMessage } from '../core/transport';
 import { downloadBlob, sha256Blob } from '../core/integrations.models';
 import { TradePreviewService } from '../core/trade-preview.service';
 import { GaebPreview, TradeSource, readTradeSource, sourceBudget, validateGaebPreview } from '../core/trade-import.models';
+import {
+  applyGaebPriceWorksheet, exportGaebPriceWorksheet, normalizeGaebUnitPrice,
+  readGaebWorksheetFile, reviewGaebPriceWorksheet, GaebWorksheetPrice as BidPrice,
+  GaebWorksheetReview
+} from '../core/gaeb-price-worksheet';
 
-interface BidPrice { positionKey: string; expectedItemDigest: string; unitPrice: string; notOffered: boolean; priceEvidence: string }
 interface GaebRule { sourceSha256: string; phase: string; schemaEdition: string; schemaBundleSha256: string; valid: boolean; issues: { code: string; severity: string; message: string }[] }
 interface GaebInspection { validation: GaebRule; readyForBid: boolean; originalBytesRetained: boolean }
 interface BidPreview {
@@ -25,12 +29,6 @@ const validName = (value: string, name: string, limit = 240): string => {
   if (!value.trim() || value.length > limit || /[\u0000-\u001f\u007f-\u009f]/u.test(value))
     throw new Error(`${name} eingeben (maximal ${limit} Zeichen).`);
   return value.trim();
-};
-const priceString = (price: string): string => {
-  const value = price.trim().replace(',', '.');
-  if (!/^(?:0|[1-9]\d{0,8})(?:\.\d{1,6})?$/.test(value))
-    throw new Error('Für jedes angebotene Element einen expliziten Einzelpreis in EUR (maximal sechs Nachkommastellen) angeben.');
-  return value;
 };
 const validIsoDate = (date: string): boolean => {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return false;
@@ -54,6 +52,8 @@ export class GaebBidExchangeComponent {
   readonly official = signal<GaebInspection | null>(null);
   readonly preview = signal<BidPreview | null>(null);
   readonly receipt = signal<BidReceipt | null>(null);
+  readonly worksheetReview = signal<GaebWorksheetReview | null>(null);
+  worksheetConsent = false;
   readonly projects = signal<Entity[]>([]);
   readonly projectCount = signal(0); page = 1; projectSearch = ''; projectId = '';
   bidDate = ''; bidder = { name: '', street: '', postalCode: '', city: '', country: 'DE', contact: '', email: '' };
@@ -65,19 +65,24 @@ export class GaebBidExchangeComponent {
 
   constructor() {
     inject(DestroyRef).onDestroy(() => { this.generation++; this.source = null; });
-    effect(() => { this.auth.accessSignature(); untracked(() => this.reset()); });
+    effect(() => { this.auth.accessSignature(); untracked(() => this.reset(true)); });
   }
   private current(generation: number, access: string): boolean {
     return generation === this.generation && access === this.auth.accessSignature();
   }
-  private reset(): void {
+  private reset(clearBidder = false): void {
     this.edited(); this.file.set(null); this.source = null; this.structural.set(null);
     this.official.set(null); this.prices.set([]); this.projects.set([]); this.projectCount.set(0);
     this.projectSearch = ''; this.projectId = ''; this.page = 1;
+    if (clearBidder) {
+      this.bidDate = ''; this.reviewEvidence = ''; this.currency = 'EUR';
+      this.bidder = { name: '', street: '', postalCode: '', city: '', country: 'DE', contact: '', email: '' };
+    }
   }
   edited(): void {
     this.generation++; this.busy.set(false); this.error.set(''); this.notice.set('');
     this.preview.set(null); this.receipt.set(null); this.consent = false; this.exportKey = ''; this.lockedRequest = null;
+    this.worksheetReview.set(null); this.worksheetConsent = false;
   }
   chooseFile(event: Event): void {
     const input = event.target as HTMLInputElement, value = input.files?.[0]; input.value = '';
@@ -91,16 +96,17 @@ export class GaebBidExchangeComponent {
   }
   private failed(error: unknown, generation: number, access: string): void {
     if (!this.current(generation, access)) return;
-    if (error instanceof ApiError && [401, 403, 423].includes(error.status)) this.reset();
+    if (error instanceof ApiError && [401, 403, 423].includes(error.status)) this.reset(true);
     this.error.set(errorMessage(error));
   }
   async inspect(): Promise<void> {
     const file = this.file(); if (!file || !this.allowed() || this.busy()) return;
-    const generation = ++this.generation, access = this.auth.accessSignature(); this.busy.set(true);
-    this.error.set(''); this.notice.set(''); this.source = null; this.structural.set(null); this.official.set(null);
-    this.prices.set([]); this.preview.set(null); this.receipt.set(null);
+    this.edited();
+    const generation = this.generation, access = this.auth.accessSignature(); this.busy.set(true);
+    this.source = null; this.structural.set(null); this.official.set(null); this.prices.set([]);
     try {
       const source = await readTradeSource(file);
+      if (!this.current(generation, access)) return;
       const raw = await this.trade.preview('gaeb', source.blob);
       if (!this.current(generation, access)) return;
       const structural = validateGaebPreview(raw, source.sha256);
@@ -121,10 +127,51 @@ export class GaebBidExchangeComponent {
   rows(): { positionKey: string; description: string; unit: string; tenderQuantity: string | null; reviewIssues: string[]; price: BidPrice }[] {
     return this.structural()?.items.map((item, i) => ({ ...item, price: this.prices()[i] })) || [];
   }
+  private worksheetSource(): GaebPreview {
+    const doc = this.structural();
+    if (!doc || !this.source || doc.sourceSha256 !== this.source.sha256 || !this.official()?.validation.valid)
+      throw new Error('Zuerst das unveränderte GAEB-Original strukturell und gegen XSD prüfen.');
+    return doc;
+  }
+  downloadWorksheet(): void {
+    if (!this.allowed() || this.busy()) return;
+    this.error.set('');
+    try {
+      const doc = this.worksheetSource(), csv = exportGaebPriceWorksheet(doc, this.prices());
+      downloadBlob(new Blob([csv], { type: 'text/csv;charset=utf-8' }), `firstblick-gaeb-preise-${doc.sourceSha256.slice(0, 12)}.csv`);
+    } catch (error) { this.error.set(errorMessage(error)); }
+  }
+  async inspectWorksheet(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement, file = input.files?.[0]; input.value = '';
+    if (!file || !this.allowed() || this.busy()) return;
+    this.edited();
+    const generation = this.generation, access = this.auth.accessSignature(); this.busy.set(true);
+    try {
+      if (!/\.csv$/i.test(file.name)) throw new Error('Eine CSV-UTF-8-Preisarbeitsliste auswählen.');
+      const doc = this.worksheetSource();
+      const csv = await readGaebWorksheetFile(file);
+      if (!this.current(generation, access)) return;
+      this.worksheetReview.set(reviewGaebPriceWorksheet(csv, doc, this.prices()));
+      this.notice.set('Arbeitsliste nur geprüft. Die aktuellen Preise bleiben bis zur ausdrücklichen Bestätigung unverändert.');
+    } catch (error) { this.failed(error, generation, access); }
+    finally { if (this.current(generation, access)) this.busy.set(false); }
+  }
+  worksheetPrice(price: Readonly<BidPrice>): string {
+    return price.notOffered ? 'Nicht angeboten' : price.unitPrice.trim() ? `${price.unitPrice} EUR` : 'Noch offen';
+  }
+  applyWorksheet(): void {
+    const review = this.worksheetReview();
+    if (!review || !this.worksheetConsent || !this.allowed() || this.busy()) return;
+    try {
+      const next = applyGaebPriceWorksheet(review, this.worksheetSource(), this.prices());
+      this.edited(); this.prices.set(next);
+      this.notice.set(`${review.changes.length} Preiszeilen in den lokalen Entwurf übernommen. Noch keine X84-Ausgabe, Archivierung oder Übermittlung; die serverseitige Angebotsprüfung bleibt erforderlich.`);
+    } catch (error) { this.worksheetReview.set(null); this.worksheetConsent = false; this.error.set(errorMessage(error)); }
+  }
   async searchProjects(page = 1): Promise<void> {
     if (!this.allowed() || !this.auth.can('projects.read') || this.busy()) return;
-    const generation = ++this.generation, access = this.auth.accessSignature(); this.busy.set(true); this.error.set('');
-    this.preview.set(null); this.receipt.set(null); this.consent = false; this.lockedRequest = null; this.exportKey = '';
+    this.edited();
+    const generation = this.generation, access = this.auth.accessSignature(); this.busy.set(true);
     try {
       const data = await this.api.list('projects', this.projectSearch, page);
       if (!this.current(generation, access)) return;
@@ -160,14 +207,14 @@ export class GaebBidExchangeComponent {
         bidder, reviewedCurrency: this.currency, reviewEvidence: validName(this.reviewEvidence, 'Fachliche Angebotsprüfung', 2000),
         prices: this.prices().map(price => ({
           positionKey: price.positionKey, expectedItemDigest: price.expectedItemDigest,
-          unitPrice: price.notOffered ? null : priceString(price.unitPrice),
+          unitPrice: price.notOffered ? null : normalizeGaebUnitPrice(price.unitPrice),
           notOffered: price.notOffered, priceEvidence: validName(price.priceEvidence, 'Preisgrundlage', 2000)
         }))
       }
     };
   }
   async checkBid(): Promise<void> {
-    if (!this.allowed() || this.busy()) return;
+    if (!this.allowed() || this.busy() || this.worksheetReview()) return;
     const generation = ++this.generation, access = this.auth.accessSignature(); this.busy.set(true);
     this.error.set(''); this.notice.set(''); this.preview.set(null); this.receipt.set(null); this.consent = false;
     try {
@@ -217,7 +264,9 @@ export class GaebBidExchangeComponent {
         throw new Error('Dateityp oder Prüfsumme des serverseitigen GAEB-Belegs stimmen nicht.');
       const blob = await response.blob();
       if (!this.current(generation, access)) return;
-      if (blob.size !== document.size || await sha256Blob(blob) !== document.sha256)
+      const actualSha256 = await sha256Blob(blob);
+      if (!this.current(generation, access)) return;
+      if (blob.size !== document.size || actualSha256 !== document.sha256)
         throw new Error('Die abgerufene GAEB-Datei besteht die SHA-256-Prüfung nicht.');
       downloadBlob(blob, document.name);
     } catch (error) { this.failed(error, generation, access); }

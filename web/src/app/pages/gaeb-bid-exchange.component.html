@@ -37,6 +37,42 @@
           <div class="detail-actions"><button type="button" class="button secondary" [disabled]="page<=1 || busy()" (click)="searchProjects(page-1)">Vorherige Projektseite</button>
             <span>{{page}}</span><button type="button" class="button secondary" [disabled]="page*25>=projectCount() || busy()" (click)="searchProjects(page+1)">Nächste Projektseite</button></div>
         }
+        <section class="panel" aria-labelledby="gb-worksheet-title">
+          <h3 id="gb-worksheet-title">Preisarbeitsliste für die gesammelte Bearbeitung</h3>
+          <p>Optional: aktuelle Eingaben als CSV UTF-8 herunterladen, gesammelt bearbeiten und geprüft zurücklesen.
+            Dies ist ein FirstBlick-Arbeitsformat, keine GAEB-Datei und keine Angebotsabgabe. Die CSV wird nur lokal gelesen.</p>
+          <details><summary>Bearbeitungsregeln der Preisarbeitsliste</summary>
+            <p>Semikolon als Trennzeichen verwenden. Nur <code>decision</code>, <code>unit_price_eur</code> und <code>price_evidence</code> ändern.
+              Alle Positionen genau einmal behalten; die Reihenfolge darf sich ändern. Quelldigests, Mengen, Einheiten und Beschreibung nicht verändern.</p>
+            <p>Entscheidung: <code>offer</code> mit ausdrücklichem Preis, <code>not-offered</code> ohne Preis oder <code>pending</code> ohne Preis.
+              Dezimalpunkt oder Dezimalkomma, höchstens sechs Nachkommastellen; keine Formeln oder Tausendertrennzeichen.</p>
+            <p>Die Präfixe <code>pos:</code>, <code>sha256:</code>, <code>qty:</code>, <code>unit:</code> und <code>text:</code> beibehalten.
+              Sie schützen Textzellen und führende Nullen. Die Preisgrundlage hinter <code>text:</code> eintragen.
+              Unvollständige Entwürfe sind erlaubt, aber noch nicht für die X84-Prüfung bereit.</p>
+          </details>
+          <button type="button" class="button secondary" [disabled]="busy()" (click)="downloadWorksheet()">Aktuelle Preise als CSV herunterladen</button>
+          <div class="form-field"><label for="gb-worksheet">Bearbeitete Preisarbeitsliste prüfen (CSV UTF-8, maximal 4 MiB)</label>
+            <input id="gb-worksheet" type="file" accept=".csv,text/csv" [disabled]="busy()" (change)="inspectWorksheet($event)"></div>
+          @if (worksheetReview(); as review) {
+            <section aria-labelledby="gb-worksheet-review">
+              <h4 id="gb-worksheet-review">Preisänderungen vor Übernahme prüfen</h4>
+              <p>{{review.changes.length}} geänderte Positionen · {{review.offered}} angeboten · {{review.notOffered}} nicht angeboten · {{review.pending}} noch offen.</p>
+              @if (review.pending || review.missingEvidence) {
+                <p class="alert warning">Noch unvollständig: {{review.pending}} offene Preisentscheidungen, {{review.missingEvidence}} fehlende Preisgrundlagen.
+                  Übernahme nur als Entwurf; keine automatische Freigabe.</p>
+              }
+              <div class="table-scroll"><table><thead><tr><th>Position</th><th>Bisher</th><th>Aus Arbeitsliste</th></tr></thead>
+                <tbody>@for (change of review.changes; track change.positionKey) {
+                  <tr><td>{{change.positionKey}}</td><td>{{worksheetPrice(change.before)}}<p>{{change.before.priceEvidence || 'Keine Preisgrundlage'}}</p></td>
+                    <td>{{worksheetPrice(change.after)}}<p>{{change.after.priceEvidence || 'Keine Preisgrundlage'}}</p></td></tr>
+                }</tbody></table></div>
+              <label class="checkbox-field"><input id="gb-worksheet-consent" type="checkbox" [(ngModel)]="worksheetConsent" [disabled]="busy()">
+                Geänderte Preise und Preisgrundlagen geprüft; aktuelle Eingaben durch diese Arbeitsliste ersetzen.</label>
+              <div class="detail-actions"><button type="button" class="button primary" [disabled]="busy() || !worksheetConsent" (click)="applyWorksheet()">Geprüfte Preisarbeitsliste übernehmen</button>
+                <button type="button" class="button secondary" [disabled]="busy()" (click)="edited()">Arbeitslistenprüfung verwerfen</button></div>
+            </section>
+          }
+        </section>
         <form #gaebBidForm="ngForm" (ngSubmit)="checkBid()">
           <fieldset [disabled]="busy()">
             <h3>3 · Bieter und Angebotsdatum</h3>
@@ -65,7 +101,7 @@
                 </div>
               </section>
             }
-            <button type="submit" class="button primary" [disabled]="gaebBidForm.invalid || busy() || !projectId || !official()?.validation?.valid">X84 bilden und nach Original-XSD prüfen</button>
+            <button type="submit" class="button primary" [disabled]="gaebBidForm.invalid || busy() || !projectId || !official()?.validation?.valid || !!worksheetReview()">X84 bilden und nach Original-XSD prüfen</button>
           </fieldset>
         </form>
       }
