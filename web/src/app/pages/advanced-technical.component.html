@@ -159,6 +159,7 @@
           @if (mode()==='boards' || mode()==='assembly') {
             <dl class="result-list">
               <div><dt>Belegte Fläche</dt><dd>{{number(value['roofAreaM2'])}} m²</dd></div>
+              @if (mode()==='assembly') { <div><dt>Zusammenhängende Dachfelder</dt><dd>{{responseEntries(value,'fields').length}}</dd></div> }
               <div><dt>Platten im Feld</dt><dd>{{value['installedBoards']}}</dd></div>
               <div><dt>Einbauvolumen</dt><dd>{{number(value['installedVolumeM3'])}} m³</dd></div>
               <div><dt>Zuschnittverschnitt</dt><dd>{{number(value['cutWasteVolumeM3'])}} m³</dd></div>
@@ -166,9 +167,9 @@
             </dl>
             <h4>Bestellvorschlag nach SKU</h4>
             <div class="table-scroll"><table><thead><tr><th>SKU</th><th>Verbaut</th><th>Gesamt zu bestellen</th><th>Packungen</th><th>Zuschnitte</th><th>Kosten</th></tr></thead>
-              <tbody>@for (row of responseEntries(value,'orders'); track row['sku']) {<tr><td>{{row['sku']}}</td><td>{{row['usedBoards']}}</td><td>{{row['boardsOrdered']}}</td><td>{{row['packsToOrder']}}</td><td>{{row['boardsRequiringCut']}}</td><td>{{row['estimatedPackCostEur'] == null ? 'Unbekannt' : row['estimatedPackCostEur'] + ' €'}}</td></tr>}</tbody></table></div>
+              <tbody>@for (row of responseEntries(value,'orders'); track $index) {<tr><td>@if (mode()==='assembly') {<span>{{row['manufacturer']}} – </span>}{{boardOrder(row)['sku']}}</td><td>{{boardOrder(row)['usedBoards']}}</td><td>{{boardOrder(row)['boardsOrdered']}}</td><td>{{boardOrder(row)['packsToOrder']}}</td><td>{{boardOrder(row)['boardsRequiringCut']}}</td><td>{{boardOrder(row)['estimatedPackCostEur'] == null ? 'Unbekannt' : boardOrder(row)['estimatedPackCostEur'] + ' €'}}</td></tr>}</tbody></table></div>
             <details><summary>Positionsplan (Koordinaten und Zuschnitte)</summary><div class="table-scroll"><table><thead><tr><th>Zeile/Spalte</th><th>SKU</th><th>x / y (m)</th><th>Länge / Breite (m)</th><th>Dicken (m)</th><th>Zuschnitt</th></tr></thead>
-              <tbody>@for (cell of responseEntries(value,'placements'); track $index) {<tr><td>{{cell['row']}}/{{cell['column']}}</td><td>{{cell['sku']}}</td><td>{{number(cell['x'])}}/{{number(cell['y'])}}</td><td>{{number(cell['lengthM'])}}/{{number(cell['widthM'])}}</td><td>{{number(cell['thinEdgeM'])}}/{{number(cell['thickEdgeM'])}}</td><td>{{cell['requiresCut'] ? 'Ja' : 'Nein'}}</td></tr>}</tbody></table></div></details>
+              <tbody>@for (cell of responseEntries(value,'placements'); track $index) {<tr><td>@if (mode()==='assembly') { {{cell['fieldId']}}: }{{boardPanel(cell)['row']}}/{{boardPanel(cell)['column']}}</td><td>{{boardPanel(cell)['sku']}}</td><td>{{number(mode()==='assembly' ? cell['globalX'] : cell['x'])}}/{{number(mode()==='assembly' ? cell['globalY'] : cell['y'])}}</td><td>{{number(boardPanel(cell)['lengthM'])}}/{{number(boardPanel(cell)['widthM'])}}</td><td>{{number(boardPanel(cell)['thinEdgeM'])}}/{{number(boardPanel(cell)['thickEdgeM'])}}</td><td>{{boardPanel(cell)['requiresCut'] ? 'Ja' : 'Nein'}}</td></tr>}</tbody></table></div></details>
           } @else {
             <dl class="result-list">
               @if (mode()==='balance') {
