@@ -8,10 +8,10 @@ Das bestehende Wareneingangs-, Reservierungs- und Verbrauchssystem wird um vier 
 
 | Fachvorgang | Schnittstelle | Vorbedingungen und Wirkung |
 |---|---|---|
-| Inventurdifferenz | `POST /api/v1/materials/{id}/inventory-count` | Erfasster Buchbestand `expectedOnHand` muss dem aktuell gebuchten Wert entsprechen. Der gezählte Bestand `countedOnHand` darf nicht negativ und nicht kleiner als die noch gebundene Reservierung sein. Differenz wird als unveränderliche, **vorzeichenbehaftete** `Adjustment`-Bewegung gebucht. |
-| Lagerumbuchung | `POST /api/v1/materials/{id}/transfer` | Unterschiedliche Lagerorte und ausreichender **nicht reservierter** Ausgangsbestand. Genau zwei Bewegungen (negativ `TransferOut`, positiv `TransferIn`) mit gemeinsamer Referenz werden **atomar** geschrieben. |
+| Inventurdifferenz | `POST /api/v1/materials/{id}/inventory-count` | Erfasster Buchbestand `expectedOnHand` muss dem aktuell gebuchten Wert entsprechen. Der gezählte Bestand `countedOnHand` darf nicht negativ und nicht kleiner als die noch gebundene Reservierung sein. Der explizite Inventurbeleg `evidenceReference` und die Begründung sind Pflicht. Die Differenz wird als unveränderliche, **vorzeichenbehaftete** `Adjustment`-Bewegung gebucht; ihre Referenz enthält den Zählbeleg. |
+| Lagerumbuchung | `POST /api/v1/materials/{id}/transfer` | Unterschiedliche Lagerorte und ausreichender **nicht reservierter** Ausgangsbestand. `expectedFromOnHand` muss mit dem aktuell gebuchten Quellbestand übereinstimmen, auch wenn die gewünschte Menge weiterhin verfügbar wäre. Genau zwei Bewegungen (negativ `TransferOut`, positiv `TransferIn`) mit gemeinsamer Referenz werden **atomar** geschrieben. |
 | Lieferantenrückgabe | `POST /api/v1/stock-movements/{receiptId}/supplier-return` | Ursprüngliche gebuchte `Receipt`, eindeutige Bestellung/Position, bisher noch nicht zurückgegebene Originalmenge und freier Bestand am Empfangsort. Negative `SupplierReturn`, Referenz ist die ID des Originalwareneingangs. Bestellung wird anhand aller Zu-/Rückgänge auf `Ordered`, `PartiallyReceived` oder `Received` zurückgerechnet; Fehlmengen können erneut angeliefert werden. |
-| Baustellenrückgabe | `POST /api/v1/stock-movements/{consumptionId}/project-return` | Ursprünglicher gebuchter und reservierungsbezogener Projektverbrauch. Positive `Return`, nur bis zur noch nicht retournierten Originalmenge, mit identischem Projekt, Material, Lagerort und Einstandswert. Die ursprüngliche Reservierung wird nicht erneut eröffnet. Die Nachkalkulation behandelt solche Rückgaben bereits als negative Materialkosten. |
+| Baustellenrückgabe | `POST /api/v1/stock-movements/{consumptionId}/project-return` | Ursprünglicher gebuchter und reservierungsbezogener Projektverbrauch. Positive `Return`, nur bis zur noch nicht retournierten Originalmenge, mit identischem Projekt, Material, Lagerort und Einstandswert. Die Reservierung vermindert `consumedQuantity` und erhöht `releasedQuantity` in derselben Transaktion; der noch reservierte Rest bleibt unverändert. Die Nachkalkulation behandelt solche Rückgaben als negative Materialkosten. |
 
 Alle schreibenden Vorgänge benötigen eine Begründung beziehungsweise nachvollziehbare Belegreferenz. Vorgänge werden nicht aus einer bloßen Belegvorschau, aus CSV-Daten oder unbestätigten Bestellmengen automatisch erzeugt.
 
@@ -25,12 +25,19 @@ Alle schreibenden Vorgänge benötigen eine Begründung beziehungsweise nachvoll
 - Wiederholte HTTP-Anforderungen verwenden denselben Idempotency-Key **nur bei identischem Payload und derselben Revision**; ein Replay erzeugt keine Doppelbuchung.
 - Bestehende `StockMovement`-Digests bleiben bitweise unverändert; zusätzliche `SupplierReturn`-Enumwerte verändern keine bereits archivierten Nachweise.
 - Eine Baustellenrückgabe wird mit dem ursprünglichen Einstandswert gebucht. In der vorhandenen Projekt-Nachkalkulation senkt die positive `Return`-Menge die Materialkosten, ohne die Originalverbrauchsbuchung zu manipulieren.
+- Konkurrierende Rückgaben werden gegen den aktuellen Belegrest und den aktuellen Nettoverbrauch der exakt zugehörigen Reservierung geprüft. Ein abgewiesener zweiter Vorgang verändert weder Lagerjournal noch Reservierungszähler; ein Replay des erfolgreichen Vorgangs verändert sie ebenfalls nicht.
 
 ## Rollen und Bedienung
 
 Die Backend-Berechtigung für `stock-movements` und das Betriebsmodul `purchasing` werden **vor** jedem Schreibvorgang erneut geprüft. **Inventur, Umbuchung und Baustellenrückgabe** erfordern GF oder Bauleiter, **Lieferantenrückgabe** GF, Büro oder Bauleiter. Eine reine Buchhaltungssitzung darf diese manuellen Lagerbewegungen nicht buchen. Die Angular-Oberfläche zeigt nur zulässige Vorgangstypen; das ist kein Ersatz für die API-Rollenprüfung.
 
 Die Bedienung liefert keinen vorbefüllten Sollwert für tatsächlich gezählte Inventur oder retournierten Materialumfang. Die Anwender müssen Mengen, Referenzen, Standorte und belegende Informationen eingeben. Eine Buchung bestätigt keine physisch durchgeführte Inventur oder rechtliche Gewährleistungsabwicklung.
+
+Bei Material- oder Lagerortwechsel verwirft die Oberfläche ungespeicherte Korrektureingaben und ausstehende Antworten des vorherigen Kontexts. Auch während einer laufenden Abfrage kann der neue Lagerort erneut geladen werden. Eine fachlich abgewiesene Buchung bleibt mit ihrem Fehlerhinweis und den Eingaben sichtbar, während Bestand und Journal neu geladen werden.
+
+## Zusammenführung der bisherigen Arbeitsstände
+
+Die konkurrierenden Entwürfe aus PR #7 und PR #8 werden auf den Schnittstellen von PR #8 konsolidiert. Übernommen wurden die getrennte Inventurbelegreferenz, die bestätigte Transfer-Ausgangsmenge und die atomare Korrektur der Reservierungszähler. Die genauere Bindung jeder Lieferantenrückgabe an einen einzelnen Wareneingang, das paginierte Journal und der Aufmaß-PDF-Ablauf aus PR #8 bleiben erhalten. Es wird keine zweite Variante der Lagerendpunkte eingeführt. Der ältere alternative Branch ist dadurch technisch ersetzt.
 
 ## Regression und verbleibende Grenzen
 

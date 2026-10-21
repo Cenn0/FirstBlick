@@ -50,12 +50,13 @@ test('warehouse count, transfer and linked returns are explicit and discard stal
   await expect(page.getByText('Gebucht', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Beleggebundene Bewegung buchen' })).toBeDisabled();
   await page.getByLabel('Tatsächlich gezählter Bestand').fill('9');
+  await page.getByLabel('Inventurbeleg', { exact: true }).fill('COUNT-2026-001');
   await page.getByLabel('Bewertung je Einheit (€)').fill('2');
   await page.getByLabel('Begründung / Belegreferenz').fill('Signed count evidence');
   await page.getByRole('button', { name: 'Beleggebundene Bewegung buchen' }).click();
   await expect(page.getByText('Bestandsbewegung mit Buchungsbeleg erfasst.', { exact: false })).toBeVisible();
   expect(f.requests[0].path).toBe(`materials/${materialId}/inventory-count`);
-  expect(f.requests[0].body).toMatchObject({ expectedOnHand: '10', countedOnHand: '9', location: 'Hauptlager' });
+  expect(f.requests[0].body).toMatchObject({ expectedOnHand: '10', countedOnHand: '9', location: 'Hauptlager', evidenceReference: 'COUNT-2026-001' });
   expect(f.requests[0].headers['idempotency-key']).toMatch(/^[a-f0-9-]{36}$/i);
   await page.getByRole('tab', { name: 'Lagerumbuchung' }).click();
   await page.getByLabel('Ziellagerort').fill('Aussenlager');
@@ -64,7 +65,7 @@ test('warehouse count, transfer and linked returns are explicit and discard stal
   await page.getByLabel('Begründung / Belegreferenz').fill('Relocation record');
   await page.getByRole('button', { name: 'Beleggebundene Bewegung buchen' }).click();
   await expect.poll(() => f.requests.length).toBe(2);
-  expect(f.requests[1].body).toMatchObject({ fromLocation: 'Hauptlager', toLocation: 'Aussenlager', quantity: '2' });
+  expect(f.requests[1].body).toMatchObject({ fromLocation: 'Hauptlager', toLocation: 'Aussenlager', quantity: '2', expectedFromOnHand: '9' });
   await page.getByRole('tab', { name: 'Lieferantenrückgabe' }).click();
   await page.getByLabel('Ursprüngliche gebuchte Bewegung').selectOption(receiptId);
   await page.getByLabel('Menge', { exact: true }).fill('1');
@@ -92,6 +93,56 @@ test('accounting role cannot trigger privileged manual warehouse changes', async
   await select.selectOption(materialId);
   await expect(page.getByText('Für diesen Buchungstyp fehlt die erforderliche Rolle.')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Beleggebundene Bewegung buchen' })).toHaveCount(0);
+  expect(f.requests).toEqual([]);
+  expect(f.errors).toEqual([]);
+});
+
+test('changing a warehouse during a pending request enables refresh and discards the old response', async ({ page }) => {
+  const f = await fixture(page);
+  let release!: () => void, started!: () => void;
+  const blocked = new Promise<void>(resolve => { release = resolve; });
+  const requested = new Promise<void>(resolve => { started = resolve; });
+  await page.route(`**/api/v1/materials/${materialId}/stock?**`, async route => {
+    if (new URL(route.request().url()).searchParams.get('location') === 'Hauptlager') {
+      started(); await blocked;
+      return route.fulfill({ json: { onHand: '999', reserved: '0', available: '999' } });
+    }
+    return route.fulfill({ json: { onHand: '20', reserved: '0', available: '20' } });
+  });
+  await page.goto('/inventory-control');
+  const select = page.getByLabel('Material auswählen');
+  await expect(select.locator('option')).toHaveCount(2);
+  await select.selectOption(materialId);
+  await requested;
+  await page.getByLabel('Lagerort (exakter Name)').fill('Aussenlager');
+  const refresh = page.getByRole('button', { name: 'Bestand & Bewegungen laden' });
+  await expect(refresh).toBeEnabled();
+  await refresh.click();
+  const onHand = page.locator('dl div').filter({ has: page.getByText('Gebucht', { exact: true }) }).locator('dd');
+  await expect(onHand).toHaveText('20');
+  release();
+  await expect(refresh).toBeEnabled();
+  await expect(onHand).toHaveText('20');
+  expect(f.errors).toEqual([]);
+});
+
+test('a rejected stock command retains the error and entered evidence while refreshing the ledger', async ({ page }) => {
+  const f = await fixture(page);
+  await page.route(`**/api/v1/materials/${materialId}/inventory-count`, route => route.fulfill({
+    status: 400, json: { code: 'stale_stock_count', detail: 'Der Bestand wurde inzwischen geändert. Bitte erneut prüfen.' }
+  }));
+  await page.goto('/inventory-control');
+  const select = page.getByLabel('Material auswählen');
+  await expect(select.locator('option')).toHaveCount(2);
+  await select.selectOption(materialId);
+  await page.getByLabel('Tatsächlich gezählter Bestand').fill('9');
+  await page.getByLabel('Inventurbeleg', { exact: true }).fill('COUNT-2026-002');
+  await page.getByLabel('Bewertung je Einheit (€)').fill('2');
+  await page.getByLabel('Begründung / Belegreferenz').fill('Physical count witness');
+  await page.getByRole('button', { name: 'Beleggebundene Bewegung buchen' }).click();
+  await expect(page.getByRole('button', { name: 'Bestand & Bewegungen laden' })).toBeEnabled();
+  await expect(page.getByRole('alert')).toContainText('Der Bestand wurde inzwischen geändert.');
+  await expect(page.getByLabel('Inventurbeleg', { exact: true })).toHaveValue('COUNT-2026-002');
   expect(f.requests).toEqual([]);
   expect(f.errors).toEqual([]);
 });

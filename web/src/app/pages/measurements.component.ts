@@ -1,4 +1,4 @@
-import { Component, ElementRef, ViewChild, effect, inject, signal, untracked } from '@angular/core';
+import { Component, DestroyRef, ElementRef, ViewChild, effect, inject, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -57,8 +57,8 @@ export class MeasurementsComponent {
   readonly error=signal('');readonly notice=signal('');readonly editorError=signal('');readonly busy=signal(false);readonly loading=signal(false);
   readonly types=[{key:'rectangleArea',label:'Rechteckfläche',unit:'m²'},{key:'triangleArea',label:'Dreiecksfläche',unit:'m²'},{key:'length',label:'Länge',unit:'m'},{key:'count',label:'Stückzahl',unit:'Stk'},{key:'volume',label:'Volumen',unit:'m³'},{key:'surfaceNetArea',label:'Nettofläche aus Dachstand',unit:'m²'}];
   @ViewChild('editor')editor?:ElementRef<HTMLDialogElement>;
-  searchText='';pageNumber=1;title='';projectId='';roofRevisionId='';lines:MeasureLine[]=[];editing?:Measurement;private scope='';private loadVersion=0;private projectVersion=0;private roofVersion=0;private incomingRoofId='';private newRequested=false;
-  constructor(){this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe(query=>{this.incomingRoofId=query.get('roofRevisionId')||'';this.newRequested=query.get('new')==='1';if(this.newRequested)setTimeout(()=>{if(this.writable())this.create();});});effect(()=>{const scope=this.auth.scope();untracked(()=>{if(scope!==this.scope){this.scope=scope;this.selected.set(null);this.preview.set(null);this.sourceRoof.set(null);this.editor?.nativeElement.close();this.error.set('');this.notice.set('');void this.load();void this.loadProjects();void this.loadRoofs();}});});}
+  searchText='';pageNumber=1;title='';projectId='';roofRevisionId='';lines:MeasureLine[]=[];editing?:Measurement;private scope='';private loadVersion=0;private projectVersion=0;private roofVersion=0;private incomingRoofId='';private newRequested=false;private alive=true;
+  constructor(){inject(DestroyRef).onDestroy(()=>{this.alive=false;});this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe(query=>{this.incomingRoofId=query.get('roofRevisionId')||'';this.newRequested=query.get('new')==='1';if(this.newRequested)setTimeout(()=>{if(this.writable())this.create();});});effect(()=>{const scope=this.auth.accessSignature();untracked(()=>{if(scope!==this.scope){this.scope=scope;this.loadVersion++;this.projectVersion++;this.roofVersion++;this.selected.set(null);this.preview.set(null);this.sourceRoof.set(null);this.page.set({items:[],total:0,page:1,pageSize:25});this.projects.set([]);this.roofs.set([]);this.editor?.nativeElement.close();this.busy.set(false);this.loading.set(false);this.error.set('');this.notice.set('');if(this.auth.scope()&&this.allowed()){void this.load();void this.loadProjects();void this.loadRoofs();}}});});}
   allowed():boolean{return this.auth.hasModule('technical')&&this.auth.can('measurements.read');}writable():boolean{return this.allowed()&&this.auth.can('measurements.write');}
   projectName(id:string):string{return String(this.projects().find(project=>project.id===id)?.['name']||'Projektaufmaß');}decimal(value:unknown):string{return new Intl.NumberFormat('de-DE',{maximumFractionDigits:6}).format(Number(value));}
   result():MeasureSnapshot|null{return this.selected()?.snapshot||this.preview();}unit(kind:MeasureKind):string{return this.types.find(type=>type.key===kind)?.unit||'';}
@@ -80,11 +80,13 @@ export class MeasurementsComponent {
 
   async downloadPdf(measure: Measurement): Promise<void> {
     if (!this.writable() || this.busy() || measure.status !== 'Frozen' || !measure.snapshot) return;
-    const scope = this.auth.scope(), currentId = measure.id, digest = measure.snapshot.digest;
+    const access = this.auth.accessSignature(), currentId = measure.id, digest = measure.snapshot.digest;
+    const current = () => this.alive && access === this.auth.accessSignature() && this.writable()
+      && this.selected()?.id === currentId && this.selected()?.snapshot?.digest === digest;
     this.busy.set(true); this.error.set('');
     try {
       const raw = await this.api.command<unknown>(`measurements/${measure.id}/pdf`, {}, measure.revision);
-      if (scope !== this.auth.scope() || this.selected()?.id !== currentId || this.selected()?.snapshot?.digest !== digest) return;
+      if (!current()) return;
       const document = asObject(raw);
       if (typeof document['id'] !== 'string' || !/^[a-f0-9-]{36}$/i.test(document['id']) ||
         document['sourceId'] !== currentId || document['sourceKind'] !== 'measurements' ||
@@ -94,13 +96,14 @@ export class MeasurementsComponent {
         (document['size'] as number) > 25 * 1024 * 1024 || !isDigest(document['sha256']))
         throw new Error('Der erzeugte Aufmaßbericht ist nicht eindeutig an den festgehaltenen Projektstand gebunden.');
       const blob = await this.api.download(`documents/${document['id']}/download`);
-      if (scope !== this.auth.scope() || this.selected()?.id !== currentId || this.selected()?.snapshot?.digest !== digest) return;
+      if (!current()) return;
       if (blob.size !== document['size'] || await blob.slice(0, 5).text() !== '%PDF-' ||
         await sha256Blob(blob) !== document['sha256'])
         throw new Error('Der Aufmaßbericht ist beschädigt oder seine SHA-256-Prüfsumme stimmt nicht.');
+      if (!current()) return;
       downloadBlob(blob, `FirstBlick-Aufmass-${currentId}.pdf`);
-    } catch (error) { if (scope === this.auth.scope()) this.error.set(errorMessage(error)); }
-    finally { if (scope === this.auth.scope()) this.busy.set(false); }
+    } catch (error) { if (current()) this.error.set(errorMessage(error)); }
+    finally { if (this.alive && access === this.auth.accessSignature()) this.busy.set(false); }
   }
   async freeze(measure:Measurement):Promise<void>{if(!confirm(`„${measure.title}“ mit den geprüften Maßen und Abzügen festhalten? Die verwendete Dachrevision und die ermittelten Mengen bleiben danach unveränderlich.`))return;this.busy.set(true);try{const result=await this.api.command<Measurement>(`measurements/${measure.id}/freeze`,{},measure.revision);this.selected.set(result);this.preview.set(null);this.notice.set('Aufmaß und Dachbezug verbindlich festgehalten.');await this.load();}catch(error){this.error.set(errorMessage(error));}finally{this.busy.set(false);}}
 }

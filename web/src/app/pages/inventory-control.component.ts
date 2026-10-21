@@ -33,7 +33,7 @@ const modes: { key: StockMode; name: string }[] = [
   @if (!allowed()) {
     <section class="panel empty-state"><h2>Kein Zugriff</h2><p>Materialbewegungen sind für diese Rolle oder diesen Betrieb nicht freigegeben.</p></section>
   } @else {
-    <div class="alert information"><strong>Jede Buchung bleibt erhalten.</strong> Inventuren und Rückgaben erzeugen zusätzliche, revisionssichere Bewegungen; vorhandene Belege werden nicht überschrieben. Die Korrektur ersetzt keine Lieferanten- oder Buchhaltungsfreigabe.</div>
+    <div class="alert information"><strong>Jede Buchung bleibt erhalten.</strong> Inventuren und Rückgaben erzeugen zusätzliche, nachvollziehbare Bewegungen; vorhandene Belege werden nicht überschrieben.</div>
     @if (error()) { <div class="alert error" role="alert">{{error()}}</div> }
     @if (notice()) { <div class="alert information" role="status">{{notice()}}</div> }
     <section class="panel">
@@ -67,7 +67,7 @@ const modes: { key: StockMode; name: string }[] = [
           @for (item of modes; track item.key) {
             @if (permitted(item.key)) {
               <button type="button" role="tab" [attr.aria-selected]="mode === item.key"
-                [class.active]="mode === item.key" (click)="switchMode(item.key)">{{item.name}}</button>
+                [class.active]="mode === item.key" [disabled]="busy()" (click)="switchMode(item.key)">{{item.name}}</button>
             }
           }
         </div>
@@ -81,6 +81,9 @@ const modes: { key: StockMode; name: string }[] = [
               <div class="form-field"><label for="stock-counted">Tatsächlich gezählter Bestand</label>
                 <input id="stock-counted" name="stock-counted" type="text" inputmode="decimal"
                   pattern="[0-9]+([.,][0-9]{1,6})?" required [(ngModel)]="quantity"></div>
+              <div class="form-field"><label for="stock-evidence">Inventurbeleg</label>
+                <input id="stock-evidence" name="stock-evidence" required maxlength="240" [(ngModel)]="evidenceReference"
+                  placeholder="Nummer des Zählprotokolls"></div>
             } @else if (mode === 'transfer') {
               <div class="form-field"><label for="stock-destination">Ziellagerort</label>
                 <input id="stock-destination" name="stock-destination" required maxlength="120" [(ngModel)]="destination"></div>
@@ -161,6 +164,7 @@ export class InventoryControlComponent {
   quantity = '';
   unitCost = '';
   reason = '';
+  evidenceReference = '';
   destination = '';
   sourceId = '';
   page = 1;
@@ -177,7 +181,7 @@ export class InventoryControlComponent {
   private reset(): void {
     this.generation++; this.materialId = ''; this.location = 'Hauptlager'; this.mode = 'count';
     this.materials.set([]); this.balance.set(null); this.movements.set([]); this.total.set(0);
-    this.quantity = ''; this.unitCost = ''; this.reason = ''; this.destination = ''; this.sourceId = '';
+    this.quantity = ''; this.unitCost = ''; this.reason = ''; this.evidenceReference = ''; this.destination = ''; this.sourceId = '';
     this.page = 1; this.busy.set(false); this.error.set(''); this.notice.set('');
     if (this.allowed()) void this.searchMaterials();
   }
@@ -205,17 +209,21 @@ export class InventoryControlComponent {
       : role === 'ManagingDirector' || role === 'SiteManager';
   }
   switchMode(mode: StockMode): void {
-    this.mode = mode; this.sourceId = ''; this.quantity = ''; this.unitCost = ''; this.reason = '';
+    if (this.busy()) return;
+    this.mode = mode; this.sourceId = ''; this.quantity = ''; this.unitCost = ''; this.reason = ''; this.evidenceReference = '';
     this.notice.set(''); this.error.set('');
   }
   selectMaterial(): void {
-    this.generation++; this.balance.set(null); this.movements.set([]); this.total.set(0);
-    this.page = 1; this.sourceId = ''; this.notice.set(''); this.error.set('');
+    this.invalidateSelection();
     if (this.materialId) void this.refresh();
   }
   changedLocation(): void {
+    this.invalidateSelection();
+  }
+  private invalidateSelection(): void {
     this.generation++; this.balance.set(null); this.movements.set([]); this.total.set(0);
-    this.page = 1; this.sourceId = ''; this.notice.set('');
+    this.page = 1; this.sourceId = ''; this.quantity = ''; this.unitCost = ''; this.reason = '';
+    this.evidenceReference = ''; this.destination = ''; this.busy.set(false); this.notice.set(''); this.error.set('');
   }
   async searchMaterials(): Promise<void> {
     if (!this.allowed() || this.busy()) return;
@@ -227,11 +235,11 @@ export class InventoryControlComponent {
     } catch (error) { if (this.current(gen, access)) this.error.set(errorMessage(error)); }
     finally { if (this.current(gen, access)) this.busy.set(false); }
   }
-  async refresh(): Promise<void> {
+  async refresh(clearError = true): Promise<void> {
     if (!this.materialId || !this.location.trim() || !this.allowed()) return;
     const gen = ++this.generation, access = this.auth.accessSignature(), materialId = this.materialId;
     const location = this.location;
-    this.busy.set(true); this.error.set('');
+    this.busy.set(true); if (clearError) this.error.set('');
     try {
       const [balance, history] = await Promise.all([
         this.api.get<Balance>(`materials/${materialId}/stock?location=${encodeURIComponent(location)}`),
@@ -249,7 +257,7 @@ export class InventoryControlComponent {
   }
   canSubmit(): boolean {
     if (!this.permitted(this.mode) || this.busy() || !this.balance() || !this.reason.trim()) return false;
-    if (this.mode === 'count') return this.amount(this.quantity, true) !== null && this.amount(this.unitCost, true) !== null;
+    if (this.mode === 'count') return !!this.evidenceReference.trim() && this.amount(this.quantity, true) !== null && this.amount(this.unitCost, true) !== null;
     if (this.amount(this.quantity, false) === null) return false;
     if (this.mode === 'transfer') return !!this.destination.trim() && this.amount(this.unitCost, true) !== null;
     return !!this.sourceMovements().some(x => x.id === this.sourceId);
@@ -261,11 +269,11 @@ export class InventoryControlComponent {
     try {
       if (this.mode === 'count') await this.api.command(`materials/${this.materialId}/inventory-count`, {
         location: this.location, expectedOnHand: this.balance()!.onHand, countedOnHand: this.amount(this.quantity, true),
-        unitCost: this.amount(this.unitCost, true), reason: this.reason.trim()
+        unitCost: this.amount(this.unitCost, true), reason: this.reason.trim(), evidenceReference: this.evidenceReference.trim()
       });
       else if (this.mode === 'transfer') await this.api.command(`materials/${this.materialId}/transfer`, {
         fromLocation: this.location, toLocation: this.destination, quantity: this.amount(this.quantity, false),
-        unitCost: this.amount(this.unitCost, true), reason: this.reason.trim()
+        unitCost: this.amount(this.unitCost, true), expectedFromOnHand: this.balance()!.onHand, reason: this.reason.trim()
       });
       else {
         const source = this.sourceMovements().find(x => x.id === this.sourceId);
@@ -274,9 +282,9 @@ export class InventoryControlComponent {
           { quantity: this.amount(this.quantity, false), reason: this.reason.trim() }, source.revision);
       }
       if (!this.current(gen, access)) return;
-      this.quantity = ''; this.sourceId = ''; this.reason = '';
+      this.quantity = ''; this.sourceId = ''; this.reason = ''; this.evidenceReference = '';
       this.notice.set('Bestandsbewegung mit Buchungsbeleg erfasst. Bestand und Journal werden aktualisiert.');
     } catch (error) { if (this.current(gen, access)) this.error.set(errorMessage(error)); }
-    finally { if (this.current(gen, access)) { this.busy.set(false); void this.refresh(); } }
+    finally { if (this.current(gen, access)) { this.busy.set(false); void this.refresh(false); } }
   }
 }

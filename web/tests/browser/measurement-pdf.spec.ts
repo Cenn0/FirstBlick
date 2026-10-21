@@ -63,3 +63,29 @@ test('corrupt measurement PDF never reaches the download action', async ({ page 
   expect(downloads).toEqual([]);
   expect(f.errors).toEqual([]);
 });
+
+test('leaving the measurement page discards an outstanding PDF download', async ({ page }) => {
+  const f = await fixture(page); const downloads: string[] = [];
+  page.on('download', download => downloads.push(download.suggestedFilename()));
+  let release!: () => void, started!: () => void;
+  const pending = new Promise<void>(resolve => { release = resolve; });
+  const requested = new Promise<void>(resolve => { started = resolve; });
+  await page.route(`**/api/v1/documents/${documentId}/download`, async route => {
+    started(); await pending;
+    await route.fulfill({ contentType: 'application/pdf', body: validPdf });
+  });
+  await page.route('**/api/v1/roof-revisions?**', route => route.fulfill({ json: { items: [], total: 0, page: 1, pageSize: 25 } }));
+  await page.goto('/measurements');
+  await page.getByRole('button', { name: 'Öffnen', exact: true }).click();
+  await page.getByRole('button', { name: 'Festgehaltenes Aufmaß als geprüftes PDF herunterladen' }).click();
+  await requested;
+  await page.getByRole('navigation', { name: 'Aufmaßbereiche' }).getByRole('link', { name: 'Dachrevisionen', exact: true }).click();
+  await expect(page).toHaveURL('/roof-revisions');
+  const finished = page.waitForResponse(response => response.url().endsWith(`/documents/${documentId}/download`));
+  const unexpectedDownload = page.waitForEvent('download', { timeout: 700 }).then(() => true, () => false);
+  release(); await finished;
+  await expect(page.getByRole('heading', { name: 'Dachrevisionen', exact: true })).toBeVisible();
+  expect(await unexpectedDownload).toBe(false);
+  expect(downloads).toEqual([]);
+  expect(f.errors).toEqual([]);
+});
