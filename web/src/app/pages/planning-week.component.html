@@ -1,0 +1,103 @@
+<header class="page-heading">
+  <div><p class="eyebrow">DISPOSITION</p><h1>Wochenplan</h1><p>Personal, Baustellen und Betriebsmittel gemeinsam planen.</p></div>
+  <a class="button secondary" routerLink="/schedule-assignments">Einsatzliste</a>
+</header>
+@if (!allowed()) {
+  <section class="panel"><h2>Kein Zugriff</h2><p>Die Einsatzplanung ist für Ihre Rolle oder diesen Betrieb nicht freigegeben.</p></section>
+} @else {
+  @if (error()) { <p class="alert error" role="alert">{{error()}}</p> }
+  @if (notice()) { <p class="alert information" role="status">{{notice()}}</p> }
+  <section class="panel">
+    <div class="dispatch-toolbar">
+      <button type="button" class="button secondary" (click)="navigate(-1)" [disabled]="busy() || editorOpen()">Vorherige Woche</button>
+      <div class="form-field"><label for="dispatch-week">Datum in der Planungswoche</label>
+        <input id="dispatch-week" type="date" [ngModel]="monday" (ngModelChange)="chooseWeek($event)" [disabled]="busy() || editorOpen()"></div>
+      <button type="button" class="button secondary" (click)="navigate(1)" [disabled]="busy() || editorOpen()">Nächste Woche</button>
+      <button type="button" class="button secondary" (click)="load()" [disabled]="busy() || editorOpen()">Plan aktualisieren</button>
+      @if (writable()) { <button type="button" class="button primary" (click)="newAssignment()" [disabled]="busy() || editorOpen() || !week()">Einsatz anlegen</button> }
+    </div>
+    @if (week(); as result) {
+      <p class="zone-note"><strong>Betriebszeitzone: {{result.timeZone}}</strong> · {{result.count}} Einsätze. Alle Eingabe- und Anzeigezeiten gelten in dieser Zeitzone.</p>
+    }
+    <details>
+      <summary>Stammdaten suchen und Wochenplan filtern</summary>
+      <p>Suchlisten enthalten jeweils bis zu 25 Einträge. Die Filter begrenzen die serverseitige Wochenabfrage.</p>
+      <div class="lookup-grid">
+        @for (kind of lookupKinds; track kind) {
+          @if (canLookup(kind)) {
+            <div class="form-field">
+              <label [for]="'dispatch-search-'+kind">{{labels[kind]}} suchen</label>
+              <input [id]="'dispatch-search-'+kind" [(ngModel)]="lookups[kind].search" maxlength="200" [disabled]="busy()">
+              <button type="button" class="button secondary" (click)="search(kind)" [disabled]="busy()">{{labels[kind]}} laden</button>
+              <div><button type="button" class="button secondary" (click)="search(kind,lookups[kind].page-1)" [disabled]="busy() || lookups[kind].page <= 1" [attr.aria-label]="labels[kind]+' vorherige Seite'">Zurück</button>
+                <span>Seite {{lookups[kind].page}} · {{lookups[kind].total}} Einträge</span>
+                <button type="button" class="button secondary" (click)="search(kind,lookups[kind].page+1)" [disabled]="busy() || lookups[kind].page*25 >= lookups[kind].total" [attr.aria-label]="labels[kind]+' nächste Seite'">Weiter</button></div>
+              @if (kind === 'projects') {
+                <label for="dispatch-project-filter">Projektfilter</label>
+                <select id="dispatch-project-filter" [(ngModel)]="filterProject" [disabled]="busy()"><option value="">Alle sichtbaren Projekte</option>@for (item of options(kind); track item.id) { <option [value]="item.id">{{item['name']}}</option> }</select>
+              } @else if (kind === 'employees') {
+                <label for="dispatch-employee-filter">Mitarbeiterfilter</label>
+                <select id="dispatch-employee-filter" [(ngModel)]="filterEmployee" [disabled]="busy()"><option value="">Alle sichtbaren Mitarbeiter</option>@for (item of options(kind); track item.id) { <option [value]="item.id">{{item['name']}}</option> }</select>
+              } @else {
+                <label for="dispatch-equipment-filter">Betriebsmittelfilter</label>
+                <select id="dispatch-equipment-filter" [(ngModel)]="filterEquipment" [disabled]="busy()"><option value="">Alle Betriebsmittel</option>@for (item of options(kind); track item.id) { <option [value]="item.id">{{item['name']}}</option> }</select>
+              }
+            </div>
+          }
+        }
+      </div>
+      <button type="button" class="button secondary" (click)="applyFilters()" [disabled]="busy() || editorOpen()">Filter anwenden</button>
+    </details>
+  </section>
+
+  @if (editorOpen() && writable() && week(); as result) {
+    <section class="panel editor" aria-labelledby="dispatch-editor-heading">
+      <h2 id="dispatch-editor-heading">{{editing ? 'Einsatz bearbeiten' : 'Neuer Einsatz'}}</h2>
+      <p>Zeiten in {{result.timeZone}}. Projekt, Mitarbeiter und Geräte bei Bedarf über die Stammdatensuche oben laden.</p>
+      <form #dispatchForm="ngForm" (ngSubmit)="save()">
+        <fieldset [disabled]="busy()"><div class="form-grid">
+          <div class="form-field full-width"><label for="dispatch-title">Einsatzbezeichnung</label><input id="dispatch-title" name="title" required maxlength="240" [(ngModel)]="title"></div>
+          <div class="form-field"><label for="dispatch-project">Projekt</label><select id="dispatch-project" name="project" required [(ngModel)]="projectId"><option value="">Bitte auswählen</option>@for (item of options('projects'); track item.id) { <option [value]="item.id">{{item['name']}}</option> }</select></div>
+          <div class="form-field"><label for="dispatch-employee">Mitarbeiter</label><select id="dispatch-employee" name="employee" required [(ngModel)]="employeeId"><option value="">Bitte auswählen</option>@for (item of options('employees'); track item.id) { <option [value]="item.id" [disabled]="item['active'] === false && !cancelled">{{item['name']}}</option> }</select></div>
+          <div class="form-field"><label for="dispatch-start">Beginn in Betriebszeit</label><input id="dispatch-start" name="start" type="datetime-local" step="0.001" required [(ngModel)]="startLocal" (ngModelChange)="startOffset=''">
+            @if (choices(startLocal).length > 1) { <label for="dispatch-start-offset">Zeitversatz für Beginn</label><select id="dispatch-start-offset" name="startOffset" required [(ngModel)]="startOffset"><option value="">Zeitversatz auswählen</option>@for (choice of choices(startLocal); track choice.instant) { <option [value]="choice.offset">{{choice.label}}</option> }</select> }
+            @if (startLocal && !choices(startLocal).length) { <p role="status">Diese Ortszeit existiert in der Betriebszeitzone nicht.</p> }
+          </div>
+          <div class="form-field"><label for="dispatch-end">Ende in Betriebszeit</label><input id="dispatch-end" name="end" type="datetime-local" step="0.001" required [(ngModel)]="endLocal" (ngModelChange)="endOffset=''">
+            @if (choices(endLocal).length > 1) { <label for="dispatch-end-offset">Zeitversatz für Ende</label><select id="dispatch-end-offset" name="endOffset" required [(ngModel)]="endOffset"><option value="">Zeitversatz auswählen</option>@for (choice of choices(endLocal); track choice.instant) { <option [value]="choice.offset">{{choice.label}}</option> }</select> }
+            @if (endLocal && !choices(endLocal).length) { <p role="status">Diese Ortszeit existiert in der Betriebszeitzone nicht.</p> }
+          </div>
+          <div class="form-field full-width"><p><strong>Geräte und Fahrzeuge</strong></p>
+            @for (item of options('equipment'); track item.id) {
+              <label class="resource-choice"><input type="checkbox" [checked]="equipmentIds.includes(item.id)" (change)="toggleEquipment(item.id,$any($event.target).checked)" [disabled]="!canLookup('equipment') || (item['available'] === false && !equipmentIds.includes(item.id))">{{item['name']}}</label>
+            } @empty { <p>Keine Betriebsmittel gewählt. Weitere Geräte über die Stammdatensuche laden.</p> }
+          </div>
+          @if (editing) { <label class="resource-choice full-width"><input type="checkbox" name="cancelled" [(ngModel)]="cancelled">Diesen Einsatz absagen</label> }
+          <div class="detail-actions full-width">
+            <button type="submit" class="button primary" [disabled]="dispatchForm.invalid || !validTime(startLocal,startOffset) || !validTime(endLocal,endOffset)">{{editing ? 'Änderungen speichern' : 'Einsatz speichern'}}</button>
+            <button type="button" class="button secondary" (click)="closeEditor()">Bearbeitung schließen</button>
+          </div>
+        </div></fieldset>
+      </form>
+    </section>
+  }
+  @if (busy()) { <p role="status">Planungsdaten werden geladen …</p> }
+  @if (week(); as result) {
+    <section class="panel" aria-label="Einsätze der Woche">
+      <div class="week-board">
+        @for (day of result.days; track day.date) {
+          <section class="week-day" [attr.aria-label]="formatDate(day.date)"><h3>{{formatDate(day.date)}}</h3>
+            @for (assignment of entries(day); track assignment.id) {
+              <article class="dispatch-entry"><strong>{{assignment.title}}</strong><p>{{assignment.employeeName}}</p><p>{{assignment.projectName}}</p>
+                <p>{{formatInstant(assignment.start)}} – {{formatInstant(assignment.end)}}</p>
+                @for (resource of assignment.equipment; track resource.id) { <p>{{resource.name}}</p> }
+                @if (writable()) { <button type="button" class="button secondary" (click)="edit(assignment)" [disabled]="busy() || editorOpen()" [attr.aria-label]="assignment.title+' bearbeiten'">Bearbeiten</button> }
+              </article>
+            } @empty { <p class="empty">Keine Einsätze</p> }
+            @if (writable()) { <button type="button" class="button secondary" (click)="newAssignment(day.date)" [disabled]="busy() || editorOpen()" [attr.aria-label]="'Einsatz am '+day.date+' anlegen'">+ Einsatz</button> }
+          </section>
+        }
+      </div>
+    </section>
+  }
+}

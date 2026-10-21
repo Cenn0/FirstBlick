@@ -72,6 +72,31 @@ public static class BusinessPdf
         return writer.Finish();
     }
 
+    public static byte[] Diary(DiaryEntry entry)
+    {
+        var digest = DiaryWorkflow.ReportDigest(entry);
+        var submission = entry.Submission!; var content = submission.Content; var review = entry.Review!;
+        using var writer = new Report("TAGESRAPPORT", $"{content.Date:dd.MM.yyyy} · {entry.Id.ToString("N")[..8]}", digest);
+        writer.Text(content.BusinessName, true, 15); writer.Space(10);
+        writer.Text($"Projekt: {content.ProjectName}", true, 12);
+        if (!string.IsNullOrWhiteSpace(content.ProjectNumber)) writer.Text($"Projektnummer: {content.ProjectNumber}");
+        writer.Text($"Baustelle: {content.BuildingAddress}");
+        writer.Text($"Mitarbeiter: {content.EmployeeName}"); writer.Text($"Arbeitstag: {content.Date:dd.MM.yyyy}");
+        foreach (var (heading, value) in new[] { ("Ausgeführte Arbeiten", content.Work), ("Wetter", content.Weather),
+            ("Behinderungen", content.Obstructions), ("Sicherheitshinweise", content.SafetyNotes) })
+        {
+            writer.Space(14); writer.Text(heading, true, 11);
+            writer.Text(string.IsNullOrWhiteSpace(value) ? "Keine Angabe" : value);
+        }
+        writer.Space(18); writer.Text("Interne Prüfung", true, 12);
+        writer.Text($"Eingereicht: {submission.SubmittedAt:dd.MM.yyyy HH:mm} UTC");
+        writer.Text($"Geprüft durch {review.ReviewerName} am {review.ReviewedAt:dd.MM.yyyy HH:mm} UTC");
+        if (!string.IsNullOrWhiteSpace(review.Notes)) writer.Text(review.Notes);
+        writer.Text("Der Bericht enthält den intern bestätigten Tagesstand. Eine Unterschrift oder Kundenabnahme ist damit nicht erklärt.", size: 9);
+        writer.Text($"Eingereichter Inhalt SHA-256: {submission.Digest}", size: 7);
+        return writer.Finish();
+    }
+
     public static byte[] Technical(string title, string digest, IEnumerable<string> lines)
     {
         using var writer = new Report("TECHNISCHER RECHENBERICHT", "Ref. " + digest[..12], digest);

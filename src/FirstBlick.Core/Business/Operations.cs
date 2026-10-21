@@ -9,11 +9,15 @@ public sealed class DiaryEntry : TenantEntity
     public string Weather { get; set; } = "";
     public string Obstructions { get; set; } = "";
     public string SafetyNotes { get; set; } = "";
+    public DiaryStatus Status { get; set; }
+    public DiarySubmission? Submission { get; set; }
+    public DiaryReview? Review { get; set; }
     public override void Validate()
     {
         ValidateCommon(); Guard.Id(ProjectId, nameof(ProjectId)); Guard.Id(EmployeeId, nameof(EmployeeId)); Guard.Require(Date != default, "required", "Diary date is required.");
         Guard.Text(Work, nameof(Work), 20_000); Guard.Text(Weather, nameof(Weather), 2000, false);
         Guard.Text(Obstructions, nameof(Obstructions), 8000, false); Guard.Text(SafetyNotes, nameof(SafetyNotes), 8000, false);
+        DiaryWorkflow.ValidateState(this);
     }
     public override IEnumerable<EntityReference> References() => [BusinessRegistry.Reference<Project>(ProjectId), BusinessRegistry.Reference<Employee>(EmployeeId)];
 }
@@ -69,6 +73,9 @@ public sealed class Acceptance : TenantEntity
 
 public sealed class MaintenanceContract : TenantEntity
 {
+    public List<MaintenanceCheckTemplate> ChecklistTemplate { get; set; } = [];
+    public bool AutomaticPlanning { get; set; }
+    public int PlanningLeadDays { get; set; } = 14;
     public Guid CustomerId { get; set; }
     public Guid BuildingId { get; set; }
     public string Title { get; set; } = "";
@@ -83,6 +90,8 @@ public sealed class MaintenanceContract : TenantEntity
     {
         ValidateCommon(); Guard.Id(CustomerId, nameof(CustomerId)); Guard.Id(BuildingId, nameof(BuildingId)); Guard.Text(Title, nameof(Title)); Guard.Text(Scope, nameof(Scope), 20_000);
         Guard.Require(StartDate != default && NextDueDate >= StartDate && (!EndDate.HasValue || EndDate >= StartDate), "invalid_window", "Maintenance dates are invalid.");
+        MaintenanceWorkflow.ValidateTemplate(ChecklistTemplate, AutomaticPlanning);
+        Guard.Require(PlanningLeadDays is >= 0 and <= 365, "invalid_lead_time", "The planning lead time must be between zero and 365 days.");
         Guard.Require(IntervalMonths is >= 1 and <= 120 && CompletedOccurrences is >= 0 and <= 10_000, "invalid_recurrence", "Maintenance recurrence is out of range.");
         DateOnly expected;
         try { expected = StartDate.AddMonths(checked(CompletedOccurrences * IntervalMonths)); }

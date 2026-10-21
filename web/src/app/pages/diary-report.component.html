@@ -1,0 +1,35 @@
+<section aria-labelledby="diary-workflow-title">
+  <h3 id="diary-workflow-title">Prüfung und Tagesrapport</h3>
+  @if(error()){<div class="alert error" role="alert">{{error()}}</div>}
+  @if(notice()){<div class="alert success" role="status">{{notice()}}</div>}
+  @if(!online()){<p class="alert information">Das Einreichen, Prüfen und Erstellen des Rapports benötigt eine Verbindung. Entwürfe können Sie weiter offline bearbeiten.</p>}
+  @if(pendingEdits()){<p class="alert warning">Für diesen Bericht stehen lokale Änderungen aus. Übertragen oder klären Sie diese zuerst.</p>}
+  @if(status()==='Returned'){
+    <p class="badge">Zur Überarbeitung zurückgegeben</p>
+    <p class="notes">{{review()?.notes}}</p>
+    <p class="small muted">Bearbeiten Sie den Tagesbericht und reichen Sie den korrigierten Stand erneut ein.</p>
+  }
+  @if(status()==='Draft' || status()==='Returned'){
+    @if(writable()){
+      <p>Beim Einreichen werden die Angaben dieses Tagesberichts festgehalten. Änderungen sind danach über eine Rückgabe zur Überarbeitung möglich.</p>
+      <label class="consent"><input type="checkbox" [ngModel]="consent()" (ngModelChange)="consent.set($event)" [disabled]="busy()">Ich habe den Tagesbericht geprüft und möchte diesen Stand einreichen.</label>
+      <button class="button primary" type="button" (click)="act('submit')" [disabled]="busy() || !consent() || !online() || pendingEdits()">Zur Prüfung einreichen</button>
+    }
+  } @else if(status()==='Submitted'){
+    <p class="badge">Eingereicht</p>
+    <p>Der Tagesbericht wartet auf eine andere Person aus Bauleitung oder Geschäftsführung.</p>
+    @if(canReview()){
+      <div class="review"><label for="diary-review-notes">Prüfvermerk · für eine Rückgabe erforderlich</label><textarea id="diary-review-notes" [ngModel]="notes()" (ngModelChange)="notes.set($event)" maxlength="4000" rows="3" [disabled]="busy()"></textarea></div>
+      <label class="consent"><input type="checkbox" [ngModel]="consent()" (ngModelChange)="consent.set($event)" [disabled]="busy()">Ich habe den eingereichten Tagesbericht geprüft.</label>
+      <div class="actions">
+        <button class="button primary" type="button" (click)="act('approve')" [disabled]="busy() || !consent() || !online()">Tagesbericht freigeben</button>
+        <button class="button secondary" type="button" (click)="act('return')" [disabled]="busy() || !consent() || !notes().trim() || !online()">Zur Überarbeitung zurückgeben</button>
+      </div>
+    }
+  } @else if(status()==='Approved'){
+    <p class="badge">Freigegeben</p>
+    @if(review();as review){<p>Geprüft durch {{review.reviewerName}} am {{date(review.reviewedAt)}}.</p>@if(review.notes){<p class="notes">{{review.notes}}</p>}}
+    <p class="small muted">Der PDF-Rapport enthält die festgehaltenen Angaben und den internen Prüfvermerk.</p>
+    @if(writable()){<button class="button secondary" type="button" (click)="act('pdf')" [disabled]="busy() || !online()">Tagesrapport als PDF</button>}
+  }
+</section>
