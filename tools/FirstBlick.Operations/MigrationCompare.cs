@@ -102,9 +102,9 @@ internal static class MigrationCompare
             var row = rows.SingleOrDefault(x => x.TenantId == original.TenantId && x.Kind == kind && x.Id == original.Id);
             Verify(row is not null, $"{kind}/{original.Id}", "A source entity is missing."); if (row is null) continue;
             using var actualJson = JsonDocument.Parse(row.Data); var actualHash = MigrationJson.Hash(actualJson.RootElement);
-            var expectedHash = MigrationJson.Digest(expected);
+            var expectedJson = MigrationEntityJson.Serialize(expected, envelope.Data); var expectedHash = MigrationJson.HashJson(expectedJson);
             Verify(actualHash == expectedHash && row.Revision == expected.Revision && row.CreatedAt == expected.CreatedAt && row.UpdatedAt == expected.UpdatedAt && row.Archived == expected.Archived
-                && row.UniqueKey == EntityProjection.UniqueKey(expected) && row.SearchText == EntityProjection.SearchText(AppJson.Serialize(expected)), $"{kind}/{original.Id}", "Historical typed values, revision, index projection or permitted grant revocation differ.");
+                && row.UniqueKey == EntityProjection.UniqueKey(expected) && row.SearchText == EntityProjection.SearchText(expectedJson), $"{kind}/{original.Id}", "Historical typed values, revision, index projection or permitted grant revocation differ.");
             var receipt = Receipt(original.TenantId, MigrationImport.EntityKey(kind, original.Id));
             if (receipt is not null)
             {
@@ -114,7 +114,7 @@ internal static class MigrationCompare
                     && mapping.ContractParties == envelope.ContractParties && mapping.DeliveryHistory == envelope.DeliveryHistory
                     && mapping.SourceEvidence == (envelope.EvidenceFile is null ? null : bundle.EvidenceFiles.Single(x => x.File == envelope.EvidenceFile))
                     && mapping.SecurityTransformation == (expected.Revision == original.Revision ? "none" : "portal_grant_revoked")
-                    && (expected.Revision == original.Revision ? mapping.Original is null : mapping.Original == AppJson.Serialize(original)), "source-mapping", "Original source identity/checksum or security transformation evidence differs.");
+                    && (expected.Revision == original.Revision ? mapping.Original is null : mapping.Original == MigrationEntityJson.Serialize(original, envelope.Data)), "source-mapping", "Original source identity/checksum or security transformation evidence differs.");
             }
             foreach (var reference in original.References().Distinct()) expectedLinks.Add((original.TenantId, kind, original.Id, reference.Kind, reference.Id));
             var actual = AppJson.Read(kind, row.Data);
@@ -122,7 +122,7 @@ internal static class MigrationCompare
             {
                 ((PortalShare)actual).RevokedAt = null; actual.UpdatedAt = original.UpdatedAt; actual.Revision = original.Revision;
             }
-            actualEntities.Add(actual); var actualSource = MigrationJson.Element(actual);
+            actualEntities.Add(actual); var actualSource = MigrationEntityJson.Element(actual, envelope.Data);
             actualEnvelopes.Add(envelope with { Data = actualSource, Sha256 = MigrationJson.Hash(actualSource) });
         }
         Verify(expectedLinks.SetEquals(links.Select(x => (x.TenantId, x.SourceKind, x.SourceId, x.TargetKind, x.TargetId))), "references", "Tenant-qualified reference edges differ from the source graph.");

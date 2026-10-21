@@ -83,16 +83,20 @@ internal sealed class MigrationGraph
                 if (payment.ReturnBankTransactionId is { } supplierReturned) Require.That(payment.Direction == SupplierPaymentDirection.Payment && Get<BankTransaction>(tenant, supplierReturned).Amount > 0, "Returned supplier payment requires an incoming bank entry.");
                 break;
             case StockMovement movement:
-                if (movement.PurchaseOrderId is { } movementPurchase)
+                ValidateStockMovement(movement); break;
+            case Equipment equipment:
+                ValidateEquipmentHistory(equipment); break;
+            case EquipmentInspection inspection:
+                _ = Get<Equipment>(tenant, inspection.EquipmentId);
+                if (inspection.Completion is { } completed)
                 {
-                    var purchase = Get<PurchaseOrder>(tenant, movementPurchase); var line = purchase.Lines.SingleOrDefault(x => x.Id == movement.PurchaseLineId);
-                    Require.That(line is not null && line.MaterialId == movement.MaterialId && movement.ProjectId == purchase.ProjectId && movement.Kind == StockMovementKind.Receipt && movement.UnitCost == line.UnitNet, "Receipt must preserve purchase line, material, project and effective cost.");
+                    var inspectionZone = TimeZoneInfo.FindSystemTimeZoneById(bundle.Tenants.Single(x => x.Data.Id == tenant).Data.TimeZone);
+                    var recordedDate = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(completed.RecordedAt, inspectionZone).DateTime);
+                    Require.That(completed.RecordedAt <= bundle.ExportedAt && completed.PerformedOn <= recordedDate,
+                        "A completed equipment inspection cannot occur after its recording or export date.");
                 }
-                if (movement.ReservationId is { } reservationId)
-                {
-                    var reservation = Get<MaterialReservation>(tenant, reservationId);
-                    Require.That(movement.MaterialId == reservation.MaterialId && movement.ProjectId == reservation.ProjectId && movement.Location == reservation.Location && movement.Kind == StockMovementKind.Consumption, "Consumption must match its reserved material, project and location.");
-                }
+                if (inspection.Cancellation is { } cancelled)
+                    Require.That(cancelled.CancelledAt <= bundle.ExportedAt, "Equipment inspection cancellation cannot occur after export.");
                 break;
             case ScheduleAssignment assignment:
                 PlanningRules.EnsureAssignment(assignment, All<ScheduleAssignment>(tenant), All<Absence>(tenant));
@@ -166,6 +170,125 @@ internal sealed class MigrationGraph
         }
     }
 
+    private void ValidateStockMovement(StockMovement movement)
+    {
+        var tenant = movement.TenantId;
+        var movements = All<StockMovement>(tenant);
+        Require.That(!movement.Archived, "Historical inventory movements cannot be archived out of the active stock ledger.");
+        Require.That(movement.OccurredAt <= bundle.ExportedAt, "Historical inventory movements cannot postdate the export.");
+        Require.That(movement.PostedDigest is { Length: 64 }, "Historical inventory movements must retain their posted digest.");
+        if (movement.PurchaseOrderId is { } purchaseId)
+        {
+            var purchase = Get<PurchaseOrder>(tenant, purchaseId);
+            var line = purchase.Lines.SingleOrDefault(x => x.Id == movement.PurchaseLineId);
+            Require.That(line is not null && line.MaterialId == movement.MaterialId && movement.ProjectId == purchase.ProjectId
+                && movement.Kind is StockMovementKind.Receipt or StockMovementKind.SupplierReturn && movement.UnitCost == line.UnitNet,
+                "Purchase receipts and supplier returns must preserve purchase line, material, project and effective cost.");
+        }
+        if (movement.ReservationId is { } reservationId)
+        {
+            var reservation = Get<MaterialReservation>(tenant, reservationId);
+            Require.That(movement.MaterialId == reservation.MaterialId && movement.ProjectId == reservation.ProjectId
+                && movement.Location == reservation.Location && movement.Kind is StockMovementKind.Consumption or StockMovementKind.Return,
+                "Consumption and project returns must match their reserved material, project and location.");
+        }
+        if (movement.Kind is StockMovementKind.TransferIn or StockMovementKind.TransferOut)
+        {
+            var pair = movements.Where(x => x.Reference == movement.Reference && x.Kind is StockMovementKind.TransferIn or StockMovementKind.TransferOut).ToArray();
+            Require.That(Guid.TryParse(movement.Reference, out var correlation) && correlation != Guid.Empty && pair.Length == 2
+                && pair.Count(x => x.Kind == StockMovementKind.TransferIn) == 1 && pair.Count(x => x.Kind == StockMovementKind.TransferOut) == 1,
+                "Historical warehouse transfers require exactly one incoming and outgoing posting.");
+            var incoming = pair.Single(x => x.Kind == StockMovementKind.TransferIn);
+            var outgoing = pair.Single(x => x.Kind == StockMovementKind.TransferOut);
+            Require.That(incoming.Quantity == -outgoing.Quantity && incoming.Location != outgoing.Location
+                && incoming.MaterialId == outgoing.MaterialId && incoming.UnitCost == outgoing.UnitCost
+                && incoming.OccurredAt == outgoing.OccurredAt && incoming.TransferSourceId == outgoing.TransferSourceId,
+                "Historical transfer pair quantities, value, source and timestamps must agree.");
+            if (incoming.TransferSourceId.HasValue)
+                _ = InventoryTransferChain.Inspect(incoming, movements);
+        }
+        if (movement.Kind == StockMovementKind.SupplierReturn)
+        {
+            Require.That(Guid.TryParse(movement.Reference, out var originalId), "A supplier return requires its original receipt ID.");
+            var original = Get<StockMovement>(tenant, originalId);
+            Require.That(original.Kind == StockMovementKind.Receipt && original.PostedDigest.Length == 64
+                && original.MaterialId == movement.MaterialId && original.UnitCost == movement.UnitCost
+                && original.PurchaseOrderId == movement.PurchaseOrderId && original.PurchaseLineId == movement.PurchaseLineId
+                && original.ProjectId == movement.ProjectId && original.OccurredAt <= movement.OccurredAt,
+                "The supplier return must preserve its original receipt, purchase, value and chronology.");
+            if (movement.ReturnTransferId is { } transferId)
+            {
+                var transfer = Get<StockMovement>(tenant, transferId);
+                Require.That(transfer.Kind == StockMovementKind.TransferIn && transfer.PostedDigest.Length == 64
+                    && transfer.Location == movement.Location && transfer.MaterialId == movement.MaterialId
+                    && transfer.UnitCost == movement.UnitCost && transfer.OccurredAt >= original.OccurredAt
+                    && transfer.OccurredAt <= movement.OccurredAt,
+                    "A supplier return must use the linked warehouse at the original receipt's value.");
+                if (transfer.TransferSourceId.HasValue)
+                    Require.That(InventoryTransferChain.Resolve(transfer, movements, movement.OccurredAt).Receipt.Id == original.Id,
+                        "A supplier return must retain the complete chain to its own original receipt.");
+                else
+                {
+                    var outgoing = movements.Where(x => x.Kind == StockMovementKind.TransferOut && x.Reference == transfer.Reference).ToArray();
+                    Require.That(outgoing.Length == 1 && outgoing[0].Location == original.Location,
+                        "A historic unlinked return transfer must originate directly at the receipt warehouse.");
+                }
+                Require.That(-movements.Where(x => x.Kind == StockMovementKind.SupplierReturn && x.ReturnTransferId == transferId).Sum(x => x.Quantity) <= transfer.Quantity,
+                    "Supplier returns exceed the referenced warehouse transfer quantity.");
+            }
+            else Require.That(movement.Location == original.Location, "A supplier return from another warehouse requires its transfer evidence.");
+            Require.That(-movements.Where(x => x.Kind == StockMovementKind.SupplierReturn && x.Reference == original.Id.ToString("D")).Sum(x => x.Quantity) <= original.Quantity,
+                "Supplier returns exceed their original purchase receipt quantity.");
+            _ = InventoryTransferChain.Remaining(original, movements);
+        }
+        if (movement.Kind == StockMovementKind.Return && movement.ReservationId.HasValue)
+        {
+            Require.That(Guid.TryParse(movement.Reference, out var originalId), "A project return requires its original consumption ID.");
+            var original = Get<StockMovement>(tenant, originalId);
+            Require.That(original.Kind == StockMovementKind.Consumption && original.PostedDigest.Length == 64
+                && original.MaterialId == movement.MaterialId && original.ProjectId == movement.ProjectId
+                && original.ReservationId == movement.ReservationId && original.Location == movement.Location
+                && original.UnitCost == movement.UnitCost && original.OccurredAt <= movement.OccurredAt,
+                "A project return must retain its original consumption, reservation, value and chronology.");
+            Require.That(movements.Where(x => x.Kind == StockMovementKind.Return && x.Reference == original.Id.ToString("D")).Sum(x => x.Quantity) <= -original.Quantity,
+                "Project returns exceed their original consumption quantity.");
+        }
+    }
+
+    private void ValidateEquipmentHistory(Equipment equipment)
+    {
+        var history = All<EquipmentInspection>(equipment.TenantId).Where(x => x.EquipmentId == equipment.Id).ToArray();
+        var pending = history.Where(x => x.Status == EquipmentInspectionStatus.Scheduled).ToArray();
+        Require.That(pending.Length <= 1 && equipment.PendingInspectionId == pending.SingleOrDefault()?.Id,
+            "An equipment resource must retain exactly its own outstanding inspection link.");
+        if (pending.Length == 1)
+            Require.That(pending[0].EquipmentSnapshot == EquipmentInspectionWorkflow.Snapshot(equipment),
+                "The outstanding inspection must retain the currently planned equipment identity.");
+        var completed = history.Where(x => x.Status == EquipmentInspectionStatus.Completed).ToArray();
+        Require.That(completed.All(x => x.Completion is not null), "Completed equipment inspections require their sealed result evidence.");
+        var chronological = completed.OrderBy(x => x.Completion!.RecordedAt).ThenBy(x => x.Completion!.PerformedOn).ToArray();
+        for (var index = 1; index < chronological.Length; index++)
+            Require.That(chronological[index - 1].Completion!.PerformedOn <= chronological[index].Completion!.PerformedOn,
+                "A later recorded equipment result cannot predate the previously recorded performance date.");
+        if (equipment.LastInspectionId is not { } lastId)
+        {
+            Require.That(completed.Length == 0 && equipment.LastInspectionOn is null && !equipment.InspectionBlocked,
+                "Equipment result flags require their completed inspection evidence.");
+            return;
+        }
+        var last = completed.SingleOrDefault(x => x.Id == lastId);
+        Require.That(last?.Completion is not null, "The equipment's latest result must refer to its own completed inspection.");
+        var evidence = last!.Completion!;
+        Require.That(completed.All(x => x.Completion!.RecordedAt <= evidence.RecordedAt && x.Completion.PerformedOn <= evidence.PerformedOn)
+            && equipment.LastInspectionOn == evidence.PerformedOn
+            && equipment.InspectionBlocked == (evidence.Result == EquipmentInspectionResult.Failed),
+            "The equipment availability projection must retain its latest recorded result.");
+        if (equipment.InspectionBlocked)
+            Require.That(!equipment.Available, "A failed inspection cannot be imported as available equipment.");
+        else Require.That(equipment.NextInspectionOn == evidence.NextInspectionOn,
+            "The next equipment inspection date must retain the latest completed result's explicit date.");
+    }
+
     private void ValidateQuantity(Guid tenant, Guid project, QuantityEvidence? evidence)
     {
         if (evidence is null) return;
@@ -177,7 +300,7 @@ internal sealed class MigrationGraph
     }
     private void ValidateActors(Guid tenant, JsonElement value)
     {
-        string[] names = ["userId", "allocatedBy", "reversedBy", "approvedBy", "submittedBy", "reviewedBy", "calculatedBy", "grantedBy", "recipientUserId", "authorUserId", "actorId"];
+        string[] names = ["userId", "allocatedBy", "reversedBy", "approvedBy", "submittedBy", "reviewedBy", "calculatedBy", "grantedBy", "recipientUserId", "authorUserId", "actorId", "plannedBy", "recordedBy", "cancelledBy"];
         if (value.ValueKind == JsonValueKind.Object)
             foreach (var property in value.EnumerateObject())
             {
@@ -237,6 +360,12 @@ internal sealed class MigrationGraph
             Require.That(InventoryRules.Balance(tenant, key.MaterialId, key.Location, movements, reservations).Available >= 0, "Imported stock or outstanding reservations have insufficient capacity.");
         foreach (var reservation in reservations) Require.That(-movements.Where(x => x.ReservationId == reservation.Id).Sum(x => x.Quantity) == reservation.ConsumedQuantity, "Reservation consumption and immutable stock movements differ.");
         foreach (var purchase in All<PurchaseOrder>(tenant))
-            foreach (var line in purchase.Lines) Require.That(movements.Where(x => x.PurchaseOrderId == purchase.Id && x.PurchaseLineId == line.Id).Sum(x => x.Quantity) <= line.Quantity, "Historical purchase receipts exceed the ordered line.");
+        {
+            foreach (var line in purchase.Lines) Require.That(InventoryRules.ReceivedQuantity(purchase, line.Id, movements) <= line.Quantity,
+                "Historical purchase receipts exceed the ordered line.");
+            if (purchase.Status is PurchaseOrderStatus.Ordered or PurchaseOrderStatus.PartiallyReceived or PurchaseOrderStatus.Received)
+                Require.That(purchase.Status == InventoryRules.ReceiptStatus(purchase, movements),
+                    "Imported purchase order status differs from its net purchase receipts and supplier returns.");
+        }
     }
 }

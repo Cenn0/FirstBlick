@@ -83,7 +83,7 @@ internal static class MigrationCheck
             var entity = AppJson.Read(item.Kind, item.Data.GetRawText()); SourceId(item.SourceId, entity.Id);
             Require.That(tenants.Contains(entity.TenantId), "Entity tenant is absent from the identity mapping.");
             Require.That(MigrationJson.IsHash(item.Sha256) && MigrationJson.Hash(item.Data) == item.Sha256, "Entity source checksum is incorrect.");
-            Require.That(MigrationJson.HashJson(AppJson.Serialize(entity)) == item.Sha256, "Entity JSON must be complete canonical typed JSON; defaults or computed evidence changed.");
+            Require.That(MigrationJson.HashJson(MigrationEntityJson.Serialize(entity, item.Data)) == item.Sha256, "Entity JSON must be complete canonical typed JSON; defaults or computed evidence changed.");
             entity.Validate(); // Re-evaluation verifies a supported immutable contract; it never replaces historical values.
             Require.That(entity.CreatedAt.Ticks % 10 == 0 && entity.UpdatedAt.Ticks % 10 == 0 && entity.UpdatedAt <= bundle.ExportedAt,
                 "Entity envelope timestamps must fit PostgreSQL microseconds and cannot postdate the export; their historical JSON values are never truncated by the importer.");

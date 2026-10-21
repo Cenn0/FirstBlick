@@ -96,6 +96,8 @@ public sealed class StockMovement : TenantEntity
     public Guid? ReservationId { get; set; }
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public Guid? ReturnTransferId { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public Guid? TransferSourceId { get; set; }
     public string Location { get; set; } = "Hauptlager";
     public StockMovementKind Kind { get; set; }
     /// <summary>Positive receipts/returns/inbound transfers; negative consumption/outbound transfers; signed adjustments.</summary>
@@ -110,8 +112,12 @@ public sealed class StockMovement : TenantEntity
         ValidateCommon(); Guard.Id(MaterialId, nameof(MaterialId)); Guard.OptionalId(ProjectId, nameof(ProjectId));
         Guard.OptionalId(PurchaseOrderId, nameof(PurchaseOrderId)); Guard.OptionalId(PurchaseLineId, nameof(PurchaseLineId)); Guard.OptionalId(ReservationId, nameof(ReservationId));
         Guard.OptionalId(ReturnTransferId, nameof(ReturnTransferId));
+        Guard.OptionalId(TransferSourceId, nameof(TransferSourceId));
         Guard.Require(ReturnTransferId is null || Kind == StockMovementKind.SupplierReturn,
             "invalid_return_transfer", "Only a supplier return can reference its prior warehouse transfer.");
+        Guard.Require(TransferSourceId is null || Kind is StockMovementKind.TransferIn or StockMovementKind.TransferOut,
+            "invalid_transfer_source", "Only a warehouse transfer can identify its source receipt.");
+        Guard.Require(TransferSourceId != Id, "invalid_transfer_source", "A transfer cannot identify itself as its source.");
         Guard.Require(PurchaseOrderId.HasValue == PurchaseLineId.HasValue, "invalid_purchase_reference", "A purchase movement requires both order and line reference.");
         Guard.Text(Location, nameof(Location), 120); Guard.Utc(OccurredAt, nameof(OccurredAt)); Guard.Text(Reference, nameof(Reference), 240, false);
         Guard.Text(Reason, nameof(Reason), 2000, Kind == StockMovementKind.Adjustment); Guard.Range(Quantity, -1_000_000m, 1_000_000m, nameof(Quantity));
@@ -140,6 +146,7 @@ public sealed class StockMovement : TenantEntity
         if (PurchaseOrderId is { } purchase) yield return BusinessRegistry.Reference<PurchaseOrder>(purchase);
         if (ReservationId is { } reservation) yield return BusinessRegistry.Reference<MaterialReservation>(reservation);
         if (ReturnTransferId is { } transfer) yield return BusinessRegistry.Reference<StockMovement>(transfer);
+        if (TransferSourceId is { } source) yield return BusinessRegistry.Reference<StockMovement>(source);
     }
 }
 
@@ -172,11 +179,31 @@ public sealed class Equipment : TenantEntity
     public string Location { get; set; } = "";
     public DateOnly? NextInspectionOn { get; set; }
     public bool Available { get; set; } = true;
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public Guid? PendingInspectionId { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public Guid? LastInspectionId { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public DateOnly? LastInspectionOn { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool InspectionBlocked { get; set; }
     public override void Validate()
     {
         ValidateCommon(); Guard.Text(Name, nameof(Name)); Guard.Text(InventoryNumber, nameof(InventoryNumber), 100);
         Guard.Text(Registration, nameof(Registration), 80, false); Guard.Text(Location, nameof(Location), 240, false);
         Guard.Require(Enum.IsDefined(Kind), "invalid_kind", "Equipment kind is invalid.");
+        Guard.OptionalId(PendingInspectionId, nameof(PendingInspectionId)); Guard.OptionalId(LastInspectionId, nameof(LastInspectionId));
+        if (NextInspectionOn.HasValue) EquipmentInspectionWorkflow.Date(NextInspectionOn.Value, nameof(NextInspectionOn));
+        if (LastInspectionOn.HasValue) EquipmentInspectionWorkflow.Date(LastInspectionOn.Value, nameof(LastInspectionOn));
+        Guard.Require(LastInspectionId.HasValue == LastInspectionOn.HasValue && (!InspectionBlocked || LastInspectionId.HasValue && !Available),
+            "inspection_state", "Equipment inspection evidence and availability are inconsistent.");
+        Guard.Require(!PendingInspectionId.HasValue || PendingInspectionId != LastInspectionId,
+            "inspection_state", "The last completed inspection cannot also be outstanding.");
+    }
+    public override IEnumerable<EntityReference> References()
+    {
+        if (PendingInspectionId is { } pending) yield return BusinessRegistry.Reference<EquipmentInspection>(pending);
+        if (LastInspectionId is { } latest) yield return BusinessRegistry.Reference<EquipmentInspection>(latest);
     }
 }
 
@@ -184,7 +211,14 @@ public sealed record StockBalance(decimal OnHand, decimal Reserved, decimal Avai
 public static class InventoryRules
 {
     public static string PurchaseDigest(PurchaseOrder order) => ContentDigest.Of(new { order.TenantId, order.Id, order.SupplierId, order.ProjectId, order.Number, order.Title, order.Currency, order.Lines });
-    public static string MovementDigest(StockMovement movement) => movement.ReturnTransferId is null
+    public static string MovementDigest(StockMovement movement) => movement.TransferSourceId is not null
+        ? ContentDigest.Of(new
+        {
+            movement.TenantId, movement.Id, movement.MaterialId, movement.ProjectId, movement.PurchaseOrderId, movement.PurchaseLineId,
+            movement.ReservationId, movement.Location, movement.Kind, movement.Quantity, movement.UnitCost, movement.OccurredAt, movement.Reference, movement.Reason,
+            movement.TransferSourceId
+        })
+        : movement.ReturnTransferId is null
         // Keep the byte contract of existing posted movements unchanged.
         ? ContentDigest.Of(new
         {
@@ -328,26 +362,43 @@ public static class InventoryRules
             var incoming = movements.SingleOrDefault(m => m.Id == transferId && m.TenantId == order.TenantId);
             Guard.Require(incoming is not null, "invalid_return_transfer", "The warehouse transfer receipt is unavailable.");
             incoming.Validate();
-            var outgoing = movements.Where(m => m.TenantId == order.TenantId && m.Kind == StockMovementKind.TransferOut
-                && m.Reference == incoming.Reference).ToArray();
-            Guard.Require(!incoming.Archived && incoming.Kind == StockMovementKind.TransferIn && incoming.PostedDigest.Length == 64
-                && incoming.MaterialId == originalReceipt.MaterialId && incoming.UnitCost == originalReceipt.UnitCost
-                && incoming.OccurredAt >= originalReceipt.OccurredAt && outgoing.Length == 1
-                && Guid.TryParse(incoming.Reference, out var correlation) && correlation != Guid.Empty,
-                "invalid_return_transfer", "A return from another warehouse requires a matching posted direct transfer.");
-            var source = outgoing[0]; source.Validate();
-            Guard.Require(!source.Archived && source.PostedDigest.Length == 64
-                && source.MaterialId == incoming.MaterialId && source.UnitCost == incoming.UnitCost
-                && source.OccurredAt == incoming.OccurredAt && source.Quantity == -incoming.Quantity
-                && source.Location == originalReceipt.Location && incoming.Location != source.Location,
-                "invalid_return_transfer", "The transfer must originate at the original receipt warehouse with matching quantity and value.");
-            var returnedFromTransfer = movements.Where(m => m.TenantId == order.TenantId
-                && m.Kind == StockMovementKind.SupplierReturn && m.ReturnTransferId == transferId).ToArray();
-            foreach (var previousReturn in returnedFromTransfer) previousReturn.Validate();
-            Guard.Require(quantity - returnedFromTransfer.Sum(m => m.Quantity) <= incoming.Quantity,
-                "supplier_return_transfer_exceeded", "The transfer's remaining returnable quantity would be exceeded.");
-            location = incoming.Location;
+            if (incoming.TransferSourceId.HasValue)
+            {
+                var chain = InventoryTransferChain.Resolve(incoming, movements, now);
+                Guard.Require(chain.Receipt.Id == originalReceipt.Id,
+                    "invalid_return_transfer", "The selected warehouse chain belongs to a different purchase receipt.");
+                Guard.Require(quantity <= InventoryTransferChain.Remaining(incoming, movements, chain),
+                    "supplier_return_transfer_exceeded", "The chain's remaining quantity would be exceeded by this return.");
+                location = incoming.Location;
+            }
+            else
+            {
+                var outgoing = movements.Where(m => m.TenantId == order.TenantId && m.Kind == StockMovementKind.TransferOut
+                    && m.Reference == incoming.Reference).ToArray();
+                Guard.Require(!incoming.Archived && incoming.Kind == StockMovementKind.TransferIn && incoming.PostedDigest.Length == 64
+                    && incoming.MaterialId == originalReceipt.MaterialId && incoming.UnitCost == originalReceipt.UnitCost
+                    && incoming.OccurredAt >= originalReceipt.OccurredAt && outgoing.Length == 1
+                    && Guid.TryParse(incoming.Reference, out var correlation) && correlation != Guid.Empty,
+                    "invalid_return_transfer", "A return from another warehouse requires a matching posted direct transfer.");
+                var source = outgoing[0]; source.Validate();
+                Guard.Require(!source.Archived && source.PostedDigest.Length == 64 && source.TransferSourceId is null
+                    && source.MaterialId == incoming.MaterialId && source.UnitCost == incoming.UnitCost
+                    && source.OccurredAt == incoming.OccurredAt && source.Quantity == -incoming.Quantity
+                    && source.Location == originalReceipt.Location && incoming.Location != source.Location,
+                    "invalid_return_transfer", "The transfer must originate at the original receipt warehouse with matching quantity and value.");
+                var returnedFromTransfer = movements.Where(m => m.TenantId == order.TenantId
+                    && m.Kind == StockMovementKind.SupplierReturn && m.ReturnTransferId == transferId).ToArray();
+                foreach (var previousReturn in returnedFromTransfer) previousReturn.Validate();
+                Guard.Require(quantity - returnedFromTransfer.Sum(m => m.Quantity) <= incoming.Quantity,
+                    "supplier_return_transfer_exceeded", "The transfer's remaining returnable quantity would be exceeded.");
+                Guard.Require(quantity <= InventoryTransferChain.Remaining(originalReceipt, movements),
+                    "supplier_return_source_exceeded", "This receipt's remaining quantity is already assigned to another transfer chain or return.");
+                location = incoming.Location;
+            }
         }
+        else
+            Guard.Require(quantity <= InventoryTransferChain.Remaining(originalReceipt, movements),
+                "supplier_return_source_exceeded", "This receipt's remaining quantity is already assigned to another transfer chain or return.");
         var balance = Balance(order.TenantId, originalReceipt.MaterialId, location, movements, reservations);
         Guard.Require(quantity <= balance.Available, "stock_reserved", "Only physically available, unreserved stock can be returned to the supplier.");
         var movement = new StockMovement
@@ -399,7 +450,8 @@ public static class InventoryRules
     /// <summary>One atomic command creates two signed postings bound by a shared reference.</summary>
     public static (StockMovement Out, StockMovement In) Transfer(Guid tenantId, Guid materialId,
         string fromLocation, string toLocation, decimal quantity, decimal unitCost, decimal expectedFromOnHand, string reason,
-        IReadOnlyCollection<StockMovement> movements, IReadOnlyCollection<MaterialReservation> reservations, DateTimeOffset now)
+        IReadOnlyCollection<StockMovement> movements, IReadOnlyCollection<MaterialReservation> reservations, DateTimeOffset now,
+        Guid? transferSourceId = null)
     {
         Guard.Text(fromLocation, nameof(fromLocation), 120);
         Guard.Text(toLocation, nameof(toLocation), 120);
@@ -409,6 +461,8 @@ public static class InventoryRules
         Guard.Range(quantity, .000001m, 1_000_000m, nameof(quantity));
         Guard.Range(unitCost, 0, 1_000_000m, nameof(unitCost));
         Guard.Range(expectedFromOnHand, 0, 1_000_000m, nameof(expectedFromOnHand));
+        if (transferSourceId is { } sourceId)
+            InventoryTransferChain.EnsureTransferSource(tenantId, materialId, sourceId, fromLocation, unitCost, quantity, movements, now);
         var balance = Balance(tenantId, materialId, fromLocation, movements, reservations);
         Guard.Require(balance.OnHand == expectedFromOnHand, "stale_stock_count", "The source stock changed; review the transfer against the current balance.");
         Guard.Require(quantity <= balance.Available, "stock_reserved", "A transfer cannot take stock reserved for projects.");
@@ -416,7 +470,8 @@ public static class InventoryRules
         StockMovement Create(StockMovementKind kind, string location, decimal signed) => new()
         {
             TenantId = tenantId, MaterialId = materialId, Kind = kind, Location = location,
-            Quantity = signed, UnitCost = unitCost, Reference = reference, Reason = reason, OccurredAt = now
+            Quantity = signed, UnitCost = unitCost, Reference = reference, Reason = reason, OccurredAt = now,
+            TransferSourceId = transferSourceId
         };
         var outgoing = Create(StockMovementKind.TransferOut, fromLocation, -quantity);
         var incoming = Create(StockMovementKind.TransferIn, toLocation, quantity);

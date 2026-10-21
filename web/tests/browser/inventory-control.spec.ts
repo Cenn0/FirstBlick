@@ -4,16 +4,17 @@ const materialId = '11111111-1111-4111-8111-111111111111';
 const receiptId = '22222222-2222-4222-8222-222222222222';
 const consumptionId = '33333333-3333-4333-8333-333333333333';
 const transferId = '44444444-4444-4444-8444-444444444444';
+const intermediateTransferId = '66666666-6666-4666-8666-666666666666';
 
-async function fixture(page: Page, role = 'ManagingDirector') {
+async function fixture(page: Page, role = 'ManagingDirector', linkedTransfers = false) {
   const requests: { path: string; body: Record<string, unknown>; headers: Record<string, string> }[] = [];
   const errors: string[] = [];
   let onHand = 10, reserved = 4;
   let nextId = 10;
   const movements = [
-    { id: receiptId, revision: 1, materialId, kind: 'Receipt', quantity: '10', location: 'Hauptlager', occurredAt: '2026-10-21T08:00:00Z', reference: 'BE-001', reason: '', unitCost: '2' },
+    { id: receiptId, revision: 1, materialId, kind: 'Receipt', quantity: '10', location: 'Hauptlager', occurredAt: '2026-10-21T08:00:00Z', reference: 'BE-001', reason: '', unitCost: '2', purchaseOrderId: '77777777-7777-4777-8777-777777777777' },
     { id: consumptionId, revision: 1, materialId, kind: 'Consumption', quantity: '-2', location: 'Hauptlager', occurredAt: '2026-10-21T09:00:00Z', reference: '', reason: '', unitCost: '2' },
-    { id: transferId, revision: 1, materialId, kind: 'TransferIn', quantity: '2', location: 'Aussenlager', occurredAt: '2026-10-21T10:00:00Z', reference: '55555555-5555-4555-8555-555555555555', reason: 'Direct transfer', unitCost: '2' }
+    { id: transferId, revision: 1, materialId, kind: 'TransferIn', quantity: '2', location: 'Aussenlager', occurredAt: '2026-10-21T10:00:00Z', reference: '55555555-5555-4555-8555-555555555555', reason: 'Recorded transfer', unitCost: '2', ...(linkedTransfers ? { transferSourceId: intermediateTransferId } : {}) }
   ];
   page.on('pageerror', error => errors.push(error.message));
   await page.route('**/api/v1/**', async route => {
@@ -28,6 +29,15 @@ async function fixture(page: Page, role = 'ManagingDirector') {
       const items = movements.filter(m => (!url.searchParams.get('location') || m.location === url.searchParams.get('location'))
         && (!url.searchParams.get('kind') || m.kind === url.searchParams.get('kind')));
       return route.fulfill({ json: { items, total: items.length, page: 1, pageSize: 25 } });
+    }
+    if (path === `stock-movements/${receiptId}/transfer-chain` || path === `stock-movements/${transferId}/transfer-chain`) {
+      const transferred = path.includes(transferId);
+      return route.fulfill({ json: { sourceMovementId: transferred ? transferId : receiptId,
+        originalReceiptId: receiptId, originalLocation: 'Hauptlager', sourceLocation: transferred ? 'Aussenlager' : 'Hauptlager',
+        unitCost: '2', evidenceRemaining: transferred ? '1' : '6', transfers: transferred ? [
+          { incomingId: intermediateTransferId, sourceId: receiptId, fromLocation: 'Hauptlager', toLocation: 'Zwischenlager', quantity: '4', occurredAt: '2026-10-21T09:30:00Z' },
+          { incomingId: transferId, sourceId: intermediateTransferId, fromLocation: 'Zwischenlager', toLocation: 'Aussenlager', quantity: '2', occurredAt: '2026-10-21T10:00:00Z' }
+        ] : [] } });
     }
     if (req.method() === 'POST') {
       const body = req.postDataJSON() as Record<string, unknown>;
@@ -168,5 +178,189 @@ test('supplier return can select a matching direct transfer into another warehou
   expect(f.requests).toHaveLength(1);
   expect(f.requests[0].body).toMatchObject({ quantity: '1', returnTransferId: transferId });
   expect(f.requests[0].path).toBe(`stock-movements/${receiptId}/supplier-return`);
+  expect(f.errors).toEqual([]);
+});
+
+test('a linked transfer shows receipt capacity and preserves its inherited unit cost', async ({ page }) => {
+  const f = await fixture(page);
+  await page.goto('/inventory-control');
+  await page.getByLabel('Material auswählen').selectOption(materialId);
+  await page.getByRole('tab', { name: 'Lagerumbuchung' }).click();
+  await page.getByLabel('Herkunftsbeleg der Umbuchung').selectOption(receiptId);
+  const chain = page.getByRole('region', { name: 'Herkunftskette' });
+  await expect(chain).toContainText('Am ausgewählten Beleg noch nicht zugeordnet: 6');
+  await expect(page.getByLabel('Bewertung je Einheit (€)')).toHaveValue('2');
+  await expect(page.getByLabel('Bewertung je Einheit (€)')).toHaveAttribute('readonly', '');
+  await page.getByLabel('Ziellagerort').fill('Weiteres Lager');
+  await page.getByLabel('Menge', { exact: true }).fill('2');
+  await page.getByLabel('Begründung / Belegreferenz').fill('Quelle und Umbuchungsbeleg geprüft');
+  await page.getByRole('button', { name: 'Beleggebundene Bewegung buchen' }).click();
+  await expect.poll(() => f.requests.length).toBe(1);
+  expect(f.requests[0].body).toMatchObject({ transferSourceId: receiptId, unitCost: '2', quantity: '2', expectedFromOnHand: '10' });
+  expect(f.errors).toEqual([]);
+});
+
+test('a pending provenance check prevents competing material and stock refreshes and then unlocks them', async ({ page }) => {
+  const f = await fixture(page);
+  let release!: () => void, started!: () => void;
+  const blocked = new Promise<void>(resolve => { release = resolve; });
+  const requested = new Promise<void>(resolve => { started = resolve; });
+  let materialReads = 0, stockReads = 0;
+  page.on('request', request => {
+    const path = new URL(request.url()).pathname;
+    if (path === '/api/v1/materials') materialReads++;
+    if (path === `/api/v1/materials/${materialId}/stock`) stockReads++;
+  });
+  await page.route(`**/api/v1/stock-movements/${receiptId}/transfer-chain`, async route => {
+    started(); await blocked;
+    return route.fulfill({ json: { sourceMovementId: receiptId, originalReceiptId: receiptId,
+      originalLocation: 'Hauptlager', sourceLocation: 'Hauptlager', unitCost: '2', evidenceRemaining: '6', transfers: [] } });
+  });
+  await page.goto('/inventory-control');
+  await page.getByLabel('Material auswählen').selectOption(materialId);
+  await page.getByRole('tab', { name: 'Lagerumbuchung' }).click();
+  await page.getByLabel('Herkunftsbeleg der Umbuchung').selectOption(receiptId);
+  await requested;
+  const search = page.getByRole('button', { name: 'Materialliste aktualisieren' });
+  const refresh = page.getByRole('button', { name: 'Bestand & Bewegungen laden' });
+  await expect(search).toBeDisabled();
+  await expect(refresh).toBeDisabled();
+  await page.getByLabel('Material suchen').press('Enter');
+  release();
+  await expect(page.getByRole('region', { name: 'Herkunftskette' })).toContainText('noch nicht zugeordnet: 6');
+  await expect(search).toBeEnabled();
+  await expect(refresh).toBeEnabled();
+  expect(materialReads).toBe(1);
+  expect(stockReads).toBe(1);
+  await page.route(`**/api/v1/materials/${materialId}/stock?**`, route => route.fulfill({
+    status: 503, json: { detail: 'Der Lagerstand ist vorübergehend nicht abrufbar.' }
+  }));
+  await refresh.click();
+  await expect(page.getByRole('alert')).toContainText('Der Lagerstand ist vorübergehend nicht abrufbar.');
+  await expect(refresh).toBeEnabled();
+  await expect(search).toBeEnabled();
+  await expect(page.getByText('Herkunftskette wird geprüft …', { exact: true })).toHaveCount(0);
+  expect(f.requests).toEqual([]);
+  expect(f.errors).toEqual([]);
+});
+
+test('a rejected linked transfer preserves its error and evidence after refreshing the provenance', async ({ page }) => {
+  const f = await fixture(page);
+  let chainReads = 0;
+  await page.route(`**/api/v1/stock-movements/${receiptId}/transfer-chain`, route => {
+    chainReads++;
+    return route.fulfill({ json: { sourceMovementId: receiptId, originalReceiptId: receiptId,
+      originalLocation: 'Hauptlager', sourceLocation: 'Hauptlager', unitCost: '2',
+      evidenceRemaining: chainReads === 1 ? '6' : '4', transfers: [] } });
+  });
+  await page.route(`**/api/v1/materials/${materialId}/transfer`, route => route.fulfill({
+    status: 400, json: { code: 'stale_stock_count', detail: 'Der Bestand wurde inzwischen geändert. Bitte erneut prüfen.' }
+  }));
+  await page.goto('/inventory-control');
+  await page.getByLabel('Material auswählen').selectOption(materialId);
+  await page.getByRole('tab', { name: 'Lagerumbuchung' }).click();
+  await page.getByLabel('Herkunftsbeleg der Umbuchung').selectOption(receiptId);
+  await expect(page.getByRole('region', { name: 'Herkunftskette' })).toContainText('noch nicht zugeordnet: 6');
+  await page.getByLabel('Ziellagerort').fill('Weiteres Lager');
+  await page.getByLabel('Menge', { exact: true }).fill('2');
+  await page.getByLabel('Begründung / Belegreferenz').fill('Geprüfter Umbuchungsbeleg bleibt erhalten');
+  await page.getByRole('button', { name: 'Beleggebundene Bewegung buchen' }).click();
+  await expect(page.getByRole('region', { name: 'Herkunftskette' })).toContainText('noch nicht zugeordnet: 4');
+  await expect(page.getByRole('button', { name: 'Bestand & Bewegungen laden' })).toBeEnabled();
+  await expect(page.getByRole('alert')).toContainText('Der Bestand wurde inzwischen geändert.');
+  await expect(page.getByLabel('Herkunftsbeleg der Umbuchung')).toHaveValue(receiptId);
+  await expect(page.getByLabel('Ziellagerort')).toHaveValue('Weiteres Lager');
+  await expect(page.getByLabel('Menge', { exact: true })).toHaveValue('2');
+  await expect(page.getByLabel('Begründung / Belegreferenz')).toHaveValue('Geprüfter Umbuchungsbeleg bleibt erhalten');
+  expect(chainReads).toBe(2);
+  expect(f.requests).toEqual([]);
+  expect(f.errors).toEqual([]);
+});
+
+test('a supplier return shows every warehouse hop and sends the final transfer with the original receipt', async ({ page }) => {
+  const f = await fixture(page, 'ManagingDirector', true);
+  await page.goto('/inventory-control');
+  await page.getByLabel('Material auswählen').selectOption(materialId);
+  await page.getByRole('tab', { name: 'Lieferantenrückgabe' }).click();
+  await page.getByLabel('Ursprüngliche gebuchte Bewegung').selectOption(receiptId);
+  await page.getByLabel('Rückgabe nach Lagerumbuchung').selectOption(transferId);
+  const chain = page.getByRole('region', { name: 'Herkunftskette' });
+  await expect(chain.getByRole('listitem')).toHaveCount(2);
+  await expect(chain).toContainText('Hauptlager → Zwischenlager');
+  await expect(chain).toContainText('Zwischenlager → Aussenlager');
+  await page.getByLabel('Menge', { exact: true }).fill('1');
+  await page.getByLabel('Begründung / Belegreferenz').fill('Mehrstufige Herkunft vor Rückgabe geprüft');
+  await page.getByRole('button', { name: 'Beleggebundene Bewegung buchen' }).click();
+  await expect.poll(() => f.requests.length).toBe(1);
+  expect(f.requests[0].path).toBe(`stock-movements/${receiptId}/supplier-return`);
+  expect(f.requests[0].body).toMatchObject({ quantity: '1', returnTransferId: transferId });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  expect(f.errors).toEqual([]);
+});
+
+test('a warehouse chain belonging to another receipt cannot be submitted', async ({ page }) => {
+  const f = await fixture(page, 'ManagingDirector', true);
+  await page.route(`**/api/v1/stock-movements/${transferId}/transfer-chain`, route => route.fulfill({ json: {
+    sourceMovementId: transferId, originalReceiptId: '88888888-8888-4888-8888-888888888888', originalLocation: 'Hauptlager',
+    sourceLocation: 'Aussenlager', unitCost: '2', evidenceRemaining: '2', transfers: [
+      { incomingId: transferId, sourceId: '88888888-8888-4888-8888-888888888888', fromLocation: 'Hauptlager',
+        toLocation: 'Aussenlager', quantity: '2', occurredAt: '2026-10-21T10:00:00Z' }
+    ]
+  } }));
+  await page.goto('/inventory-control');
+  await page.getByLabel('Material auswählen').selectOption(materialId);
+  await page.getByRole('tab', { name: 'Lieferantenrückgabe' }).click();
+  await page.getByLabel('Ursprüngliche gebuchte Bewegung').selectOption(receiptId);
+  await page.getByLabel('Rückgabe nach Lagerumbuchung').selectOption(transferId);
+  await expect(page.getByRole('alert')).toContainText('anderen Originalwareneingang');
+  await page.getByLabel('Menge', { exact: true }).fill('1');
+  await page.getByLabel('Begründung / Belegreferenz').fill('Darf keine fremde Quelle belasten');
+  await expect(page.getByRole('button', { name: 'Beleggebundene Bewegung buchen' })).toBeDisabled();
+  expect(f.requests).toEqual([]);
+  expect(f.errors).toEqual([]);
+});
+
+test('late provenance responses cannot restore a chain after changing the warehouse', async ({ page }) => {
+  const f = await fixture(page);
+  let release!: () => void, started!: () => void;
+  const blocked = new Promise<void>(resolve => { release = resolve; });
+  const requested = new Promise<void>(resolve => { started = resolve; });
+  await page.route(`**/api/v1/stock-movements/${receiptId}/transfer-chain`, async route => {
+    started(); await blocked;
+    return route.fulfill({ json: { sourceMovementId: receiptId, originalReceiptId: receiptId,
+      originalLocation: 'Hauptlager', sourceLocation: 'Hauptlager', unitCost: '2', evidenceRemaining: '999', transfers: [] } });
+  });
+  await page.goto('/inventory-control');
+  await page.getByLabel('Material auswählen').selectOption(materialId);
+  await page.getByRole('tab', { name: 'Lagerumbuchung' }).click();
+  await page.getByLabel('Herkunftsbeleg der Umbuchung').selectOption(receiptId);
+  await requested;
+  await page.getByLabel('Lagerort (exakter Name)').fill('Aussenlager');
+  await page.getByRole('button', { name: 'Bestand & Bewegungen laden' }).click();
+  release();
+  await expect(page.getByRole('button', { name: 'Bestand & Bewegungen laden' })).toBeEnabled();
+  await expect(page.getByRole('region', { name: 'Herkunftskette' })).toHaveCount(0);
+  await expect(page.getByLabel('Herkunftsbeleg der Umbuchung')).toHaveValue('');
+  expect(f.requests).toEqual([]);
+  expect(f.errors).toEqual([]);
+});
+
+test('an inconsistent chain response blocks the linked transfer without dropping the users evidence', async ({ page }) => {
+  const f = await fixture(page);
+  await page.route(`**/api/v1/stock-movements/${receiptId}/transfer-chain`, route => route.fulfill({ json: {
+    sourceMovementId: receiptId, originalReceiptId: receiptId, originalLocation: 'Hauptlager',
+    sourceLocation: 'Hauptlager', unitCost: '999', evidenceRemaining: '6', transfers: []
+  } }));
+  await page.goto('/inventory-control');
+  await page.getByLabel('Material auswählen').selectOption(materialId);
+  await page.getByRole('tab', { name: 'Lagerumbuchung' }).click();
+  await page.getByLabel('Ziellagerort').fill('Weiteres Lager');
+  await page.getByLabel('Menge', { exact: true }).fill('1');
+  await page.getByLabel('Begründung / Belegreferenz').fill('Vorliegender Umlagerungsbeleg');
+  await page.getByLabel('Herkunftsbeleg der Umbuchung').selectOption(receiptId);
+  await expect(page.getByRole('alert')).toContainText('Herkunftskette konnte nicht eindeutig geprüft werden');
+  await expect(page.getByRole('button', { name: 'Beleggebundene Bewegung buchen' })).toBeDisabled();
+  await expect(page.getByLabel('Begründung / Belegreferenz')).toHaveValue('Vorliegender Umlagerungsbeleg');
+  expect(f.requests).toEqual([]);
   expect(f.errors).toEqual([]);
 });
