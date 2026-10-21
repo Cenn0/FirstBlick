@@ -78,7 +78,7 @@ public sealed class InhomogeneousThermalTests
         Assert.ThrowsAny<ArgumentException>(() => InhomogeneousThermalCalculator.Calculate(example with
         { Sections = [example.Sections[0] with { AreaFraction = .25 }, example.Sections[1]] }));
         Assert.ThrowsAny<ArgumentException>(() => InhomogeneousThermalCalculator.Calculate(example with
-        { Sections = [example.Sections[0], example.Sections[1] with { Layers = example.Sections[1].Layers[..2] }] }));
+        { Sections = [example.Sections[0], example.Sections[1] with { Layers = example.Sections[1].Layers.Take(2).ToArray() }] }));
         Assert.ThrowsAny<ArgumentException>(() => InhomogeneousThermalCalculator.Calculate(example with
         { Sections = [example.Sections[0], example.Sections[1] with { Name = "Rafter" }] }));
 
