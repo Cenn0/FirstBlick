@@ -132,7 +132,8 @@ public static class BusinessRegistry
         ["supplier-payment-allocations"] = typeof(SupplierPaymentAllocation), ["supplier-cost-allocations"] = typeof(SupplierCostAllocation),
         ["roof-revisions"] = typeof(RoofRevision), ["measurements"] = typeof(Measurement), ["technical-results"] = typeof(TechnicalRecord),
         ["portal-shares"] = typeof(PortalShare), ["portal-feedback"] = typeof(PortalFeedback), ["material-demands"] = typeof(MaterialDemand),
-        ["gaeb-sources"] = typeof(GaebSource), ["e-invoice-sources"] = typeof(ElectronicInvoiceSource)
+        ["gaeb-sources"] = typeof(GaebSource), ["e-invoice-sources"] = typeof(ElectronicInvoiceSource),
+        ["gaeb-exchanges"] = typeof(GaebExchange)
     };
 
     public static string KindOf<T>() where T : TenantEntity => Entities.Single(x => x.Value == typeof(T)).Key;

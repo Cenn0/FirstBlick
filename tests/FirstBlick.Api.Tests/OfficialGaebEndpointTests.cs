@@ -58,6 +58,10 @@ public sealed class OfficialGaebEndpointTests(PostgresApiFixture fixture) : ICla
             "/api/v1/integrations/v2/gaeb/bid-export", approved, key: key));
         Assert.Equal(3, host.Store.PutCount);
         var id = committed.GetProperty("id").GetGuid();
+        // A committed exchange requires a persisted FK parent, but it is not
+        // a generic user-editable or read-accessible business record.
+        using (var restricted = await client.GetAsync($"/api/v1/gaeb-exchanges/{id}"))
+            Assert.Equal(HttpStatusCode.NotFound, restricted.StatusCode);
         Assert.False(committed.GetProperty("externallySubmitted").GetBoolean());
         var documents = committed.GetProperty("documents").EnumerateArray().ToArray();
         Assert.Equal(3, documents.Length);

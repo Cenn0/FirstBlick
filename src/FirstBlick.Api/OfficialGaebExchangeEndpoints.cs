@@ -74,6 +74,21 @@ public static class OfficialGaebExchangeEndpoints
                     "gaeb_bid_preview_changed", "The GAEB original, project, output, schema configuration or reviewed prices have changed.");
 
                 var exchangeId = Guid.NewGuid();
+                // Documents.SourceKind/SourceId is a required tenant-qualified FK to Entities.
+                // Persist a dedicated, immutable GAEB exchange parent, not an orphan source ID.
+                // Its generic read/write routes are disabled; only the reviewed project-bound
+                // catalogue exchange commands can access these priced artifacts.
+                var exchange = new GaebExchange
+                {
+                    Id = exchangeId, ProjectId = work.Preview.ProjectId,
+                    ProjectRevision = work.Preview.ProjectRevision,
+                    SourceSha256 = work.Preview.SourceSha256,
+                    OutputSha256 = work.Preview.XmlSha256,
+                    PreviewDigest = work.Preview.Digest,
+                    TotalNet = work.Preview.TotalNet,
+                    ApprovedBy = c.Scope.UserId, ApprovedAtUtc = DateTimeOffset.UtcNow
+                };
+                await c.SaveNew(exchange, "gaeb.x84-export-approved", ct);
                 var originalId = Guid.NewGuid(); var outputId = Guid.NewGuid(); var receiptId = Guid.NewGuid();
                 var receipt = new
                 {
@@ -115,6 +130,11 @@ public static class OfficialGaebExchangeEndpoints
             Guard.Require(docs.Count == 3 && docs.All(x => x.ProjectId.HasValue && x.ProjectId == docs[0].ProjectId),
                 "not_found", "The GAEB export and its complete immutable evidence are not available.");
             _ = await c.Current<Project>(docs[0].ProjectId!.Value, ct, false);
+            var exchange = await c.Store.Get<GaebExchange>(exchangeId, ct);
+            exchange.Validate();
+            Guard.Require(exchange.ProjectId == docs[0].ProjectId
+                && docs.All(x => x.SourceDigest == exchange.PreviewDigest),
+                "gaeb_artifact_changed", "The GAEB evidence no longer matches the immutable, approved exchange parent.");
             return Results.Ok(new
             {
                 contract = "firstblick.gaeb-export-evidence/2.0.0", id = exchangeId,
@@ -134,6 +154,10 @@ public static class OfficialGaebExchangeEndpoints
             Guard.Require(doc.ProjectId.HasValue && doc.State == "Ready",
                 "gaeb_artifact_unavailable", "The requested artifact has no authorized project or immutable ready state.");
             _ = await c.Current<Project>(doc.ProjectId!.Value, ct, false);
+            var exchange = await c.Store.Get<GaebExchange>(exchangeId, ct);
+            exchange.Validate();
+            Guard.Require(exchange.ProjectId == doc.ProjectId && exchange.PreviewDigest == doc.SourceDigest,
+                "gaeb_artifact_changed", "The original/export file is not bound to this approved project review.");
             var bytes = await DocumentEndpoints.ReadVerified(objects, doc, ct);
             http.Response.Headers["X-Content-SHA256"] = doc.Sha256;
             http.Response.Headers.CacheControl = "no-store";

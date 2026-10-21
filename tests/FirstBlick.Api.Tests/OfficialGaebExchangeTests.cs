@@ -32,7 +32,7 @@ public sealed class OfficialGaebExchangeTests
         Assert.Empty(output.Descendants(ns + "Description"));
         Assert.Equal(2, result.PhaseExcludedSourceFields.Count(x => x.Contains("/Description:")));
         Assert.Contains(result.PhaseExcludedSourceFields, x => x.Contains("original X83 archived"));
-        Assert.Contains(Encoding.UTF8.GetString(source), "Synthetic roof insulation &amp; installation");
+        Assert.Contains("Synthetic roof insulation &amp; installation", Encoding.UTF8.GetString(source));
         Assert.Contains(result.PhaseExcludedSourceFields, x => x.Contains("/QU"));
         Assert.Contains(result.PhaseExcludedSourceFields, x => x.Contains("LblBoQ"));
     }
