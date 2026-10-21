@@ -180,8 +180,8 @@ test('inhomogeneous rafter workbench validates area sections, displays non-norma
   await page.getByLabel('Projekt für den Bericht').selectOption(projectId);
   await page.getByLabel('Berichtsbezeichnung').fill('Synthetic roof assessment');
   await page.getByRole('button', { name: 'Berechnung im Projekt speichern', exact: true }).click();
-  expect(f.requests.find(r => r.path === 'technical/runs')?.body['method']).toBe('thermal.inhomogeneous');
   await expect(page.getByRole('button', { name: 'PDF erzeugen und herunterladen' })).toBeEnabled();
+  expect(f.requests.find(r => r.path === 'technical/runs')?.body['method']).toBe('thermal.inhomogeneous');
   await page.locator('#section-fraction-0').fill('.2');
   await expect(page.getByRole('heading', { name: 'Berechnungsergebnis' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'PDF erzeugen und herunterladen' })).toHaveCount(0);
