@@ -15,7 +15,7 @@ public sealed class OfficialGaebExchangeTests
         Assert.True(validation.Valid, string.Join("\n", validation.Issues.Select(x => x.Message)) + "\n" + Encoding.UTF8.GetString(bytes));
     }
     [Fact]
-    public void Original_X83_and_generated_X84_both_pass_the_unmodified_official_schemas()
+    public void Original_X83_and_X84_price_projection_pass_official_schemas_without_invented_bidder_text()
     {
         var validator = new GaebSchemaValidator(OfficialXmlValidationTests.Bundle());
         var source = OfficialGaebFixtures.Tender(); Valid(validator, source);
@@ -25,11 +25,14 @@ public sealed class OfficialGaebExchangeTests
         XNamespace ns = "http://www.gaeb.de/GAEB_DA_XML/DA84/3.3";
         Assert.Equal("84", output.Root!.Element(ns + "Award")!.Element(ns + "DP")!.Value);
         Assert.Equal(new[] { "Item001", "Item002" }, output.Descendants(ns + "Item").Select(x => (string)x.Attribute("ID")!));
-        Assert.Equal(3, output.Descendants(ns + "p").Count());
-        Assert.DoesNotContain(output.Descendants(ns + "span"), _ => true);
-        Assert.Contains(output.Descendants(ns + "p"), x => x.Value == "Synthetic roof insulation & installation");
-        Assert.Contains(result.PhaseExcludedSourceFields, x => x.Contains("inline span formatting"));
-        Assert.Equal(3, result.PhaseExcludedSourceFields.Count(x => x.Contains("inline span formatting")));
+        // The X84 schema only permits bidder-text complements at this point,
+        // not X83 free text. Keeping the original and declaring exclusions is required.
+        Assert.Empty(output.Descendants(ns + "p"));
+        Assert.Empty(output.Descendants(ns + "span"));
+        Assert.Empty(output.Descendants(ns + "Description"));
+        Assert.Equal(2, result.PhaseExcludedSourceFields.Count(x => x.Contains("/Description:")));
+        Assert.Contains(result.PhaseExcludedSourceFields, x => x.Contains("original X83 archived"));
+        Assert.Contains(Encoding.UTF8.GetString(source), "Synthetic roof insulation &amp; installation");
         Assert.Contains(result.PhaseExcludedSourceFields, x => x.Contains("/QU"));
         Assert.Contains(result.PhaseExcludedSourceFields, x => x.Contains("LblBoQ"));
     }
@@ -42,7 +45,7 @@ public sealed class OfficialGaebExchangeTests
         var next = GaebBidWriter.Render(first.Xml, input with { Prices = input.Prices.Select(x => x with { UnitPrice = 10m }).ToArray() });
         Valid(validator, next.Xml); Assert.Equal(145m, next.TotalNet); Assert.Empty(next.PhaseExcludedSourceFields);
         XNamespace ns = "http://www.gaeb.de/GAEB_DA_XML/DA84/3.3";
-        Assert.Equal(3, TradeXml.Load(next.Xml).Document.Descendants(ns + "p").Count());
+        Assert.Empty(TradeXml.Load(next.Xml).Document.Descendants(ns + "p"));
         Assert.All(TradeXml.Load(next.Xml).Document.Descendants(ns + "Totals"), x => Assert.Equal("145.00", x.Element(ns + "Total")!.Value));
         Assert.Equal("FirstBlick", TradeXml.Load(next.Xml).Document.Root!.Element(ns + "GAEBInfo")!.Element(ns + "ProgSystem")!.Value);
     }
@@ -64,6 +67,21 @@ public sealed class OfficialGaebExchangeTests
         Assert.Throws<DomainException>(() => GaebBidWriter.Render(source, input with { Prices = input.Prices.Select(x => x with { UnitPrice = null }).ToArray() }));
         Assert.Throws<DomainException>(() => GaebBidWriter.Render(source, input with { Prices = input.Prices.Select(x => x with { ExpectedItemDigest = new('0', 64) }).ToArray() }));
     }
+    [Fact]
+    public void Bidder_complements_must_not_be_dropped_or_fabricated_in_X84()
+    {
+        var source = OfficialGaebFixtures.Tender();
+        var xml = TradeXml.Load(source).Document;
+        var ns = xml.Root!.Name.Namespace;
+        xml.Descendants(ns + "Description").First().Descendants(ns + "p").First()
+            .Add(new XElement(ns + "TextComplement", new XAttribute("MarkLbl", 1),
+                new XAttribute("Kind", "B")));
+        var changed = Encoding.UTF8.GetBytes(xml.ToString());
+        var exception = Assert.Throws<DomainException>(() =>
+            GaebBidWriter.Render(changed, OfficialGaebFixtures.Prices(changed)));
+        Assert.Equal("gaeb_bidder_text_or_attachment", exception.Code);
+    }
+
     [Fact]
     public void Schema_errors_and_unsupported_price_semantics_are_not_passed_off_as_ordinary_items()
     {
