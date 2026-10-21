@@ -136,22 +136,23 @@ public sealed class PlanningInventoryTests
         var movements = new[] { receipt };
         var reservations = new[] { reservation };
         Assert.Equal("stale_stock_count", Assert.Throws<DomainException>(() => InventoryRules.CountAdjustment(
-            receipt.TenantId, materialId, "A", 9m, 8m, 2m, "Signed synthetic stock count",
+            receipt.TenantId, materialId, "A", 9m, 8m, 2m, "Signed synthetic stock count", "COUNT-2026-001",
             movements, reservations, BusinessFixture.Now)).Code);
         Assert.Equal("stock_reserved", Assert.Throws<DomainException>(() => InventoryRules.CountAdjustment(
-            receipt.TenantId, materialId, "A", 10m, 7m, 2m, "Signed synthetic stock count",
+            receipt.TenantId, materialId, "A", 10m, 7m, 2m, "Signed synthetic stock count", "COUNT-2026-001",
             movements, reservations, BusinessFixture.Now)).Code);
         var correction = InventoryRules.CountAdjustment(receipt.TenantId, materialId, "A",
-            10m, 8m, 2m, "Signed synthetic stock count", movements, reservations, BusinessFixture.Now);
+            10m, 8m, 2m, "Signed synthetic stock count", "COUNT-2026-001", movements, reservations, BusinessFixture.Now);
         Assert.Equal(StockMovementKind.Adjustment, correction.Kind);
         Assert.Equal(-2m, correction.Quantity);
+        Assert.Equal("COUNT-2026-001", correction.Reference);
         Assert.Equal(64, correction.PostedDigest.Length);
         Assert.Equal(new StockBalance(8m, 8m, 0m),
             InventoryRules.Balance(receipt.TenantId, materialId, "A", [receipt, correction], reservations));
         correction.Reason = "Altered evidence";
         Assert.Equal("movement_immutable", Assert.Throws<DomainException>(correction.Validate).Code);
         Assert.Equal("unchanged_stock_count", Assert.Throws<DomainException>(() => InventoryRules.CountAdjustment(
-            receipt.TenantId, materialId, "A", 8m, 8m, 2m, "Synthetic count", [receipt, new StockMovement { TenantId = receipt.TenantId, MaterialId = materialId, Location = "A", Kind = StockMovementKind.Adjustment, Quantity = -2m, UnitCost = 2m, Reason = "Signed synthetic stock count", OccurredAt = BusinessFixture.Now } ], reservations, BusinessFixture.Now)).Code);
+            receipt.TenantId, materialId, "A", 8m, 8m, 2m, "Synthetic count", "COUNT-2026-002", [receipt, new StockMovement { TenantId = receipt.TenantId, MaterialId = materialId, Location = "A", Kind = StockMovementKind.Adjustment, Quantity = -2m, UnitCost = 2m, Reason = "Signed synthetic stock count", OccurredAt = BusinessFixture.Now } ], reservations, BusinessFixture.Now)).Code);
     }
 
     [Fact]
@@ -207,20 +208,22 @@ public sealed class PlanningInventoryTests
             ProjectId = Guid.NewGuid(), Location = "A", Quantity = 5m };
         InventoryRules.Reserve(reservation, [receipt], []);
         var consumed = InventoryRules.Consume(reservation, 3m, 12m, BusinessFixture.Now);
-        var returned = InventoryRules.ProjectReturn(consumed, 2m, "Unused project stock returned",
+        var returned = InventoryRules.ProjectReturn(reservation, consumed, 2m, "Unused project stock returned",
             [receipt, consumed], BusinessFixture.Now);
         Assert.Equal(StockMovementKind.Return, returned.Kind);
         Assert.Equal(consumed.ProjectId, returned.ProjectId);
         Assert.Equal(consumed.ReservationId, returned.ReservationId);
         Assert.Equal(consumed.UnitCost, returned.UnitCost);
         Assert.Equal(2m, returned.Quantity);
-        Assert.Equal(2m, reservation.Quantity - reservation.ConsumedQuantity);
+        Assert.Equal(1m, reservation.ConsumedQuantity);
+        Assert.Equal(2m, reservation.ReleasedQuantity);
+        Assert.Equal(2m, reservation.Quantity - reservation.ConsumedQuantity - reservation.ReleasedQuantity);
         Assert.Equal(new StockBalance(9m, 2m, 7m),
             InventoryRules.Balance(receipt.TenantId, materialId, "A", [receipt, consumed, returned], [reservation]));
         Assert.Equal("project_return_exceeded", Assert.Throws<DomainException>(() => InventoryRules.ProjectReturn(
-            consumed, 2m, "Duplicate project return", [receipt, consumed, returned], BusinessFixture.Now)).Code);
+            reservation, consumed, 2m, "Duplicate project return", [receipt, consumed, returned], BusinessFixture.Now)).Code);
         Assert.Equal("invalid_project_return", Assert.Throws<DomainException>(() => InventoryRules.ProjectReturn(
-            receipt, 1m, "Not a consumption", [receipt], BusinessFixture.Now)).Code);
+            reservation, receipt, 1m, "Not a consumption", [receipt], BusinessFixture.Now)).Code);
     }
 
     [Fact]
@@ -233,7 +236,7 @@ public sealed class PlanningInventoryTests
         var reserved = new MaterialReservation { TenantId = receipt.TenantId, MaterialId = materialId,
             ProjectId = Guid.NewGuid(), Location = "A", Quantity = 4m };
         var (outgoing, incoming) = InventoryRules.Transfer(receipt.TenantId, materialId, "A", "B",
-            6m, 1m, "Stock transfer on delivery note", [receipt], [reserved], BusinessFixture.Now);
+            6m, 1m, 10m, "Stock transfer on delivery note", [receipt], [reserved], BusinessFixture.Now);
         Assert.Equal(-outgoing.Quantity, incoming.Quantity);
         Assert.Equal(outgoing.Reference, incoming.Reference);
         Assert.Equal(StockMovementKind.TransferOut, outgoing.Kind);
@@ -243,10 +246,10 @@ public sealed class PlanningInventoryTests
         Assert.Equal(new StockBalance(6m, 0m, 6m),
             InventoryRules.Balance(receipt.TenantId, materialId, "B", [receipt, outgoing, incoming], [reserved]));
         Assert.Equal("stock_reserved", Assert.Throws<DomainException>(() => InventoryRules.Transfer(
-            receipt.TenantId, materialId, "A", "B", 7m, 1m, "Excess transfer",
+            receipt.TenantId, materialId, "A", "B", 7m, 1m, 10m, "Excess transfer",
             [receipt], [reserved], BusinessFixture.Now)).Code);
         Assert.Equal("same_stock_location", Assert.Throws<DomainException>(() => InventoryRules.Transfer(
-            receipt.TenantId, materialId, "A", "a", 1m, 1m, "Invalid same warehouse",
+            receipt.TenantId, materialId, "A", "a", 1m, 1m, 10m, "Invalid same warehouse",
             [receipt], [reserved], BusinessFixture.Now)).Code);
     }
 }

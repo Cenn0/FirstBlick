@@ -264,11 +264,12 @@ public static class InventoryRules
     /// replacing newer receipts or consumption.
     /// </summary>
     public static StockMovement CountAdjustment(Guid tenantId, Guid materialId, string location,
-        decimal expectedOnHand, decimal countedOnHand, decimal unitCost, string reason,
+        decimal expectedOnHand, decimal countedOnHand, decimal unitCost, string reason, string evidenceReference,
         IReadOnlyCollection<StockMovement> movements, IReadOnlyCollection<MaterialReservation> reservations, DateTimeOffset now)
     {
         Guard.Text(location, nameof(location), 120);
         Guard.Text(reason, nameof(reason), 2000);
+        Guard.Text(evidenceReference, nameof(evidenceReference), 240);
         Guard.Range(expectedOnHand, 0, 1_000_000m, nameof(expectedOnHand));
         Guard.Range(countedOnHand, 0, 1_000_000m, nameof(countedOnHand));
         Guard.Range(unitCost, 0, 1_000_000m, nameof(unitCost));
@@ -281,7 +282,7 @@ public static class InventoryRules
         {
             TenantId = tenantId, MaterialId = materialId, Location = location,
             Kind = StockMovementKind.Adjustment, Quantity = difference, UnitCost = unitCost,
-            OccurredAt = now, Reason = reason, Reference = "Physical inventory count"
+            OccurredAt = now, Reason = reason.Trim(), Reference = evidenceReference.Trim()
         };
         movement.Validate();
         movement.PostedDigest = MovementDigest(movement);
@@ -296,7 +297,9 @@ public static class InventoryRules
         order.Validate(); originalReceipt.Validate();
         Guard.Range(quantity, .000001m, 1_000_000m, nameof(quantity));
         Guard.Text(reason, nameof(reason), 2000);
-        Guard.Require(originalReceipt.Kind == StockMovementKind.Receipt && originalReceipt.PostedDigest != ""
+        Guard.Require(!order.Archived && !originalReceipt.Archived
+            && order.Status is PurchaseOrderStatus.Received or PurchaseOrderStatus.PartiallyReceived
+            && originalReceipt.Kind == StockMovementKind.Receipt && originalReceipt.PostedDigest != ""
             && originalReceipt.TenantId == order.TenantId && originalReceipt.PurchaseOrderId == order.Id
             && originalReceipt.PurchaseLineId is { } lineId
             && order.Lines.Any(x => x.Id == lineId && x.MaterialId == originalReceipt.MaterialId),
@@ -319,18 +322,22 @@ public static class InventoryRules
     }
 
     /// <summary>Reverse actual project consumption, never an unposted reservation or a different project's usage.</summary>
-    public static StockMovement ProjectReturn(StockMovement consumption, decimal quantity, string reason,
+    public static StockMovement ProjectReturn(MaterialReservation reservation, StockMovement consumption, decimal quantity, string reason,
         IReadOnlyCollection<StockMovement> movements, DateTimeOffset now)
     {
-        consumption.Validate();
+        reservation.Validate(); consumption.Validate();
         Guard.Range(quantity, .000001m, 1_000_000m, nameof(quantity));
         Guard.Text(reason, nameof(reason), 2000);
-        Guard.Require(consumption.Kind == StockMovementKind.Consumption
-            && consumption.ProjectId.HasValue && consumption.ReservationId.HasValue && consumption.PostedDigest != "",
+        Guard.Require(!reservation.Archived && !consumption.Archived
+            && consumption.Kind == StockMovementKind.Consumption && consumption.PostedDigest != ""
+            && consumption.TenantId == reservation.TenantId && consumption.MaterialId == reservation.MaterialId
+            && consumption.ProjectId == reservation.ProjectId && consumption.ReservationId == reservation.Id
+            && consumption.Location == reservation.Location,
             "invalid_project_return", "The project return must refer to a posted reservation consumption.");
         var previous = movements.Where(m => m.TenantId == consumption.TenantId
             && m.Kind == StockMovementKind.Return && m.Reference == consumption.Id.ToString("D")).Sum(m => m.Quantity);
-        Guard.Require(previous + quantity <= -consumption.Quantity, "project_return_exceeded", "The project return exceeds the original consumption.");
+        Guard.Require(previous + quantity <= -consumption.Quantity && quantity <= reservation.ConsumedQuantity,
+            "project_return_exceeded", "The project return exceeds the remaining original consumption.");
         var movement = new StockMovement
         {
             TenantId = consumption.TenantId, MaterialId = consumption.MaterialId,
@@ -339,12 +346,17 @@ public static class InventoryRules
             UnitCost = consumption.UnitCost, OccurredAt = now, Reference = consumption.Id.ToString("D"), Reason = reason
         };
         movement.Validate(); movement.PostedDigest = MovementDigest(movement);
+        // Net consumed material decreases, while returned units are released instead of
+        // becoming reserved again. The original immutable movement remains unchanged.
+        reservation.ConsumedQuantity -= quantity;
+        reservation.ReleasedQuantity += quantity;
+        reservation.Validate();
         return movement;
     }
 
     /// <summary>One atomic command creates two signed postings bound by a shared reference.</summary>
     public static (StockMovement Out, StockMovement In) Transfer(Guid tenantId, Guid materialId,
-        string fromLocation, string toLocation, decimal quantity, decimal unitCost, string reason,
+        string fromLocation, string toLocation, decimal quantity, decimal unitCost, decimal expectedFromOnHand, string reason,
         IReadOnlyCollection<StockMovement> movements, IReadOnlyCollection<MaterialReservation> reservations, DateTimeOffset now)
     {
         Guard.Text(fromLocation, nameof(fromLocation), 120);
@@ -354,7 +366,9 @@ public static class InventoryRules
             "same_stock_location", "The destination must be a different warehouse location.");
         Guard.Range(quantity, .000001m, 1_000_000m, nameof(quantity));
         Guard.Range(unitCost, 0, 1_000_000m, nameof(unitCost));
+        Guard.Range(expectedFromOnHand, 0, 1_000_000m, nameof(expectedFromOnHand));
         var balance = Balance(tenantId, materialId, fromLocation, movements, reservations);
+        Guard.Require(balance.OnHand == expectedFromOnHand, "stale_stock_count", "The source stock changed; review the transfer against the current balance.");
         Guard.Require(quantity <= balance.Available, "stock_reserved", "A transfer cannot take stock reserved for projects.");
         var reference = Guid.NewGuid().ToString("D");
         StockMovement Create(StockMovementKind kind, string location, decimal signed) => new()

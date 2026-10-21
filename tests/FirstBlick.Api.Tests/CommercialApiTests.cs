@@ -232,21 +232,25 @@ public sealed class CommercialApiTests(PostgresApiFixture fixture) : IClassFixtu
         var graph = await ProjectGraph(client);
         await Ok<MaterialReservation>(Send(client, HttpMethod.Post, $"/api/v1/materials/{material.Id}/reserve",
             new { projectId = graph.Project.Id, quantity = 8m, location = "A" }, material.Revision));
-        var count = new { location = "A", expectedOnHand = 10m, countedOnHand = 9m, unitCost = 2m, reason = "Signed synthetic physical count sheet" };
+        var count = new { location = "A", expectedOnHand = 10m, countedOnHand = 9m, unitCost = 2m, reason = "Signed synthetic physical count sheet", evidenceReference = "COUNT-2026-001" };
         await Error(Send(client, HttpMethod.Post, $"/api/v1/materials/{material.Id}/inventory-count",
-            new { location = "A", expectedOnHand = 9m, countedOnHand = 8m, unitCost = 2m, reason = count.reason }),
+            new { location = "A", expectedOnHand = 9m, countedOnHand = 8m, unitCost = 2m, reason = count.reason, evidenceReference = count.evidenceReference }),
             HttpStatusCode.BadRequest, "stale_stock_count");
         await Error(Send(client, HttpMethod.Post, $"/api/v1/materials/{material.Id}/inventory-count",
-            new { location = "A", expectedOnHand = 10m, countedOnHand = 7m, unitCost = 2m, reason = count.reason }),
+            new { location = "A", expectedOnHand = 10m, countedOnHand = 7m, unitCost = 2m, reason = count.reason, evidenceReference = count.evidenceReference }),
             HttpStatusCode.BadRequest, "stock_reserved");
-        var posted = await Ok<JsonElement>(Send(client, HttpMethod.Post, $"/api/v1/materials/{material.Id}/inventory-count", count));
+        var countKey = Guid.NewGuid().ToString("N");
+        var posted = await Ok<JsonElement>(Send(client, HttpMethod.Post, $"/api/v1/materials/{material.Id}/inventory-count", count, key: countKey));
         Assert.Equal(-1m, posted.GetProperty("movement").GetProperty("quantity").Deserialize<decimal>(AppJson.Options));
         Assert.Equal(9m, posted.GetProperty("balance").GetProperty("onHand").Deserialize<decimal>(AppJson.Options));
         await Error(Send(client, HttpMethod.Post, $"/api/v1/materials/{material.Id}/inventory-count", count),
             HttpStatusCode.BadRequest, "stale_stock_count");
-        var transferBody = new { fromLocation = "A", toLocation = "B", quantity = 1m, unitCost = 2m, reason = "Controlled stock relocation" };
+        var transferBody = new { fromLocation = "A", toLocation = "B", quantity = 1m, unitCost = 2m, expectedFromOnHand = 9m, reason = "Controlled stock relocation" };
         await Error(Send(client, HttpMethod.Post, $"/api/v1/materials/{material.Id}/transfer",
-            new { fromLocation = "A", toLocation = "B", quantity = 2m, unitCost = 2m, reason = transferBody.reason }),
+            new { fromLocation = "A", toLocation = "B", quantity = 1m, unitCost = 2m, expectedFromOnHand = 10m, reason = transferBody.reason }),
+            HttpStatusCode.BadRequest, "stale_stock_count");
+        await Error(Send(client, HttpMethod.Post, $"/api/v1/materials/{material.Id}/transfer",
+            new { fromLocation = "A", toLocation = "B", quantity = 2m, unitCost = 2m, expectedFromOnHand = 9m, reason = transferBody.reason }),
             HttpStatusCode.BadRequest, "stock_reserved");
         var transfer = await Ok<JsonElement>(Send(client, HttpMethod.Post, $"/api/v1/materials/{material.Id}/transfer", transferBody));
         Assert.Equal(transfer.GetProperty("outgoing").GetProperty("reference").GetString(),
@@ -265,6 +269,14 @@ public sealed class CommercialApiTests(PostgresApiFixture fixture) : IClassFixtu
         var accounting = await fixture.CreateUser(person.TenantId, BusinessRole.Accounting);
         var accountant = await fixture.Login(accounting);
         await Error(Send(accountant, HttpMethod.Post, $"/api/v1/materials/{material.Id}/transfer", transferBody),
+            HttpStatusCode.Forbidden, "forbidden");
+        await fixture.InScope(async services =>
+        {
+            var db = services.GetRequiredService<FirstBlickDbContext>();
+            var member = await db.Memberships.IgnoreQueryFilters().SingleAsync(x => x.TenantId == person.TenantId && x.UserId == person.UserId);
+            member.Role = BusinessRole.Office; await db.SaveChangesAsync();
+        });
+        await Error(Send(client, HttpMethod.Post, $"/api/v1/materials/{material.Id}/inventory-count", count, key: countKey),
             HttpStatusCode.Forbidden, "forbidden");
     }
 
@@ -307,6 +319,10 @@ public sealed class CommercialApiTests(PostgresApiFixture fixture) : IClassFixtu
             new { quantity = 2m, reason = "Unused rolls returned from site" }, consumption.Revision));
         Assert.Equal(StockMovementKind.Return, projectReturn.Kind);
         Assert.Equal(consumption.Id.ToString("D"), projectReturn.Reference);
+        var afterReturn = await fixture.Read<MaterialReservation>(person.TenantId, reservation.Id);
+        Assert.Equal(1m, afterReturn.ConsumedQuantity);
+        Assert.Equal(2m, afterReturn.ReleasedQuantity);
+        Assert.Equal(reservation.Revision + 2, afterReturn.Revision);
         await Error(Send(client, HttpMethod.Post, $"/api/v1/stock-movements/{consumption.Id}/project-return",
             new { quantity = 2m, reason = "Duplicate site return" }, consumption.Revision),
             HttpStatusCode.BadRequest, "project_return_exceeded");
@@ -323,6 +339,50 @@ public sealed class CommercialApiTests(PostgresApiFixture fixture) : IClassFixtu
         var otherClient = await fixture.Login(outsider);
         await Error(Send(otherClient, HttpMethod.Post, $"/api/v1/stock-movements/{receipt.Id}/supplier-return",
             body, receipt.Revision), HttpStatusCode.NotFound, "not_found");
+    }
+
+    [PostgresApiFact]
+    public async Task Concurrent_project_returns_commit_one_ledger_entry_and_matching_reservation_counters()
+    {
+        var (person, client) = await Session(); var graph = await ProjectGraph(client);
+        var supplier = await Create<Supplier>(client, "suppliers", new() { Name = "Synthetic return supplier" });
+        var material = await Create<Material>(client, "materials", new() { Name = "Returnable synthetic tiles" });
+        var order = await Create<PurchaseOrder>(client, "purchase-orders", new()
+        {
+            SupplierId = supplier.Id, Title = "Three tiles",
+            Lines = [new() { MaterialId = material.Id, Description = "Tiles", Quantity = 3m, UnitNet = 5m }]
+        });
+        order = await Ok<PurchaseOrder>(Send(client, HttpMethod.Post, $"/api/v1/purchase-orders/{order.Id}/issue", new { }, order.Revision));
+        await Ok<JsonElement>(Send(client, HttpMethod.Post, $"/api/v1/purchase-orders/{order.Id}/receive",
+            new { lineId = order.Lines[0].Id, quantity = 3m, location = "A" }, order.Revision));
+        var reservation = await Ok<MaterialReservation>(Send(client, HttpMethod.Post,
+            $"/api/v1/materials/{material.Id}/reserve", new { projectId = graph.Project.Id, quantity = 3m, location = "A" }, material.Revision));
+        var consumed = await Ok<JsonElement>(Send(client, HttpMethod.Post,
+            $"/api/v1/material-reservations/{reservation.Id}/consume", new { quantity = 3m, unitCost = 5m }, reservation.Revision));
+        var source = AppJson.Read<StockMovement>(consumed.GetProperty("movement").GetRawText());
+        var path = $"/api/v1/stock-movements/{source.Id}/project-return";
+        var body = new { quantity = 2m, reason = "Two concurrent scans of the same return" };
+        var keys = new[] { Guid.NewGuid().ToString("N"), Guid.NewGuid().ToString("N") };
+        var responses = await Task.WhenAll(keys.Select(key => Send(client, HttpMethod.Post, path, body, source.Revision, key)));
+        var successful = Array.FindIndex(responses, response => response.IsSuccessStatusCode);
+        Assert.InRange(successful, 0, 1);
+        var posted = await Ok<StockMovement>(Task.FromResult(responses[successful]));
+        await Error(Task.FromResult(responses[1 - successful]), HttpStatusCode.BadRequest, "project_return_exceeded");
+        var replay = await Send(client, HttpMethod.Post, path, body, source.Revision, keys[successful]);
+        Assert.Equal("true", replay.Headers.GetValues("Idempotency-Replayed").Single());
+        Assert.Equal(posted.Id, (await Ok<StockMovement>(Task.FromResult(replay))).Id);
+        var actual = await fixture.Read<MaterialReservation>(person.TenantId, reservation.Id);
+        Assert.Equal(1m, actual.ConsumedQuantity);
+        Assert.Equal(2m, actual.ReleasedQuantity);
+        Assert.Equal(reservation.Revision + 2, actual.Revision);
+        Assert.Equal(new StockBalance(2m, 0m, 2m),
+            await Ok<StockBalance>(client.GetAsync($"/api/v1/materials/{material.Id}/stock?location=A")));
+        await fixture.InScope(async services =>
+        {
+            var db = services.GetRequiredService<FirstBlickDbContext>();
+            Assert.Equal(1, await db.Audit.IgnoreQueryFilters().CountAsync(x => x.TenantId == person.TenantId && x.Action == "stock.project_return"));
+            Assert.Equal(1, await db.Audit.IgnoreQueryFilters().CountAsync(x => x.TenantId == person.TenantId && x.Action == "material.return"));
+        });
     }
 
     private async Task<(ApiTestUser Person, HttpClient Client)> Session()
