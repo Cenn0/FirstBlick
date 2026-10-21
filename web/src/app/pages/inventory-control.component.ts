@@ -4,12 +4,14 @@ import { RouterLink } from '@angular/router';
 import { ApiService, Entity, Page } from '../core/api.service';
 import { AuthService } from '../core/auth.service';
 import { errorMessage } from '../core/transport';
+import { decimalDisplay } from '../core/decimal-format';
+import { decimalInput } from '../core/decimal-input';
 
 type StockMode = 'count' | 'transfer' | 'supplierReturn' | 'projectReturn';
-interface Balance { onHand: number; reserved: number; available: number }
+interface Balance { onHand: string; reserved: string; available: string }
 interface Movement extends Entity {
-  materialId: string; kind: string; quantity: number; location: string; occurredAt: string;
-  reference: string; reason: string; unitCost: number;
+  materialId: string; kind: string; quantity: string; location: string; occurredAt: string;
+  reference: string; reason: string; unitCost: string;
 }
 const modes: { key: StockMode; name: string }[] = [
   { key: 'count', name: 'Inventurdifferenz' },
@@ -77,8 +79,8 @@ const modes: { key: StockMode; name: string }[] = [
                 <input id="stock-expected" type="number" [value]="stock.onHand" disabled>
                 <p>Wird beim Buchen erneut mit dem Serverbestand abgeglichen.</p></div>
               <div class="form-field"><label for="stock-counted">Tatsächlich gezählter Bestand</label>
-                <input id="stock-counted" name="stock-counted" type="number" min="0" max="1000000" step="any"
-                  required [(ngModel)]="quantity"></div>
+                <input id="stock-counted" name="stock-counted" type="text" inputmode="decimal"
+                  pattern="[0-9]+([.,][0-9]{1,6})?" required [(ngModel)]="quantity"></div>
             } @else if (mode === 'transfer') {
               <div class="form-field"><label for="stock-destination">Ziellagerort</label>
                 <input id="stock-destination" name="stock-destination" required maxlength="120" [(ngModel)]="destination"></div>
@@ -95,12 +97,13 @@ const modes: { key: StockMode; name: string }[] = [
             }
             @if (mode !== 'count') {
               <div class="form-field"><label for="stock-quantity">Menge</label>
-                <input id="stock-quantity" name="stock-quantity" type="number" min="0.000001" max="1000000" step="any"
-                  required [(ngModel)]="quantity"></div>
+                <input id="stock-quantity" name="stock-quantity" type="text" inputmode="decimal"
+                  pattern="[0-9]+([.,][0-9]{1,6})?" required [(ngModel)]="quantity"></div>
             }
             @if (mode === 'count' || mode === 'transfer') {
               <div class="form-field"><label for="stock-unit-cost">Bewertung je Einheit (€)</label>
-                <input id="stock-unit-cost" name="stock-unit-cost" type="number" min="0" max="1000000" step="any" required [(ngModel)]="unitCost"></div>
+                <input id="stock-unit-cost" name="stock-unit-cost" type="text" inputmode="decimal"
+                  pattern="[0-9]+([.,][0-9]{1,6})?" required [(ngModel)]="unitCost"></div>
             }
             <div class="form-field full-width"><label for="stock-reason">Begründung / Belegreferenz</label>
               <textarea id="stock-reason" name="stock-reason" maxlength="2000" rows="3" required [(ngModel)]="reason"
@@ -155,8 +158,8 @@ export class InventoryControlComponent {
   materialId = '';
   location = 'Hauptlager';
   mode: StockMode = 'count';
-  quantity: number | null = null;
-  unitCost: number | null = null;
+  quantity = '';
+  unitCost = '';
   reason = '';
   destination = '';
   sourceId = '';
@@ -174,7 +177,7 @@ export class InventoryControlComponent {
   private reset(): void {
     this.generation++; this.materialId = ''; this.location = 'Hauptlager'; this.mode = 'count';
     this.materials.set([]); this.balance.set(null); this.movements.set([]); this.total.set(0);
-    this.quantity = null; this.unitCost = null; this.reason = ''; this.destination = ''; this.sourceId = '';
+    this.quantity = ''; this.unitCost = ''; this.reason = ''; this.destination = ''; this.sourceId = '';
     this.page = 1; this.busy.set(false); this.error.set(''); this.notice.set('');
     if (this.allowed()) void this.searchMaterials();
   }
@@ -182,8 +185,17 @@ export class InventoryControlComponent {
     return generation === this.generation && access === this.auth.accessSignature();
   }
   decimal(value: unknown): string {
-    return typeof value === 'number' && Number.isFinite(value)
-      ? new Intl.NumberFormat('de-DE', { maximumFractionDigits: 6 }).format(value) : '–';
+    const exact = typeof value === 'number' ? String(value) : value;
+    return typeof exact === 'string' ? decimalDisplay(exact, 0, 6) ?? '–' : '–';
+  }
+  /** Bounded comparison is allowed in JavaScript; the serialized value is never converted to float. */
+  private amount(value: string, allowZero: boolean): string | null {
+    try {
+      const amount = decimalInput(value);
+      if (!/^\\d+(?:\\.\\d{1,6})?$/.test(amount)) return null;
+      const range = Number(amount);
+      return range <= 1_000_000 && (range > 0 || allowZero) ? amount : null;
+    } catch { return null; }
   }
   permitted(mode: StockMode): boolean {
     if (!this.allowed() || !this.auth.can('stock-movements.write')) return false;
@@ -193,7 +205,7 @@ export class InventoryControlComponent {
       : role === 'ManagingDirector' || role === 'SiteManager';
   }
   switchMode(mode: StockMode): void {
-    this.mode = mode; this.sourceId = ''; this.quantity = null; this.unitCost = null; this.reason = '';
+    this.mode = mode; this.sourceId = ''; this.quantity = ''; this.unitCost = ''; this.reason = '';
     this.notice.set(''); this.error.set('');
   }
   selectMaterial(): void {
@@ -226,7 +238,7 @@ export class InventoryControlComponent {
         this.api.get<Page<Movement>>(`materials/${materialId}/movements?location=${encodeURIComponent(location)}&page=${this.page}`)
       ]);
       if (!this.current(gen, access)) return;
-      if (!Number.isFinite(balance.onHand) || !Number.isFinite(balance.reserved) || !Number.isFinite(balance.available)
+      if (![balance.onHand, balance.reserved, balance.available].every(x => typeof x === 'string' && /^-?\\d+(?:\\.\\d+)?$/.test(x))
         || !Array.isArray(history.items) || !Number.isInteger(history.total)) throw new Error('Unvollständiger Lagerstand vom Server.');
       this.balance.set(balance); this.movements.set(history.items); this.total.set(history.total);
     } catch (error) { if (this.current(gen, access)) this.error.set(errorMessage(error)); }
@@ -236,11 +248,10 @@ export class InventoryControlComponent {
     if (page < 1) return; this.page = page; this.sourceId = ''; void this.refresh();
   }
   canSubmit(): boolean {
-    if (!this.permitted(this.mode) || this.busy() || !this.balance() || !this.reason.trim() ||
-      this.quantity === null || !Number.isFinite(this.quantity)) return false;
-    if (this.mode === 'count') return this.quantity >= 0 && this.unitCost !== null && Number.isFinite(this.unitCost);
-    if (this.quantity <= 0) return false;
-    if (this.mode === 'transfer') return !!this.destination.trim() && this.unitCost !== null && Number.isFinite(this.unitCost);
+    if (!this.permitted(this.mode) || this.busy() || !this.balance() || !this.reason.trim()) return false;
+    if (this.mode === 'count') return this.amount(this.quantity, true) !== null && this.amount(this.unitCost, true) !== null;
+    if (this.amount(this.quantity, false) === null) return false;
+    if (this.mode === 'transfer') return !!this.destination.trim() && this.amount(this.unitCost, true) !== null;
     return !!this.sourceMovements().some(x => x.id === this.sourceId);
   }
   async submit(): Promise<void> {
@@ -249,21 +260,21 @@ export class InventoryControlComponent {
     this.busy.set(true); this.error.set(''); this.notice.set('');
     try {
       if (this.mode === 'count') await this.api.command(`materials/${this.materialId}/inventory-count`, {
-        location: this.location, expectedOnHand: this.balance()!.onHand, countedOnHand: this.quantity,
-        unitCost: this.unitCost, reason: this.reason.trim()
+        location: this.location, expectedOnHand: this.balance()!.onHand, countedOnHand: this.amount(this.quantity, true),
+        unitCost: this.amount(this.unitCost, true), reason: this.reason.trim()
       });
       else if (this.mode === 'transfer') await this.api.command(`materials/${this.materialId}/transfer`, {
-        fromLocation: this.location, toLocation: this.destination, quantity: this.quantity,
-        unitCost: this.unitCost, reason: this.reason.trim()
+        fromLocation: this.location, toLocation: this.destination, quantity: this.amount(this.quantity, false),
+        unitCost: this.amount(this.unitCost, true), reason: this.reason.trim()
       });
       else {
         const source = this.sourceMovements().find(x => x.id === this.sourceId);
         if (!source) throw new Error('Den Originalbeleg erneut auswählen.');
         await this.api.command(`stock-movements/${source.id}/${this.mode === 'supplierReturn' ? 'supplier-return' : 'project-return'}`,
-          { quantity: this.quantity, reason: this.reason.trim() }, source.revision);
+          { quantity: this.amount(this.quantity, false), reason: this.reason.trim() }, source.revision);
       }
       if (!this.current(gen, access)) return;
-      this.quantity = null; this.sourceId = ''; this.reason = '';
+      this.quantity = ''; this.sourceId = ''; this.reason = '';
       this.notice.set('Bestandsbewegung mit Buchungsbeleg erfasst. Bestand und Journal werden aktualisiert.');
     } catch (error) { if (this.current(gen, access)) this.error.set(errorMessage(error)); }
     finally { if (this.current(gen, access)) { this.busy.set(false); void this.refresh(); } }
