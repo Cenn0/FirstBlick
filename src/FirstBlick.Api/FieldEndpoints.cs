@@ -3,6 +3,7 @@ using FirstBlick.Core.Security;
 using FirstBlick.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace FirstBlick.Api;
 
@@ -52,6 +53,31 @@ public static class FieldEndpoints
             Guard.Text(location, nameof(location), 120);
             return Results.Ok(InventoryRules.Balance(c.Scope.TenantId, id, location, await c.Store.All<StockMovement>(ct), await c.Store.All<MaterialReservation>(ct)));
         });
+        api.MapGet("/materials/{id:guid}/movements", async (Guid id, [AsParameters] BusinessCommandServices c,
+            CancellationToken ct, string location = "", int page = 1) =>
+        {
+            await c.Commands.Authorize("stock-movements", false, ct);
+            await c.Current<Material>(id, ct, false);
+            Guard.Text(location, nameof(location), 120, false);
+            Guard.Require(page is >= 1 and <= 100_000, "invalid_page", "Page must be between 1 and 100000.");
+            const int pageSize = 25;
+            NpgsqlParameter[] Parameters() => [
+                new("tenant", c.Scope.TenantId), new("material", id.ToString("D")),
+                new("location", location)
+            ];
+            const string predicate = "\"" + "TenantId\"=@tenant AND \"Kind\"='stock-movements' AND NOT \"Archived\" AND \"Data\"->>'materialId'=@material AND (@location='' OR \"Data\"->>'location'=@location)";
+#pragma warning disable EF1002
+            var total = await c.Db.Database.SqlQueryRaw<long>(
+                $"SELECT count(*) AS \"Value\" FROM \"Entities\" WHERE {predicate}", Parameters()).SingleAsync(ct);
+            var paged = Parameters().Concat([new NpgsqlParameter("limit", pageSize),
+                new NpgsqlParameter("offset", checked((page - 1) * pageSize))]).ToArray();
+            var entries = await c.Db.Database.SqlQueryRaw<string>(
+                $"SELECT \"Data\"::text AS \"Value\" FROM \"Entities\" WHERE {predicate} ORDER BY \"CreatedAt\" DESC, \"Id\" DESC LIMIT @limit OFFSET @offset",
+                paged).ToListAsync(ct);
+#pragma warning restore EF1002
+            return Results.Ok(new { items = entries.Select(AppJson.Read<StockMovement>), total, page, pageSize });
+        }).WithTags("inventory");
+
         api.MapPost("/materials/{id:guid}/inventory-count", (Guid id, InventoryCountRequest body, [AsParameters] BusinessCommandServices c) =>
             c.Execute("stock-movements", "stock.inventory_count", body, async ct =>
             {
