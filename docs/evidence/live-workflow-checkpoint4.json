@@ -1,0 +1,256 @@
+{
+  "schemaVersion": 1,
+  "checkpoint": 4,
+  "syntheticDataOnly": true,
+  "capturedAt": "2026-10-20T05:20:48.803Z",
+  "repository": "https://github.com/Cenn0/FirstBlick",
+  "referenceCommitAtCapture": "1fed617159b0cb692bf034d74db486fe15912c6c",
+  "testedWorkingTree": true,
+  "frontendSourceSha256": "4ecbbb9df7cc9b97e1c666b0650f0527d5926068fd497f8cf16492093cba591c",
+  "sourceDigestDefinition": "SHA-256 of sorted web/src files plus package-lock.json, angular.json and ngsw-config.json; each relative POSIX path, NUL, raw bytes, NUL.",
+  "runtime": {
+    "angular": "22.2.3",
+    "playwright": "1.64.1",
+    "vitest": "5.0.5",
+    "node": "v24.19.0",
+    "chromium": "155.0.8059.84",
+    "api": "ASP.NET Core 10, Development, http://127.0.0.1:5080",
+    "frontend": "Angular development server http://127.0.0.1:4200 with same-origin API proxy",
+    "persistence": "Real PostgreSQL and versioned S3-compatible storage configured by the backend integration setup"
+  },
+  "validation": {
+    "productionBuild": {
+      "command": "npm run build",
+      "result": "passed",
+      "reportedInitialBundleKb": 367.07
+    },
+    "unit": {
+      "command": "npm test",
+      "runner": "Vitest",
+      "files": 4,
+      "passed": 25,
+      "failed": 0,
+      "skipped": 0,
+      "scope": [
+        "Durable offline outbox and conflict handling",
+        "Service worker shell-only caching policy",
+        "Stable identity for uncertain online mutations",
+        "Lossless decimal transport"
+      ]
+    },
+    "fixtureBrowser": {
+      "command": "npm run test:browser",
+      "usesApiFixtures": true,
+      "passed": 33,
+      "failed": 0,
+      "skipped": 0,
+      "projects": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
+      "casesPerProject": 11,
+      "observedResult": "33 passed (1.4m)",
+      "scope": [
+        "Accessible typed business forms",
+        "Tenant and CSRF headers",
+        "Deep quote snapshot with issued presentation digest",
+        "Approval requests",
+        "Partial goods receipt",
+        "Original file upload bytes and checksum staging",
+        "Immutable form publishing and submission",
+        "Password recovery URL token removal",
+        "Role-aware navigation and mobile keyboard focus"
+      ]
+    },
+    "liveBrowser": {
+      "command": "npm run test:live (FIRSTBLICK_LIVE_EMAIL and FIRSTBLICK_LIVE_PASSWORD supplied only through the environment)",
+      "usesApiFixtures": false,
+      "passed": 3,
+      "failed": 0,
+      "skipped": 0,
+      "durationMs": 45613.246,
+      "steps": [
+        "Authenticate with a real personal account",
+        "Create customer, building and active renovation project",
+        "Create and publish a 32 m² polygon with a 1 m² opening",
+        "Create an area measurement from the published 31 m² roof, document a 0.25 m² deduction and freeze 30.75 m²",
+        "Create and freeze a quote with server-calculated decimal-string amounts and frozen customer evidence",
+        "Accept the exact issued presentation digest and create its order",
+        "Prepare, edit and issue an invoice from that order",
+        "Generate a PDF document in the actual versioned object store",
+        "Download the PDF through the authenticated API, check its file signature and SHA-256 against stored metadata"
+      ],
+      "runs": [
+        {
+          "synthetic": true,
+          "completedAt": "2026-10-20T05:20:23.298Z",
+          "project": "desktop",
+          "viewport": {
+            "width": 1440,
+            "height": 1000
+          },
+          "runtime": {
+            "browser": "155.0.8059.84",
+            "node": "v24.19.0",
+            "origin": "http://127.0.0.1:4200"
+          },
+          "resourceIds": {
+            "customerId": "3aefda30-7473-47c5-b7a7-32546fbccd91",
+            "buildingId": "5bb6dc38-b6b9-47e1-8cc7-f4d70aecda61",
+            "projectId": "cf0cf472-c1f8-465f-a7a2-75335bd27786",
+            "roofRevisionId": "007f3deb-e242-4ced-a29c-afc30ceac99f",
+            "measurementId": "819f5644-492e-4a06-8cc5-1b335609757b",
+            "quoteId": "c4ecfc0e-946d-4a0c-b34c-d1ac3436c29f",
+            "orderId": "5b2ee9ec-48a5-4f4b-80d2-e729c6f2609a",
+            "invoiceId": "caf7ef95-fe0e-4810-b9da-55e3ace26651",
+            "documentId": "65b8139e-ae12-4c8b-b22d-32ef2793a0da"
+          },
+          "assertions": {
+            "realAuthentication": true,
+            "noApiInterception": true,
+            "tenantBoundCrud": true,
+            "roofNetAreaM2": 31,
+            "frozenMeasurementQuantity": "30.75",
+            "quantityUnit": "m²",
+            "issuedQuotePresentationMatchesCustomer": true,
+            "acceptanceUsesIssuedDigest": true,
+            "orderCreatedFromAcceptedQuote": true,
+            "invoiceIssuedFromOrder": true,
+            "documentState": "Ready",
+            "downloadHasPdfSignature": true,
+            "downloadSha256MatchesStoredMetadata": true,
+            "noHorizontalOverflow": true,
+            "browserErrors": []
+          },
+          "pdf": {
+            "name": "Rechnung-RE-2026-000002.pdf",
+            "size": 53959,
+            "expectedSha256": "5db48b3fc1bf4f75676f65b8acc6170b69b9052f0c1aea9101926fc141289300",
+            "downloadedSha256": "5db48b3fc1bf4f75676f65b8acc6170b69b9052f0c1aea9101926fc141289300"
+          }
+        },
+        {
+          "synthetic": true,
+          "completedAt": "2026-10-20T05:20:35.439Z",
+          "project": "tablet",
+          "viewport": {
+            "width": 1024,
+            "height": 768
+          },
+          "runtime": {
+            "browser": "155.0.8059.84",
+            "node": "v24.19.0",
+            "origin": "http://127.0.0.1:4200"
+          },
+          "resourceIds": {
+            "customerId": "163f07ee-d5b7-4f71-ba14-afa0b64a60d8",
+            "buildingId": "1b59fac6-eb03-4499-aa92-654abde5bb83",
+            "projectId": "e1c22048-3da3-4cf8-9e48-f92356ade6b2",
+            "roofRevisionId": "8478924d-c664-46e9-97cc-385a62beed0b",
+            "measurementId": "a548ceac-84ed-4c29-9934-394e7e75893c",
+            "quoteId": "3370736f-2f99-42ef-8883-4ff5c637bb04",
+            "orderId": "71cbb82c-41d7-4dbc-b155-49f28bb527d9",
+            "invoiceId": "44cd3254-9e0a-404f-9cc7-02e5a8dcdb02",
+            "documentId": "dd2e330d-9636-41b5-a391-5a4127e13c93"
+          },
+          "assertions": {
+            "realAuthentication": true,
+            "noApiInterception": true,
+            "tenantBoundCrud": true,
+            "roofNetAreaM2": 31,
+            "frozenMeasurementQuantity": "30.75",
+            "quantityUnit": "m²",
+            "issuedQuotePresentationMatchesCustomer": true,
+            "acceptanceUsesIssuedDigest": true,
+            "orderCreatedFromAcceptedQuote": true,
+            "invoiceIssuedFromOrder": true,
+            "documentState": "Ready",
+            "downloadHasPdfSignature": true,
+            "downloadSha256MatchesStoredMetadata": true,
+            "noHorizontalOverflow": true,
+            "browserErrors": []
+          },
+          "pdf": {
+            "name": "Rechnung-RE-2026-000003.pdf",
+            "size": 53873,
+            "expectedSha256": "6cf702bb69f21567582f35fd8899a7986e9eebbd9b35f11f8b6b2d4252e804fa",
+            "downloadedSha256": "6cf702bb69f21567582f35fd8899a7986e9eebbd9b35f11f8b6b2d4252e804fa"
+          }
+        },
+        {
+          "synthetic": true,
+          "completedAt": "2026-10-20T05:20:48.803Z",
+          "project": "mobile",
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "runtime": {
+            "browser": "155.0.8059.84",
+            "node": "v24.19.0",
+            "origin": "http://127.0.0.1:4200"
+          },
+          "resourceIds": {
+            "customerId": "f4e22098-f5a2-4188-87c0-5f1458dd1567",
+            "buildingId": "aab88c78-2f9b-45f9-8b5b-e81220958a1e",
+            "projectId": "35ead6b8-1a95-4844-b60a-b90edd465f15",
+            "roofRevisionId": "174cf13e-3ea6-4620-90dc-189f731593e8",
+            "measurementId": "b4927a37-3669-4991-8082-2f223a95fadd",
+            "quoteId": "be19b252-138f-470e-aa4c-efa35ad2f927",
+            "orderId": "1b2f8c2a-927e-41a5-8c66-c63668e13d3f",
+            "invoiceId": "aa6cf5ed-2f82-4234-baaf-0e106c2000a6",
+            "documentId": "72a62feb-08c3-4ca5-96b3-8ea8a58cd548"
+          },
+          "assertions": {
+            "realAuthentication": true,
+            "noApiInterception": true,
+            "tenantBoundCrud": true,
+            "roofNetAreaM2": 31,
+            "frozenMeasurementQuantity": "30.75",
+            "quantityUnit": "m²",
+            "issuedQuotePresentationMatchesCustomer": true,
+            "acceptanceUsesIssuedDigest": true,
+            "orderCreatedFromAcceptedQuote": true,
+            "invoiceIssuedFromOrder": true,
+            "documentState": "Ready",
+            "downloadHasPdfSignature": true,
+            "downloadSha256MatchesStoredMetadata": true,
+            "noHorizontalOverflow": true,
+            "browserErrors": []
+          },
+          "pdf": {
+            "name": "Rechnung-RE-2026-000004.pdf",
+            "size": 53874,
+            "expectedSha256": "1a1f7944d9658381630c5fe4f6d5de76e561e855efcf272a96f0b4d63c73ba90",
+            "downloadedSha256": "1a1f7944d9658381630c5fe4f6d5de76e561e855efcf272a96f0b4d63c73ba90"
+          }
+        }
+      ]
+    }
+  },
+  "visualReview": {
+    "reviewed": true,
+    "views": [
+      "Mobile overview",
+      "Mobile frozen measurement",
+      "Mobile stored invoice documents",
+      "Tablet published polygon roof",
+      "Desktop frozen measurement"
+    ],
+    "observations": [
+      "German labels and action controls remain readable",
+      "Mobile tables become structured rows without clipped values",
+      "Roof opening, gross area, deduction and net quantity are visible",
+      "Fixed navigation remains available; full-page captures retain its current viewport position"
+    ],
+    "automatedOverflowAssertion": "Final documents view on all three viewport configurations"
+  },
+  "limits": [
+    "Synthetic development workflow evidence, not a production rollout or legal/technical certification",
+    "The live run covers one renovation path, not every role, module or negative case",
+    "External communications providers are not exercised",
+    "PWA offline behavior is covered by the separate unit/fixture checks; the live journey runs online"
+  ],
+  "credentialsIncluded": false
+}

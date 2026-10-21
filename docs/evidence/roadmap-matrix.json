@@ -1,0 +1,834 @@
+{
+  "schema": "firstblick.roadmap-evidence/1.0.0",
+  "recordedAtUtc": "2026-10-20T09:41:20.226589+00:00",
+  "counts": {
+    "K": 49,
+    "T": 41,
+    "O": 10
+  },
+  "meaning": "K=declared technical core evidenced; T=partial; O=no accepted implementation. None means original-roadmap acceptance or production certification.",
+  "sources": {
+    "discovery-live": "docs/evidence/live-discovery-checkpoint7.json",
+    "discovery-ui-docs": "docs/discovery-ui.md",
+    "backend-seven": "docs/evidence/checkpoint7.json",
+    "cost-docs": "docs/cost-analysis.md",
+    "cost-model": "src/FirstBlick.Core/Business/CostAnalysis.cs",
+    "cost-api": "src/FirstBlick.Api/CostEndpoints.cs",
+    "cost-tests": "tests/FirstBlick.Core.Tests/Business/CostAnalysisTests.cs",
+    "cost-api-tests": "tests/FirstBlick.Api.Tests/CostApiTests.cs",
+    "discovery-api": "src/FirstBlick.Api/DiscoveryEndpoints.cs",
+    "discovery-access": "src/FirstBlick.Api/DiscoveryAccess.cs",
+    "discovery-docs": "docs/discovery-data-copy.md",
+    "discovery-tests": "tests/FirstBlick.Api.Tests/DiscoveryApiTests.cs",
+    "discovery-evidence": "docs/evidence/discovery-checkpoint7.json",
+    "quantity-model": "src/FirstBlick.Core/Business/QuantityLinks.cs",
+    "quantity-api": "src/FirstBlick.Api/QuantityEndpoints.cs",
+    "quantity-tests": "tests/FirstBlick.Core.Tests/Business/QuantityLinkTests.cs",
+    "quantity-api-tests": "tests/FirstBlick.Api.Tests/QuantityApiTests.cs",
+    "live-offline": "docs/evidence/live-offline-checkpoint7.json",
+    "session-access": "web/src/app/core/session-access.ts",
+    "container-restore": "docs/evidence/container-restore-drill.json",
+    "migration-docs": "docs/migration.md",
+    "migration-import": "tools/FirstBlick.Operations/MigrationImport.cs",
+    "migration-evidence": "docs/evidence/migration-drill.json",
+    "baseline": "docs/BASELINE.md",
+    "roadmap": "docs/ROADMAP.md",
+    "architecture": "docs/ARCHITECTURE.md",
+    "readme": "README.md",
+    "methods": "docs/technical-methods.md",
+    "jobs": "docs/jobs.md",
+    "integrations": "docs/integrations.md",
+    "operations": "docs/operations.md",
+    "backend-evidence": "docs/evidence/checkpoint6.json",
+    "live-renovation": "docs/evidence/live-workflow-checkpoint4.json",
+    "live-portal": "docs/evidence/live-portal-checkpoint5.json",
+    "integration-evidence": "docs/evidence/integrations-checkpoint.json",
+    "restore-evidence": "docs/evidence/restore-drill.json",
+    "restore-integrity": "docs/evidence/restore-drill-integrity.json",
+    "ci": ".github/workflows/ci.yml",
+    "api-program": "src/FirstBlick.Api/Program.cs",
+    "api-infrastructure": "src/FirstBlick.Api/ApiInfrastructure.cs",
+    "auth": "src/FirstBlick.Api/AuthEndpoints.cs",
+    "management": "src/FirstBlick.Api/ManagementEndpoints.cs",
+    "approvals": "src/FirstBlick.Api/ApprovalService.cs",
+    "business-api": "src/FirstBlick.Api/BusinessEndpoints.cs",
+    "commercial-api": "src/FirstBlick.Api/CommercialEndpoints.cs",
+    "field-api": "src/FirstBlick.Api/FieldEndpoints.cs",
+    "documents": "src/FirstBlick.Api/DocumentEndpoints.cs",
+    "technical-api": "src/FirstBlick.Api/TechnicalEndpoints.cs",
+    "portal-api": "src/FirstBlick.Api/PortalEndpoints.cs",
+    "integration-api": "src/FirstBlick.Api/IntegrationEndpoints.cs",
+    "record-policy": "src/FirstBlick.Api/RecordPolicy.cs",
+    "access": "src/FirstBlick.Core/Security/AccessRules.cs",
+    "foundation": "src/FirstBlick.Core/Business/Foundation.cs",
+    "projects": "src/FirstBlick.Core/Business/Projects.cs",
+    "commercial": "src/FirstBlick.Core/Business/Commercial.cs",
+    "planning": "src/FirstBlick.Core/Business/Planning.cs",
+    "inventory": "src/FirstBlick.Core/Business/Inventory.cs",
+    "finance": "src/FirstBlick.Core/Business/Finance.cs",
+    "supplier-finance": "src/FirstBlick.Core/Business/SupplierFinance.cs",
+    "operations-model": "src/FirstBlick.Core/Business/Operations.cs",
+    "training": "src/FirstBlick.Core/Business/TrainingAndForms.cs",
+    "roof-model": "src/FirstBlick.Core/Business/RoofMeasurements.cs",
+    "portal-model": "src/FirstBlick.Core/Business/Portal.cs",
+    "technical-record": "src/FirstBlick.Core/Business/TechnicalRecord.cs",
+    "roof-geometry": "src/FirstBlick.Core/Technical/RoofGeometry.cs",
+    "thermal": "src/FirstBlick.Core/Technical/ThermalCalculator.cs",
+    "bridges": "src/FirstBlick.Core/Technical/ThermalBridgeCalculator.cs",
+    "provenance": "src/FirstBlick.Core/Technical/CalculationProvenance.cs",
+    "csv": "src/FirstBlick.Core/Integrations/CsvV1.cs",
+    "bank-csv": "src/FirstBlick.Core/Integrations/BankCsvV1.cs",
+    "ledger-export": "src/FirstBlick.Core/Integrations/LedgerExport.cs",
+    "payroll-export": "src/FirstBlick.Core/Integrations/PayrollTimeExport.cs",
+    "store": "src/FirstBlick.Infrastructure/Persistence/EntityStore.cs",
+    "models": "src/FirstBlick.Infrastructure/Persistence/Models.cs",
+    "dbcontext": "src/FirstBlick.Infrastructure/Persistence/FirstBlickDbContext.cs",
+    "migration": "src/FirstBlick.Infrastructure/Persistence/Migrations/20261020043844_InitialSchema.cs",
+    "finance-read": "src/FirstBlick.Infrastructure/Persistence/FinanceReadModel.cs",
+    "service-registration": "src/FirstBlick.Infrastructure/ServiceRegistration.cs",
+    "worker": "src/FirstBlick.Infrastructure/OutboxProcessor.cs",
+    "object-store": "src/FirstBlick.Infrastructure/Storage/ObjectStore.cs",
+    "pdf": "src/FirstBlick.Infrastructure/Documents/BusinessPdf.cs",
+    "security-tests": "tests/FirstBlick.Api.Tests/SecurityApiTests.cs",
+    "regression-tests": "tests/FirstBlick.Api.Tests/AuthorizationRegressionTests.cs",
+    "document-tests": "tests/FirstBlick.Api.Tests/DocumentApiTests.cs",
+    "commercial-api-tests": "tests/FirstBlick.Api.Tests/CommercialApiTests.cs",
+    "worker-tests": "tests/FirstBlick.Api.Tests/WorkerTests.cs",
+    "portal-tests": "tests/FirstBlick.Api.Tests/PortalApiTests.cs",
+    "integration-tests": "tests/FirstBlick.Api.Tests/IntegrationApiTests.cs",
+    "commercial-tests": "tests/FirstBlick.Core.Tests/Business/CommercialTests.cs",
+    "operations-tests": "tests/FirstBlick.Core.Tests/Business/OperationsFormTests.cs",
+    "planning-tests": "tests/FirstBlick.Core.Tests/Business/PlanningInventoryTests.cs",
+    "supplier-tests": "tests/FirstBlick.Core.Tests/Business/SupplierFinanceTests.cs",
+    "ledger-tests": "tests/FirstBlick.Core.Tests/Business/LedgerTests.cs",
+    "roof-tests": "tests/FirstBlick.Core.Tests/Business/RoofMeasurementTests.cs",
+    "geometry-tests": "tests/FirstBlick.Core.Tests/Technical/RoofGeometryTests.cs",
+    "thermal-tests": "tests/FirstBlick.Core.Tests/Technical/ThermalTests.cs",
+    "csv-tests": "tests/FirstBlick.Core.Tests/Integrations/CsvAdapterTests.cs",
+    "payroll-tests": "tests/FirstBlick.Core.Tests/Integrations/PayrollExportTests.cs",
+    "routes": "web/src/app/app.routes.ts",
+    "styles": "web/src/styles.css",
+    "web-api": "web/src/app/core/api.service.ts",
+    "collections": "web/src/app/pages/collection.component.ts",
+    "workflow-ui": "web/src/app/pages/workflow-panel.component.ts",
+    "offline": "web/src/app/core/offline-store.ts",
+    "offline-tests": "web/tests/offline-store.test.ts",
+    "sw-tests": "web/tests/service-worker.test.ts",
+    "browser-tests": "web/tests/browser/workflows.spec.ts",
+    "attachments-eight": "docs/evidence/attachment-inventory-2026-10-20.json",
+    "backend-eight": "docs/evidence/checkpoint8-backend.json",
+    "observability": "docs/observability.md",
+    "operations-api-tests": "tests/FirstBlick.Api.Tests/OperationsApiTests.cs",
+    "telemetry-tests": "tests/FirstBlick.Api.Tests/TelemetryTests.cs",
+    "invoice-rounding": "docs/invoice-rounding.md",
+    "collections-docs": "docs/collections.md",
+    "checkpoint-nine": "docs/evidence/checkpoint9.json",
+    "checkpoint-nine-docs": "docs/checkpoint9.md",
+    "ui-nine": "docs/checkpoint8-ui.md",
+    "ci-eight": "docs/evidence/checkpoint8-ci.json",
+    "asset-check": "scripts/production_assets.py",
+    "container-smoke": "scripts/container-smoke.py"
+  },
+  "tasks": [
+    {
+      "id": "DP-00-01",
+      "status": "T",
+      "evidence": "[Baseline][baseline] hält den verglichenen Legacy-Commit und die unabhängige Neuimplementierung fest.",
+      "remaining": "Gleichheit mit dem zuletzt gehosteten Altstand ist nicht nachgewiesen; kein realer Produktionsstand wurde zusammengeführt.",
+      "title": "Aktuellen Quellstand zusammenführen"
+    },
+    {
+      "id": "DP-00-02",
+      "status": "T",
+      "evidence": "[Baseline][baseline], [Methodeninventar][methods] und [aktuelles Anhanginventar][attachments-eight] erfassen Quellgrenzen sowie sechs aktuell verfügbare, statisch per PE-Header und SHA-256 geprüfte Installer.",
+      "remaining": "Produktive D1-/R2-Exporte und reale Datensatz-/Dokumentvollständigkeit fehlen. Flachdach- und Steildach-Demo sind in dieser Übertragung nicht verfügbar; der ältere Flachdach-Befund bleibt ausdrücklich historisch.",
+      "title": "Daten und Dateien inventarisieren"
+    },
+    {
+      "id": "DP-00-03",
+      "status": "T",
+      "evidence": "[ROADMAP][roadmap] enthält alle 100 Kennungen; diese Matrix verknüpft sie mit Implementierung, Tests und Restlücken.",
+      "remaining": "Verbindliche Bestätigung der individuellen Berichtskriterien und Prioritäten durch den Betrieb fehlt.",
+      "title": "Verbindliche Anforderungsmatrix erstellen"
+    },
+    {
+      "id": "DP-00-04",
+      "status": "T",
+      "evidence": "[Baseline][baseline] beschreibt Sanierung/Reparatur/Wartung; [Core-Gesamtfall][operations-tests] und [echter Sanierungsbrowserlauf][live-renovation] decken einen synthetischen Sanierungspfad ab.",
+      "remaining": "Drei reale Betriebsabläufe samt Ausnahmen wurden nicht fachlich abgenommen; Reparatur/Wartung sind nicht als vollständige echte Browserketten belegt.",
+      "title": "Drei reale Betriebsabläufe modellieren (Sanierung, Reparatur, Wartung)"
+    },
+    {
+      "id": "DP-00-05",
+      "status": "K",
+      "evidence": "[Architekturentscheidungen][architecture] fixieren Stack, Mandanten, Offline, Audit und Nachweisgrenzen; [README][readme] legt Entwicklungsregeln offen.",
+      "remaining": "Rechteinhaberentscheidung zur Open-Source-Lizenz, Betreiberverantwortung und externe Datenrechte bleiben offen.",
+      "title": "Projektregeln und Entscheidungen dokumentieren"
+    },
+    {
+      "id": "DP-01-01",
+      "status": "K",
+      "evidence": "[Server-/Web-CI][ci], SDK-/Paket-Locks und [Backend-Checkpoint 6][backend-evidence] belegen automatisierte Tests mit verpflichtendem PostgreSQL; der [Container-Restore][container-restore] ist für einen früheren Containerstand grün.",
+      "remaining": "Der aktuelle finale Commit muss erneut durch alle Server-/Web- und Operations-Jobs laufen; die native kanonische Migrationsweiterentwicklung braucht ihren eigenen Container-Nachweis.",
+      "title": "Reproduzierbare Ausgangsbasis und neue CI herstellen"
+    },
+    {
+      "id": "DP-01-02",
+      "status": "K",
+      "evidence": "[Auth][auth], [Worker][worker], [Securitytests][security-tests] und [Regressionstests][regression-tests] trennen Einladung, Recovery und Passwortreset; parallele Recovery-Anfragen erzeugen einen Job.",
+      "remaining": "Konfigurierter echter E-Mail-Zustellweg und produktiver Kontowiederherstellungsprozess sind nicht ausgeführt.",
+      "title": "Aktivierung und Kontowiederherstellung trennen"
+    },
+    {
+      "id": "DP-01-03",
+      "status": "K",
+      "evidence": "[CommercialWorkflow][commercial] trennt QuoteStatus von DeliveryState; [Commercialtests][commercial-tests] und [Worker-PG-Tests][worker-tests] prüfen akzeptierte Angebote während Versand/Uncertainty.",
+      "remaining": "Providerzustellung ist synthetisch/fault-injiziert geprüft; keine tatsächliche Nachricht wurde verschickt.",
+      "title": "Angebotsstatus beim Versand erhalten"
+    },
+    {
+      "id": "DP-01-04",
+      "status": "K",
+      "evidence": "[Kalkulation][commercial] friert effektive Material-/Lohn-/Mengen-/Steuerwerte und Verkaufsdarstellung ein; [PDF-HTTP-Tests][document-tests] prüfen spätere Stammdatenänderung und Digestbindung.",
+      "remaining": "Betriebliche Kalkulations-/Steuerfälle müssen anhand eigener Referenzen abgenommen werden.",
+      "title": "Effektive Kalkulationswerte einfrieren"
+    },
+    {
+      "id": "DP-01-05",
+      "status": "K",
+      "evidence": "[API-Grenzen][api-program], [EntityStore][store], [Dokumentgrenzen][documents] und [CSV-Profil][csv] begrenzen JSON, Snapshots, Dateien und Importmengen; [Securitytests][security-tests]/[CSV-Tests][csv-tests] prüfen Ablehnung.",
+      "remaining": "Budgets sind technische Grenzen, keine repräsentative Last-/Speicherkostenmessung; große Fachdaten benötigen gesonderte Prüfung.",
+      "title": "Eingabe- und Speicherbudgets abstimmen"
+    },
+    {
+      "id": "DP-01-06",
+      "status": "K",
+      "evidence": "[Workerzustände][jobs], [Worker][worker], [Job-Klärungsbefehle][management] und [Crash-/Leasetests][worker-tests] machen mögliche externe Annahme dauerhaft Uncertain.",
+      "remaining": "Die fachliche Klärung einer realen Providerannahme benötigt Providerbeleg und verantwortliche Person; kein automatisches Exactly-once-Versprechen.",
+      "title": "Unklare Versandvorgänge auflösbar machen"
+    },
+    {
+      "id": "DP-01-07",
+      "status": "K",
+      "evidence": "[PlanningRules][planning] prüfen Abwesenheit/Zuordnung, Änderungen, Geräte und halb offene Zeitfenster; [Planungstests][planning-tests] testen beide Erstellungsreihenfolgen.",
+      "remaining": "Praxisdaten, Fahrzeiten und betriebliche Sonderregeln sind nicht abgenommen.",
+      "title": "Planungsinvarianten in beide Richtungen prüfen"
+    },
+    {
+      "id": "DP-01-08",
+      "status": "K",
+      "evidence": "[Finale Header-Middleware][api-program] und [Antiforgery-/Headertest][security-tests] decken Erfolgs- und Fehlerantworten ab.",
+      "remaining": "Produktive TLS-/Proxy-/Domain-Konfiguration und Browserpolitik am späteren öffentlichen Ziel bleiben zu prüfen.",
+      "title": "Finale Sicherheitsheader prüfen"
+    },
+    {
+      "id": "DP-02-01",
+      "status": "K",
+      "evidence": "[API-Start][api-program], [Angular-Routen][routes], Projektdateien und [echter Browserlauf][live-renovation] verbinden Angular 22 und ASP.NET Core 10 mit PostgreSQL/S3.",
+      "remaining": "Die lokale Entwicklungsinstanz ist keine öffentliche Produktivbereitstellung.",
+      "title": "C#-/Angular-Serverbasis aufsetzen"
+    },
+    {
+      "id": "DP-02-02",
+      "status": "T",
+      "evidence": "[Core-Fachmodule][foundation] sind von HTTP/Persistenz getrennt; [API-Start][api-program] bietet authentifiziertes OpenAPI v1; [Adaptervertrag][integrations] dokumentiert Binär-/CSV-Semantik.",
+      "remaining": "Vollständige maschinenlesbare Erfolgs-/Fehlerschemas und rückwärtskompatible OpenAPI-Vertragsprüfungen sind nicht für alle Endpunkte nachgewiesen.",
+      "title": "C#-Fachmodule und OpenAPI-Vertrag einführen"
+    },
+    {
+      "id": "DP-02-03",
+      "status": "K",
+      "evidence": "[DbContext][dbcontext], [Initialmigration][migration], tenantqualifizierte Fremdschlüssel und [Security-PG-Tests][security-tests] sichern Isolation auch unter Umgehung des EntityStore.",
+      "remaining": "Große Upgrade-/Downgradepfade, Produktionsmigration und belastbare Optimierung des JSONB-Lesemodells bleiben offen.",
+      "title": "PostgreSQL und EF-Core-Migrationen strukturieren"
+    },
+    {
+      "id": "DP-02-04",
+      "status": "K",
+      "evidence": "[EntityStore][store], [CommandExecutor][api-infrastructure] und [Worker][worker] verbinden Mutation/Audit/Receipt/Outbox atomar; [Worker-PG-Tests][worker-tests] prüfen SKIP LOCKED, Token-CAS und Absturzfälle.",
+      "remaining": "Audit ist Anwendungsevidenz, kein manipulationssicheres externes WORM-Archiv; nicht unterstützte Generierungsjobs schlagen ausdrücklich fehl.",
+      "title": ".NET-Worker, Outbox und atomaren Audit aufbauen"
+    },
+    {
+      "id": "DP-02-05",
+      "status": "K",
+      "evidence": "[Dokument-API][documents], [S3-Adapter][object-store], [PDF-Erzeugung][pdf], [Korruptionstests][document-tests] und [realer S3-Download][live-renovation] belegen Version/SHA/Größenbindung.",
+      "remaining": "Produktive Speicherpolitik, Malware-Prüfung und professionelle Dokumentvorlagen sind nicht vollständig abgenommen.",
+      "title": "C#-Dokumentendienst und Dateispeicher entwickeln"
+    },
+    {
+      "id": "DP-02-06",
+      "status": "T",
+      "evidence": "[SQL-paginierte Suche][discovery-api], [zentrale Datensatzrechte][discovery-access] und [Angular-Kontextschutz][ui-nine] bündeln begrenzte, mandantengefilterte Lesezugriffe. Rechte-/Betriebswechsel entwerten alte Listen, Details und Downloads; die [aktuellen Fixture-/Live-Nachweise][checkpoint-nine] trennen Fehlerfälle und echte Datenzugriffe.",
+      "remaining": "Kein repräsentativer Lastnachweis oder vollständiger globaler Suchindex. Abhängige Sammlungen der bestehenden RecordPolicy sowie anfängliche Rechnungsausgabe-Abfragen bleiben gesonderte Skalierungsgrenzen.",
+      "title": "API-Abfragen und Angular-Datenzugriff konsolidieren"
+    },
+    {
+      "id": "DP-02-07",
+      "status": "T",
+      "evidence": "[Konfiguration][service-registration], [Schlüssel][api-program] und [Betriebsbeobachtung][observability] ergänzen persistente Schlüssel um begrenzte Command-/Outbox-Metriken sowie einen mandantengebundenen Geschäftsführungs-Snapshot. [Vier Snapshot- und drei Metrikfälle][operations-api-tests] sind im [vollständigen Checkpoint-8-Lauf][backend-eight] enthalten.",
+      "remaining": "Externer Metrikexport, verteiltes Tracing, Alarmzustellung, reale Secret-Rotation, repräsentative Last und vereinbarte Betreiber-SLOs bleiben offen. Der Snapshot behauptet keine Worker-/Providerverfügbarkeit.",
+      "title": "Serverkonfiguration, Schlüssel und Beobachtbarkeit schaffen"
+    },
+    {
+      "id": "DP-03-01",
+      "status": "K",
+      "evidence": "[Identity-/Membership-Modelle][models], [Auth][auth], [Mandantenfilter][api-infrastructure] und [Securitytests][security-tests] trennen Person, bestätigtes Konto und aktive Betriebsmitgliedschaft.",
+      "remaining": "Produktive Kontoübernahme/Migration bleibt ein eigenständiger Nachweis; kein Kopieren alter Zugangsdaten wird als gelungen behauptet.",
+      "title": "ASP.NET-Identität und Betriebsmitgliedschaften trennen"
+    },
+    {
+      "id": "DP-03-02",
+      "status": "K",
+      "evidence": "[AccessRules][access], [RecordPolicy][record-policy], [CommandExecutor][api-infrastructure] und [Security-/Replaytests][regression-tests] erzwingen Rolle, Mandant und aktuelle persönliche Sicht.",
+      "remaining": "Neue Funktionen müssen diese serverseitigen Grenzen weiter explizit aufnehmen; Navigation allein ist kein Berechtigungsbeleg.",
+      "title": "Funktionsrechte serverseitig ausdrücken"
+    },
+    {
+      "id": "DP-03-03",
+      "status": "T",
+      "evidence": "[Mitgliederverwaltung][management] ermöglicht mehrere persönliche GF und Rollenänderungen; [Securitytests][security-tests] schützen den letzten aktiven GF.",
+      "remaining": "Zeitlich begrenzte/feingranulare Vollmachten und betriebliche Delegationsabnahme sind nicht implementiert bzw. belegt.",
+      "title": "Mehrere Geschäftsführer und Delegation ermöglichen"
+    },
+    {
+      "id": "DP-03-04",
+      "status": "K",
+      "evidence": "[ApprovalService][approvals] bindet Aktion, Objekt, Revision, Inhalt, Policy, Antragsteller und zweiten aktiven GF; [Vieraugentest][security-tests] prüft veraltete/abweichende Vorschläge.",
+      "remaining": "Unterstützt wird die dokumentierte Aktionsliste; ein alleiniger GF ist ausdrücklich ausgenommen. Beliebige Freigabeketten sind nicht implementiert.",
+      "title": "Konfigurierbare Vieraugenfreigabe implementieren"
+    },
+    {
+      "id": "DP-03-05",
+      "status": "K",
+      "evidence": "[Module und Abhängigkeiten][access], [Settings][management] und [Securitytests][security-tests] erlauben Historienlesen, sperren neue Aktionen und verbergen deaktivierte Kennzahlen.",
+      "remaining": "Betriebliche Modulpakete/Preise/Lizenzabrechnung sind nicht Gegenstand dieser Implementierung.",
+      "title": "Module pro Betrieb steuern"
+    },
+    {
+      "id": "DP-03-06",
+      "status": "K",
+      "evidence": "[Routen][routes], [Styles][styles], typisierte Seiten und [UI-Nachweise][live-portal] belegen responsive Bedienung auf drei Viewports.",
+      "remaining": "Keine vollständige Barrierefreiheitszertifizierung oder reale Geräte-/Browserabdeckung aller Funktionen.",
+      "title": "Angular-Oberfläche mit Routen und Designsystem aufbauen"
+    },
+    {
+      "id": "DP-03-07",
+      "status": "K",
+      "evidence": "[SecurityApiTests][security-tests], [Autorisierungsregressionen][regression-tests], [Export-Rollenmatrix][integration-tests] und [11 Discovery-PG-Fälle][discovery-evidence] prüfen direkte URLs, Tenant-FKs, persönliche Sicht und nach echtem Lock-Warten entzogene Mitgliedschaft.",
+      "remaining": "Die Suite ist keine unabhängige vollständige Penetrationsprüfung; neue Funktionen brauchen passende Negativfälle.",
+      "title": "Berechtigungsmatrix als Prüfsuite verankern"
+    },
+    {
+      "id": "DP-03-08",
+      "status": "K",
+      "evidence": "[Portalmodell][portal-model], [Portal-API][portal-api], [Portal-PG-Tests][portal-tests] und [echter Portalbrowserlauf][live-portal] geben benannten Partnern einzelne Inhalte mit Ablauf/Widerruf frei.",
+      "remaining": "Keine anonyme öffentliche Freigabe; tatsächliche Kundenorganisation und Praxisfreigabe fehlen.",
+      "title": "Externe Partner gezielt beteiligen"
+    },
+    {
+      "id": "DP-04-01",
+      "status": "T",
+      "evidence": "[Customer][projects] und typisierte CRM-Seiten in [Collection UI][collections] speichern Kontakt-, Adress- und Notizfelder; [echter Ablauf][live-renovation] legt Kunden an.",
+      "remaining": "Mehrere strukturierte Ansprechpartner, Kontakthistorien/Dublettenführung und betriebliches CRM-Fachmodell fehlen.",
+      "title": "CRM und Ansprechpartner ausbauen"
+    },
+    {
+      "id": "DP-04-02",
+      "status": "K",
+      "evidence": "[Building/Project][projects], [RoofRevision][roof-model], [Roof-/Aufmaßtests][roof-tests] und [Sanierungsnachweis][live-renovation] verbinden dauerhaftes Gebäude mit unveränderlichen Dachversionen.",
+      "remaining": "Reale Bestandsakten und Reparatur/Wartung über mehrere Projekte wurden nicht durchgängig abgenommen.",
+      "title": "Gebäude und dauerhafte Dachakte einführen"
+    },
+    {
+      "id": "DP-04-03",
+      "status": "T",
+      "evidence": "[Project/TaskItem][projects], Graphregeln in [Business API][business-api] und [echter Ablauf][live-renovation] bilden Projektbezüge, Typen/Status und Aufgaben ab.",
+      "remaining": "Komplexe Arbeitsstruktur, Projektvorlagen und betrieblich bestätigte Projektorganisation fehlen.",
+      "title": "Projekte und Arbeitsstruktur modellieren"
+    },
+    {
+      "id": "DP-04-04",
+      "status": "K",
+      "evidence": "[TaskItem][projects], Fristen im [Dashboard][business-api], [Projektverlauf][discovery-api] und [11 echte HTTP-/PG-Tests][discovery-evidence] verbinden Aufgaben mit aktuell zugänglichen Projekt-Ereignissen; [18 Fixtures und 3 echte Browserabläufe][discovery-live] prüfen die [Bedienoberfläche][discovery-ui-docs].",
+      "remaining": "Historische Projektverknüpfungen werden nicht rekonstruiert; umfassende automatische Erinnerungs- und betriebliche Abnahmeabläufe fehlen.",
+      "title": "Aufgaben, Fristen und Verlauf integrieren"
+    },
+    {
+      "id": "DP-04-05",
+      "status": "K",
+      "evidence": "[Dokument-API][documents] unterstützt Projektdateien mit opaque S3-Key, Version und SHA; [Dokumenttests][document-tests] und [Upload-UI-Tests][browser-tests] prüfen Originalbytes und Zugriff.",
+      "remaining": "Keine Dateikonvertierung, kooperative Planbearbeitung oder vollständige Schadsoftwareprüfung.",
+      "title": "Allgemeine Projektunterlagen bereitstellen"
+    },
+    {
+      "id": "DP-04-06",
+      "status": "K",
+      "evidence": "[Übergreifende Suche][discovery-api], [Archivierung][business-api] und [PG-Tests][discovery-tests] belegen sichere Titel-/Nummernfelder und Pagination nach aktuellen Rechten; [Browsernachweis][discovery-live] prüft Bedienung, private Notiz-Nichttreffer und den konkreten Projektverweis.",
+      "remaining": "Keine Inhalts-/OCR-Volltextsuche oder unveränderliche mehrseitige Suchmomentaufnahme; umfassende Aufbewahrungs-/Wiederherstellungsbedienung und betriebliche Fachabnahme bleiben offen.",
+      "title": "Übergreifende Suche und Archivierung ergänzen"
+    },
+    {
+      "id": "DP-05-01",
+      "status": "T",
+      "evidence": "[CatalogItem][projects] und [Pricing][commercial] verbinden Leistungsinputs mit einer einheitlichen Snapshotrechnung; [Kalkulationstests][commercial-tests] prüfen Rundung und Effektivwerte.",
+      "remaining": "Externe Katalogversionen, Lieferantenpreise/Importmapping und fachliche Katalogpflege fehlen.",
+      "title": "Kalkulations- und Leistungskatalog konsolidieren"
+    },
+    {
+      "id": "DP-05-02",
+      "status": "K",
+      "evidence": "[Quote/Order/Delivery][commercial], explizite [Kommandos][commercial-api] und [Commercial-/Worker-Tests][commercial-tests] trennen Entwurf, Ausgabe, Annahme, Vertrag und Versand.",
+      "remaining": "Vertragliche Rechtswirksamkeit einer tatsächlichen Annahme ist nicht durch technische Statusprüfungen allein belegt.",
+      "title": "Angebots- und Vertragszustände trennen"
+    },
+    {
+      "id": "DP-05-03",
+      "status": "T",
+      "evidence": "[Workflow-UI][workflow-ui], [frozen-party PDF-Tests][document-tests] und [echter Ablauf][live-renovation] erlauben Positionen, Ausgabe, Vorschau, Annahme und PDF.",
+      "remaining": "Professionelle Layout-/Textbaustein-/Positionsbearbeitung und alle praxisüblichen Angebotsvarianten sind nicht vollständig umgesetzt.",
+      "title": "Professionelle Angebotsbearbeitung ermöglichen"
+    },
+    {
+      "id": "DP-05-04",
+      "status": "K",
+      "evidence": "[CreateOrder][commercial], [Order-Kommando][commercial-api], [Parallel-/Snapshottests][commercial-api-tests] und [Live-Abfolge][live-renovation] erzeugen einen Auftrag aus genau der angenommenen Version.",
+      "remaining": "Externe Vertragsabnahme und Sonderfälle außerhalb des festgelegten Zustandsmodells bleiben separat.",
+      "title": "Auftrag aus angenommener Version erzeugen"
+    },
+    {
+      "id": "DP-05-05",
+      "status": "K",
+      "evidence": "[ChangeOrder][commercial], [Annahme-Kommando][commercial-api] und [Rechnungsgrenztests][commercial-tests] frieren Nachträge ein und beziehen akzeptierte Änderungen in abrechenbare Mengen ein.",
+      "remaining": "Komplette Änderungsverhandlung, Signatur und kundenseitige Nachtragsbedienung sind nicht als End-to-End-Ablauf belegt.",
+      "title": "Nachträge und Leistungsänderungen führen"
+    },
+    {
+      "id": "DP-05-06",
+      "status": "K",
+      "evidence": "[Quellengebundene Nachkalkulation][cost-docs], [Core/API][cost-api] und [Bedienung][ui-nine] verbinden angenommene Vertragsquellen mit freigegebener Zeit, bewerteten Lagerbewegungen und explizit zugeordneten Eingangsbelegen. Drei echte Fälle im [Checkpoint 9][checkpoint-nine] prüfen 380 EUR Istkosten, 480 EUR Prognose, 520 EUR Überschuss und den originalgetreuen JSON-Bericht.",
+      "remaining": "Bewertungen/Restprognose werden nicht dauerhaft als eigene Forecast-Versionen oder betriebsweit reservierte Kostenstellenzuordnung gebucht. Ohne belegte Vollständigkeit bleibt Ist/Prognose unbekannt; externe Fachabnahme fehlt.",
+      "title": "Soll, Ist und Prognose vergleichen"
+    },
+    {
+      "id": "DP-05-07",
+      "status": "T",
+      "evidence": "[CommercialApiTests][commercial-api-tests], [LedgerTests][ledger-tests] und [echter Sanierungsbrowserlauf][live-renovation] prüfen wichtige kommerzielle Ketten und Fehlerfälle.",
+      "remaining": "Kein realer, vollständig fachlich abgenommener Betriebsfall mit sämtlichen Planungs-, Material-, Abnahme- und Zahlungsvarianten.",
+      "title": "Kaufmännischen Referenzablauf absichern"
+    },
+    {
+      "id": "DP-06-01",
+      "status": "K",
+      "evidence": "[Planungsmodell][planning], Graph-/Editregeln in [Business API][business-api] und [Planungstests][planning-tests] prüfen Mitarbeiter-/Gerätebelegung sowie Abwesenheiten.",
+      "remaining": "Keine vollwertige grafische Disposition, Routenoptimierung oder realer Wochenplan-Abnahmefall.",
+      "title": "Disposition mit Zeitfenstern und Ressourcen aufbauen"
+    },
+    {
+      "id": "DP-06-02",
+      "status": "K",
+      "evidence": "[TimeEntry][planning], [Feldkommandos][field-api], [Zeit-/DST-Tests][planning-tests] und [Lohnexporttests][payroll-tests] sichern UTC-Intervalle, Pausen und Freigabe.",
+      "remaining": "Gesetzliche Arbeitszeitbewertung, Zuschläge und Lohnberechnung werden nicht behauptet.",
+      "title": "Zeiten, Pausen und Tätigkeiten erfassen"
+    },
+    {
+      "id": "DP-06-03",
+      "status": "T",
+      "evidence": "[DiaryEntry][operations-model], [persönliche Collection UI][collections] und [3 echte Offline-Arbeitstage][live-offline] belegen projekt-/mitarbeiterbezogene Tagesberichte mit Browserprozessneustart und genau einmaliger Übertragung.",
+      "remaining": "Vollständige Rapport-PDFs, fachliche Freigabeabläufe und ein tatsächlich im Betrieb abgenommener Baustellentag fehlen.",
+      "title": "Bautagebuch und Rapporte erstellen"
+    },
+    {
+      "id": "DP-06-04",
+      "status": "K",
+      "evidence": "[Defect/Acceptance][operations-model], [Feldkommandos][field-api] und [Abnahmetests][operations-tests] halten Mangelbehebung/-annahme und ausdrücklich offene Mängel fest.",
+      "remaining": "Signaturen, Beweissicherung im realen Streitfall und Praxisabnahme sind nicht nachgewiesen.",
+      "title": "Abnahme, Mangel und Nacharbeit führen"
+    },
+    {
+      "id": "DP-06-05",
+      "status": "T",
+      "evidence": "[Employee/Absence][planning], [Abwesenheitskommandos][field-api] und [Planungstests][planning-tests] bilden Personal, Anträge und Konflikte ab.",
+      "remaining": "Urlaubskonten, Überträge, Feiertags-/Tarifregeln und produktive Personaldatenmigration fehlen.",
+      "title": "Personal, Urlaub und Abwesenheit ergänzen"
+    },
+    {
+      "id": "DP-06-06",
+      "status": "T",
+      "evidence": "[TrainingRecord][training], [Reviewkommandos][field-api], [RecordPolicy][record-policy] und [Form-/Trainingtests][operations-tests] binden aktive Auszubildende, Mentor und Wochenbericht.",
+      "remaining": "Offizielles Berichtsheftformat, vollständiger Ausbildungs-/Schulablauf und tatsächliche Ausbildungsabnahme fehlen.",
+      "title": "Ausbildungsmodul umsetzen"
+    },
+    {
+      "id": "DP-06-07",
+      "status": "K",
+      "evidence": "[IndexedDB-Queue][offline], [Zugriffssignaturen][session-access] und [3 echte Offline-Arbeitstage][live-offline] belegen produktiven Shell-Service-Worker, kompletten Chromium-Neustart, erhaltene Mutation-Keys, persönliche Wiederanmeldung und genau einmalige Zeit-/Tagebuchübertragung.",
+      "remaining": "Synthetischer Ablauf auf drei Chromium-Viewports; Hardwareverlust, Storage-Eviction, jede reale Geräteplattform und vollständige betriebliche Ausnahmeszenarien sind nicht nachgewiesen.",
+      "title": "Angular-PWA und dauerhafte Offline-Synchronisierung bauen"
+    },
+    {
+      "id": "DP-06-08",
+      "status": "K",
+      "evidence": "[Checkpoint 9][checkpoint-nine] belegt 30 unterschiedliche echte Browserkombinationen: zehn Abläufe jeweils Desktop/Tablet/Mobil, darunter Rechnungen, Kosten, Forderungen, Mengen, Exporte, Portal, Discovery, Sanierung, Operations und vollständiger Offline-Browserneustart. Der reale Produktionshost und sein CSS/CSP werden zusätzlich geprüft.",
+      "remaining": "Viewports ersetzen keine reale Geräteflotte. Zusätzliche Fachrollen, reale Betriebsbedingungen und bisher nicht implementierte Roadmapmodule benötigen eigene Abnahmen.",
+      "title": "Mobile und Tablet-Abläufe praktisch prüfen"
+    },
+    {
+      "id": "DP-06-09",
+      "status": "K",
+      "evidence": "[FormDefinition/FormSubmission][training], [Feldkommandos][field-api], [Formtests][operations-tests] und [HTTP-Tests][commercial-api-tests] frieren Schemas und Antworten ein und verwerfen unbekannte/ungültige Felder.",
+      "remaining": "Kein beliebiges Skripting, komplexe Verzweigungslogik oder kundenspezifischer Formularimport.",
+      "title": "Eigene Formulare konfigurieren"
+    },
+    {
+      "id": "DP-07-01",
+      "status": "K",
+      "evidence": "[Supplier/Material][inventory], generische [CRUD-API][business-api] und [Einkaufstests][planning-tests] bilden Lieferanten-/Materialbezüge mit validierten Einheiten ab.",
+      "remaining": "Echte Stammdatenübernahme, externe Preislisten und Lieferantenabnahme fehlen.",
+      "title": "Lieferanten und Einkaufsstammdaten modellieren"
+    },
+    {
+      "id": "DP-07-02",
+      "status": "T",
+      "evidence": "[PurchaseOrder][inventory], [Issue-Kommando][field-api] und [ApprovalService][approvals] unterstützen prüfbare Bestellungen mit eingefrorenen Positionen.",
+      "remaining": "Automatische Bedarfsableitung aus Aufmaß/LV, umfassende Freigabeketten und ein Anbieter-Bestelladapter fehlen.",
+      "title": "Bedarf in geprüfte Bestellung überführen"
+    },
+    {
+      "id": "DP-07-03",
+      "status": "K",
+      "evidence": "[Receive/StockMovement][inventory], [Wareneingangskommando][field-api] und [PG-/Core-Tests][commercial-api-tests] verbuchen Teilmengen atomar mit Referenzen.",
+      "remaining": "Inventurdifferenzen, Rücklieferungen und alle lagerfachlichen Korrekturprozesse sind nicht vollständig belegt.",
+      "title": "Wareneingang und Bestandsbewegungen erfassen"
+    },
+    {
+      "id": "DP-07-04",
+      "status": "K",
+      "evidence": "[Reserve/Consume/Release][inventory], [Feldkommandos][field-api] und [Parallelreservierungstests][commercial-api-tests] verbinden Projektverbrauch und verfügbare Bestände.",
+      "remaining": "Automatische Mengenplanung/Bedarf aus Dachaufmaß und repräsentative Mehrlagerpraxis fehlen.",
+      "title": "Projektverbrauch und Reservierung verbinden"
+    },
+    {
+      "id": "DP-07-05",
+      "status": "T",
+      "evidence": "[Equipment][inventory] enthält Gerät/Fahrzeug, Kennzeichen, Ort, Prüfungstermin und Verfügbarkeit; [Planungstests][planning-tests] prüfen Ressourcenkollisionen.",
+      "remaining": "Wartungshistorie, Fahrtenbuch, Kilometer/Kosten, Prüfbelege und durchgängiger Flottenprozess fehlen.",
+      "title": "Geräte und Fahrzeuge verwalten"
+    },
+    {
+      "id": "DP-07-06",
+      "status": "T",
+      "evidence": "[PlanningInventoryTests][planning-tests] und [CommercialApiTests][commercial-api-tests] prüfen Teilwareneingang, Überreservierung, Verbrauch und unveränderliche Buchungen.",
+      "remaining": "Lieferdifferenz-/Rücklieferungs-/Inventurabläufe und vollständige betriebliche Einkaufsabnahme fehlen.",
+      "title": "Einkaufsablauf und Differenzen absichern"
+    },
+    {
+      "id": "DP-08-01",
+      "status": "T",
+      "evidence": "[Money/Pricing][commercial], [Invoice][finance], [kumulative Rechnungsarithmetik][invoice-rounding] und [SupplierInvoice][supplier-finance] erzwingen Cent-, Positions- und Summenregeln. 21 neue Core-Fälle prüfen Originalpositionsrundung, tatsächliche Vorbeträge und Centkorrekturen.",
+      "remaining": "Steuerfälle, Belegpflichtfelder und rechts-/anbieterbezogene Rechnungsprofile sind nicht vollständig spezifiziert oder extern abgenommen.",
+      "title": "Beleg- und Steuerregeln spezifizieren"
+    },
+    {
+      "id": "DP-08-02",
+      "status": "K",
+      "evidence": "[InvoiceWorkflow][finance] verwendet für neue Belege [kumulative Originalpositionsbeträge und eingefrorene Herleitung][invoice-rounding]. 21 Core-, fünf echte HTTP-/PG- und drei PDF-Fälle sind im [aktuellen vollständigen Serverlauf][backend-eight] enthalten. Legacy-Digests und Aufmaßherkunft bleiben prüfbar.",
+      "remaining": "Nullbetrag-Mengenabschluss, anfänglich tenantweit geladene Beleglisten, E-Rechnungsprofile und steuerliche Fachabnahme bleiben offen. Die kumulative Arithmetik ist kein zertifiziertes Rechnungsprofil.",
+      "title": "Ausgangsrechnungen und Korrekturen umsetzen"
+    },
+    {
+      "id": "DP-08-03",
+      "status": "O",
+      "evidence": "[Integrationsgrenzen][integrations] benennen XRechnung/ZUGFeRD ausdrücklich als nicht implementierte Provider-/Profilformate.",
+      "remaining": "Sichere profilversionierte XML-Validierung, Schematron/Regeln, Importvorschau und geprüfte strukturierte Ausgabe fehlen.",
+      "title": "Strukturierte E-Rechnungen verarbeiten"
+    },
+    {
+      "id": "DP-08-04",
+      "status": "K",
+      "evidence": "[Forderungsfälle][collections-docs] verbinden offenen Arbeitsvorrat, geprüfte Salden, manuelle Stufen, Kontakte, Streit-/Pausenzustände und Wiederöffnung. 18 Core-/elf PG-Fälle, 27 Clientfixtures und drei echte 119→99-EUR-Vorschauabläufe sind in [Checkpoint 8][backend-eight] und [Checkpoint 9][checkpoint-nine] belegt.",
+      "remaining": "Keine automatische Mahnzustellung, Gebühren-/Zinsberechnung, Rechtsprüfung oder historische as-of-Buchhaltung. Freigabe dokumentiert den internen Entwurf; ein tatsächlicher Kontakt wird separat mit Beleg erfasst.",
+      "title": "Offene Posten und Mahnwesen führen"
+    },
+    {
+      "id": "DP-08-05",
+      "status": "T",
+      "evidence": "[SupplierInvoice][supplier-finance], [Freigabekommandos][commercial-api] und [SupplierFinanceTests][supplier-tests] prüfen Eingangsrechnungen/-gutschriften und unabhängige Freigabe.",
+      "remaining": "Vollständiger Beleg-/OCR-/Profilprüfungsprozess, echte Lieferantenbelege und betriebliche Fachabnahme fehlen.",
+      "title": "Eingangsbelege prüfen und freigeben"
+    },
+    {
+      "id": "DP-08-06",
+      "status": "T",
+      "evidence": "[CSV-Bankadapter][bank-csv], [Integrations-API][integration-api] und [echte PG-Tests][integration-tests] importieren ausschließlich vorhandene Buchungen mit stabilen IDs und ohne Zahlungsauftrag.",
+      "remaining": "Automatische lesende Anbindung an einen tatsächlichen Bankanbieter samt Vertrag/Tokenverwaltung ist nicht implementiert.",
+      "title": "Bankdaten ausschließlich lesend anbinden"
+    },
+    {
+      "id": "DP-08-07",
+      "status": "K",
+      "evidence": "[PaymentWorkflow][finance], [PayablesWorkflow][supplier-finance], [Ledger-/Supplier-Tests][supplier-tests] und [PG-Konkurrenztests][commercial-api-tests] prüfen Teil-/Sammelzahlungen, Skonto, Einbehalt, Refund und Rücklastschrift.",
+      "remaining": "Praktische Bankreferenzdaten und vollständige fachliche Freigabe sämtlicher Geschäftsfälle fehlen.",
+      "title": "Zahlungsabgleich und Rücknahme implementieren"
+    },
+    {
+      "id": "DP-08-08",
+      "status": "T",
+      "evidence": "[Finanzexport][ledger-export], kumulative Rechnungen/Korrekturen und saldengebundene Forderungen sind mit Core-/PG-Fällen sowie echten [Rechnungs-, Forderungs- und Exportketten][checkpoint-nine] geprüft. Drei CSV/ZIP-Abläufe verifizieren tatsächlich heruntergeladene Exportbytes gegen ihre Manifeste.",
+      "remaining": "Kein Steuerberater-/Buchhaltungsanbieter-Abnahmetest oder produktiver Kontoabgleich; eigener CSV-Vertrag ist kein DATEV-Zertifikat.",
+      "title": "Finanzablauf und Exporte fachlich prüfen"
+    },
+    {
+      "id": "DP-09-01",
+      "status": "K",
+      "evidence": "[Portalmodell][portal-model], [API][portal-api], [Portaltests][portal-tests] und [echter Portalbrowserlauf][live-portal] beschränken persönliche Partner auf einzelne eingefrorene Verkaufsinhalte/Dokumente.",
+      "remaining": "Realer Kundenbetrieb und alle kommerziellen Portalvarianten sind nicht abgenommen.",
+      "title": "Kundenportal mit freigegebenen Inhalten aufbauen"
+    },
+    {
+      "id": "DP-09-02",
+      "status": "T",
+      "evidence": "[MaintenanceContract][operations-model], [complete-Kommando][field-api] und [Monatsende-/Enddatumtests][operations-tests] führen fällige Termine deterministisch fort.",
+      "remaining": "Durchgängige automatische Termin-/Arbeitsauftrag-/Checklistenanlage und realer Wartungsfall fehlen.",
+      "title": "Wartungsverträge und wiederkehrende Termine führen"
+    },
+    {
+      "id": "DP-09-03",
+      "status": "T",
+      "evidence": "[DeliveryAttempt][commercial], [Outbox][worker] und [PortalFeedback][portal-model] binden Versand/Rückfragen an Vorgang und freigegebenen Stand.",
+      "remaining": "Keine vollständige ein-/ausgehende Mail-/Chat-Konversationsakte oder produktive Providerhistorie.",
+      "title": "Kommunikation an Vorgänge binden"
+    },
+    {
+      "id": "DP-09-04",
+      "status": "K",
+      "evidence": "[NotificationPreference][operations-model], [Worker][worker] und [Benachrichtigungstests][worker-tests] prüfen persönliche Uhrzeit/Zeitzone/Wochentage sowie aktuelle Berechtigung.",
+      "remaining": "Zustellung über reale externe Anbieter ist nicht belegt; ruhende lokale Geräte erhalten keinen garantierten Push.",
+      "title": "Persönliche Benachrichtigungsregeln speichern"
+    },
+    {
+      "id": "DP-09-05",
+      "status": "T",
+      "evidence": "[SMTP-Adapter][worker] unterstützt konfiguriertes STARTTLS; [Worker-Tests][worker-tests] prüfen fehlende Konfiguration, Fehler und Uncertainty ohne echte Nachricht.",
+      "remaining": "Push- und WhatsApp-Anbindung sowie echter SMTP-Zustellnachweis fehlen; ungedeckte Kanäle melden keinen falschen Erfolg.",
+      "title": "Push, E-Mail und WhatsApp anbinden"
+    },
+    {
+      "id": "DP-09-06",
+      "status": "T",
+      "evidence": "[Briefingregeln][operations-model] und [Worker-PG-Tests][worker-tests] deduplizieren lokale Tage/DST und filtern aktuelle eigene Arbeit.",
+      "remaining": "Vollständiger echter Wartungs-/Morgenbriefingablauf über den gewählten Provider fehlt.",
+      "title": "Morgenbriefing und Wartungsablauf absichern"
+    },
+    {
+      "id": "DP-10-01",
+      "status": "K",
+      "evidence": "[RoofRevision/Measurement][roof-model], [Dach-/Aufmaßtests][roof-tests] und [Graphregression][regression-tests] sichern Gebäude, Vorgängerversion, Mengen und Einheiten.",
+      "remaining": "Betriebliche Dachdetail-/Vermessungsstandards und reale Bestandsakten bleiben zu prüfen.",
+      "title": "Fachmodell, Einheiten und Revisionen"
+    },
+    {
+      "id": "DP-10-02",
+      "status": "K",
+      "evidence": "[Geometriekern][roof-geometry], [unabhängige Geometrietests][geometry-tests] und [Live-Polygon][live-renovation] prüfen Ebenen, konkave Polygone, Öffnungen und Mengensummen.",
+      "remaining": "Keine 3D-Dachkonstruktion, automatische Flächenerkennung oder statische Nachweisrechnung.",
+      "title": "Einfache Dachgeometrie und Mengenkern"
+    },
+    {
+      "id": "DP-10-03",
+      "status": "K",
+      "evidence": "[Sechs Aufmaßtypen][roof-model], [Technical-API/PDF][technical-api], [49 Domänenfälle][roof-tests] und [echtes Freeze][live-renovation] speichern Dimensionen, Quellen, Abzüge und unveränderliche Digests.",
+      "remaining": "Vertragliche Abzugsregeln und Geländeaufmaßabnahme fehlen; der eigene PDF-Endpunkt ist nicht als eigener vollständiger Browser-PDF-Fall belegt.",
+      "title": "Aufmaß erfassen und nachweisen"
+    },
+    {
+      "id": "DP-10-04",
+      "status": "T",
+      "evidence": "[RoofDetail][roof-model] modelliert First/Traufe/Ortgang/Kehle/Grat sowie Durchdringung/Ablauf mit expliziter Länge/Zahl und Flächenbezug.",
+      "remaining": "Nur beschreibende Details; keine parametrischen technischen Bauteile oder daraus abgeleitete Entwässerungs-/Lastberechnung.",
+      "title": "Dachdetails und technische Bauteile"
+    },
+    {
+      "id": "DP-10-05",
+      "status": "T",
+      "evidence": "[Dokument-API][documents] nimmt Planunterlagen als geprüfte Dateien auf; [Geometrieeingaben][roof-geometry] sind explizit definiert.",
+      "remaining": "Kein DXF-/IFC-/Laser-/Drohnenadapter oder geprüfte Übernahme externer Aufmaße mit Koordinatentransformation.",
+      "title": "Externe Aufmaße und Planunterlagen"
+    },
+    {
+      "id": "DP-10-06",
+      "status": "K",
+      "evidence": "[QuantityEvidence/MaterialDemand][quantity-model] und [Mengentransfer-API][quantity-api] binden eingefrorene Aufmaßmengen an Angebot, gemessene Rechnung/Korrektur und Einkauf. Drei echte [UI-Fälle][checkpoint-nine] prüfen 10,8 m² Quellmenge, ausdrücklich umgerechnete 13,5 m² und genau einen Bestellentwurf samt Herkunft.",
+      "remaining": "Kein allgemeiner externer LV-/GAEB-Austausch, normative Produkt-/Verschnittregel oder reale betriebliche Mengenabnahme.",
+      "title": "Mengen, Material und Leistungsverzeichnis verbinden"
+    },
+    {
+      "id": "DP-11-01",
+      "status": "T",
+      "evidence": "[Methoden-/Rechteinventar][methods] trennt elementare Mathematik, öffentliche Normmetadaten, Herstellerdaten und statische Installerbefunde.",
+      "remaining": "Lizenzierte Normvolltexte/Herstellerdaten, Rechteklärung und unabhängige fachliche Referenzabnahme fehlen.",
+      "title": "Verfahren, Datenstände und Nutzungsrechte klären"
+    },
+    {
+      "id": "DP-11-02",
+      "status": "K",
+      "evidence": "[Provenance][provenance], [TechnicalRecord][technical-record], [Technical-API/PDF][technical-api] und [JSONB-Regressionsfälle][regression-tests] frieren Methode/Input/Resultat/Digest ein.",
+      "remaining": "Nur deklarierte elementare Verfahren; keine generelle Fachsoftware- oder normative Berichtszertifizierung.",
+      "title": "Rechenkern und nachvollziehbare Ergebnisberichte"
+    },
+    {
+      "id": "DP-11-03",
+      "status": "T",
+      "evidence": "[ThermalCalculator][thermal], [ThermalBridgeCalculator][bridges] und [unabhängige Thermiktests][thermal-tests] berechnen homogene Serien, ideale parallele Pfade und externe psi/chi-Summen.",
+      "remaining": "Vollständige ISO-6946-Verfahren, Luftschichten/Korrekturen, reale Materialdaten und normative Sparrendachprüfung fehlen.",
+      "title": "U-Wert und thermische Aufbauten"
+    },
+    {
+      "id": "DP-11-04",
+      "status": "O",
+      "evidence": "[Methodengrenzen][methods] dokumentieren, warum eine U-Wert-Rechnung kein Feuchteschutznachweis ist.",
+      "remaining": "DIN-4108-3-/ISO-13788-Verfahrenswahl, Tauwasser/Trocknung und hygrothermische Simulation sind nicht implementiert.",
+      "title": "Feuchteschutz und Verfahrensgrenzen"
+    },
+    {
+      "id": "DP-11-05",
+      "status": "O",
+      "evidence": "[Methodengrenzen][methods] benennen Gefälledämmung/Verlegeplanung als offen.",
+      "remaining": "Herstellergebundene Gefälleplatten, Entwässerungsgeometrie, Zuschnitt/Verlegeoptimierung und unabhängige Fälle fehlen.",
+      "title": "Gefälledämmung und Verlegeplanung"
+    },
+    {
+      "id": "DP-11-06",
+      "status": "O",
+      "evidence": "[Methodengrenzen][methods] schließen Wind-/Befestigungsnachweise aus.",
+      "remaining": "Zonen-/Standortdaten, Regelwerk, Lastkombinationen, Befestiger-/Untergrunddaten und geprüfte Nachweise fehlen.",
+      "title": "Windlast und Befestigung"
+    },
+    {
+      "id": "DP-11-07",
+      "status": "O",
+      "evidence": "[Dachdetails][roof-model] können einen Ablauf nur beschreiben; [Methodengrenzen][methods] unterscheiden dies von Dimensionierung.",
+      "remaining": "Haupt-/Notentwässerung mit Regendaten, Fließwegen, hydraulischen Grenzen und unabhängigen Referenzen fehlt.",
+      "title": "Haupt- und Notentwässerung"
+    },
+    {
+      "id": "DP-11-08",
+      "status": "O",
+      "evidence": "[Geometriekern][roof-geometry] berechnet einfache geneigte Ebenen; [Methodengrenzen][methods] schließen Tragwerksaussagen aus.",
+      "remaining": "Schnee, Steildachkonstruktion, tragende Verbindungen und konstruktive Nachweise fehlen.",
+      "title": "Steildach, Schnee und konstruktive Nachweise"
+    },
+    {
+      "id": "DP-11-09",
+      "status": "O",
+      "evidence": "[Methodengrenzen][methods] führen Photovoltaik ausdrücklich als offenen Fachbereich.",
+      "remaining": "Modulbelegung/Verschattung, Befestigung/Last, Elektroplanung und Hersteller-/Standortdaten fehlen.",
+      "title": "Photovoltaik als Dachplanungsmodul"
+    },
+    {
+      "id": "DP-11-10",
+      "status": "O",
+      "evidence": "[Statisches Installerinventar][methods] enthält weder ausgeführte Demoalgorithmen noch kopierte Herstellerdaten.",
+      "remaining": "Fachsoftwareadapter, lizenzierte Datenaustauschverträge und unabhängiger vollständiger Flach-/Steildachvergleich fehlen.",
+      "title": "Fachsoftwareintegration und Gesamtprüfung"
+    },
+    {
+      "id": "DP-12-01",
+      "status": "K",
+      "evidence": "[Versionierte CSV-/Exportverträge][integrations], [Core-/PG-Nachweise][integration-evidence] und drei echte [UI-Ketten][checkpoint-nine] prüfen Vorschau, ausdrücklich ausgelösten Import, stabile Duplikat-IDs, atomare Konfliktablehnung und verifizierte Exportpakete.",
+      "remaining": "Weitere Provider benötigen eigene Profile, Identitäts-/Idempotenzregeln und geprüfte Fixtures.",
+      "title": "Integrationsverträge und Adapterbasis definieren"
+    },
+    {
+      "id": "DP-12-02",
+      "status": "O",
+      "evidence": "[Integrationsgrenzen][integrations] erklären fehlende stabile externe Katalog-/Versionsidentität.",
+      "remaining": "GAEB und Material-/Leistungskatalogimport mit geprüften Versionen/Zuordnungen sind nicht implementiert.",
+      "title": "GAEB und Material-/Leistungskataloge anbinden"
+    },
+    {
+      "id": "DP-12-03",
+      "status": "T",
+      "evidence": "[LedgerExport][ledger-export], [PayrollTimeExport][payroll-export] und [echte Exporttests][integration-tests] liefern IDs/Digests/Korrekturen sowie exakte UTC-Pausen-/DST-Segmente.",
+      "remaining": "Keine providerfertige Buchungsschnittstelle/Lohnabrechnung, Kontierung, Steuer-/Tariflogik oder Providerabnahme.",
+      "title": "Buchhaltungs- und Lohnexporte umsetzen"
+    },
+    {
+      "id": "DP-12-04",
+      "status": "T",
+      "evidence": "[API v1][api-program] und [Adapterdokumentation][integrations] dokumentieren Auth, Formate und `firstblick.integration-event/1.0.0` in Importreceipts.",
+      "remaining": "Keine externe Ereignissubskription/Webhookauslieferung oder vollautomatisierte OpenAPI-Kompatibilitätsprüfung.",
+      "title": "Dokumentierte API und Ereignisse bereitstellen"
+    },
+    {
+      "id": "DP-12-05",
+      "status": "T",
+      "evidence": "[Integrationswartung][integrations] fordert Versions-/Rechte-/Fixture-/Ablehnungsregeln; Locks/CI sichern Änderungen an der eigenen Implementierung.",
+      "remaining": "Benannte Providerverantwortliche, Versionsmonitoring und konkret freigegebene Fremdprofile fehlen.",
+      "title": "Format- und Anbieterwartung etablieren"
+    },
+    {
+      "id": "DP-13-01",
+      "status": "K",
+      "evidence": "[Backup/Restore][operations], [nativer Drill][restore-evidence], [PG18.6-Container-Drill][container-restore] und [Integritätsmanifest][restore-integrity] belegen Zeilen, historische S3-Versionen, Keyring und kontrollierte Recovery-Sperre/Wiederaufnahme.",
+      "remaining": "Beide Drills verwenden nur 20 Tabellen/36 Zeilen und zwei S3-Versionen. Repräsentative Produktions-RPO/RTO, externer Sicherungsbetrieb und der abschließende aktuelle Containerlauf bleiben separat.",
+      "title": "Backup und vollständigen Restore implementieren"
+    },
+    {
+      "id": "DP-13-02",
+      "status": "T",
+      "evidence": "[Self-Service-Datenkopie][discovery-docs] mit [11 HTTP-/PG-Fällen][discovery-evidence], [drei echten UI-Downloads][discovery-live] einschließlich ZIP-/Manifest-SHA und [Offline-Purge-Tests][offline-tests] ergänzen die Konten-/Mandantentrennung.",
+      "remaining": "Keine vollständige datenschutzrechtliche Auskunft: Archiv-/Anhangsdaten und andere Kategorien fehlen; Lösch-/Aufbewahrungsregeln, Auskunftskonflikte, Betreibervereinbarungen und fachliche Datenschutzabnahme bleiben offen.",
+      "title": "Datenschutz und Datenlebenszyklus ausarbeiten"
+    },
+    {
+      "id": "DP-13-03",
+      "status": "T",
+      "evidence": "[Budgets][api-program], [Outbox-Fehlerfälle][worker-tests] und [Betriebsmetriken][observability] liefern begrenzte Fehler-/Zeitnachweise. Der neue [Production-Assetcheck][asset-check] erkennt tatsächlich von CSP blockierte Bildschirm-Styles und ist in den [Container-Smoke][container-smoke] eingebunden.",
+      "remaining": "Keine repräsentativen Datenmengen, Last-/Kostenmodelle, Kapazitätsgrenzen, externe Alarmierung oder gemessenen Betriebsausfall-SLOs.",
+      "title": "Last, Kosten und Betriebsfehler messen"
+    },
+    {
+      "id": "DP-13-04",
+      "status": "T",
+      "evidence": "[Kanonische Migration][migration-docs], [Import-/Prüfwerkzeug][migration-import] und [echter Migrationsdrill][migration-evidence] übernehmen 2 Mandanten/19 Entitäten/2 Dateien, kontrollieren Salden/Hashes/Nummern und weisen 11 negative Quellenfälle zurück; Wiederholung erzeugt keine neuen DB-/S3-Schreibvorgänge.",
+      "remaining": "Der synthetische kanonische Export ersetzt keinen verfügbaren tatsächlichen D1-/R2-Export, bestätigte Quelladapter-/Ownershipzuordnung, echte Quellkontrollsummen oder eine reale Cutover-Abnahme.",
+      "title": "Wiederholbare Datenmigration bauen"
+    },
+    {
+      "id": "DP-13-05",
+      "status": "T",
+      "evidence": "[Operations-Runbook][operations] beschreibt isoliertes Ziel, Schreibstopp, Schlüssel, Verifikation und Rückfall; [Restore-Drill][restore-evidence] prüft Zielschutz.",
+      "remaining": "Tatsächliche Umschaltung/DNS/Proxy, Writes nach Umschaltung und Rückkehr mit repräsentativen Bestandsdaten sind nicht geprobt.",
+      "title": "Umschaltung und Rückkehr proben"
+    },
+    {
+      "id": "DP-13-06",
+      "status": "T",
+      "evidence": "[Checkpoint 8][backend-eight] mit 377 Serverfällen und [erfolgreichen eigenen CI-/Container-/Restore-/Migrationsläufen][ci-eight] sowie [Checkpoint 9][checkpoint-nine] mit 45 Units, 216 Clientfixtures und 30 unterschiedlichen echten Browserkombinationen dokumentieren die aktuellen getrennten Umfänge.",
+      "remaining": "Kein finaler Gesamtnachweis aller 100 Aufgaben. Der jeweils abschließende veröffentlichte Commit benötigt seine eigenen in PR #1 verlinkten CI-/Operations-Ergebnisse; echte Altquelle, reale Betriebsfälle und externe Fachabnahmen bleiben offen.",
+      "title": "Gesamtfälle und Wartungsdokumentation abschließen"
+    },
+    {
+      "id": "DP-14-01",
+      "status": "T",
+      "evidence": "[Dashboard][business-api], [Finanzlesemodell][finance-read], [Kostenbericht][cost-docs] und [Betriebsübersicht][observability] verknüpfen klar definierte Zustände bzw. Beträge mit ihren prüfbaren Quellen; [Checkpoint 9][checkpoint-nine] ergänzt echte UI-Nachweise.",
+      "remaining": "Vollständiger KPI-Katalog, zeitliche Vergleichsreihen, abgestimmte betriebliche Kennzahlendefinitionen und frei wählbare Analysen fehlen.",
+      "title": "Kennzahlen definieren und verlinken"
+    },
+    {
+      "id": "DP-14-02",
+      "status": "T",
+      "evidence": "[Versionierte CSV-Pakete][integrations] und [quellengebundener Kostenbericht][cost-docs] liefern prüfbare Detaildaten; die neue [Exportbedienung][ui-nine] ist mit tatsächlichen Downloads und Manifest-/Digestprüfung im [Checkpoint 9][checkpoint-nine] belegt.",
+      "remaining": "Breitere frei konfigurierbare Auswertungen und interaktive Trends fehlen; die vorhandenen Berichte sind ausdrücklich definierte Einzelverträge.",
+      "title": "Auswertungen und Datenexport ergänzen"
+    },
+    {
+      "id": "DP-14-03",
+      "status": "O",
+      "evidence": "[Architekturgrenzen][architecture] unterscheiden überprüfbare Fachlogik von ungeprüften Schlussfolgerungen.",
+      "remaining": "Ein optionales Assistenzsystem mit Provenienz, Freigaben, Evaluation, Kosten- und Datenschutzkontrolle ist nicht implementiert.",
+      "title": "Optionale Assistenz kontrolliert integrieren"
+    }
+  ]
+}

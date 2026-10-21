@@ -1,0 +1,231 @@
+{
+  "schemaVersion": 1,
+  "checkpoint": 5,
+  "syntheticDataOnly": true,
+  "capturedAt": "2026-10-20T05:46:37.210Z",
+  "repository": "https://github.com/Cenn0/FirstBlick",
+  "referenceCommitAtCapture": "b27e04826289ec334901911602a74ccdb1aa53d3",
+  "testedWorkingTree": true,
+  "frontendSourceSha256": "6a229b264b4572a577b6687b1534939ff0385fe042da2891d6801b9965f09a65",
+  "sourceDigestDefinition": "SHA-256 of sorted web/src files plus package-lock.json, angular.json and ngsw-config.json; each relative POSIX path, NUL, raw bytes, NUL.",
+  "runtime": {
+    "angular": "22.2.3",
+    "playwright": "1.64.1",
+    "vitest": "5.0.5",
+    "node": "v24.19.0",
+    "chromium": "155.0.8059.84",
+    "api": "ASP.NET Core 10, Development, http://127.0.0.1:5080",
+    "frontend": "Angular development server http://127.0.0.1:4200 with same-origin API proxy",
+    "persistence": "Real PostgreSQL and versioned S3-compatible storage"
+  },
+  "validation": {
+    "productionBuild": {
+      "command": "npm run build",
+      "result": "passed",
+      "reportedInitialBundleKb": 371.85
+    },
+    "unit": {
+      "command": "npm test",
+      "runner": "Vitest",
+      "files": 5,
+      "passed": 28,
+      "failed": 0,
+      "skipped": 0,
+      "newScope": "Selling-value projection excludes calculation inputs/internal identifiers and retains decimal strings"
+    },
+    "fixtureBrowser": {
+      "command": "npm run test:browser",
+      "usesApiFixtures": true,
+      "passed": 45,
+      "failed": 0,
+      "skipped": 0,
+      "projects": [
+        "desktop",
+        "tablet",
+        "mobile"
+      ],
+      "casesPerProject": 15,
+      "newCasesPerProject": 4,
+      "observedResult": "45 passed (1.2m)",
+      "newScope": [
+        "Partner-only navigation and selling values",
+        "Explicit acceptance uses quote revision; feedback uses share revision",
+        "Refresh removes revoked open details",
+        "Internal grant reviews exact source and recipient",
+        "Mismatching downloaded content hash produces no file download"
+      ]
+    },
+    "liveBrowser": {
+      "command": "npm run test:live -- tests/live/portal.spec.ts (synthetic credentials supplied through FIRSTBLICK_LIVE_EMAIL/PASSWORD and FIRSTBLICK_LIVE_PARTNER_EMAIL/PASSWORD)",
+      "usesApiFixtures": false,
+      "passed": 3,
+      "failed": 0,
+      "skipped": 0,
+      "observedResult": "3 passed (57.0s)",
+      "runs": [
+        {
+          "synthetic": true,
+          "completedAt": "2026-10-20T05:46:08.781Z",
+          "project": "desktop",
+          "viewport": {
+            "width": 1440,
+            "height": 1000
+          },
+          "runtime": {
+            "browser": "155.0.8059.84",
+            "node": "v24.19.0",
+            "origin": "http://127.0.0.1:4200"
+          },
+          "setup": "Authenticated real HTTP creates customer, building, project, issued quote and versioned PDF; all portal operations use rendered UI.",
+          "resourceIds": {
+            "tenantId": "33ee2861-9964-4a1e-864b-43dbef4e68ec",
+            "partnerUserId": "418ded0c-4e59-4198-bdc3-601e815058a3",
+            "customerId": "0efc1ee2-141d-4861-ba0a-df1ab40fee35",
+            "projectId": "1a4e5c3c-0587-4630-92fb-7768912467c2",
+            "quoteId": "206963e3-0ef2-4eff-b91f-53ca0ef4f25e",
+            "quoteShareId": "6706a998-68b7-4a17-a7fd-6b05d484f953",
+            "documentId": "afaf3bff-2561-4ace-b74a-455296c34d5e",
+            "documentShareId": "899e6216-555c-436d-a69f-93cace30d8b2"
+          },
+          "assertions": {
+            "realPersonalAuthentication": true,
+            "noApiInterception": true,
+            "noPrivateRecordRequests": true,
+            "publicResponseContainsOnlySellingValues": true,
+            "explicitConsentRequired": true,
+            "acceptanceUsesIssuedDigest": true,
+            "acceptanceUsesQuoteRevision": true,
+            "feedbackUsesShareRevision": true,
+            "bothSidesSeeVersionBoundConversation": true,
+            "documentSha256MatchesReleasedVersion": true,
+            "revocationRemovesOpenDetails": true,
+            "revocationBlocksAuthenticatedDownload": true,
+            "noHorizontalOverflow": true,
+            "browserErrors": []
+          },
+          "pdf": {
+            "name": "Angebot-AN-2026-000008.pdf",
+            "size": 53718,
+            "expectedSha256": "892d29c9a3a2f5488bdaab3514936524944ca5abd6becd6c76c0aeff3e113b1f",
+            "downloadedSha256": "892d29c9a3a2f5488bdaab3514936524944ca5abd6becd6c76c0aeff3e113b1f"
+          }
+        },
+        {
+          "synthetic": true,
+          "completedAt": "2026-10-20T05:46:25.178Z",
+          "project": "tablet",
+          "viewport": {
+            "width": 1024,
+            "height": 768
+          },
+          "runtime": {
+            "browser": "155.0.8059.84",
+            "node": "v24.19.0",
+            "origin": "http://127.0.0.1:4200"
+          },
+          "setup": "Authenticated real HTTP creates customer, building, project, issued quote and versioned PDF; all portal operations use rendered UI.",
+          "resourceIds": {
+            "tenantId": "33ee2861-9964-4a1e-864b-43dbef4e68ec",
+            "partnerUserId": "418ded0c-4e59-4198-bdc3-601e815058a3",
+            "customerId": "f1f03ac0-835d-4e7d-8047-0c1865d95e98",
+            "projectId": "287e6058-dca8-45e5-82ef-cede244361c7",
+            "quoteId": "33b25b29-3feb-47a7-a4b2-54a458273303",
+            "quoteShareId": "a9ba3cfc-a5b5-4d68-83af-14c8c054115a",
+            "documentId": "83b20951-f47d-4059-95d9-db186e8ee563",
+            "documentShareId": "c0082f22-6e06-4098-a095-b233456294f8"
+          },
+          "assertions": {
+            "realPersonalAuthentication": true,
+            "noApiInterception": true,
+            "noPrivateRecordRequests": true,
+            "publicResponseContainsOnlySellingValues": true,
+            "explicitConsentRequired": true,
+            "acceptanceUsesIssuedDigest": true,
+            "acceptanceUsesQuoteRevision": true,
+            "feedbackUsesShareRevision": true,
+            "bothSidesSeeVersionBoundConversation": true,
+            "documentSha256MatchesReleasedVersion": true,
+            "revocationRemovesOpenDetails": true,
+            "revocationBlocksAuthenticatedDownload": true,
+            "noHorizontalOverflow": true,
+            "browserErrors": []
+          },
+          "pdf": {
+            "name": "Angebot-AN-2026-000009.pdf",
+            "size": 53561,
+            "expectedSha256": "ed4113f8af70611d377b893b78fddf29232af36c40d8acc73e0276c9b73f811d",
+            "downloadedSha256": "ed4113f8af70611d377b893b78fddf29232af36c40d8acc73e0276c9b73f811d"
+          }
+        },
+        {
+          "synthetic": true,
+          "completedAt": "2026-10-20T05:46:37.210Z",
+          "project": "mobile",
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "runtime": {
+            "browser": "155.0.8059.84",
+            "node": "v24.19.0",
+            "origin": "http://127.0.0.1:4200"
+          },
+          "setup": "Authenticated real HTTP creates customer, building, project, issued quote and versioned PDF; all portal operations use rendered UI.",
+          "resourceIds": {
+            "tenantId": "33ee2861-9964-4a1e-864b-43dbef4e68ec",
+            "partnerUserId": "418ded0c-4e59-4198-bdc3-601e815058a3",
+            "customerId": "db1ef2dc-476c-4fc5-9d79-e62a76098d72",
+            "projectId": "a72d793d-b3e1-401b-9382-784ea7186ba7",
+            "quoteId": "327ce7ed-ac1f-4d63-9849-f14e10370e63",
+            "quoteShareId": "b0b0d287-df5d-4fbe-ada1-cccee17a8c6a",
+            "documentId": "4de45d44-e3a3-4246-a1c7-24ae38c6ea03",
+            "documentShareId": "21836bf2-27c3-4624-81fc-25573d41cff4"
+          },
+          "assertions": {
+            "realPersonalAuthentication": true,
+            "noApiInterception": true,
+            "noPrivateRecordRequests": true,
+            "publicResponseContainsOnlySellingValues": true,
+            "explicitConsentRequired": true,
+            "acceptanceUsesIssuedDigest": true,
+            "acceptanceUsesQuoteRevision": true,
+            "feedbackUsesShareRevision": true,
+            "bothSidesSeeVersionBoundConversation": true,
+            "documentSha256MatchesReleasedVersion": true,
+            "revocationRemovesOpenDetails": true,
+            "revocationBlocksAuthenticatedDownload": true,
+            "noHorizontalOverflow": true,
+            "browserErrors": []
+          },
+          "pdf": {
+            "name": "Angebot-AN-2026-000010.pdf",
+            "size": 53671,
+            "expectedSha256": "445d0dba3d597dda6e758bf5a05041ca4e7c0fd802e54551faa0573e5702932e",
+            "downloadedSha256": "445d0dba3d597dda6e758bf5a05041ca4e7c0fd802e54551faa0573e5702932e"
+          }
+        }
+      ]
+    }
+  },
+  "visualReview": {
+    "reviewed": true,
+    "views": [
+      "Mobile released quote",
+      "Desktop accepted quote and two-party conversation"
+    ],
+    "observations": [
+      "Partner navigation contains released documents and personal settings",
+      "Public quote lists only selling values and frozen parties",
+      "Responsive line cards and acceptance controls are readable",
+      "No horizontal overflow on all three tested viewports"
+    ]
+  },
+  "limits": [
+    "Synthetic development evidence, not a production rollout or legal/technical certification",
+    "Customer/project/quote/PDF source setup uses real authenticated HTTP; all portal operations use the rendered UI",
+    "Existing renovation workflow evidence is recorded separately in checkpoint 4",
+    "No external invitations or communications providers are used",
+    "Current portal live journey runs online; the genuine offline workday is a separate subsequent test"
+  ],
+  "credentialsIncluded": false
+}

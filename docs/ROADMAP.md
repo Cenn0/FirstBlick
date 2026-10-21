@@ -1,6 +1,40 @@
 # FirstBlick – Rework-Roadmap
 
-> Übernommen aus der Projektanalyse „DachPlaner Rework Roadmap“, 19.10.2026 (34 Seiten). Dies ist eine strukturierte Arbeitsfassung, **kein Nachweis bereits umgesetzter Funktionen**. Der Originalbericht umfasst 100 Aufgaben in 15 Epics. Aufgaben gelten bis zur belegten Abnahme als offen.
+> Übernommen aus der Projektanalyse „DachPlaner Rework Roadmap“, 19.10.2026 (34 Seiten). Der Originalbericht umfasst 100 Aufgaben in 15 Epics. Diese Fassung erhält alle Aufgabenkennungen und ursprünglichen Abnahmekriterien. Ein implementierter Teilablauf bedeutet nicht automatisch, dass das gesamte Epic abgeschlossen ist.
+
+## Umsetzung der geprüften Fachmodule (21.10.2026)
+
+Die [erweiterte Fach- und Schnittstellendokumentation](advanced-exchange-and-physics.md) beschreibt die neuen, separat überprüfbaren Abläufe und Grenzen:
+
+- **DP-08-03:** Geprüftes XRechnung-XML anhand der gepinnten KoSIT-Konfiguration, manuell bestätigte Lieferantenrechnung mit Original-/Prüfbericht-/Prüfbelegversionen, Freigabe-/Zahlungsabgleich sowie validierter UBL-Rechnungsausgabe aus dem eingefrorenen Ist-Rechnungsstand. Keine automatische Banküberweisung, Peppol-Zustellung oder generelle ZUGFeRD-/DATEV-Freigabe.
+- **DP-12-02:** GAEB-X83/X84 anhand der originalen XSD 3.3/2021-05 prüfen; Angebote mit quell- und projektgebundener Prüffreigabe als X84 mit archiviertem X83-Original und eigener, gegen Datenbank-Fremdschlüssel referenzierter Exportakte ausgeben. Nur reguläre Positionen; phasenbedingt nicht darstellbare Freitexte sind ausdrücklich ausgewiesen.
+- **DP-11-04:** Monatsbilanzen für Kondensation/Verdunstung und mehrjährige Austrocknungsvergleiche nach dem bezeichneten ISO-13788:2012-Verfahren, mit Anwendungsgrenzen, Klimanachweisen und prüfsummengebundenen Projektläufen. Kein umfassender Nachweis der DIN 4108-3 oder unabhängige Fachabnahme; der dokumentierte Referenzwiderspruch bleibt offen.
+- **DP-11-05:** Rechteckiges, einachsiges Gefälleplattenraster mit expliziten Hersteller-/Katalogversions-/SKU-Eingaben, Stücklisten, Packmengen und Verschnitt. Kein bestätigter Herstellerkatalog, keine Innenentwässerung, keine normative Verlegefreigabe.
+
+Diese Fähigkeiten sind **technisch implementierte Teilumfänge**, keine pauschale Erledigung sämtlicher ursprünglicher Aufgaben und keine Zusage umfassender Norm-/Herstellerkonformität. Maßgeblich sind die **CI-, Standards- und Operations-Prüfergebnisse desselben finalen GitHub-Commits**. Ältere Checkpoints behalten ihre historische Aussage zum jeweiligen Quellstand; nachfolgende Abschnitte dokumentieren den früheren Stand.
+
+## Weiterführung – Originale XML-Akten
+
+Die [Originalakten-Dokumentation](xml-originals.md) ergänzt **DP-08-03, DP-12-02 und DP-02-05** um einen zusammenhängenden Ablauf: strukturell geprüfte Originaldatei → bewusste Ablage → konkrete S3-Version und Eingangsbeleg → mandantengebundene Dublettenprüfung → wiederauffindbare Akte → erneut verifizierter Download oder Wiederaufnahme im Prüfbereich. GAEB-Akten zeigen die tatsächlich daraus übernommenen Katalogpositionen; ungespeicherte Kalkulationswerte werden bei der Wiederaufnahme nicht ohne Bestätigung verworfen.
+
+Die Implementierung umfasst Backend, responsive Angular-Bedienung, Core-/HTTP-/PostgreSQL-Regressionen, Browser-Vertragstests und einen erweiterten tatsächlichen Containerablauf mit PostgreSQL/S3, Sicherung und Neustart. Die zugehörigen Ausführungsergebnisse werden für den konkret veröffentlichten Commit in [Folge-PR #2](https://github.com/Cenn0/FirstBlick/pull/2) nachgewiesen. Ein vorhandener Test oder Workflow ist für sich kein bestandener Lauf.
+
+Die Dateiaufbewahrung **bucht keine Rechnung**, erzeugt ohne gesonderte bestätigte Katalogübernahme keine Leistung und behauptet weder vollständige Profil-/XSD-/Schematron-Konformität noch ein zertifiziertes Langzeitarchiv. Die weiter erforderliche vollständige E-Rechnungs- und GAEB-Verarbeitung bleibt offen. Die untenstehenden ursprünglichen Aufgaben werden deshalb nicht pauschal abgehakt; die historischen Gesamtzählungen werden durch diesen Teilumfang nicht in einen neuen Fertigstellungsprozentsatz umgedeutet.
+
+## Vorheriger Arbeitsstand – Checkpoint 13
+
+[Checkpoint 13](checkpoint13.md) beschreibt die neuen durchgängigen Bedienabläufe und ihre konkreten Testbelege. Die [Bedienungs- und Vertragsdokumentation](calculation-and-trade-workbenches.md) erklärt Eingaben, Speicherung, Importbestätigung und bewusst nicht unterstützte Fälle.
+
+- **DP-11-02/03/04/05:** Fünf vorhandene Rechenverfahren sind über einen gemeinsamen Angular-Arbeitsplatz bedienbar: Dachgeometrie, Wärme, Einzelklima- und Zwölfmonats-Feuchtescreening sowie lineare Gefälledämmung. Ergebnisprüfung, ausdrückliche Projektablage, JSON-Export und quellen-/prüfsummengebundener PDF-Download bilden einen zusammenhängenden Ablauf.
+- **DP-12-02:** GAEB-Datei → unveränderte Originalbytes → Positionsauswahl → ausdrücklich eingegebene eigene Kosten → geprüfte Zuordnung → bestätigte atomare Katalogübernahme. Der Prüfstand ist serverseitig an den Betrieb gebunden; fehlende Kostenfelder werden nicht als Nullwerte erfunden.
+- **DP-08-03:** Eine lesende UBL-/CII-XML-Oberfläche zeigt Angaben, Positionen und Prüfhinweise. Eine vollständige Profilvalidierung, steuerliche Verarbeitung oder strukturierte Ausgabe ist weiterhin nicht vorhanden.
+- **DP-03-06/07 und DP-06-08:** Zusätzliche Browserfälle decken Desktop, Tablet und Mobil, Betriebswechsel, verspätete Antworten, Rechteentzug, fehlerhafte Antworten und explizite Bestätigung ab. Die neuen HTTP-/PostgreSQL-Fälle prüfen reale serverseitige Mandanten-, Pflichtfeld- und Transaktionsgrenzen.
+
+Die [ältere vollständige Nachweismatrix](roadmap-evidence.md) bleibt als historisches Inventar erhalten. **Für die hier berührten Aufgaben ergänzt und berichtigt die Tabelle in Checkpoint 13 den älteren Stand**, insbesondere die früher als vollständig offen beschriebenen XML-/Feuchte-Teilfunktionen. Die historischen Kategorien 49 K / 42 T / 9 O werden nicht als aktualisierte Gesamtzählung oder Fertigstellungsprozentsatz ausgegeben. Die gesamte 100-Aufgaben-Matrix wurde in diesem Checkpoint nicht neu abgenommen.
+
+[Checkpoint 9](checkpoint9.md) dokumentiert den damaligen Gesamtstand; [Checkpoint 10](checkpoint10.md) ergänzt begrenzte Rechnungsquellen und versionierte Kostenprognosen; [Checkpoint 11](checkpoint11.md) ergänzt den Null-Euro-Mengenabschluss und abgesicherte Kostenquellen. Die [lineare Gefälledämmungs-Mengenhilfe](tapered-insulation.md) bleibt von einer herstellergebundenen Verlegeplanung getrennt. Jeder Testbeleg gilt ausschließlich für seinen angegebenen Quellstand.
+
+Weiter offen bleiben vollständige E-Rechnungsprofile und Import-/Exportketten, normative Feuchteschutzverfahren, Hersteller-Verlegeplanung, weitere technische Fachmodule, automatisierter Providerbetrieb, repräsentative Last-/SLO-Nachweise und reale Migrationsquellen. Eine erfolgreiche Softwareprüfung ersetzt keine unabhängige Prüfung der Fachverfahren. Open-Source-Weiterentwicklung ist kein formaler Produktionsfreigabeprozess.
 
 ## Zielarchitektur
 
@@ -174,10 +208,10 @@
 3. Die Open-Source-Lizenz ist vom Rechteinhaber festzulegen; nicht automatisch annehmen.
 4. Normdaten, Herstellerkennwerte, Fachprüfung und Nutzungsrechte sind vor normativen Nachweisen zu klären.
 5. E-Rechnungsprofile, Steuerfälle, DATEV-/GAEB-/Bank-/WhatsApp-Verträge müssen versionsbezogen geprüft werden.
-6. Ein grüner Build allein ist keine Fachabnahme oder Produktionsfreigabe.
+6. Ein grüner Build allein ist kein Nachweis vollständiger Fachkonformität.
 
-## Erste Reihenfolge
+## Historische erste Reihenfolge
 
-DP-00-01 bis 03, DP-01-01 und DP-11-01 beginnen; danach DP-01-02 bis 06 schließen. Parallel DP-02-01 (Serverbasis), Identität und Dokumentmodell vorbereiten. Erst nach überprüften Grundlagen Finanz- und Freigabeabläufe ausweiten.
+DP-00-01 bis 03, DP-01-01 und DP-11-01 beginnen; danach DP-01-02 bis 06 schließen. Parallel DP-02-01 (Serverbasis), Identität und Dokumentmodell vorbereiten. Erst nach überprüften Grundlagen Finanz- und Freigabeabläufe ausweiten. Der aktuelle Entwicklungsstand steht oben und in den Checkpoints; diese ursprüngliche Reihenfolge behauptet nicht, dass bereits implementierte Grundlagen erneut fehlen.
 
 **Quelle:** DachPlaner – Projektanalyse und Rework Roadmap, 19.10.2026, insbesondere Seiten 17–32. Diese Markdown-Fassung übernimmt Aufgabenkennungen und Titel und verdichtet die Abnahmebedingungen. Für die vollständigen individuellen Aufgabenbeschreibungen gilt der Originalbericht.

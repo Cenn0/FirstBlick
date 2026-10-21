@@ -1,0 +1,608 @@
+{
+  "schema": "firstblick.collection-browser-evidence/1.0.0",
+  "checkpoint": 8,
+  "recordedAtUtc": "2026-10-20T09:33:52.866174+00:00",
+  "syntheticDataOnly": true,
+  "resultProvenance": "Observed results from the Playwright list reporter in execution sessions 43320 (fixtures) and 3801 (live). This JSON is a recorded summary, not a raw Playwright JSON reporter export. Existing last-run files and generated per-viewport evidence are retained below.",
+  "fixtureRun": {
+    "command": "FIRSTBLICK_TEST_PORT=4284 npm run test:browser -- collections.spec.ts --output=test-results/collections-isolated --max-failures=3",
+    "passed": 27,
+    "failed": 0,
+    "skipped": 0,
+    "durationSecondsAsReported": 46.7,
+    "includesFinalPendingDraftGuard": true,
+    "lastRunFile": "web/test-results/collections-isolated/.last-run.json",
+    "lastRunSha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903",
+    "lastRun": {
+      "status": "passed",
+      "failedTests": []
+    }
+  },
+  "liveRun": {
+    "command": "FIRSTBLICK_LIVE_URL=http://127.0.0.1:46653 npm run test:live -- collections.spec.ts --output=test-results/collections-live-verified --reporter=list --max-failures=1",
+    "passed": 3,
+    "failed": 0,
+    "skipped": 0,
+    "durationSecondsAsReported": 22.4,
+    "apiInterception": false,
+    "lastRunFile": "web/test-results/collections-live-verified/.last-run.json",
+    "lastRunSha256": "91d1c43004802cd49950d78eb11c8fa7d05da8ffffe219a8b13b2f561bc00903",
+    "lastRun": {
+      "status": "passed",
+      "failedTests": []
+    },
+    "productionIndexSha256": "36745aac6b693ba6a889b36812328502aadeda7a3fa096e31a4f2f065a5b7c23",
+    "cases": [
+      {
+        "viewport": "desktop",
+        "outcome": "passed",
+        "durationSecondsAsReported": 5.0,
+        "evidenceFile": "web/test-results/collections-live-verified/collections-real-historica-bbd73--internal-reminder-approval-desktop/collections-live-evidence.json",
+        "evidenceSha256": "3278246f4da0c26c01fe5e59855ddd5f0185e8dad52d3dd8f1c6ff26aac33116",
+        "screenshot": "web/test-results/collections-live-verified/collections-real-historica-bbd73--internal-reminder-approval-desktop/collections-real-approved.png",
+        "screenshotSha256": "c714047b51f633d9e18d820d3eb120aa716ba3d51387dfe71093688f883a59c1",
+        "visualReview": {
+          "reviewed": true,
+          "globalStylesApplied": true,
+          "noHorizontalOverflow": true,
+          "retained99EuroDraftAndPendingDraftGuardVisible": true
+        },
+        "capturedEvidence": {
+          "synthetic": true,
+          "completedAt": "2026-10-20T09:29:39.670Z",
+          "viewport": "desktop",
+          "runtime": {
+            "browser": "156.0.8078.4",
+            "node": "v24.19.0"
+          },
+          "fixture": {
+            "schema": "firstblick.collection-browser-fixtures/1.0.0",
+            "setupMethod": "Historical synthetic invoices created directly through Core InvoiceWorkflow.IssueForOrder and EntityStore in an isolated database. No public issuance endpoint was backdated.",
+            "invoice": {
+              "id": "50336028-258f-4efd-9004-c703d1ec7431",
+              "number": "RE-COL-da055ad831",
+              "issuedDigest": "7695551da9487a75860f4dee844c2e2af0ed305080c75bf1ffcc0aa503db6bf3",
+              "revision": 1,
+              "issueDate": "2026-09-20",
+              "dueDate": "2026-10-05",
+              "gross": "119",
+              "projectId": "cbab9680-93b4-45e8-b153-863154a8673f",
+              "orderId": "0cb98559-0194-42ad-93f4-f6622cd1d067"
+            }
+          },
+          "assertions": {
+            "noApiInterception": true,
+            "realSignIn": true,
+            "historicalInvoiceExplicitlySeededViaCoreAndEntityStore": true,
+            "caseOpeningAndPreviewAndApprovalViaUi": true,
+            "paymentViaAuthenticatedHttp": true,
+            "oldAmount": "119",
+            "actualPayment": "20",
+            "freshAmount": "99",
+            "stalePreviewRejectedWithoutCaseMutation": true,
+            "exactFreshTextAndSourcesRetained": true,
+            "invoiceDigestAndRevisionUnchanged": true,
+            "noRecordedContact": true,
+            "noHorizontalOverflow": true,
+            "browserErrors": []
+          },
+          "caseId": "a57e8705-fa06-42fe-a356-07c4f6fefda4",
+          "paymentId": "03823e6f-86c6-4003-a153-dbd796398826",
+          "oldPreviewDigest": "e855ae84925d23532adeb842f8f0ba79d0dbd5bd3b85eb5ec05b52401ee19a7b",
+          "preview": {
+            "version": "1.0.0",
+            "caseId": "a57e8705-fa06-42fe-a356-07c4f6fefda4",
+            "caseRevision": 1,
+            "caseHistoryDigest": "cfe644fd778250ff94b5db5bfe7561f1ed9450231298339386a815b6c79ec227",
+            "input": {
+              "stage": "PaymentReminder",
+              "respondBy": "2026-10-27",
+              "reason": "Aktuellen synthetischen Belegstand und Kundenansprache geprüft",
+              "additionalMessage": "Bitte teilen Sie uns den Stand Ihrer Prüfung mit."
+            },
+            "ledger": {
+              "version": "1.0.0",
+              "tenantId": "66f231f5-b3f1-4d5e-a207-48a925f5fd14",
+              "invoiceId": "50336028-258f-4efd-9004-c703d1ec7431",
+              "invoiceDigest": "7695551da9487a75860f4dee844c2e2af0ed305080c75bf1ffcc0aa503db6bf3",
+              "asOf": "2026-10-20",
+              "invoice": {
+                "number": "RE-COL-da055ad831",
+                "buyerName": "Synthetischer Forderungskunde desktop da055ad831",
+                "buyerAddress": "Synthetischer Testweg 1",
+                "sellerName": "Synthetischer Testbetrieb",
+                "sellerAddress": "Synthetischer Testweg 2",
+                "currency": "EUR",
+                "dueDate": "2026-10-05"
+              },
+              "balance": {
+                "gross": "119",
+                "credits": "0",
+                "paid": "20",
+                "discount": "0",
+                "retained": "0",
+                "outstanding": "99",
+                "collectible": "99",
+                "overdue": true,
+                "customerCredit": "0"
+              },
+              "sources": [
+                {
+                  "kind": "invoices",
+                  "id": "50336028-258f-4efd-9004-c703d1ec7431",
+                  "revision": 1,
+                  "digest": "04c9b6384a98edd36f362ee769b4934dc41d2923463d9ba59a3a06655b628fdc"
+                },
+                {
+                  "kind": "payment-allocations",
+                  "id": "03823e6f-86c6-4003-a153-dbd796398826",
+                  "revision": 1,
+                  "digest": "c8a10f131ab6f07784c4ddecb08b6e10b7fa48b4233945c637d2c1cb768b7515"
+                }
+              ],
+              "digest": "6e5f09ab473a96acd88a5071ceecdfc4251e4dcef9cab00d78f3aa06e082c5e8"
+            },
+            "subject": "Zahlungserinnerung zur Rechnung RE-COL-da055ad831",
+            "text": "Zahlungserinnerung zur Rechnung RE-COL-da055ad831\n\nGuten Tag Synthetischer Forderungskunde desktop da055ad831,\n\nfür die Rechnung RE-COL-da055ad831 mit Fälligkeit 05.10.2026 ist nach unseren erfassten Belegen vom 20.10.2026 ein Betrag von 99,00 EUR ohne erfasste Einbehalte offen.\nBitte prüfen Sie den Vorgang und melden Sie sich bis zum 27.10.2026.\n\nBitte teilen Sie uns den Stand Ihrer Prüfung mit.\n\nSynthetischer Testbetrieb",
+            "digest": "bf94a0c852b5340a9442ebfd5f1776139ef07ab04ec82c2f531862f0175e0fe8"
+          },
+          "approvedStep": {
+            "id": "1a4735aa-7775-44b9-ae18-d93b8e7f178b",
+            "preview": {
+              "version": "1.0.0",
+              "caseId": "a57e8705-fa06-42fe-a356-07c4f6fefda4",
+              "caseRevision": 1,
+              "caseHistoryDigest": "cfe644fd778250ff94b5db5bfe7561f1ed9450231298339386a815b6c79ec227",
+              "input": {
+                "stage": "PaymentReminder",
+                "respondBy": "2026-10-27",
+                "reason": "Aktuellen synthetischen Belegstand und Kundenansprache geprüft",
+                "additionalMessage": "Bitte teilen Sie uns den Stand Ihrer Prüfung mit."
+              },
+              "ledger": {
+                "version": "1.0.0",
+                "tenantId": "66f231f5-b3f1-4d5e-a207-48a925f5fd14",
+                "invoiceId": "50336028-258f-4efd-9004-c703d1ec7431",
+                "invoiceDigest": "7695551da9487a75860f4dee844c2e2af0ed305080c75bf1ffcc0aa503db6bf3",
+                "asOf": "2026-10-20",
+                "invoice": {
+                  "number": "RE-COL-da055ad831",
+                  "buyerName": "Synthetischer Forderungskunde desktop da055ad831",
+                  "buyerAddress": "Synthetischer Testweg 1",
+                  "sellerName": "Synthetischer Testbetrieb",
+                  "sellerAddress": "Synthetischer Testweg 2",
+                  "currency": "EUR",
+                  "dueDate": "2026-10-05"
+                },
+                "balance": {
+                  "gross": "119",
+                  "credits": "0",
+                  "paid": "20",
+                  "discount": "0",
+                  "retained": "0",
+                  "outstanding": "99",
+                  "collectible": "99",
+                  "overdue": true,
+                  "customerCredit": "0"
+                },
+                "sources": [
+                  {
+                    "kind": "invoices",
+                    "id": "50336028-258f-4efd-9004-c703d1ec7431",
+                    "revision": 1,
+                    "digest": "04c9b6384a98edd36f362ee769b4934dc41d2923463d9ba59a3a06655b628fdc"
+                  },
+                  {
+                    "kind": "payment-allocations",
+                    "id": "03823e6f-86c6-4003-a153-dbd796398826",
+                    "revision": 1,
+                    "digest": "c8a10f131ab6f07784c4ddecb08b6e10b7fa48b4233945c637d2c1cb768b7515"
+                  }
+                ],
+                "digest": "6e5f09ab473a96acd88a5071ceecdfc4251e4dcef9cab00d78f3aa06e082c5e8"
+              },
+              "subject": "Zahlungserinnerung zur Rechnung RE-COL-da055ad831",
+              "text": "Zahlungserinnerung zur Rechnung RE-COL-da055ad831\n\nGuten Tag Synthetischer Forderungskunde desktop da055ad831,\n\nfür die Rechnung RE-COL-da055ad831 mit Fälligkeit 05.10.2026 ist nach unseren erfassten Belegen vom 20.10.2026 ein Betrag von 99,00 EUR ohne erfasste Einbehalte offen.\nBitte prüfen Sie den Vorgang und melden Sie sich bis zum 27.10.2026.\n\nBitte teilen Sie uns den Stand Ihrer Prüfung mit.\n\nSynthetischer Testbetrieb",
+              "digest": "bf94a0c852b5340a9442ebfd5f1776139ef07ab04ec82c2f531862f0175e0fe8"
+            },
+            "approvedBy": "1c0d5474-cf8a-4315-880a-886d0147ea9f",
+            "approvedAt": "2026-10-20T09:29:38.7957099+00:00",
+            "digest": "87d71a87587f6cf71029c66b3e3b1dfaedf6d4bb9b68205eaf35739ddb913295",
+            "contact": null,
+            "withdrawal": null
+          }
+        }
+      },
+      {
+        "viewport": "tablet",
+        "outcome": "passed",
+        "durationSecondsAsReported": 6.4,
+        "evidenceFile": "web/test-results/collections-live-verified/collections-real-historica-bbd73--internal-reminder-approval-tablet/collections-live-evidence.json",
+        "evidenceSha256": "eb26584033504ad2e90a61b204fc7bb398ef657ea37838088c0875143f88156d",
+        "screenshot": "web/test-results/collections-live-verified/collections-real-historica-bbd73--internal-reminder-approval-tablet/collections-real-approved.png",
+        "screenshotSha256": "e630fa2da2f7f5faa066a9ef6b9a15f362ededf22a8950819be42213d8dd4714",
+        "visualReview": {
+          "reviewed": true,
+          "globalStylesApplied": true,
+          "noHorizontalOverflow": true,
+          "retained99EuroDraftAndPendingDraftGuardVisible": true
+        },
+        "capturedEvidence": {
+          "synthetic": true,
+          "completedAt": "2026-10-20T09:29:47.550Z",
+          "viewport": "tablet",
+          "runtime": {
+            "browser": "156.0.8078.4",
+            "node": "v24.19.0"
+          },
+          "fixture": {
+            "schema": "firstblick.collection-browser-fixtures/1.0.0",
+            "setupMethod": "Historical synthetic invoices created directly through Core InvoiceWorkflow.IssueForOrder and EntityStore in an isolated database. No public issuance endpoint was backdated.",
+            "invoice": {
+              "id": "d96ffcb9-2bf1-47ef-bc9e-4753533b1412",
+              "number": "RE-COL-80508a3f71",
+              "issuedDigest": "2d6a06b43a95d970cd312edaeeacc1b142c7690e7856ca1d1baf69a01cb92b8f",
+              "revision": 1,
+              "issueDate": "2026-09-20",
+              "dueDate": "2026-10-05",
+              "gross": "119",
+              "projectId": "ebd6014c-8975-455e-bee8-79d90f2a8b01",
+              "orderId": "6911f382-1254-4d52-ad29-c7a27473d8ba"
+            }
+          },
+          "assertions": {
+            "noApiInterception": true,
+            "realSignIn": true,
+            "historicalInvoiceExplicitlySeededViaCoreAndEntityStore": true,
+            "caseOpeningAndPreviewAndApprovalViaUi": true,
+            "paymentViaAuthenticatedHttp": true,
+            "oldAmount": "119",
+            "actualPayment": "20",
+            "freshAmount": "99",
+            "stalePreviewRejectedWithoutCaseMutation": true,
+            "exactFreshTextAndSourcesRetained": true,
+            "invoiceDigestAndRevisionUnchanged": true,
+            "noRecordedContact": true,
+            "noHorizontalOverflow": true,
+            "browserErrors": []
+          },
+          "caseId": "1c6397ef-7bb4-4cef-b6d0-fe69bb491179",
+          "paymentId": "eeed9192-9dea-4c31-b0f3-da0b6413a248",
+          "oldPreviewDigest": "c51d40d761a8764ace3e98f3d6baf1b5bb95fd927470eebdba68c21eab1818f0",
+          "preview": {
+            "version": "1.0.0",
+            "caseId": "1c6397ef-7bb4-4cef-b6d0-fe69bb491179",
+            "caseRevision": 1,
+            "caseHistoryDigest": "8a5850f8bceb463519020b2869006e1f25da112e1f613314e7682a85a7aa0c5f",
+            "input": {
+              "stage": "PaymentReminder",
+              "respondBy": "2026-10-27",
+              "reason": "Aktuellen synthetischen Belegstand und Kundenansprache geprüft",
+              "additionalMessage": "Bitte teilen Sie uns den Stand Ihrer Prüfung mit."
+            },
+            "ledger": {
+              "version": "1.0.0",
+              "tenantId": "66f231f5-b3f1-4d5e-a207-48a925f5fd14",
+              "invoiceId": "d96ffcb9-2bf1-47ef-bc9e-4753533b1412",
+              "invoiceDigest": "2d6a06b43a95d970cd312edaeeacc1b142c7690e7856ca1d1baf69a01cb92b8f",
+              "asOf": "2026-10-20",
+              "invoice": {
+                "number": "RE-COL-80508a3f71",
+                "buyerName": "Synthetischer Forderungskunde tablet 80508a3f71",
+                "buyerAddress": "Synthetischer Testweg 1",
+                "sellerName": "Synthetischer Testbetrieb",
+                "sellerAddress": "Synthetischer Testweg 2",
+                "currency": "EUR",
+                "dueDate": "2026-10-05"
+              },
+              "balance": {
+                "gross": "119",
+                "credits": "0",
+                "paid": "20",
+                "discount": "0",
+                "retained": "0",
+                "outstanding": "99",
+                "collectible": "99",
+                "overdue": true,
+                "customerCredit": "0"
+              },
+              "sources": [
+                {
+                  "kind": "invoices",
+                  "id": "d96ffcb9-2bf1-47ef-bc9e-4753533b1412",
+                  "revision": 1,
+                  "digest": "07f38cbdab5700a1f37edd780c6f12fa44a1c345baff2967e653e0f1647d40b6"
+                },
+                {
+                  "kind": "payment-allocations",
+                  "id": "eeed9192-9dea-4c31-b0f3-da0b6413a248",
+                  "revision": 1,
+                  "digest": "e89bbb9dd0b5597e8203bf13a8ca5660dfbff3f4436662e2eca9de17c6c7a6c9"
+                }
+              ],
+              "digest": "b1bc60b7e0df3f5645701f59dfa36e8d65cfc47a58debac535ccedb2e753c6d8"
+            },
+            "subject": "Zahlungserinnerung zur Rechnung RE-COL-80508a3f71",
+            "text": "Zahlungserinnerung zur Rechnung RE-COL-80508a3f71\n\nGuten Tag Synthetischer Forderungskunde tablet 80508a3f71,\n\nfür die Rechnung RE-COL-80508a3f71 mit Fälligkeit 05.10.2026 ist nach unseren erfassten Belegen vom 20.10.2026 ein Betrag von 99,00 EUR ohne erfasste Einbehalte offen.\nBitte prüfen Sie den Vorgang und melden Sie sich bis zum 27.10.2026.\n\nBitte teilen Sie uns den Stand Ihrer Prüfung mit.\n\nSynthetischer Testbetrieb",
+            "digest": "f022e17f51e075f51d00ce7710c84cba9625be5ab75ce166fa3b1689663b2d3c"
+          },
+          "approvedStep": {
+            "id": "b902931e-c126-4f94-b9b9-52420bf2b367",
+            "preview": {
+              "version": "1.0.0",
+              "caseId": "1c6397ef-7bb4-4cef-b6d0-fe69bb491179",
+              "caseRevision": 1,
+              "caseHistoryDigest": "8a5850f8bceb463519020b2869006e1f25da112e1f613314e7682a85a7aa0c5f",
+              "input": {
+                "stage": "PaymentReminder",
+                "respondBy": "2026-10-27",
+                "reason": "Aktuellen synthetischen Belegstand und Kundenansprache geprüft",
+                "additionalMessage": "Bitte teilen Sie uns den Stand Ihrer Prüfung mit."
+              },
+              "ledger": {
+                "version": "1.0.0",
+                "tenantId": "66f231f5-b3f1-4d5e-a207-48a925f5fd14",
+                "invoiceId": "d96ffcb9-2bf1-47ef-bc9e-4753533b1412",
+                "invoiceDigest": "2d6a06b43a95d970cd312edaeeacc1b142c7690e7856ca1d1baf69a01cb92b8f",
+                "asOf": "2026-10-20",
+                "invoice": {
+                  "number": "RE-COL-80508a3f71",
+                  "buyerName": "Synthetischer Forderungskunde tablet 80508a3f71",
+                  "buyerAddress": "Synthetischer Testweg 1",
+                  "sellerName": "Synthetischer Testbetrieb",
+                  "sellerAddress": "Synthetischer Testweg 2",
+                  "currency": "EUR",
+                  "dueDate": "2026-10-05"
+                },
+                "balance": {
+                  "gross": "119",
+                  "credits": "0",
+                  "paid": "20",
+                  "discount": "0",
+                  "retained": "0",
+                  "outstanding": "99",
+                  "collectible": "99",
+                  "overdue": true,
+                  "customerCredit": "0"
+                },
+                "sources": [
+                  {
+                    "kind": "invoices",
+                    "id": "d96ffcb9-2bf1-47ef-bc9e-4753533b1412",
+                    "revision": 1,
+                    "digest": "07f38cbdab5700a1f37edd780c6f12fa44a1c345baff2967e653e0f1647d40b6"
+                  },
+                  {
+                    "kind": "payment-allocations",
+                    "id": "eeed9192-9dea-4c31-b0f3-da0b6413a248",
+                    "revision": 1,
+                    "digest": "e89bbb9dd0b5597e8203bf13a8ca5660dfbff3f4436662e2eca9de17c6c7a6c9"
+                  }
+                ],
+                "digest": "b1bc60b7e0df3f5645701f59dfa36e8d65cfc47a58debac535ccedb2e753c6d8"
+              },
+              "subject": "Zahlungserinnerung zur Rechnung RE-COL-80508a3f71",
+              "text": "Zahlungserinnerung zur Rechnung RE-COL-80508a3f71\n\nGuten Tag Synthetischer Forderungskunde tablet 80508a3f71,\n\nfür die Rechnung RE-COL-80508a3f71 mit Fälligkeit 05.10.2026 ist nach unseren erfassten Belegen vom 20.10.2026 ein Betrag von 99,00 EUR ohne erfasste Einbehalte offen.\nBitte prüfen Sie den Vorgang und melden Sie sich bis zum 27.10.2026.\n\nBitte teilen Sie uns den Stand Ihrer Prüfung mit.\n\nSynthetischer Testbetrieb",
+              "digest": "f022e17f51e075f51d00ce7710c84cba9625be5ab75ce166fa3b1689663b2d3c"
+            },
+            "approvedBy": "1c0d5474-cf8a-4315-880a-886d0147ea9f",
+            "approvedAt": "2026-10-20T09:29:46.3912956+00:00",
+            "digest": "6d47b8ce61aada215bfc8b4530dd41acbdc9ade87900cee8fab7027770b30edc",
+            "contact": null,
+            "withdrawal": null
+          }
+        }
+      },
+      {
+        "viewport": "mobile",
+        "outcome": "passed",
+        "durationSecondsAsReported": 6.7,
+        "evidenceFile": "web/test-results/collections-live-verified/collections-real-historica-bbd73--internal-reminder-approval-mobile/collections-live-evidence.json",
+        "evidenceSha256": "004bcabd9df6879c32c3a3142eff28ba906a20b320e26fbb791ab0b7cc0884d9",
+        "screenshot": "web/test-results/collections-live-verified/collections-real-historica-bbd73--internal-reminder-approval-mobile/collections-real-approved.png",
+        "screenshotSha256": "651d807184c71b2f33c9df97ccc82b52f2e1f6aa08113908ee620161ca2461a7",
+        "visualReview": {
+          "reviewed": true,
+          "globalStylesApplied": true,
+          "noHorizontalOverflow": true,
+          "retained99EuroDraftAndPendingDraftGuardVisible": true
+        },
+        "capturedEvidence": {
+          "synthetic": true,
+          "completedAt": "2026-10-20T09:29:55.446Z",
+          "viewport": "mobile",
+          "runtime": {
+            "browser": "156.0.8078.4",
+            "node": "v24.19.0"
+          },
+          "fixture": {
+            "schema": "firstblick.collection-browser-fixtures/1.0.0",
+            "setupMethod": "Historical synthetic invoices created directly through Core InvoiceWorkflow.IssueForOrder and EntityStore in an isolated database. No public issuance endpoint was backdated.",
+            "invoice": {
+              "id": "130f3a33-9ea7-4fbd-82cc-55489149b7cc",
+              "number": "RE-COL-6b40fe457f",
+              "issuedDigest": "2789c7db75e55dec52ee862a840a8c8634d5ee3b78fe18e20de2be3072aff4c9",
+              "revision": 1,
+              "issueDate": "2026-09-20",
+              "dueDate": "2026-10-05",
+              "gross": "119",
+              "projectId": "894d5b36-7c62-4cc1-be0a-f8530796ee0d",
+              "orderId": "698258dc-2fff-42a4-ac2e-a7258864d666"
+            }
+          },
+          "assertions": {
+            "noApiInterception": true,
+            "realSignIn": true,
+            "historicalInvoiceExplicitlySeededViaCoreAndEntityStore": true,
+            "caseOpeningAndPreviewAndApprovalViaUi": true,
+            "paymentViaAuthenticatedHttp": true,
+            "oldAmount": "119",
+            "actualPayment": "20",
+            "freshAmount": "99",
+            "stalePreviewRejectedWithoutCaseMutation": true,
+            "exactFreshTextAndSourcesRetained": true,
+            "invoiceDigestAndRevisionUnchanged": true,
+            "noRecordedContact": true,
+            "noHorizontalOverflow": true,
+            "browserErrors": []
+          },
+          "caseId": "73dbb7f1-e636-40da-9625-1db3b1a72b06",
+          "paymentId": "572472ce-61ce-4dde-9865-1fc2a2de4673",
+          "oldPreviewDigest": "67ac85bfef933167f6abdf032e6a1bf44581592667da0878f59739779b0a00e9",
+          "preview": {
+            "version": "1.0.0",
+            "caseId": "73dbb7f1-e636-40da-9625-1db3b1a72b06",
+            "caseRevision": 1,
+            "caseHistoryDigest": "ef0fb399927c38693b9abd4352a3f64b8aa5733cc9204cd9ac3fa492491910e8",
+            "input": {
+              "stage": "PaymentReminder",
+              "respondBy": "2026-10-27",
+              "reason": "Aktuellen synthetischen Belegstand und Kundenansprache geprüft",
+              "additionalMessage": "Bitte teilen Sie uns den Stand Ihrer Prüfung mit."
+            },
+            "ledger": {
+              "version": "1.0.0",
+              "tenantId": "66f231f5-b3f1-4d5e-a207-48a925f5fd14",
+              "invoiceId": "130f3a33-9ea7-4fbd-82cc-55489149b7cc",
+              "invoiceDigest": "2789c7db75e55dec52ee862a840a8c8634d5ee3b78fe18e20de2be3072aff4c9",
+              "asOf": "2026-10-20",
+              "invoice": {
+                "number": "RE-COL-6b40fe457f",
+                "buyerName": "Synthetischer Forderungskunde mobile 6b40fe457f",
+                "buyerAddress": "Synthetischer Testweg 1",
+                "sellerName": "Synthetischer Testbetrieb",
+                "sellerAddress": "Synthetischer Testweg 2",
+                "currency": "EUR",
+                "dueDate": "2026-10-05"
+              },
+              "balance": {
+                "gross": "119",
+                "credits": "0",
+                "paid": "20",
+                "discount": "0",
+                "retained": "0",
+                "outstanding": "99",
+                "collectible": "99",
+                "overdue": true,
+                "customerCredit": "0"
+              },
+              "sources": [
+                {
+                  "kind": "invoices",
+                  "id": "130f3a33-9ea7-4fbd-82cc-55489149b7cc",
+                  "revision": 1,
+                  "digest": "c8839362e879ba558939e44a90546a44f627e0b7400548a8c77c0a85f501be24"
+                },
+                {
+                  "kind": "payment-allocations",
+                  "id": "572472ce-61ce-4dde-9865-1fc2a2de4673",
+                  "revision": 1,
+                  "digest": "d0036b94586d3bc4be2aafdfbf27600ab311306d0b2bc90a5c629083fd837f21"
+                }
+              ],
+              "digest": "4e44d362b6fdf73532bbfdd412309c254cebd68b1005a787d4e5446aedc34312"
+            },
+            "subject": "Zahlungserinnerung zur Rechnung RE-COL-6b40fe457f",
+            "text": "Zahlungserinnerung zur Rechnung RE-COL-6b40fe457f\n\nGuten Tag Synthetischer Forderungskunde mobile 6b40fe457f,\n\nfür die Rechnung RE-COL-6b40fe457f mit Fälligkeit 05.10.2026 ist nach unseren erfassten Belegen vom 20.10.2026 ein Betrag von 99,00 EUR ohne erfasste Einbehalte offen.\nBitte prüfen Sie den Vorgang und melden Sie sich bis zum 27.10.2026.\n\nBitte teilen Sie uns den Stand Ihrer Prüfung mit.\n\nSynthetischer Testbetrieb",
+            "digest": "02fb6803a33f071bce82b7bbdf4d9d795f9ff548df0560c2a3389b3082a36d6c"
+          },
+          "approvedStep": {
+            "id": "1ac81a94-852e-45ac-acca-0f7d21190c1c",
+            "preview": {
+              "version": "1.0.0",
+              "caseId": "73dbb7f1-e636-40da-9625-1db3b1a72b06",
+              "caseRevision": 1,
+              "caseHistoryDigest": "ef0fb399927c38693b9abd4352a3f64b8aa5733cc9204cd9ac3fa492491910e8",
+              "input": {
+                "stage": "PaymentReminder",
+                "respondBy": "2026-10-27",
+                "reason": "Aktuellen synthetischen Belegstand und Kundenansprache geprüft",
+                "additionalMessage": "Bitte teilen Sie uns den Stand Ihrer Prüfung mit."
+              },
+              "ledger": {
+                "version": "1.0.0",
+                "tenantId": "66f231f5-b3f1-4d5e-a207-48a925f5fd14",
+                "invoiceId": "130f3a33-9ea7-4fbd-82cc-55489149b7cc",
+                "invoiceDigest": "2789c7db75e55dec52ee862a840a8c8634d5ee3b78fe18e20de2be3072aff4c9",
+                "asOf": "2026-10-20",
+                "invoice": {
+                  "number": "RE-COL-6b40fe457f",
+                  "buyerName": "Synthetischer Forderungskunde mobile 6b40fe457f",
+                  "buyerAddress": "Synthetischer Testweg 1",
+                  "sellerName": "Synthetischer Testbetrieb",
+                  "sellerAddress": "Synthetischer Testweg 2",
+                  "currency": "EUR",
+                  "dueDate": "2026-10-05"
+                },
+                "balance": {
+                  "gross": "119",
+                  "credits": "0",
+                  "paid": "20",
+                  "discount": "0",
+                  "retained": "0",
+                  "outstanding": "99",
+                  "collectible": "99",
+                  "overdue": true,
+                  "customerCredit": "0"
+                },
+                "sources": [
+                  {
+                    "kind": "invoices",
+                    "id": "130f3a33-9ea7-4fbd-82cc-55489149b7cc",
+                    "revision": 1,
+                    "digest": "c8839362e879ba558939e44a90546a44f627e0b7400548a8c77c0a85f501be24"
+                  },
+                  {
+                    "kind": "payment-allocations",
+                    "id": "572472ce-61ce-4dde-9865-1fc2a2de4673",
+                    "revision": 1,
+                    "digest": "d0036b94586d3bc4be2aafdfbf27600ab311306d0b2bc90a5c629083fd837f21"
+                  }
+                ],
+                "digest": "4e44d362b6fdf73532bbfdd412309c254cebd68b1005a787d4e5446aedc34312"
+              },
+              "subject": "Zahlungserinnerung zur Rechnung RE-COL-6b40fe457f",
+              "text": "Zahlungserinnerung zur Rechnung RE-COL-6b40fe457f\n\nGuten Tag Synthetischer Forderungskunde mobile 6b40fe457f,\n\nfür die Rechnung RE-COL-6b40fe457f mit Fälligkeit 05.10.2026 ist nach unseren erfassten Belegen vom 20.10.2026 ein Betrag von 99,00 EUR ohne erfasste Einbehalte offen.\nBitte prüfen Sie den Vorgang und melden Sie sich bis zum 27.10.2026.\n\nBitte teilen Sie uns den Stand Ihrer Prüfung mit.\n\nSynthetischer Testbetrieb",
+              "digest": "02fb6803a33f071bce82b7bbdf4d9d795f9ff548df0560c2a3389b3082a36d6c"
+            },
+            "approvedBy": "1c0d5474-cf8a-4315-880a-886d0147ea9f",
+            "approvedAt": "2026-10-20T09:29:54.3302146+00:00",
+            "digest": "02ac7cdb0fe8fae452db8a8e224edbc25150bd44f4554f990292db17bc6c2ac2",
+            "contact": null,
+            "withdrawal": null
+          }
+        }
+      }
+    ]
+  },
+  "sourceSha256": {
+    "src/FirstBlick.Core/Business/Collections.cs": "771d6d2293de98dabb9f644492d7d7de09b605df71e330e2d81942b48566cc65",
+    "src/FirstBlick.Api/CollectionEndpoints.cs": "eb3afc821c991bfdef85abcfdce7d4e2830c425c4035c710cb1a2a8fd373a9fa",
+    "src/FirstBlick.Api/CollectionWorklistEndpoints.cs": "788a75f015b12a9ea4eb05298f4e78a4da08cc2bb6ae58be06dcd02d0c0a96a1",
+    "web/src/app/core/collections.models.ts": "3f5a6bcba5c15ee5fe6b6af11b3bf1469d12bfe1307ef1cf0db0c58eadfbc3c3",
+    "web/src/app/pages/collections-workflow.component.ts": "1b772ead358551f70dddd5b7240b1995e3217764bdfd427b449e3cc0a4456046",
+    "web/src/app/pages/collections-workflow.component.html": "ce30338fc4eeff2f4b906f99ca9fc8c905f82fa0f75d358ab70d39eacc663358",
+    "web/tests/browser/collections.spec.ts": "46d4a663a694a26092585792e333dfade62e3081c6fd4e82679f779217c7a70e",
+    "web/tests/live/collections.spec.ts": "4090bfd3ffe61afebf5d643481a97bc8568ba5c17711aa0b6fe3c0592ea6ea1a",
+    "web/playwright.config.ts": "c3868a3df4214db57a4be8e10acd12037296cb02cb3560076ffb6538725cb37f",
+    "web/playwright.live.config.ts": "4f24be6550dc553fdb9a1b052e6a80f3822db35d7ad3cc976c8b9473293ad0bd",
+    "web/angular.json": "cfcdb9bcba275e5bb45b0c77a30646ee19182b86e9a0702033d2151d42aa8573"
+  },
+  "scope": [
+    "Fixture tests cover the client workflow and synthetic responses, with no independent financial arithmetic claim.",
+    "Live tests sign in normally and use real API/PostgreSQL records, with one explicitly historical invoice per viewport created through Core and EntityStore outside the public issue endpoint.",
+    "Each live case opens at EUR119, records an actual synthetic EUR20 allocation through authenticated HTTP, rejects stale approval without case mutation, then explicitly approves the freshly reviewed EUR99 text through the UI.",
+    "The normal public issue endpoint is not backdated, and no contact is recorded or external message provider invoked.",
+    "All three final screenshots were inspected after the production critical-CSS/CSP fix. These are emulated browser viewports, not actual-device or representative business/legal acceptance."
+  ],
+  "supersededAttempts": [
+    {
+      "reason": "An initial live assertion expected an English decimal separator; it was corrected to the existing German server text before the final run.",
+      "finalEvidence": false
+    },
+    {
+      "reason": "The earlier production build left global CSS in print media because its inline activation script was blocked by the unchanged CSP. The frontend build disabled critical-style inlining, and all three live cases were repeated with fresh fixtures.",
+      "finalEvidence": false
+    }
+  ]
+}

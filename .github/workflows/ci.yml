@@ -1,0 +1,68 @@
+name: CI
+on:
+  push:
+    branches: [main, 'work/**']
+  pull_request:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  server:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16.15
+        env:
+          POSTGRES_USER: firstblick_test
+          POSTGRES_PASSWORD: ci-isolated-test-password
+          POSTGRES_DB: firstblick_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U firstblick_test -d firstblick_test"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      FIRSTBLICK_TEST_POSTGRES: Host=localhost;Port=5432;Database=firstblick_test;Username=firstblick_test;Password=ci-isolated-test-password
+      FIRSTBLICK_REQUIRE_POSTGRES: 'true'
+      FIRSTBLICK_STANDARDS_PATH: ${{ github.workspace }}/.standards
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68
+        with:
+          global-json-file: global.json
+      - name: Install fonts and the local validator runtime
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends fonts-dejavu-core openjdk-21-jre-headless
+      - name: Install original hash-pinned XSD and Schematron resources
+        run: python3 scripts/standards-assets.py
+      - run: dotnet restore FirstBlick.slnx --locked-mode
+      - run: dotnet test FirstBlick.slnx -c Release --no-restore --logger trx --results-directory TestResults
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        if: always()
+        with:
+          name: server-test-results
+          path: TestResults
+  web:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: '24.19.0'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:browser
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        if: failure()
+        with:
+          name: browser-failure-evidence
+          path: web/test-results

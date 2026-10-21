@@ -1,0 +1,299 @@
+<main class="collections" data-testid="collections-workflow">
+ <header>
+  <p class="collection-muted">Finanzen · dokumentierte Bearbeitung</p>
+  <h1>Mahn- &amp; Streitfälle</h1>
+  <p>Prüfen Sie offene Rechnungen, legen Sie Stufen und Antwortdaten ausdrücklich fest und dokumentieren Sie tatsächliche Kontakte. Vor einer internen Freigabe wird der aktuelle Belegstand erneut geprüft.</p>
+ </header>
+
+ @if (!allowed()) {
+  <section class="collection-card" role="status">
+   <h2>Diese Fallübersicht ist aktuell nicht verfügbar</h2>
+   @if (auth.recoveryHold()) { <p>Die Betriebswiederherstellung muss zuerst ausdrücklich abgeschlossen werden.</p> }
+   @else { <p>Für diese Ansicht benötigen Sie einen aktuellen Zugang als Geschäftsführung, Büro oder Buchhaltung mit Leserecht für Mahnfälle.</p> }
+  </section>
+ } @else {
+  @if (!writable()) { <p class="collection-warning">Sie können den verfügbaren Stand lesen. Für Änderungen ist ein aktiver Schreibzugang im Finanzmodul mit bestätigter Online-Sitzung erforderlich.</p> }
+  @if (error()) { <p class="collection-error" role="alert">{{error()}}</p> }
+  @if (notice()) { <p class="collection-notice" role="status">{{notice()}}</p> }
+  @if (pending(); as command) {
+   <section class="collection-warning" aria-label="Unbestätigter Vorgang">
+    <h2>Bestätigung noch offen</h2>
+    <p>Der Vorgang könnte bereits gespeichert sein. Eine Wiederholung prüft genau denselben Inhalt mit derselben Vorgangskennung. Weitere Änderungen bleiben bis zur eindeutigen Antwort gesperrt.</p>
+    <div class="collection-actions">
+     <button type="button" (click)="retryPending()" [disabled]="busy() || !writable()">Denselben Vorgang erneut prüfen</button>
+     <button type="button" (click)="refresh()" [disabled]="busy()">Aktuellen Stand einlesen</button>
+    </div>
+   </section>
+  }
+  <div class="collection-columns">
+   <aside class="collection-card collection-stack" aria-label="Fallübersicht">
+    <div>
+     <h2>Rechnungsfälle</h2>
+     <p class="collection-muted">Die Suche verwendet Rechnungsnummer und Kundenname aus dem ausgestellten Beleg.</p>
+    </div>
+    <form class="collection-fields" (ngSubmit)="loadWorklist(1)">
+     <label class="wide">Rechnungsnummer oder Kundenname
+      <input name="collectionSearch" [(ngModel)]="search" type="search" maxlength="200" placeholder="Mindestens zwei Zeichen" [disabled]="listLoading() || !!pending()">
+     </label>
+     <label class="wide">Fallstatus
+      <select name="collectionStatus" [(ngModel)]="statusFilter" [disabled]="listLoading() || !!pending()">
+       <option value="">Alle Fälle</option>
+       @for (status of statuses; track status.value) { <option [value]="status.value">{{status.label}}</option> }
+      </select>
+     </label>
+     <button type="submit" [disabled]="listLoading() || !!pending()">Fälle suchen</button>
+     @if (writable()) { <button type="button" (click)="openInvoicePicker()" [disabled]="busy() || !!pending()">Rechnung auswählen</button> }
+    </form>
+    @if (listLoading()) { <p role="status">Fallübersicht wird gelesen …</p> }
+    @if (listError()) { <p class="collection-error" role="alert">{{listError()}}</p> }
+    @if (worklist(); as list) {
+     <p class="collection-muted" role="status">{{list.total}} zugängliche Fälle · Seite {{list.page}} von {{pages()}}</p>
+     @if (!list.items.length) { <p>Für diesen Filter sind keine zugänglichen Rechnungsfälle vorhanden.</p> }
+     <ul class="collection-list">
+      @for (item of list.items; track item.id) {
+       <li>
+        <button class="collection-list-button" type="button" (click)="chooseCase(item.id)" [attr.aria-current]="selected()?.id===item.id" [disabled]="busy() || !!pending()">
+         <strong>{{item.invoiceNumber}}</strong><span>{{item.buyerName}}</span>
+         <span class="collection-muted">{{state(item.status)}} · Nächste Prüfung {{date(item.nextReviewOn)}}</span>
+        </button>
+       </li>
+      }
+     </ul>
+     <nav class="collection-pager" aria-label="Seiten der Fallübersicht">
+      <button type="button" (click)="loadWorklist(page()-1)" [disabled]="listLoading() || page()<=1 || !!pending()">Vorherige Fälle</button>
+      <button type="button" (click)="loadWorklist(page()+1)" [disabled]="listLoading() || page()>=pages() || !!pending()">Weitere Fälle</button>
+     </nav>
+    }
+   </aside>
+
+   <div class="collection-stack">
+    @if (showInvoicePicker) {
+     <section class="collection-card" aria-label="Rechnungsauswahl">
+      <h2>Offene Rechnung auswählen</h2>
+      <p>Ein vorhandener Fall wird mit seiner Historie geöffnet. Für eine Rechnung bleibt auch nach dem Abschluss derselbe Fall erhalten.</p>
+      <form class="collection-fields" (ngSubmit)="loadInvoices(1)">
+       <label class="wide">Offene Rechnungen durchsuchen<input type="search" name="invoiceSearch" [(ngModel)]="invoiceSearch" maxlength="200" [disabled]="invoiceLoading() || busy() || !!pending()"></label>
+       <button type="submit" [disabled]="invoiceLoading() || busy() || !!pending()">Rechnungen suchen</button>
+       <button type="button" (click)="showInvoicePicker=false">Auswahl schließen</button>
+      </form>
+      @if (invoiceLoading()) { <p role="status">Rechnungen werden gelesen …</p> }
+      @if (invoices(); as choices) {
+       @if (!choices.items.length) { <p role="status">Für diesen Filter sind keine offenen, zugänglichen Rechnungen vorhanden.</p> }
+       <ul class="collection-list">
+        @for (item of choices.items; track item.id) {
+         <li><button type="button" class="collection-list-button" (click)="chooseInvoice(item.id)" [disabled]="loading() || busy() || !!pending()">
+          <strong>{{item.number}}</strong><span>{{item.buyerName}}</span><span class="collection-muted">Fällig am {{date(item.dueDate)}}</span>
+         </button></li>
+        }
+       </ul>
+       <nav class="collection-pager" aria-label="Seiten der Rechnungsauswahl">
+        <button type="button" (click)="loadInvoices(invoicePage()-1)" [disabled]="invoiceLoading() || invoicePage()<=1">Vorherige Rechnungen</button>
+        <span>Seite {{invoicePage()}} von {{invoicePages()}}</span>
+        <button type="button" (click)="loadInvoices(invoicePage()+1)" [disabled]="invoiceLoading() || invoicePage()>=invoicePages()">Weitere Rechnungen</button>
+       </nav>
+      }
+     </section>
+    }
+    @if (loading()) { <section class="collection-card" role="status">Rechnungsfall und aktueller Saldo werden geprüft …</section> }
+
+    @if (invoice(); as source) {
+     <section class="collection-card" aria-label="Neuen Rechnungsfall anlegen">
+      <h2>Fall für {{source.number}} anlegen</h2>
+      <p><strong>{{source.buyerName}}</strong> · Fällig am {{date(source.dueDate)}}</p>
+      <p>Die Anlage prüft den offenen Anspruch und hält den ausgestellten Rechnungsstand fest. Anschließend können Sie den aktuellen Saldo und jede gewünschte Mahnstufe gesondert prüfen.</p>
+      @if (writable()) {
+       <form class="collection-fields" (ngSubmit)="create()">
+        <label>Verantwortliche Person<select aria-label="Verantwortliche Person" name="openOwner" [(ngModel)]="openForm.assignedToUserId" required [disabled]="busy() || !!pending()"><option value="">Bitte auswählen</option>@for (person of assignees(); track person.id) { <option [value]="person.id">{{person.displayName}}</option> }</select></label>
+        <label>Nächste interne Prüfung<input type="date" name="openReview" [(ngModel)]="openForm.nextReviewOn" required [disabled]="busy() || !!pending()"></label>
+        <label class="wide">Anlass des Rechnungsfalls<textarea name="openReason" [(ngModel)]="openForm.reason" maxlength="2000" rows="3" required [disabled]="busy() || !!pending()"></textarea></label>
+        <button type="submit" [disabled]="busy() || !!pending() || !assignees().length">Rechnungsfall anlegen</button>
+       </form>
+      }
+      <p><a routerLink="/invoices" [queryParams]="{selected:source.id}">Ausgestellte Rechnung öffnen</a></p>
+     </section>
+    }
+
+    @if (selected(); as entity) {
+     <section class="collection-card" aria-label="Ausgewählter Rechnungsfall">
+      <div class="collection-actions">
+       <h2>{{balance()?.ledger?.invoice?.number || 'Rechnungsfall'}} · {{state(entity.status)}}</h2>
+       <button type="button" (click)="refresh()" [disabled]="busy() || loading()">Fall und Saldo aktualisieren</button>
+      </div>
+      <dl class="collection-definition">
+       <dt>Verantwortlich</dt><dd>{{assignedName(entity.assignedToUserId)}}</dd>
+       <dt>Nächste interne Prüfung</dt><dd>{{date(entity.nextReviewOn)}}</dd>
+       <dt>Fallstand</dt><dd>Revision {{entity.revision}}</dd>
+      </dl>
+      @if (refreshRequired()) { <p class="collection-warning" role="status">Für den nächsten Schritt muss der aktuelle Fall- und Saldenstand erneut eingelesen werden.</p> }
+      @if (balance(); as current) {
+       <h3>{{current.ledger.invoice.buyerName}}</h3>
+       <p class="collection-muted">Aktueller Belegstand am {{date(current.ledger.asOf)}} · Rechnung fällig am {{date(current.ledger.invoice.dueDate)}}</p>
+       <div class="collection-summary" aria-label="Aktuelle Salden">
+        <div><span>Offener Anspruch</span><strong>{{money(current.ledger.balance.outstanding)}}</strong></div>
+        <div><span>Erfasste Einbehalte</span><strong>{{money(current.ledger.balance.retained)}}</strong></div>
+        <div><span>Offen ohne Einbehalte</span><strong>{{money(current.ledger.balance.collectible)}}</strong></div>
+       </div>
+       @if (!current.ledger.balance.overdue && entity.status==='Active') { <p class="collection-warning">Am ausgewiesenen Betriebsdatum ist die Rechnung noch nicht überfällig. Eine Mahnvorschau setzt einen Tag nach der Fälligkeit voraus.</p> }
+       <details>
+        <summary>Finanzquellen und Belegdarstellung prüfen</summary>
+        <dl class="collection-definition">
+         <dt>Rechnung brutto</dt><dd>{{money(current.ledger.balance.gross)}}</dd><dt>Referenzierte Gutschriften</dt><dd>{{money(current.ledger.balance.credits)}}</dd>
+         <dt>Erfasste Zahlungen</dt><dd>{{money(current.ledger.balance.paid)}}</dd><dt>Erfasste Nachlässe</dt><dd>{{money(current.ledger.balance.discount)}}</dd><dt>Kundenguthaben</dt><dd>{{money(current.ledger.balance.customerCredit)}}</dd>
+         <dt>Rechnungsempfänger</dt><dd class="collection-history-note">{{current.ledger.invoice.buyerName}}<br>{{current.ledger.invoice.buyerAddress}}</dd>
+         <dt>Rechnungsaussteller</dt><dd class="collection-history-note">{{current.ledger.invoice.sellerName}}<br>{{current.ledger.invoice.sellerAddress}}</dd>
+         <dt>Ausgestellter Rechnungsdigest</dt><dd class="collection-code">{{current.ledger.invoiceDigest}}</dd><dt>Aktueller Quellendigest</dt><dd class="collection-code">{{current.ledger.digest}}</dd>
+        </dl>
+        <p>{{current.ledger.sources.length}} belegte Quellen. Jede Quelle bleibt mit Kennung, Revision und Inhaltshash nachvollziehbar.</p>
+        <ul class="collection-list">
+         @for (source of sources(); track source.kind+'/'+source.id) {
+          <li><strong>{{source.kind==='invoices'?'Rechnung oder Gutschrift':'Zahlungszuordnung'}} · Revision {{source.revision}}</strong><div class="collection-code">{{source.id}}<br>{{source.digest}}</div></li>
+         }
+        </ul>
+        <nav class="collection-pager" aria-label="Seiten der Finanzquellen"><button type="button" (click)="sourcePage.set(sourcePage()-1)" [disabled]="sourcePage()<=1">Vorherige Quellen</button><span>{{sourcePage()}} / {{sourcePages()}}</span><button type="button" (click)="sourcePage.set(sourcePage()+1)" [disabled]="sourcePage()>=sourcePages()">Weitere Quellen</button></nav>
+       </details>
+      }
+      @if (entity.status==='Disputed') {
+       <div class="collection-warning">
+        <h3>Weitere Mahnfreigaben sind pausiert</h3>
+        @if (unresolvedDispute(); as dispute) { <p>Dokumentierter Einwand: <strong>{{money(dispute.amount)}}</strong> am {{date(dispute.openedOn)}}.</p><p class="collection-history-note">{{dispute.reason}}</p><p class="collection-history-note">Nachweis: {{dispute.evidenceReference}}</p> }
+        <p>Auch ein Einwand gegen einen Teilbetrag hält die weitere Mahnbearbeitung dieses Falls an. Eine Klärung wird ausdrücklich dokumentiert.</p>
+       </div>
+      }
+      @if (entity.status==='Closed') { <p class="collection-warning">Dieser Fall ist geschlossen. Der Abschluss bewahrt den finanziellen Anspruch und die vollständige Historie. Eine neue Bearbeitung erfolgt durch ausdrückliches Wiedereröffnen.</p> }
+
+      @if (writable()) {
+       <nav class="collection-actions" aria-label="Fall bearbeiten">
+        @if (entity.status==='Active') {
+         <button type="button" (click)="showPanel('reminder')" [disabled]="busy() || !!pending()" [attr.aria-pressed]="panel()==='reminder'">Mahnschritt vorbereiten</button>
+         @if (pendingStep()) { <button type="button" (click)="showPanel('contact')" [disabled]="busy() || !!pending()" [attr.aria-pressed]="panel()==='contact'">Kontakt oder Rücknahme</button> }
+         <button type="button" (click)="showPanel('dispute')" [disabled]="busy() || !!pending()" [attr.aria-pressed]="panel()==='dispute'">Einwand erfassen</button>
+        }
+        @if (entity.status==='Disputed') { <button type="button" (click)="showPanel('resolve')" [disabled]="busy() || !!pending()" [attr.aria-pressed]="panel()==='resolve'">Streitfall klären</button> }
+        @if (entity.status!=='Closed') {
+         <button type="button" (click)="showPanel('review')" [disabled]="busy() || !!pending()" [attr.aria-pressed]="panel()==='review'">Verantwortung &amp; Prüfung</button>
+         <button type="button" (click)="showPanel('close')" [disabled]="busy() || !!pending()" [attr.aria-pressed]="panel()==='close'">Fall abschließen</button>
+        } @else { <button type="button" (click)="showPanel('reopen')" [disabled]="busy() || !!pending()">Wiedereröffnung vorbereiten</button> }
+       </nav>
+
+       @if (panel()==='reminder' && entity.status==='Active') {
+        <section aria-label="Mahnschritt vorbereiten">
+         <h3>Mahnschritt ausdrücklich vorbereiten</h3>
+         <p>Eine höhere Stufe setzt den belegten Kontakt und das abgelaufene Antwortdatum der vorherigen Stufe voraus. Der Vorschautext enthält den aktuell offenen Betrag ohne erfasste Einbehalte.</p>
+         @if (pendingStep()) { <p class="collection-warning">Es liegt ein intern freigegebener Entwurf ohne dokumentierten Kontakt vor. Belegen Sie zuerst den tatsächlichen Kontakt oder nehmen Sie den Entwurf unter „Kontakt oder Rücknahme“ mit einer Begründung zurück.</p> }
+         <form class="collection-fields" (ngSubmit)="makePreview()">
+          <label>Gewünschte Stufe<select aria-label="Gewünschte Stufe" name="stepStage" [(ngModel)]="stepForm.stage" required [disabled]="!canAct() || !!preview() || !!pendingStep()"><option value="">Bitte auswählen</option>@for (stage of stages; track stage.value) { <option [value]="stage.value">{{stage.label}}</option> }</select></label>
+          <label>Gewünschtes Antwortdatum<input type="date" name="stepRespondBy" [(ngModel)]="stepForm.respondBy" required [disabled]="!canAct() || !!preview() || !!pendingStep()"></label>
+          <label class="wide">Begründung dieses Schritts<textarea name="stepReason" [(ngModel)]="stepForm.reason" maxlength="2000" rows="3" required [disabled]="!canAct() || !!preview() || !!pendingStep()"></textarea></label>
+          <label class="wide">Ergänzende Nachricht, optional<textarea name="stepAdditional" [(ngModel)]="stepForm.additionalMessage" maxlength="4000" rows="4" [disabled]="!canAct() || !!preview() || !!pendingStep()"></textarea></label>
+          <button type="submit" [disabled]="!canAct() || !!preview() || !!pendingStep()">Aktuelle Mahnvorschau prüfen</button>
+         </form>
+         @if (preview(); as prepared) {
+          <section class="collection-card" aria-label="Konkrete Mahnvorschau">
+           <h3>{{prepared.subject}}</h3><p class="collection-muted">{{stage(prepared.input.stage)}} · Antwort bis {{date(prepared.input.respondBy)}} · Quellen vom {{date(prepared.ledger.asOf)}}</p>
+           <p class="collection-preview">{{prepared.text}}</p>
+           <details><summary>Bindung der Freigabe</summary><p>Fallrevision {{prepared.caseRevision}} und exakt dieser Text mit seinen Finanzquellen.</p><p class="collection-code">{{prepared.digest}}</p></details>
+           <label class="collection-checkbox"><input type="checkbox" name="previewAcknowledged" [(ngModel)]="previewAcknowledged" [disabled]="!canAct()">Ich habe Text, Betrag, Mahnstufe und gewünschtes Antwortdatum geprüft und gebe genau diesen internen Entwurf frei.</label>
+           <div class="collection-actions"><button type="button" class="collection-primary" (click)="approve()" [disabled]="!canAct() || !previewAcknowledged">Internen Entwurf freigeben</button><button type="button" (click)="discardPreview()" [disabled]="busy() || !!pending()">Vorschau verwerfen und bearbeiten</button></div>
+           <p class="collection-muted">Die Freigabe speichert den geprüften Text. Einen tatsächlichen Kontakt dokumentieren Sie anschließend mit einem eigenen Nachweis.</p>
+          </section>
+         }
+        </section>
+       }
+
+       @if (panel()==='contact' && entity.status==='Active') {
+        @if (pendingStep(); as step) {
+         <section aria-label="Manuellen Kontakt dokumentieren">
+          <h3>Intern freigegeben; Kontakt noch nicht dokumentiert</h3><p><strong>{{stage(step.preview.input.stage)}}</strong> · Freigegeben am {{instant(step.approvedAt)}} · Antwortdatum {{date(step.preview.input.respondBy)}}</p>
+          <details><summary>Freigegebenen Text einsehen</summary><h4>{{step.preview.subject}}</h4><p class="collection-preview">{{step.preview.text}}</p><p class="collection-code">{{step.digest}}</p></details>
+          <form class="collection-fields" (ngSubmit)="recordContact()">
+           <label>Tatsächliche Kontaktart<select aria-label="Tatsächliche Kontaktart" name="contactChannel" [(ngModel)]="contactForm.channel" required [disabled]="!canAct()"><option value="">Bitte auswählen</option>@for (channel of channels; track channel.value) { <option [value]="channel.value">{{channel.label}}</option> }</select></label>
+           <label>Tatsächlicher Kontaktzeitpunkt<input type="datetime-local" name="contactTime" [(ngModel)]="contactForm.localTime" (ngModelChange)="contactTimeChanged()" required [disabled]="!canAct()"></label>
+           <p class="wide collection-muted">Eingabe in der Gerätezeitzone {{zone}}. Das Betriebsdatum des Kontakts wird aus dem eindeutig gewählten Zeitpunkt berechnet.</p>
+           @if (contactForm.localTime && contactChoices().length===0) { <p class="wide collection-error" role="alert">Diese Ortszeit existiert in der Gerätezeitzone nicht. Bitte den tatsächlichen Zeitpunkt korrigieren.</p> }
+           @if (contactChoices().length>1) {
+            <label class="wide">Doppelte Ortsstunde eindeutig zuordnen<select aria-label="Doppelte Ortsstunde eindeutig zuordnen" name="contactOffset" [(ngModel)]="contactForm.offset" required [disabled]="!canAct()"><option value="">Tatsächlichen UTC-Versatz auswählen</option>@for (choice of contactChoices(); track choice.offset) { <option [value]="choice.offset">{{choice.label}}</option> }</select></label>
+           }
+           <label class="wide">Kontaktbeleg oder überprüfbare Fundstelle<textarea name="contactEvidence" [(ngModel)]="contactForm.evidenceReference" rows="3" maxlength="4000" required [disabled]="!canAct()"></textarea></label>
+           <label class="wide collection-checkbox"><input type="checkbox" name="contactAcknowledged" [(ngModel)]="contactForm.acknowledged" [disabled]="!canAct()">Ich bestätige als eigene Angabe, dass der ausgewählte Kontakt zu diesem freigegebenen Text tatsächlich zum genannten Zeitpunkt stattgefunden hat.</label>
+           <button type="submit" [disabled]="!canAct() || !contactForm.acknowledged">Manuellen Kontakt belegen</button>
+          </form>
+          <details><summary>Unkontaktierten Entwurf zurücknehmen</summary><form class="collection-fields" (ngSubmit)="withdraw()"><label class="wide">Begründung der Rücknahme<textarea name="withdrawReason" [(ngModel)]="withdrawReason" rows="3" maxlength="2000" required [disabled]="!canAct()"></textarea></label><button type="submit" [disabled]="!canAct()">Entwurf ausdrücklich zurücknehmen</button></form></details>
+         </section>
+        } @else { <p>Es liegt kein unkontaktierter, freigegebener Entwurf vor.</p> }
+       }
+
+       @if (panel()==='dispute' && entity.status==='Active') {
+        <section aria-label="Streitfall eröffnen"><h3>Einwand mit Nachweis erfassen</h3><p>Der Betrag benennt den bestrittenen Anteil. Die weitere Mahnbearbeitung des gesamten Falls pausiert bis zur ausdrücklichen Klärung.</p>
+         <form class="collection-fields" (ngSubmit)="dispute()">
+          <label>Bestrittener Betrag in EUR<input [type]="'number'" inputmode="decimal" step="0.01" min="0.01" name="disputeAmount" [(ngModel)]="disputeForm.amount" required [disabled]="!canAct()"></label>
+          <label>Nächste interne Prüfung<input type="date" name="disputeReview" [(ngModel)]="disputeForm.nextReviewOn" required [disabled]="!canAct()"></label>
+          <label class="wide">Konkreter Streitgrund<textarea name="disputeReason" [(ngModel)]="disputeForm.reason" rows="3" maxlength="2000" required [disabled]="!canAct()"></textarea></label>
+          <label class="wide">Nachweis des Einwands<textarea name="disputeEvidence" [(ngModel)]="disputeForm.evidenceReference" rows="3" maxlength="4000" required [disabled]="!canAct()"></textarea></label>
+          <button type="submit" [disabled]="!canAct()">Streitfall mit Mahnpause erfassen</button>
+         </form>
+        </section>
+       }
+       @if (panel()==='resolve' && entity.status==='Disputed') {
+        <section aria-label="Streitfall ausdrücklich klären"><h3>Klärung belegen</h3><p>Dokumentieren Sie die konkrete Einigung oder Sachklärung. Erforderliche Rechnungsberichtigungen oder Zahlungsbuchungen erfolgen als eigenständige Finanzvorgänge.</p>
+         <form class="collection-fields" (ngSubmit)="resolve()">
+          <label class="wide">Inhalt der ausdrücklichen Klärung<textarea name="resolveReason" [(ngModel)]="resolveForm.reason" maxlength="2000" rows="3" required [disabled]="!canAct()"></textarea></label>
+          <label class="wide">Nachweis der Klärung<textarea name="resolveEvidence" [(ngModel)]="resolveForm.evidenceReference" maxlength="4000" rows="3" required [disabled]="!canAct()"></textarea></label>
+          <label>Nächste interne Prüfung<input type="date" name="resolveReview" [(ngModel)]="resolveForm.nextReviewOn" required [disabled]="!canAct()"></label><button type="submit" [disabled]="!canAct()">Klärung ausdrücklich dokumentieren</button>
+         </form>
+        </section>
+       }
+       @if (panel()==='review' && entity.status!=='Closed') {
+        <section aria-label="Verantwortung und Prüfung ändern"><h3>Verantwortung &amp; nächste Prüfung</h3>
+         <form class="collection-fields" (ngSubmit)="review()"><label>Verantwortliche Person<select aria-label="Verantwortliche Person" name="reviewOwner" [(ngModel)]="reviewForm.assignedToUserId" required [disabled]="!canAct()"><option value="">Bitte auswählen</option>@for (person of assignees(); track person.id) { <option [value]="person.id">{{person.displayName}}</option> }</select></label><label>Nächste interne Prüfung<input type="date" name="reviewDate" [(ngModel)]="reviewForm.nextReviewOn" required [disabled]="!canAct()"></label><label class="wide">Begründung der Zuordnung oder Prüfung<textarea name="reviewReason" [(ngModel)]="reviewForm.reason" rows="3" maxlength="2000" required [disabled]="!canAct()"></textarea></label><button type="submit" [disabled]="!canAct()">Zuordnung und Prüfung dokumentieren</button></form>
+        </section>
+       }
+       @if (panel()==='close' && entity.status!=='Closed') {
+        <section aria-label="Rechnungsfall schließen"><h3>Fallabschluss ausdrücklich begründen</h3><p>„Vollständig ausgeglichen“ setzt einen offenen Anspruch und ein Kundenguthaben von jeweils 0,00 EUR einschließlich aller Einbehalte voraus. „Weitere manuelle Behandlung“ bewahrt einen noch offenen Anspruch.</p>
+         <form class="collection-fields" (ngSubmit)="close()">
+          <label class="wide">Abschlussgrund<select aria-label="Abschlussgrund" name="closureKind" [(ngModel)]="closeForm.kind" required [disabled]="!canAct()"><option value="">Bitte ausdrücklich auswählen</option><option value="Settled">Vollständig ausgeglichen</option><option value="ManualHandling">Weitere manuelle Behandlung</option></select></label>
+          <label class="wide">Konkrete Abschlussbegründung<textarea name="closureReason" [(ngModel)]="closeForm.reason" rows="3" maxlength="2000" required [disabled]="!canAct()"></textarea></label>
+          <label class="wide">Nachweis {{closeForm.kind==='ManualHandling'?'der weiteren Behandlung':'zum Abschluss, optional'}}<textarea name="closureEvidence" [(ngModel)]="closeForm.evidenceReference" rows="3" maxlength="4000" [required]="closeForm.kind==='ManualHandling'" [disabled]="!canAct()"></textarea></label>
+          <label class="wide collection-checkbox"><input type="checkbox" name="closureAcknowledged" [(ngModel)]="closeForm.acknowledged" [disabled]="!canAct()">Ich habe den aktuellen Anspruch, erfasste Einbehalte und den ausdrücklichen Abschlussgrund geprüft.</label>
+          <button type="submit" [disabled]="!canAct() || !closeForm.acknowledged">Fall ausdrücklich schließen</button>
+         </form>
+        </section>
+       }
+       @if (panel()==='reopen' && entity.status==='Closed') {
+        <section aria-label="Rechnungsfall wiedereröffnen"><h3>Erneute Bearbeitung mit bestehender Historie</h3><p>Die Wiedereröffnung setzt einen noch offenen Anspruch voraus. Die frühere Abschlussentscheidung bleibt erhalten.</p>
+         <form class="collection-fields" (ngSubmit)="reopen()">
+          <label>Verantwortliche Person<select aria-label="Verantwortliche Person" name="reopenOwner" [(ngModel)]="reopenForm.assignedToUserId" required [disabled]="!canAct()"><option value="">Bitte auswählen</option>@for (person of assignees(); track person.id) { <option [value]="person.id">{{person.displayName}}</option> }</select></label><label>Nächste interne Prüfung<input type="date" name="reopenReview" [(ngModel)]="reopenForm.nextReviewOn" required [disabled]="!canAct()"></label>
+          <label class="wide">Konkreter Wiedereröffnungsgrund<textarea name="reopenReason" [(ngModel)]="reopenForm.reason" maxlength="2000" rows="3" required [disabled]="!canAct()"></textarea></label><label class="wide">Nachweis zur Wiedereröffnung<textarea name="reopenEvidence" [(ngModel)]="reopenForm.evidenceReference" maxlength="4000" rows="3" required [disabled]="!canAct()"></textarea></label><button type="submit" [disabled]="!canAct()">Fall ausdrücklich wiedereröffnen</button>
+         </form>
+        </section>
+       }
+      }
+     </section>
+
+     <section class="collection-card" aria-label="Fallhistorie">
+      <h2>Dokumentierte Historie</h2>
+      <p class="collection-muted">Frühere Freigaben behalten ihren damaligen Text und Quellstand. Die aktuellen Salden stehen oben im Rechnungsfall.</p>
+      <details><summary>{{entity.steps.length}} freigegebene Entwürfe und manuelle Kontakte</summary>
+       @if (!entity.steps.length) { <p>Für diesen Fall wurde noch kein Mahnentwurf freigegeben.</p> }
+       <ul class="collection-list">
+        @for (step of steps(); track step.id) {
+         <li><h3>{{stage(step.preview.input.stage)}} · {{instant(step.approvedAt)}}</h3><p>Gewünschtes Antwortdatum {{date(step.preview.input.respondBy)}} · Damaliger Betrag {{money(step.preview.ledger.balance.collectible)}}</p>
+          @if (step.contact; as contact) { <p><strong>Manuell belegter Kontakt:</strong> {{channel(contact.channel)}} am {{instant(contact.occurredAt)}} · Betriebsdatum {{date(contact.occurredOn)}}</p><p class="collection-history-note">{{contact.evidenceReference}}</p><p class="collection-muted">Als Nutzerangabe erfasst am {{instant(contact.recordedAt)}}.</p> }
+          @else if (step.withdrawal; as withdrawal) { <p><strong>Unkontaktierter Entwurf zurückgenommen</strong> am {{instant(withdrawal.at)}}</p><p class="collection-history-note">{{withdrawal.reason}}</p> }
+          @else { <p><strong>Intern freigegeben; Kontakt noch nicht dokumentiert</strong></p> }
+          <details><summary>Damals freigegebener Text und Bindung</summary><h4>{{step.preview.subject}}</h4><p class="collection-preview">{{step.preview.text}}</p><p>Quellstand vom {{date(step.preview.ledger.asOf)}} · damalige Fallrevision {{step.preview.caseRevision}}</p><p class="collection-code">{{step.digest}}<br>{{step.preview.ledger.digest}}</p></details>
+         </li>
+        }
+       </ul>
+       <nav class="collection-pager" aria-label="Seiten der freigegebenen Entwürfe"><button type="button" (click)="stepPage.set(stepPage()-1)" [disabled]="stepPage()<=1">Vorherige Entwürfe</button><span>{{stepPage()}} / {{stepPages()}}</span><button type="button" (click)="stepPage.set(stepPage()+1)" [disabled]="stepPage()>=stepPages()">Weitere Entwürfe</button></nav>
+      </details>
+      <details><summary>{{entity.events.length}} dokumentierte Fallvorgänge</summary><ul class="collection-list">
+       @for (event of events(); track event.id) { <li><strong>{{eventName(event.action)}}</strong><p class="collection-muted">{{instant(event.at)}} · Betriebsdatum {{date(event.on)}}</p><p class="collection-history-note">{{event.reason}}</p>@if (event.evidenceReference) { <p class="collection-history-note">Nachweis: {{event.evidenceReference}}</p> }@if (event.data.amount!==null) { <p>Belegter Betrag {{money(event.data.amount!)}}</p> }<details><summary>Vorgangsbindung</summary><p class="collection-code">{{event.id}}<br>{{event.digest}}</p></details></li> }
+      </ul><nav class="collection-pager" aria-label="Seiten der Fallvorgänge"><button type="button" (click)="eventPage.set(eventPage()-1)" [disabled]="eventPage()<=1">Vorherige Vorgänge</button><span>{{eventPage()}} / {{eventPages()}}</span><button type="button" (click)="eventPage.set(eventPage()+1)" [disabled]="eventPage()>=eventPages()">Weitere Vorgänge</button></nav></details>
+      <details><summary>Fallkennung und Verlaufshash</summary><p class="collection-code">{{entity.id}}<br>{{entity.historyDigest}}</p></details>
+     </section>
+    }
+    @if (!selected() && !invoice() && !loading() && !showInvoicePicker) { <section class="collection-card"><h2>Einen Rechnungsfall öffnen</h2><p>Wählen Sie einen zugänglichen Fall aus der Übersicht. Für eine bisher unbearbeitete offene Rechnung können Sie Verantwortung und nächsten Prüftermin ausdrücklich festlegen.</p></section> }
+   </div>
+  </div>
+ }
+</main>

@@ -1,0 +1,80 @@
+<header class="page-heading">
+  <div><p class="eyebrow">{{projectId()?'PROJEKTAKTE':'IM BETRIEB FINDEN'}}</p><h1>{{projectId()?'Projektverlauf':'Suche'}}</h1>
+    <p>{{projectId()?'Änderungen an den aktuell zugeordneten, für Sie zugänglichen Unterlagen.':'Projekte, Unterlagen und weitere zugängliche Einträge nach Bezeichnung oder Nummer finden.'}}</p></div>
+  @if(projectId()){
+    <div class="discovery-actions"><a class="button secondary" routerLink="/discovery">Zur Suche</a>
+      @if(canRead()){<a class="button secondary" routerLink="/projects" [queryParams]="{selected:projectId()}">Projektakte öffnen</a>}
+    </div>
+  }
+</header>
+
+@if(error()){
+  <div class="alert error" role="alert">{{error()}} @if(canRead()){<button type="button" class="text-button" (click)="retry()" [disabled]="busy()">Erneut laden</button>}</div>
+}
+
+@if(!canRead()){
+  <section class="panel"><div class="empty-state"><h2>Diese Ansicht ist derzeit nicht verfügbar.</h2><p>Ihre aktuellen Rechte oder eine vorübergehende Betriebssperre erlauben diesen Zugriff nicht. Bei Fragen hilft Ihre Betriebsverwaltung.</p></div></section>
+} @else if(projectId()) {
+  <section class="panel" aria-labelledby="history-heading" [attr.aria-busy]="busy()">
+    <div class="panel-heading"><div><h2 id="history-heading">Ereignisse im Projekt</h2><p class="small muted">Zeitpunkte in Ihrer Gerätezeitzone.</p></div>
+      <button type="button" class="button secondary" (click)="loadHistory(1)" [disabled]="busy()">Aktualisieren</button>
+    </div>
+    <p class="small muted discovery-note">Der Verlauf folgt den heutigen Projektzuordnungen. Wird eine Aufgabe in ein anderes Projekt verschoben, erscheint ihre Historie dort. Früher geltende Zuordnungen werden hier nicht rekonstruiert.</p>
+    @if(busy()){<p role="status">Projektverlauf wird geladen …</p>}
+    @if(history();as response){
+      <p class="small muted" role="status">{{response.total}} für Sie zugängliche Ereignisse · Stand {{when(response.capturedAt)}}</p>
+      <ol class="discovery-list" aria-label="Projektverlauf">
+        @for(event of response.items;track event.id){
+          <li class="discovery-row"><div class="discovery-event"><time [attr.datetime]="event.occurredAt">{{when(event.occurredAt)}}</time>
+            <div class="discovery-main"><strong class="discovery-title">{{event.title}}</strong>
+              <div class="discovery-meta"><span>{{category(event.kind)}}</span><span>Version {{event.revision}}</span>@if(event.performedByCurrentUser){<span>Von Ihnen</span>}</div>
+              @if(routeFor(event.kind);as path){<div class="discovery-check"><a [routerLink]="path" [queryParams]="{selected:event.entityId}">Datensatz öffnen →</a></div>}
+            </div></div>
+          </li>
+        } @empty {
+          <li class="empty-state compact"><h3>Auf dieser Seite sind keine zugänglichen Ereignisse vorhanden.</h3><p>Der Verlauf zeigt nur Änderungen an Unterlagen, die Sie aktuell in diesem Projekt lesen dürfen.</p></li>
+        }
+      </ol>
+      <nav class="discovery-paging" aria-label="Seiten des Projektverlaufs"><button type="button" class="button secondary" (click)="loadHistory(response.page-1)" [disabled]="response.page<=1||busy()">← Zurück</button>
+        <p class="small muted">Seite {{response.page}} · {{response.total}} Ereignisse</p>
+        <button type="button" class="button secondary" (click)="loadHistory(response.page+1)" [disabled]="response.page*response.pageSize>=response.total||response.page>=10000||busy()">Weiter →</button>
+      </nav>
+    }
+  </section>
+} @else {
+  <section class="panel" aria-labelledby="search-heading">
+    <h2 id="search-heading">Was möchten Sie finden?</h2>
+    <form class="discovery-form" (ngSubmit)="search()">
+      <div class="form-field"><label for="discovery-query">Suchbegriff</label><input id="discovery-query" name="query" type="search" [(ngModel)]="query" (ngModelChange)="clearSearch()" minlength="2" maxlength="200" required autocomplete="off" placeholder="Bezeichnung oder Nummer" aria-describedby="search-scope"></div>
+      <div class="form-field"><label for="discovery-kind">Bereich</label><select id="discovery-kind" name="kind" [(ngModel)]="kind" (ngModelChange)="clearSearch()"><option value="">Alle zugänglichen Bereiche</option>@for(category of categories();track category.kind){<option [value]="category.kind">{{category.title}}</option>}</select></div>
+      <button type="submit" class="button primary" [disabled]="busy()||query.trim().length<2">{{busy()?'Suche läuft …':'Suchen'}}</button>
+    </form>
+    <p id="search-scope" class="small muted discovery-note">Gesucht werden Bezeichnungen, Titel und Nummern. Inhalte von Dateien, privaten Notizen, Personal- und Bankdaten gehören nicht zu dieser Suche. Archivierte Einträge werden nicht angezeigt.</p>
+  </section>
+  <section class="panel" aria-labelledby="results-heading" [attr.aria-busy]="busy()">
+    <h2 id="results-heading">Suchergebnisse</h2>
+    @if(busy()){<p role="status">Zugängliche Einträge werden gesucht …</p>}
+    @if(result();as response){
+      <p class="small muted" role="status">{{response.total}} zugängliche Treffer · Stand {{when(response.capturedAt)}}</p>
+      <ul class="discovery-list" aria-label="Suchergebnisse">
+        @for(item of response.items;track item.kind+':'+item.id){
+          <li class="discovery-row"><div class="discovery-main">
+            @if(routeFor(item.kind);as path){<a class="discovery-title" [routerLink]="path" [queryParams]="{selected:item.id}">{{item.title||category(item.kind)}}</a>}
+            @else{<strong class="discovery-title">{{item.title||category(item.kind)}}</strong>}
+            <div class="discovery-meta"><span class="badge">{{category(item.kind)}}</span>@if(item.number){<span>{{item.number}}</span>}<span>Geändert {{when(item.updatedAt)}}</span></div>
+          </div>
+          @if(item.kind==='projects'){<div class="discovery-actions"><a routerLink="/discovery" [queryParams]="{projectId:item.id}">Projektverlauf →</a></div>}
+          </li>
+        } @empty {
+          <li class="empty-state compact"><h3>Keine zugänglichen Treffer auf dieser Seite.</h3><p>Versuchen Sie eine andere Bezeichnung oder Nummer. Welche Einträge erscheinen, richtet sich nach Ihren aktuellen Rechten und Projektzuordnungen.</p></li>
+        }
+      </ul>
+      <nav class="discovery-paging" aria-label="Suchergebnisseiten"><button type="button" class="button secondary" (click)="loadSearch(response.page-1)" [disabled]="response.page<=1||busy()">← Zurück</button>
+        <p class="small muted">Seite {{response.page}} · {{response.total}} Treffer</p>
+        <button type="button" class="button secondary" (click)="loadSearch(response.page+1)" [disabled]="response.page*response.pageSize>=response.total||response.page>=10000||busy()">Weiter →</button>
+      </nav>
+    } @else if(!busy()&&!error()&&!searched()) {
+      <div class="empty-state compact"><span class="empty-icon" aria-hidden="true">⌕</span><h3>Bezeichnung oder Nummer eingeben.</h3><p>Mit mindestens zwei Zeichen können Sie in den für Sie zugänglichen Bereichen suchen.</p></div>
+    }
+  </section>
+}

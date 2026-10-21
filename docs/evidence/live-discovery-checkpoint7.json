@@ -1,0 +1,457 @@
+{
+  "schema": "firstblick.browser-evidence/1.0.0",
+  "checkpoint": 7,
+  "feature": "discovery-and-own-data-copy",
+  "recordedAtUtc": "2026-10-20T07:01:54.572484+00:00",
+  "publishedBaseline": "06b58921f206bd216f6c23408b735da091ef1e8e",
+  "syntheticDataOnly": true,
+  "fixtureRun": {
+    "reportFile": "discovery-fixture-report.json",
+    "sha256": "cf46d9adb778a3d81cfd3432ff92532335bcacf19f5adf3581ba75d15181ced4",
+    "stats": {
+      "startTime": "2026-10-20T06:52:26.295Z",
+      "duration": 26267.461,
+      "expected": 18,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    },
+    "results": [
+      {
+        "name": "global search sends literal queries and explicit pages and distinguishes the authorized empty state",
+        "project": "desktop",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "durationMs": 3978
+          }
+        ]
+      },
+      {
+        "name": "project history explains current associations and removes old events after revoked or unavailable access",
+        "project": "desktop",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "durationMs": 2811
+          }
+        ]
+      },
+      {
+        "name": "a delayed search response cannot restore data from a previously selected business",
+        "project": "desktop",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "durationMs": 2416
+          }
+        ]
+      },
+      {
+        "name": "own data copy has no subject selector and downloads exactly the verified bytes for the selected business",
+        "project": "desktop",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "durationMs": 1487
+          }
+        ]
+      },
+      {
+        "name": "own data copy discards a mismatching ZIP hash and never offers a download",
+        "project": "desktop",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "durationMs": 1409
+          }
+        ]
+      },
+      {
+        "name": "own data copy suppresses a late download after a business switch and after leaving settings",
+        "project": "desktop",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "durationMs": 1910
+          }
+        ]
+      },
+      {
+        "name": "global search sends literal queries and explicit pages and distinguishes the authorized empty state",
+        "project": "tablet",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "durationMs": 3306
+          }
+        ]
+      },
+      {
+        "name": "project history explains current associations and removes old events after revoked or unavailable access",
+        "project": "tablet",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "durationMs": 2476
+          }
+        ]
+      },
+      {
+        "name": "a delayed search response cannot restore data from a previously selected business",
+        "project": "tablet",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "durationMs": 2298
+          }
+        ]
+      },
+      {
+        "name": "own data copy has no subject selector and downloads exactly the verified bytes for the selected business",
+        "project": "tablet",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "durationMs": 1751
+          }
+        ]
+      },
+      {
+        "name": "own data copy discards a mismatching ZIP hash and never offers a download",
+        "project": "tablet",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "durationMs": 1618
+          }
+        ]
+      },
+      {
+        "name": "own data copy suppresses a late download after a business switch and after leaving settings",
+        "project": "tablet",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "durationMs": 2608
+          }
+        ]
+      },
+      {
+        "name": "global search sends literal queries and explicit pages and distinguishes the authorized empty state",
+        "project": "mobile",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "durationMs": 3043
+          }
+        ]
+      },
+      {
+        "name": "project history explains current associations and removes old events after revoked or unavailable access",
+        "project": "mobile",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "durationMs": 1902
+          }
+        ]
+      },
+      {
+        "name": "a delayed search response cannot restore data from a previously selected business",
+        "project": "mobile",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "durationMs": 1614
+          }
+        ]
+      },
+      {
+        "name": "own data copy has no subject selector and downloads exactly the verified bytes for the selected business",
+        "project": "mobile",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "durationMs": 1529
+          }
+        ]
+      },
+      {
+        "name": "own data copy discards a mismatching ZIP hash and never offers a download",
+        "project": "mobile",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "durationMs": 1853
+          }
+        ]
+      },
+      {
+        "name": "own data copy suppresses a late download after a business switch and after leaving settings",
+        "project": "mobile",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "durationMs": 2593
+          }
+        ]
+      }
+    ]
+  },
+  "realBrowserRun": {
+    "reportFile": "discovery-live-report.json",
+    "sha256": "bacd33913e0b79e0d846011f5c0fcaf65ccc41c898bd92c59603f7e03c1f100a",
+    "stats": {
+      "startTime": "2026-10-20T06:59:13.693Z",
+      "duration": 17031.445,
+      "expected": 3,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    },
+    "results": [
+      {
+        "name": "real scoped search, safe current project history and verified own-account ZIP copy",
+        "project": "desktop",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "durationMs": 4766
+          }
+        ]
+      },
+      {
+        "name": "real scoped search, safe current project history and verified own-account ZIP copy",
+        "project": "tablet",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "durationMs": 3982
+          }
+        ]
+      },
+      {
+        "name": "real scoped search, safe current project history and verified own-account ZIP copy",
+        "project": "mobile",
+        "status": "expected",
+        "results": [
+          {
+            "status": "passed",
+            "durationMs": 3579
+          }
+        ]
+      }
+    ]
+  },
+  "cases": [
+    {
+      "synthetic": true,
+      "completedAt": "2026-10-20T06:59:20.758Z",
+      "project": "desktop",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "runtime": {
+        "browser": "155.0.8059.84",
+        "node": "v24.19.0",
+        "origin": "http://127.0.0.1:4200"
+      },
+      "setup": "Authenticated real HTTP creates synthetic customer, building, project, task and, if absent, an own inactive notification preference. Discovery, history and own ZIP copy use rendered Angular controls without API interception.",
+      "resourceIds": {
+        "tenantId": "33ee2861-9964-4a1e-864b-43dbef4e68ec",
+        "userId": "3eaa2562-669f-433e-8a3d-03b4dd805b82",
+        "customerId": "f2c295e7-14b8-432a-b0b0-9abbdad28e73",
+        "projectId": "d9662f7d-1079-4f8a-9582-7a6bd0e03422",
+        "taskId": "67f78354-c2ef-4c71-894a-3deb415c82b3",
+        "notificationPreferenceId": "1579af3d-e947-47d2-a017-1c158662b063"
+      },
+      "assertions": {
+        "realPersonalAuthentication": true,
+        "noApiInterception": true,
+        "privateNotesNotSearchable": true,
+        "explicitSearchPaging": true,
+        "exactCurrentProjectResult": true,
+        "currentAssociationExplanationVisible": true,
+        "genericHistoryWithoutPrivatePersonnelFields": true,
+        "ownEventsIdentified": true,
+        "noSubjectSelector": true,
+        "downloadSha256MatchesResponseDigest": true,
+        "allManifestEntryHashesVerified": true,
+        "profileContainsOnlyOwnSafeFields": true,
+        "ownNotificationPreferenceIncluded": true,
+        "onlyDeclaredCurrentTenantCategories": true,
+        "noHorizontalOverflow": true,
+        "browserErrors": []
+      },
+      "dataCopy": {
+        "schema": "firstblick.self-data-copy/1.0.0",
+        "captureId": "2d85c74a-3508-40b6-b28b-c41097aba904",
+        "records": 1,
+        "files": [
+          "profile.json",
+          "membership.json",
+          "records.json",
+          "manifest.json"
+        ],
+        "bytes": 1831,
+        "sha256": "3e1b4b4ccfe65c4d9e84cdf5869fbde5b9794f2ed5fc72c09b8b156df1d2df5a"
+      }
+    },
+    {
+      "synthetic": true,
+      "completedAt": "2026-10-20T06:59:30.599Z",
+      "project": "mobile",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "runtime": {
+        "browser": "155.0.8059.84",
+        "node": "v24.19.0",
+        "origin": "http://127.0.0.1:4200"
+      },
+      "setup": "Authenticated real HTTP creates synthetic customer, building, project, task and, if absent, an own inactive notification preference. Discovery, history and own ZIP copy use rendered Angular controls without API interception.",
+      "resourceIds": {
+        "tenantId": "33ee2861-9964-4a1e-864b-43dbef4e68ec",
+        "userId": "3eaa2562-669f-433e-8a3d-03b4dd805b82",
+        "customerId": "1ccf3f57-2f3a-4dba-8ddf-d68966795c65",
+        "projectId": "59d33236-95ea-461b-9df1-4034f4f83ec7",
+        "taskId": "3b7a8a22-f434-4337-bd74-8c4d5f293ddb",
+        "notificationPreferenceId": "1579af3d-e947-47d2-a017-1c158662b063"
+      },
+      "assertions": {
+        "realPersonalAuthentication": true,
+        "noApiInterception": true,
+        "privateNotesNotSearchable": true,
+        "explicitSearchPaging": true,
+        "exactCurrentProjectResult": true,
+        "currentAssociationExplanationVisible": true,
+        "genericHistoryWithoutPrivatePersonnelFields": true,
+        "ownEventsIdentified": true,
+        "noSubjectSelector": true,
+        "downloadSha256MatchesResponseDigest": true,
+        "allManifestEntryHashesVerified": true,
+        "profileContainsOnlyOwnSafeFields": true,
+        "ownNotificationPreferenceIncluded": true,
+        "onlyDeclaredCurrentTenantCategories": true,
+        "noHorizontalOverflow": true,
+        "browserErrors": []
+      },
+      "dataCopy": {
+        "schema": "firstblick.self-data-copy/1.0.0",
+        "captureId": "f1ccc182-28c3-4084-a70a-a24104e0c388",
+        "records": 1,
+        "files": [
+          "profile.json",
+          "membership.json",
+          "records.json",
+          "manifest.json"
+        ],
+        "bytes": 1830,
+        "sha256": "316aedef3b8580f1d83bb6ede91d91556f83887a841b43372139e9b0cb7d9cdc"
+      }
+    },
+    {
+      "synthetic": true,
+      "completedAt": "2026-10-20T06:59:25.624Z",
+      "project": "tablet",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      },
+      "runtime": {
+        "browser": "155.0.8059.84",
+        "node": "v24.19.0",
+        "origin": "http://127.0.0.1:4200"
+      },
+      "setup": "Authenticated real HTTP creates synthetic customer, building, project, task and, if absent, an own inactive notification preference. Discovery, history and own ZIP copy use rendered Angular controls without API interception.",
+      "resourceIds": {
+        "tenantId": "33ee2861-9964-4a1e-864b-43dbef4e68ec",
+        "userId": "3eaa2562-669f-433e-8a3d-03b4dd805b82",
+        "customerId": "d4906094-1cc4-40f8-8398-a51c081b3454",
+        "projectId": "79d1ddd3-ba9a-41d1-b68b-a29c507bd960",
+        "taskId": "e80170c2-0d08-4c7c-954b-5e461fdfb082",
+        "notificationPreferenceId": "1579af3d-e947-47d2-a017-1c158662b063"
+      },
+      "assertions": {
+        "realPersonalAuthentication": true,
+        "noApiInterception": true,
+        "privateNotesNotSearchable": true,
+        "explicitSearchPaging": true,
+        "exactCurrentProjectResult": true,
+        "currentAssociationExplanationVisible": true,
+        "genericHistoryWithoutPrivatePersonnelFields": true,
+        "ownEventsIdentified": true,
+        "noSubjectSelector": true,
+        "downloadSha256MatchesResponseDigest": true,
+        "allManifestEntryHashesVerified": true,
+        "profileContainsOnlyOwnSafeFields": true,
+        "ownNotificationPreferenceIncluded": true,
+        "onlyDeclaredCurrentTenantCategories": true,
+        "noHorizontalOverflow": true,
+        "browserErrors": []
+      },
+      "dataCopy": {
+        "schema": "firstblick.self-data-copy/1.0.0",
+        "captureId": "da10b279-20a6-47dd-8ba6-9a5558030bd5",
+        "records": 1,
+        "files": [
+          "profile.json",
+          "membership.json",
+          "records.json",
+          "manifest.json"
+        ],
+        "bytes": 1832,
+        "sha256": "fc47d7471a29f11b3ae11df5f5b2a329f1d1aa64f5892e22781bdda3331d7abd"
+      }
+    }
+  ],
+  "sourceSha256": {
+    "web/src/app/pages/discovery.component.ts": "3b7c5182883b1649ddc56794385efc03dabd4a1d75bd634674deff328dcba2e3",
+    "web/src/app/pages/discovery.component.html": "abd16da70695bbab36d83735b0f5015fac90d0bae8ff289d2b73a57d7704f97b",
+    "web/src/app/pages/self-copy.component.ts": "d3037d2348417d62f785de1151374ca5766b451d80f444a2984d40f70700c8b2",
+    "web/tests/browser/discovery.spec.ts": "555c820a65a928f2c1bc4d4874e5396ae6d87aaa17f42aaf95c0a29b87fb8185",
+    "web/tests/live/discovery.spec.ts": "efe6f8440d9bed0ec2bb1a669d5709300e8603bb562abcb600ea7392b067417e",
+    "web/src/app/core/integrations.models.ts": "20f8e3cf1e846d91c487ff23cae1754a32fe699b7f9cc62ebfe0f87667c5a83f",
+    "web/src/app/core/auth.service.ts": "a9dac3999b25487fd1bf90434ede0a1d0cbb6df8f5613891620acde641f62d7c",
+    "web/src/app/core/api.service.ts": "0ac89392857e2b917ce04fe54487a64cab7aa39ceab9d675493097c168947ae6",
+    "src/FirstBlick.Api/DiscoveryEndpoints.cs": "82d935705d13c7a09c27edd0031672b49d595ba9d69ce4725d160f3e76954490",
+    "src/FirstBlick.Api/DiscoveryAccess.cs": "dfc374bda8a2c51c602ca4f2711a1e81b40f218788513ad09e249632a0928217",
+    "docs/discovery-ui.md": "2f47845c032c82ef414935a960309f90facbadb73dc216824f6bbf351676a6b6"
+  },
+  "caseArtifactSha256": {
+    "discovery-real-scoped-sear-8f51e-rified-own-account-ZIP-copy-desktop/discovery-evidence.json": "d5f11dfe24e0e3cd8e80c34df80bcb8eb4a1e2f80b4882c0aa92cafdf4541f87",
+    "discovery-real-scoped-sear-8f51e-rified-own-account-ZIP-copy-mobile/discovery-evidence.json": "1d5a4ba460c8a20331e8ba110e9ef5a03230f88a0caacb1589d028210d556c84",
+    "discovery-real-scoped-sear-8f51e-rified-own-account-ZIP-copy-tablet/discovery-evidence.json": "fc72aec115b8e1445f98109a99b26f30eb53201dec9c674d3b9a0240b87cd4fd"
+  },
+  "separateBackendEvidence": "discovery-checkpoint7.json",
+  "limits": [
+    "Fixtures deliberately intercept API responses; all three live cases use real authenticated HTTP/PostgreSQL without interception. The result types are recorded separately.",
+    "Live ZIP contents contain the safe own profile, selected membership, one own notification preference and manifest. Four-category ownership selection, hostile metadata and large-copy rejection have separate API evidence.",
+    "Live browsers use the local Angular development server; the production service-worker/offline workflow has separate live-offline-checkpoint7.json evidence.",
+    "This is a bounded self-service data copy, not a complete data-subject access response or external privacy acceptance.",
+    "Chromium emulated viewports are not physical device fleet acceptance."
+  ]
+}

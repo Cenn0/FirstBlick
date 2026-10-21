@@ -1,0 +1,20 @@
+{
+  "format": "firstblick.recovery-reconciliation.v1",
+  "tenantId": "00000000-0000-0000-0000-000000000000",
+  "operationId": "00000000-0000-0000-0000-000000000000",
+  "snapshotAt": "2026-10-20T00:00:00+00:00",
+  "release": "REPLACE_WITH_EXACT_RESTORED_RELEASE",
+  "reviewedAt": "2026-10-20T00:00:00+00:00",
+  "reviewer": "REPLACE_WITH_RESPONSIBLE_PERSON",
+  "checks": [
+    { "area": "accounts_and_memberships", "conclusion": "REPLACE_WITH_REVIEWED_ACCOUNTS_AND_AUTHORIZED_ROLES", "evidenceFile": "actual-reconciliation-evidence.txt" },
+    { "area": "passwords_and_session_revocations", "conclusion": "REPLACE_WITH_CREDENTIAL_AND_SESSION_REVOCATION_REVIEW", "evidenceFile": "actual-reconciliation-evidence.txt" },
+    { "area": "invitations_and_portal_grants", "conclusion": "REPLACE_WITH_CURRENT_INVITATION_AND_PORTAL_GRANT_REVIEW", "evidenceFile": "actual-reconciliation-evidence.txt" },
+    { "area": "commercial_numbering_and_post_snapshot_writes", "conclusion": "REPLACE_WITH_COUNTER_AND_POST_SNAPSHOT_TRANSACTION_REVIEW", "evidenceFile": "actual-reconciliation-evidence.txt" },
+    { "area": "external_messages_and_payments", "conclusion": "REPLACE_WITH_ACTUAL_PROVIDER_AND_BANK_RECONCILIATION", "evidenceFile": "actual-reconciliation-evidence.txt" },
+    { "area": "offline_devices_and_revisions", "conclusion": "REPLACE_WITH_DEVICE_QUEUE_AND_REVISION_RECONCILIATION", "evidenceFile": "actual-reconciliation-evidence.txt" }
+  ],
+  "evidenceFiles": [
+    { "file": "actual-reconciliation-evidence.txt", "size": 0, "sha256": "0000000000000000000000000000000000000000000000000000000000000000" }
+  ]
+}

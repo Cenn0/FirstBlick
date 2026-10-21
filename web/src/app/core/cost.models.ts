@@ -1,0 +1,14 @@
+export interface TimeCostBasis{timeEntryId:string;hourlyCost:string;evidence:string}
+export type SupplierTreatment='ExternalService'|'StockValuation';
+export interface SupplierCostBasis{supplierInvoiceId:string;treatment:SupplierTreatment;projectNet:string;evidence:string}
+export interface ZeroStockCostBasis{stockMovementId:string;evidence:string}
+export interface CostAnalysisInput{timeCosts:TimeCostBasis[];supplierCosts:SupplierCostBasis[];zeroStockCosts:ZeroStockCostBasis[];remainingForecastCost:string|null;forecastEvidence:string;recordedCostsCoverage:string}
+export interface CostSource{kind:string;id:string;revision:number;digest:string;title:string;netCost:string|null;basis:string;missing:string|null}
+export interface ContractCostSource{kind:string;id:string;revision:number;digest:string;title:string;contractNet:string;plannedCost:string}
+export interface CostReport{orderId:string;projectId:string;contractNet:string;plannedCost:string;knownActualCost:string;actualCost:string|null;forecastCost:string|null;forecastMargin:string|null;marginPercent:string|null;markupPercent:string|null;contractSources:ContractCostSource[];sources:CostSource[];missing:string[];reviewedInputs:CostAnalysisInput;methodVersion:string;digest:string}
+export interface CostCapture{capturedAt:string;scope:string;report:CostReport}
+export const emptyCostInput=():CostAnalysisInput=>({timeCosts:[],supplierCosts:[],zeroStockCosts:[],remainingForecastCost:null,forecastEvidence:'',recordedCostsCoverage:''});
+export function costMissingLabel(code:string):string{const key=code.split(':').at(-1)||code;return({hourly_cost_missing:'Geprüfter Stundensatz fehlt.',time_not_approved:'Die Zeitbuchung ist noch nicht freigegeben.',material_cost_missing:'Der Materialansatz ist null; eine ausdrückliche Begründung fehlt.',movement_not_posted:'Die Materialbewegung ist noch nicht verbindlich gebucht.',supplier_invoice_not_approved:'Der Eingangsbeleg ist noch nicht freigegeben.',supplier_cost_treatment_missing:'Die Zuordnung des Eingangsbelegs ist noch nicht geprüft.',recorded_cost_coverage_not_confirmed:'Der Abgleich der erfassten Kosten ist noch nicht beschrieben.',negative_project_cost_requires_reconciliation:'Der negative Kostensaldo benötigt eine gesonderte Abstimmung.',remaining_cost_forecast_missing:'Eine ausdrückliche Restkostenschätzung fehlt.'}as Record<string,string>)[key]||'Ein Prüfschritt ist noch offen.';}
+
+export interface CostForecastSummary{id:string;version:number;capturedAt:string;capturedByUserId:string;previousForecastId:string|null;reason:string;digest:string;reportDigest:string;actualCost:string|null;forecastCost:string|null;forecastMargin:string|null;missingCount:number}
+export interface CostForecast{id:string;orderId:string;projectId:string;version:number;previousForecastId:string|null;capturedAt:string;capturedByUserId:string;reason:string;report:CostReport;digest:string}

@@ -1,0 +1,21 @@
+FROM mcr.microsoft.com/dotnet/sdk:10.0.402-noble@sha256:0d99ebf1ccad15037b5c98c9fe8979d6b8dbac23812feae2277a0b277b5c5ffa AS build
+ARG RELEASE=unversioned-local
+WORKDIR /source
+COPY . .
+RUN dotnet restore tools/FirstBlick.Operations/FirstBlick.Operations.csproj --locked-mode
+RUN dotnet publish tools/FirstBlick.Operations/FirstBlick.Operations.csproj -c Release --no-restore -o /publish -p:UseAppHost=false -p:SourceRevisionId="$RELEASE"
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0.13-noble@sha256:d5633778c754e89a386882eddf8dbee6942447a8a4b8267c19cf1e1158d0b0ac AS runtime
+# Debian 12 supports the standard Linux .NET 10 runtime. The PostgreSQL base supplies
+# libpq, ICU, Kerberos, OpenSSL, tzdata and matching pg_dump/pg_restore 18.6.
+FROM postgres:18.6-bookworm@sha256:afc7e2d441324c0388fa80c3d24f733b4194a4eb7f47dd8ee2b08eb1a24a647c
+ARG RELEASE=unversioned-local
+LABEL org.opencontainers.image.source="https://github.com/Cenn0/FirstBlick" org.opencontainers.image.revision="$RELEASE"
+COPY --from=runtime /usr/share/dotnet/ /usr/share/dotnet/
+RUN ln -s /usr/share/dotnet/dotnet /usr/local/bin/dotnet && groupadd --gid 1654 app && useradd --uid 1654 --gid 1654 --create-home app
+WORKDIR /app
+COPY --from=build /publish/ ./
+ENV DOTNET_ROOT=/usr/share/dotnet DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false TZ=Europe/Berlin FIRSTBLICK_RELEASE=$RELEASE
+USER app
+ENTRYPOINT ["dotnet", "FirstBlick.Operations.dll"]
+CMD ["--help"]

@@ -1,0 +1,128 @@
+name: firstblick
+
+x-app-environment: &app-environment
+  DOTNET_ENVIRONMENT: Development
+  ASPNETCORE_ENVIRONMENT: Development
+  ConnectionStrings__Database: Host=db;Database=firstblick;Username=firstblick;Password=${POSTGRES_PASSWORD:?Run scripts/init-local.sh first}
+  Storage__Endpoint: http://s3:8333
+  Storage__Region: us-east-1
+  Storage__Bucket: firstblick
+  Storage__AccessKey: ${S3_ACCESS_KEY:?Run scripts/init-local.sh first}
+  Storage__SecretKey: ${S3_SECRET_KEY:?Run scripts/init-local.sh first}
+  DataProtection__CertificatePath: /run/secrets/data-protection.pfx
+  DataProtection__CertificatePassword: ${DATA_PROTECTION_PASSWORD:?Run scripts/init-local.sh first}
+  FIRSTBLICK_RELEASE: ${FIRSTBLICK_RELEASE:-unversioned-local}
+  App__BaseUrl: http://localhost:${API_PORT:-8080}
+
+services:
+  db:
+    image: postgres:18.6-bookworm@sha256:afc7e2d441324c0388fa80c3d24f733b4194a4eb7f47dd8ee2b08eb1a24a647c
+    environment:
+      POSTGRES_DB: firstblick
+      POSTGRES_USER: firstblick
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run scripts/init-local.sh first}
+    ports: ["127.0.0.1:${POSTGRES_PORT:-5432}:5432"]
+    # PostgreSQL 18 image uses /var/lib/postgresql/18/docker beneath this mount.
+    volumes: ["postgres-data:/var/lib/postgresql"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U firstblick -d firstblick"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  s3:
+    image: chrislusf/seaweedfs:4.48@sha256:4e61d15fd35994cb1e43e1e553dff106794841fd9a99ade2fc8c8bfce4d7872d
+    command: ["mini", "-dir=/data", "-ip=s3", "-ip.bind=0.0.0.0", "-s3.config=/etc/seaweedfs/s3.json", "-s3.port=8333", "-s3.port.iceberg=0", "-s3.port.lance=0", "-admin.ui=false", "-webdav=false", "-master.telemetry=false", "-volume.max=20", "-master.volumeSizeLimitMB=128"]
+    ports: ["127.0.0.1:${S3_PORT:-8333}:8333"]
+    volumes:
+      - seaweed-data:/data
+      - ./secrets/s3.json:/etc/seaweedfs/s3.json:ro
+    healthcheck:
+      # S3 intentionally requires signed requests; its unauthenticated HTTP
+      # response proves the listener is ready. init-storage verifies signed API.
+      test: ["CMD-SHELL", "curl --fail --silent --show-error --max-time 3 http://127.0.0.1:9333/cluster/status >/dev/null && test \"$$(curl --silent --show-error --max-time 3 --output /dev/null --write-out '%{http_code}' http://127.0.0.1:8333/)\" = 403"]
+      interval: 5s
+      timeout: 8s
+      retries: 30
+      start_period: 30s
+    restart: unless-stopped
+
+  storage-init:
+    image: firstblick-operations:${FIRSTBLICK_RELEASE:-local}
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.operations
+      args: { RELEASE: "${FIRSTBLICK_RELEASE:-unversioned-local}" }
+    command: ["init-storage"]
+    environment: *app-environment
+    depends_on: { s3: { condition: service_healthy } }
+
+  migrate:
+    image: firstblick-api:${FIRSTBLICK_RELEASE:-local}
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.api
+      args: { RELEASE: "${FIRSTBLICK_RELEASE:-unversioned-local}" }
+    command: ["--migrate"]
+    environment: *app-environment
+    volumes: ["./secrets/data-protection.pfx:/run/secrets/data-protection.pfx:ro"]
+    depends_on: { db: { condition: service_healthy } }
+
+  api:
+    image: firstblick-api:${FIRSTBLICK_RELEASE:-local}
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.api
+      args: { RELEASE: "${FIRSTBLICK_RELEASE:-unversioned-local}" }
+    environment: *app-environment
+    ports: ["127.0.0.1:${API_PORT:-8080}:8080"]
+    volumes: ["./secrets/data-protection.pfx:/run/secrets/data-protection.pfx:ro"]
+    read_only: true
+    tmpfs: ["/tmp:rw,nosuid,size=256m"]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      storage-init: { condition: service_completed_successfully }
+    restart: unless-stopped
+
+  worker:
+    image: firstblick-worker:${FIRSTBLICK_RELEASE:-local}
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.worker
+      args: { RELEASE: "${FIRSTBLICK_RELEASE:-unversioned-local}" }
+    environment: *app-environment
+    volumes: ["./secrets/data-protection.pfx:/run/secrets/data-protection.pfx:ro"]
+    read_only: true
+    tmpfs: ["/tmp:rw,nosuid,size=128m"]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      storage-init: { condition: service_completed_successfully }
+    restart: unless-stopped
+
+  operations:
+    image: firstblick-operations:${FIRSTBLICK_RELEASE:-local}
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.operations
+      args: { RELEASE: "${FIRSTBLICK_RELEASE:-unversioned-local}" }
+    profiles: [operations]
+    environment:
+      <<: *app-environment
+      Operations__OperatorEmail: ${OPERATIONS_OPERATOR_EMAIL:-}
+      Operations__OperatorPassword: ${OPERATIONS_OPERATOR_PASSWORD:-}
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+    volumes:
+      - ./backups:/backups
+      - ./secrets/data-protection.pfx:/run/secrets/data-protection.pfx:ro
+    depends_on:
+      db: { condition: service_healthy }
+      s3: { condition: service_healthy }
+
+volumes:
+  postgres-data:
+  seaweed-data:

@@ -1,0 +1,37 @@
+[
+  {
+    "id": "sha256:18cf57d249e1f794ca97fe339e0fc1d4feeec498f758357ed340449157e8eb2a",
+    "tags": [
+      "firstblick-api:fff84b3c7247"
+    ],
+    "digests": []
+  },
+  {
+    "id": "sha256:2e182ed2ff8f5d0835353864264437a26dffc542a9a6c677ec495aa54e491627",
+    "tags": [],
+    "digests": [
+      "postgres@sha256:afc7e2d441324c0388fa80c3d24f733b4194a4eb7f47dd8ee2b08eb1a24a647c"
+    ]
+  },
+  {
+    "id": "sha256:38cce99536f8d20f7081335c8d7add0bd72c16c25ff7721c40653e6a1dd53b91",
+    "tags": [
+      "firstblick-operations:fff84b3c7247"
+    ],
+    "digests": []
+  },
+  {
+    "id": "sha256:6ff3cad4eb8b86e1558effb9cf9d2a630445469f69200dd2ca39b719fd3f214c",
+    "tags": [
+      "firstblick-worker:fff84b3c7247"
+    ],
+    "digests": []
+  },
+  {
+    "id": "sha256:7b5ca1f11aa4c91593612d2d4a9e253ec9152a4bd13a19e551290a042a4c52f5",
+    "tags": [],
+    "digests": [
+      "chrislusf/seaweedfs@sha256:4e61d15fd35994cb1e43e1e553dff106794841fd9a99ade2fc8c8bfce4d7872d"
+    ]
+  }
+]

@@ -1,0 +1,28 @@
+FROM node:24.19.0-bookworm-slim@sha256:a9f5f7c91a432850b2a8a7797adf5eadb6c733ceed61167806cee7ea7fbc29df AS web
+WORKDIR /web
+COPY web/package.json web/package-lock.json ./
+RUN npm ci --no-audit --no-fund
+COPY web/ ./
+RUN npm run build
+
+FROM mcr.microsoft.com/dotnet/sdk:10.0.402-noble@sha256:0d99ebf1ccad15037b5c98c9fe8979d6b8dbac23812feae2277a0b277b5c5ffa AS build
+ARG RELEASE=unversioned-local
+WORKDIR /source
+COPY . .
+RUN dotnet restore src/FirstBlick.Api/FirstBlick.Api.csproj --locked-mode
+RUN dotnet publish src/FirstBlick.Api/FirstBlick.Api.csproj -c Release --no-restore -o /publish -p:UseAppHost=false -p:SourceRevisionId="$RELEASE"
+COPY --from=web /web/dist/firstblick/browser/ /publish/wwwroot/
+RUN apt-get update && apt-get install -y --no-install-recommends python3 ca-certificates && python3 scripts/standards-assets.py --target /official-standards && rm -rf /var/lib/apt/lists/*
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0.13-noble@sha256:d5633778c754e89a386882eddf8dbee6942447a8a4b8267c19cf1e1158d0b0ac
+ARG RELEASE=unversioned-local
+LABEL org.opencontainers.image.source="https://github.com/Cenn0/FirstBlick" org.opencontainers.image.revision="$RELEASE"
+RUN apt-get update && apt-get install -y --no-install-recommends fonts-dejavu-core=2.37-8 openjdk-21-jre-headless && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+COPY --from=build /publish/ ./
+COPY --from=build /official-standards/xrechnung.zip /official-standards/gaeb.zip /official-standards/validator.jar /app/standards/
+ENV ASPNETCORE_HTTP_PORTS=8080 DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false TZ=Europe/Berlin FIRSTBLICK_RELEASE=$RELEASE FIRSTBLICK_STANDARDS_PATH=/app/standards
+USER app
+EXPOSE 8080
+HEALTHCHECK --interval=15s --timeout=5s --start-period=20s --retries=5 CMD ["/bin/bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080; printf 'GET /health/ready HTTP/1.0\\r\\nHost: localhost\\r\\n\\r\\n' >&3; read -r line <&3; [[ \"$line\" == *' 200 '* ]]"]
+ENTRYPOINT ["dotnet", "FirstBlick.Api.dll"]

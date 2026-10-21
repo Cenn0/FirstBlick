@@ -1,0 +1,76 @@
+{
+  "schema": "firstblick.frontend-checkpoint/1.0.0",
+  "synthetic": true,
+  "capturedAt": "2026-10-20T06:55:59.801421+00:00",
+  "referenceCommit": "06b58921f206bd216f6c23408b735da091ef1e8e",
+  "uncommittedFrontendChangesIncluded": true,
+  "productionBuild": {
+    "success": true,
+    "initialBundleKB": "382.63",
+    "angular": "22.2.3",
+    "node": "24.19.0",
+    "manifestSha256": "bce13436abfd7b26276fd4f646b3264cac8c1ab8bfaa761965b30b1bd354b4ae"
+  },
+  "unitTests": {
+    "passed": 42,
+    "failed": 0
+  },
+  "browserFixtures": {
+    "fullRun": {
+      "passed": 114,
+      "failed": 3,
+      "total": 117,
+      "onlyFailures": "New self-data-copy navigation test in all three viewports; the fixture released the response before the lazy route had actually left Settings and selected the offscreen side-rail brand on mobile."
+    },
+    "correctedDiscoveryRun": {
+      "passed": 18,
+      "failed": 0,
+      "skipped": 0,
+      "durationSeconds": 26.267461,
+      "test": "web/tests/browser/discovery.spec.ts"
+    },
+    "productChangesBetweenRuns": false,
+    "fixtureCorrection": "Wait for the Overview URL and destruction of the Settings self-copy component before releasing the delayed response; use the accessible Overview navigation link.",
+    "coverageAfterCorrection": {
+      "distinctCasesPassed": 117,
+      "viewports": [
+        "desktop 1440x1000",
+        "tablet 1024x768",
+        "mobile 390x844"
+      ],
+      "quantityCases": 12,
+      "integrationCases": 18,
+      "discoveryCases": 18
+    },
+    "note": "The final 117-case set was verified by the full run plus the corrected targeted run. A fresh full run at the exact resulting commit is delegated to repository CI."
+  },
+  "realWorkflowEvidence": {
+    "offline": "docs/evidence/live-offline-checkpoint7.json",
+    "portal": "docs/evidence/live-portal-checkpoint5.json",
+    "renovation": "docs/evidence/live-workflow-checkpoint4.json",
+    "newCsvAndQuantityBrowserJourneys": "Not yet executed at this checkpoint; their browser tests currently use explicit HTTP fixtures. Backend integration tests are documented separately."
+  },
+  "sourceFilesSha256": {
+    "web/src/app/core/auth.service.ts": "a9dac3999b25487fd1bf90434ede0a1d0cbb6df8f5613891620acde641f62d7c",
+    "web/src/app/core/api.service.ts": "0ac89392857e2b917ce04fe54487a64cab7aa39ceab9d675493097c168947ae6",
+    "web/src/app/core/transport.ts": "e7e30bfd7463541672ed8e6a9ed74930a5de9160795d24ddf324cf0941723a6c",
+    "web/src/app/core/session-access.ts": "f9773aa16ac9224d4cb00380009392ccc079f00e5969c1617c4a5ae8460c34af",
+    "web/src/app/core/local-time.ts": "291d57a366252f16114378ef31681c346fcb0366fa909ad93dbdb0d7500477f0",
+    "web/src/app/core/integrations.models.ts": "20f8e3cf1e846d91c487ff23cae1754a32fe699b7f9cc62ebfe0f87667c5a83f",
+    "web/src/app/core/quantity.models.ts": "3da193b7731b91fc7cba8d38d670412ae3ddc112c079b3194b1e74a7dba6279f",
+    "web/src/app/pages/integrations.component.ts": "e85b462c1bf7cffd3522fb39c239f65d5772b8d8b3a3af35e6c99c7d47cb4262",
+    "web/src/app/pages/integrations.component.html": "78487ac43907aab7e7e313086d7af03a00415228500a241bb963fa0a3d2a8a61",
+    "web/src/app/pages/quantity-links.component.ts": "d7180ce69780cbf9f1f489bc3c87ec98a88492ece64854a8e372ed8db6b8e622",
+    "web/src/app/pages/quantity-links.component.html": "191266fc65df5a0b851396b054edb85e7824846ef6ab8322d6e8ff8417d51219",
+    "web/src/app/pages/quantity-evidence.component.ts": "76afaa50f9e6be381c512baae894bff54f31ee93651b4d353933160132b8f9b7",
+    "web/src/app/pages/collection.component.ts": "36ff402e77c3a2f7cc10d8b0aed6f9995efd7656071cc4198ed52dc7cb7c0b3e",
+    "web/src/app/pages/discovery.component.ts": "3b7c5182883b1649ddc56794385efc03dabd4a1d75bd634674deff328dcba2e3",
+    "web/src/app/pages/discovery.component.html": "abd16da70695bbab36d83735b0f5015fac90d0bae8ff289d2b73a57d7704f97b",
+    "web/src/app/pages/self-copy.component.ts": "d3037d2348417d62f785de1151374ca5766b451d80f444a2984d40f70700c8b2",
+    "web/src/app/app.routes.ts": "70651d9a02c41bb15e056976b2e0457d26a9f15c1c1082f637d51398fe90edd5",
+    "web/src/app/app.component.ts": "207015aacdfb480cdb625927a11177dc2dad6430275c02aedd51de212a021cb6",
+    "web/tests/browser/quantity-links.spec.ts": "863dc184eb46cc9dbe3f22fec93201e7adb9236581b6e68dfa6e4a83f595ad11",
+    "web/tests/browser/integrations.spec.ts": "167ddea0adcc6b2f43b383700f9c0e4806f434ab804ac8871b1ee684f05c261e",
+    "web/tests/browser/discovery.spec.ts": "555c820a65a928f2c1bc4d4874e5396ae6d87aaa17f42aaf95c0a29b87fb8185"
+  }
+}

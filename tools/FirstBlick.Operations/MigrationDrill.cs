@@ -1,0 +1,241 @@
+using System.Diagnostics;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
+using System.Text;
+using System.Text.Json;
+using Amazon.S3.Model;
+using FirstBlick.Core.Business;
+using FirstBlick.Core.Security;
+using FirstBlick.Core.Technical;
+using FirstBlick.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Npgsql;
+
+namespace FirstBlick.Operations;
+
+internal static class MigrationDrill
+{
+    public static async Task<object> Run(Settings original, string output)
+    {
+        var watch = Stopwatch.StartNew(); var directory = BundleFiles.NewDirectory(output); var nonce = Guid.NewGuid().ToString("N")[..24];
+        var database = $"firstblick_restore_{nonce}"; var bucket = $"firstblick-restore-{nonce}"; var sourceDirectory = BundleFiles.NewDirectory(Path.Combine(directory, "source"));
+        var password = Convert.ToBase64String(RandomNumberGenerator.GetBytes(48)); var pfx = Path.Combine(directory, "target-data-protection.pfx");
+        using var rsa = RSA.Create(3072); var request = new CertificateRequest("CN=FirstBlick isolated migration drill", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+        using var certificate = request.CreateSelfSigned(DateTimeOffset.UtcNow.AddDays(-1), DateTimeOffset.UtcNow.AddDays(7));
+        await File.WriteAllBytesAsync(pfx, certificate.Export(X509ContentType.Pfx, password));
+        var settings = original with { CertificatePath = pfx, CertificatePassword = password, Release = $"migration-drill-{nonce}", Local = false,
+            OperatorEmail = $"migration-operator-{nonce}@example.invalid", OperatorPassword = $"Aa1!Migration-Operator-{nonce}" };
+        var bundle = await Source(sourceDirectory, settings.Release); await WriteBundle(sourceDirectory, bundle);
+        var checkedSource = await MigrationCheck.Load(sourceDirectory);
+        await MigrationJson.WriteReport(Path.Combine(directory, "source-check.json"), checkedSource.Report);
+        Require.That(checkedSource.Report.State == "Compatible", "Synthetic source failed compatibility checks; inspect source-check.json.");
+        var negatives = new List<string>();
+        async Task Reject(string name, MigrationBundle altered)
+        {
+            await WriteBundle(sourceDirectory, altered); var result = await MigrationCheck.Load(sourceDirectory);
+            await MigrationJson.WriteReport(Path.Combine(directory, name + ".json"), result.Report);
+            Require.That(result.Report.State == "Blocked", "Migration accepted negative fixture " + name + "."); negatives.Add(name);
+        }
+        await Reject("changed-frozen-price", Change<Quote>(bundle, quote => quote.Lines[0].UnitMaterialCost += 1m));
+        await Reject("missing-historical-parties", Change<Quote>(bundle, quote => quote.Presentation = null));
+        await Reject("unknown-dispatch-state", Change<Quote>(bundle, quote => quote.Deliveries[0].State = DeliveryState.Uncertain));
+        await Reject("missing-tenant-reference", Change<Project>(bundle, project => project.CustomerId = Guid.NewGuid()));
+        await Reject("unknown-method-version", Change<TechnicalRecord>(bundle, calculation => { calculation.MethodVersion = "999.0.0"; calculation.Digest = TechnicalRecords.Digest(calculation); }));
+        var invalidZone = AppJson.Read<BusinessTenant>(AppJson.Serialize(bundle.Tenants[0].Data)); invalidZone.TimeZone = "Synthetic/Unavailable_Zone";
+        await Reject("unknown-business-timezone", bundle with { Tenants = [bundle.Tenants[0] with { Data = invalidZone }, .. bundle.Tenants.Skip(1)] });
+        var customerBankId = checkedSource.Entities.OfType<PaymentAllocation>().Single().BankTransactionId;
+        await Reject("cross-ledger-bank-overallocation", Change<SupplierPaymentAllocation>(bundle, allocation =>
+        { allocation.BankTransactionId = customerBankId; allocation.PostedDigest = PayablesWorkflow.AllocationDigest(allocation); }, x => x.Direction == SupplierPaymentDirection.Refund));
+        var collision = bundle.Counters.Select(x => x.Kind == "AN" && x.Value > 0 ? x with { Value = x.Value - 1, ExpectedNextNumber = $"AN-{x.Year}-{x.Value:D6}" } : x).ToList();
+        await Reject("numbering-collision", Controls(bundle with { Counters = collision }));
+        await Reject("explicit-unresolved-source", bundle with { Uncertainties = [new("legacy_delivery_unknown", "Synthetic old export lacks provider acknowledgement; the original uncertainty is retained.", bundle.Tenants[0].Data.Id, "quotes", checkedSource.Entities.OfType<Quote>().Single().Id, bundle.EvidenceFiles[0].File)] });
+        // A malformed numeric exponent must produce a concrete Blocked dry-run
+        // report, rather than disappearing into a generic unreported exception.
+        await File.WriteAllTextAsync(Path.Combine(sourceDirectory, "migration.json"), "{\"format\":\"firstblick.migration.v1\",\"sourceEvidence\":1e9999999999999999999}");
+        var exponentReport = await MigrationCheck.Run(sourceDirectory, Path.Combine(directory, "out-of-budget-json-exponent.json"));
+        Require.That(exponentReport.State == "Blocked" && exponentReport.Issues.Any(x => x.Code == "invalid_contract"), "Invalid JSON exponent did not produce a blocked report.");
+        negatives.Add("out-of-budget-json-exponent");
+        await WriteBundle(sourceDirectory, bundle);
+        var documentPath = BundleFiles.SafePath(sourceDirectory, bundle.Documents[0].File.File); var bytes = await File.ReadAllBytesAsync(documentPath);
+        var corrupt = (byte[])bytes.Clone(); corrupt[0] ^= 1; await File.WriteAllBytesAsync(documentPath, corrupt);
+        var refusedCorruption = false;
+        try { await MigrationImport.Run(settings, sourceDirectory, database, bucket, Path.Combine(directory, "must-not-import.json")); }
+        catch (OperationsException) { refusedCorruption = true; }
+        finally { await File.WriteAllBytesAsync(documentPath, bytes); }
+        await using (var connection = await PostgresFiles.Open(settings, "postgres"))
+        {
+            await using var command = new NpgsqlCommand("SELECT EXISTS(SELECT 1 FROM pg_database WHERE datname = @name)", connection); command.Parameters.AddWithValue("name", database);
+            Require.That(refusedCorruption && !(bool)(await command.ExecuteScalarAsync())!, "Corrupt migration created a target database.");
+        }
+        negatives.Add("corrupt-object-before-target");
+        using (var integer = JsonDocument.Parse("{\"n\":9007199254740993}"))
+        using (var adjacent = JsonDocument.Parse("{\"n\":9007199254740992}"))
+        using (var tiny = JsonDocument.Parse("{\"n\":1e-100}"))
+        using (var zero = JsonDocument.Parse("{\"n\":0}"))
+        using (var decimalForm = JsonDocument.Parse("{\"n\":100.000}"))
+        using (var exponentForm = JsonDocument.Parse("{\"n\":1e2}"))
+            Require.That(MigrationJson.Hash(integer.RootElement) != MigrationJson.Hash(adjacent.RootElement) && MigrationJson.Hash(tiny.RootElement) != MigrationJson.Hash(zero.RootElement)
+                && MigrationJson.Hash(decimalForm.RootElement) == MigrationJson.Hash(exponentForm.RootElement), "Canonical JSON changed exact numeric values.");
+
+        var imported = await MigrationImport.Run(settings, sourceDirectory, database, bucket, Path.Combine(directory, "import-report.json"));
+        var target = settings with { ConnectionString = settings.Connection(database), Bucket = bucket };
+        var compared = await MigrationCompare.Run(settings, sourceDirectory, database, bucket, Path.Combine(directory, "compare-report.json"));
+        Require.That(compared.State == "Match" && compared.JobsPresent == 0 && compared.RecoveryHeld, "Imported target differs from the source or is active.");
+        List<TableProof> before, after;
+        await using (var connection = await PostgresFiles.Open(target)) before = await PostgresFiles.TableProofs(connection);
+        var repeated = await MigrationImport.Run(settings, sourceDirectory, database, bucket, Path.Combine(directory, "repeat-report.json"));
+        await using (var connection = await PostgresFiles.Open(target)) after = await PostgresFiles.TableProofs(connection);
+        Require.That(repeated.RepeatedWithoutWrites && before.SequenceEqual(after), "Repeating the same source bundle changed database rows.");
+        using var client = settings.S3();
+        var versions = await client.ListVersionsAsync(new ListVersionsRequest { BucketName = bucket });
+        Require.That(versions.Versions?.Count == bundle.Documents.Count, "Import retry uploaded duplicate S3 versions.");
+        var sourceTenant = bundle.Tenants[0].Data.Id;
+        await using (var db = target.Db())
+        {
+            var owner = await db.Users.SingleAsync(x => x.Id == bundle.Accounts[0].Id);
+            Require.That(owner.PasswordHash is null && !owner.EmailConfirmed && await db.Memberships.Where(x => x.UserId == owner.Id).AllAsync(x => !x.Active), "Legacy account can still authenticate or use an old role.");
+            var operatorUser = await db.Users.SingleAsync(x => x.Id == imported.OperatorUserId);
+            Require.That(new PasswordHasher<ApplicationUser>().VerifyHashedPassword(operatorUser, operatorUser.PasswordHash!, settings.OperatorPassword!) != PasswordVerificationResult.Failed,
+                "Fresh operator credential is invalid.");
+            var quote = AppJson.Read<Quote>((await db.Entities.IgnoreQueryFilters().SingleAsync(x => x.Kind == "quotes")).Data);
+            var customer = AppJson.Read<Customer>((await db.Entities.IgnoreQueryFilters().SingleAsync(x => x.Kind == "customers" && x.TenantId == sourceTenant)).Data);
+            Require.That(quote.Presentation!.BuyerName != customer.Name && quote.Presentation.BuyerName == "Historical buyer name" && quote.Deliveries.Single().State == DeliveryState.Sent,
+                "Migration reconstructed historical contract parties or changed delivery history.");
+            Require.That(AppJson.Read<PortalShare>((await db.Entities.IgnoreQueryFilters().SingleAsync(x => x.Kind == "portal-shares")).Data).RevokedAt == imported.ImportedAt, "Legacy portal permission was not quarantined.");
+            foreach (var tenant in bundle.Tenants) Require.That(await RecoveryBarrier.IsHeld(db, tenant.Data.Id), "Imported tenant lacks a persistent hold.");
+        }
+        var scope = new TenantScope { TenantId = sourceTenant, UserId = imported.OperatorUserId, Role = BusinessRole.ManagingDirector };
+        await using (var db = new FirstBlickDbContext(new DbContextOptionsBuilder<FirstBlickDbContext>().UseNpgsql(target.ConnectionString).Options, scope))
+        {
+            await using var transaction = await db.Database.BeginTransactionAsync();
+            await db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(hashtextextended({sourceTenant.ToString()}, 0))");
+            var sourceCounter = bundle.Counters.Single(x => x.TenantId == sourceTenant && x.Kind == "AN");
+            var actualNext = await new EntityStore(db, scope).NextNumber("AN", new DateOnly(sourceCounter.Year, 1, 1)); await db.SaveChangesAsync();
+            Require.That(actualNext == sourceCounter.ExpectedNextNumber, "The real application's next-number service collided after import.");
+            await transaction.RollbackAsync();
+        }
+        // Prove the read-only compare detects post-import mutation, then restore it.
+        await using (var db = target.Db())
+        {
+            var counter = await db.Counters.IgnoreQueryFilters().FirstAsync(); var saved = counter.Value; counter.Value++; await db.SaveChangesAsync();
+            var mismatch = await MigrationCompare.Run(settings, sourceDirectory, database, bucket, Path.Combine(directory, "changed-target-report.json"));
+            Require.That(mismatch.State == "Mismatch" && mismatch.Issues.Any(x => x.Location == "counters"), "Compare accepted changed target numbering.");
+            counter.Value = saved; await db.SaveChangesAsync();
+        }
+        // A later disaster restore must retain an unclaimed legacy account's
+        // non-UUID source identity and historical role/activity. Roll back this
+        // isolated mutation after verifying the exact recovery implementation.
+        await using (var db = target.Db())
+        {
+            await using var transaction = await db.Database.BeginTransactionAsync(); var recoveryId = Guid.NewGuid();
+            await RecoveryAccounts.QuarantineExisting(db, recoveryId, imported.BundleSha256); await db.SaveChangesAsync();
+            foreach (var sourceMember in bundle.Memberships)
+            {
+                var sourceAccount = bundle.Accounts.Single(x => x.Id == sourceMember.UserId); var key = MigrationAccountMarker.Key(sourceAccount.Id);
+                var receipt = await db.Receipts.IgnoreQueryFilters().SingleAsync(x => x.TenantId == sourceMember.TenantId && x.ActorId == Guid.Empty && x.Key == key);
+                var marker = AppJson.Read<MigrationAccountMarker>(receipt.Response);
+                Require.That(marker.SourceAccountId == sourceAccount.SourceId && marker.SourceRole == sourceMember.Role && marker.SourceActive == sourceMember.Active
+                    && marker.State == "Pending" && marker.BundleId == recoveryId, "Recovery lost the original pending account's source identity or membership provenance.");
+                var evidenceKey = $"operations.recovery-account:{recoveryId:N}:{sourceAccount.Id:N}";
+                Require.That(await db.Receipts.IgnoreQueryFilters().AnyAsync(x => x.TenantId == sourceMember.TenantId && x.ActorId == Guid.Empty && x.Key == evidenceKey), "Previous account provenance was overwritten without preserving its original receipt.");
+            }
+            await transaction.RollbackAsync();
+        }
+        string serverVersion;
+        await using (var connection = await PostgresFiles.Open(target)) serverVersion = await PostgresFiles.Scalar(connection, "SHOW server_version");
+        await PostgresFiles.DropDrillDatabase(settings, database, nonce); await StorageFiles.DeleteDrillBucket(client, bucket, nonce);
+        watch.Stop();
+        var report = new { status = "passed", completedAt = DateTimeOffset.UtcNow, format = bundle.Format, bundle.BundleId, sourceBundleSha256 = imported.BundleSha256,
+            postgreSql = serverVersion, entities = imported.Entities, documents = imported.Documents, historicalRecords = imported.HistoricalRecords,
+            sourceIdMappingsPreserved = true, immutableSnapshotsAndPartyNamesPreserved = true, knownDeliveryHistoryPreserved = true, noLegacyJobsCreated = true,
+            partialPaymentsAndCrossLedgerCapacityVerified = true, exactObjectBytesAndVersionMappingsVerified = true, oldCredentialsAndRolesInactive = true,
+            namedFreshOperatorVerified = true, portalGrantsRevoked = true, persistentRecoveryHoldVerified = true, repeatHasNoDatabaseOrObjectWrites = true,
+            laterRecoveryPreservesPendingSourceIdentity = true,
+            actualNextNumberVerified = true, changedTargetDetected = true, exactCanonicalNumbersVerified = true, negativeCases = negatives,
+            verifiedControls = imported.VerifiedControls, objectMappings = imported.ObjectMappings, isolatedTargetCleaned = true, totalSeconds = watch.Elapsed.TotalSeconds,
+            boundary = "Synthetic canonical export tested against real PostgreSQL and versioned S3. No unavailable D1/R2 source export, commercial ownership or real cutover is claimed." };
+        await MigrationJson.WriteReport(Path.Combine(directory, "migration-drill.json"), report); return report;
+    }
+
+    private static async Task WriteBundle(string directory, MigrationBundle bundle) => await File.WriteAllTextAsync(Path.Combine(directory, "migration.json"), JsonSerializer.Serialize(bundle, MigrationJson.Options));
+    private static MigrationBundle Change<T>(MigrationBundle bundle, Action<T> mutation, Func<T, bool>? select = null) where T : TenantEntity
+    {
+        var kind = BusinessRegistry.KindOf<T>(); var list = bundle.Entities.ToList();
+        var index = list.FindIndex(x => x.Kind == kind && (select is null || select(AppJson.Read<T>(x.Data.GetRawText()))));
+        var entity = AppJson.Read<T>(list[index].Data.GetRawText()); mutation(entity); var data = MigrationJson.Element(entity);
+        list[index] = list[index] with { Data = data, Sha256 = MigrationJson.Hash(data) }; return Controls(bundle with { Entities = list });
+    }
+    private static MigrationBundle Controls(MigrationBundle bundle) => bundle with { Controls = MigrationControls.Calculate(bundle, bundle.Entities.Select(x => AppJson.Read(x.Kind, x.Data.GetRawText()))) };
+
+    private static async Task<MigrationBundle> Source(string directory, string release)
+    {
+        var at = MigrationImport.MicrosecondNow().AddDays(-1); var date = DateOnly.FromDateTime(at.UtcDateTime); var entities = new List<TenantEntity>();
+        var tenant = new BusinessTenant { Name = "Synthetic legacy business" }; var second = new BusinessTenant { Name = "Synthetic second business" };
+        var owner = new MigrationAccount("legacy-owner-17", Guid.NewGuid(), "legacy-owner@example.invalid", "Historical owner", null);
+        var partner = new MigrationAccount("legacy-partner-4", Guid.NewGuid(), "legacy-partner@example.invalid", "Historical partner", null);
+        T Add<T>(T entity) where T : TenantEntity { entity.CreatedAt = at; entity.UpdatedAt = at; entities.Add(entity); return entity; }
+        var customer = Add(new Customer { TenantId = tenant.Id, Name = "Historical buyer name", Address = "Historical buyer address", Email = partner.Email });
+        var building = Add(new Building { TenantId = tenant.Id, CustomerId = customer.Id, Name = "Legacy building", Address = "Legacy building address" });
+        var project = Add(new Project { TenantId = tenant.Id, CustomerId = customer.Id, BuildingId = building.Id, Name = "Legacy contract project" });
+        var quote = Add(new Quote { TenantId = tenant.Id, CustomerId = customer.Id, ProjectId = project.Id, Title = "Historical roof work",
+            Lines = [new QuoteLine { Description = "Historical effective work", Quantity = 10m, UnitMaterialCost = 100m, VatPercent = 19m }] });
+        CommercialWorkflow.IssueQuote(quote, $"AN-{date.Year}-000042"); CommercialWorkflow.FreezePresentation(quote, tenant.Name, customer, at);
+        CommercialWorkflow.AcceptQuote(quote, quote.IssuedDigest, at, date);
+        quote.Deliveries.Add(new DeliveryAttempt { Channel = CommunicationChannel.Email, Recipient = partner.Email, RequestedAt = at, State = DeliveryState.Sent,
+            ResolvedAt = at, ProviderReference = "synthetic-preserved-provider-receipt", ResolutionNote = "Synthetic fixture: export contains the original provider acknowledgement." });
+        var order = Add(CommercialWorkflow.CreateOrder(quote, $"AU-{date.Year}-000017"));
+        var invoice = Add(InvoiceWorkflow.DraftFromOrder(order, customer)); invoice.SellerName = tenant.Name; invoice.SellerAddress = "Original seller address";
+        invoice.DueDate = date.AddDays(14); invoice.ServiceFrom = date; invoice.ServiceUntil = date;
+        InvoiceWorkflow.IssueForOrder(invoice, order, [], [], $"RE-{date.Year}-000073", date);
+        var credit = Add(InvoiceWorkflow.DraftCreditNote(invoice, "Preserved partial correction")); credit.DueDate = date; credit.Lines[0].Quantity = 2m;
+        InvoiceWorkflow.IssueCreditNote(credit, invoice, [], $"KO-{date.Year}-000002", date);
+        var bank = Add(new BankTransaction { TenantId = tenant.Id, AccountReference = "legacy-account", ExternalId = "bank-row-1", Amount = 500m, BookedOn = date }); PaymentWorkflow.SealImport(bank);
+        var payment = Add(PaymentWorkflow.Allocate(invoice, bank, [], [credit], 500m, 10m, 100m, "Preserved discount and retention", owner.Id, at));
+        var supplier = Add(new Supplier { TenantId = tenant.Id, Name = "Historical supplier", Address = "Historical supplier address" });
+        var payable = Add(new SupplierInvoice { TenantId = tenant.Id, SupplierId = supplier.Id, Number = "SUP-17", Title = "Preserved supplier invoice", InvoiceDate = date, DueDate = date.AddDays(14), Net = 200m, Tax = 38m, Gross = 238m });
+        PayablesWorkflow.Approve(payable, supplier, owner.Id, owner.Id, at, false);
+        var outgoing = Add(new BankTransaction { TenantId = tenant.Id, AccountReference = "legacy-account", ExternalId = "bank-row-2", Amount = -238m, BookedOn = date }); PaymentWorkflow.SealImport(outgoing);
+        var supplierPayment = Add(PayablesWorkflow.Allocate(payable, outgoing, [], [payment], [], 238m, 0m, "Preserved supplier payment", SupplierPaymentDirection.Payment, owner.Id, at));
+        var supplierCredit = Add(new SupplierInvoice { TenantId = tenant.Id, SupplierId = supplier.Id, OriginalInvoiceId = payable.Id, Number = "SUP-CREDIT-2", Title = "Preserved supplier correction",
+            Kind = SupplierInvoiceKind.CreditNote, InvoiceDate = date, DueDate = date, Net = 100m, Tax = 19m, Gross = 119m });
+        PayablesWorkflow.ApproveCredit(supplierCredit, payable, supplier, [], owner.Id, owner.Id, at, false);
+        var incomingRefund = Add(new BankTransaction { TenantId = tenant.Id, AccountReference = "legacy-account", ExternalId = "bank-row-3", Amount = 100m, BookedOn = date }); PaymentWorkflow.SealImport(incomingRefund);
+        Add(PayablesWorkflow.Allocate(payable, incomingRefund, [supplierPayment], [payment], [supplierCredit], 100m, 0m, "Preserved supplier refund", SupplierPaymentDirection.Refund, owner.Id, at));
+        Add(TechnicalRecords.Create(tenant.Id, project.Id, building.Id, null, "Historical supported geometry", "roof.rectangle", JsonSerializer.SerializeToElement(new RectangularRoofInput(10, 4, 3, "Synthetic measured source")), owner.Id, at));
+        Add(new PortalShare { TenantId = tenant.Id, RecipientUserId = partner.Id, GrantedBy = owner.Id, ProjectId = project.Id, Title = "Historical named grant", SourceKind = "quotes", SourceId = quote.Id,
+            SourceDigest = quote.IssuedDigest, ExpiresAt = at.AddDays(30), AllowAcceptance = true });
+        Add(new Customer { TenantId = second.Id, Name = "Second tenant customer", Address = "Separate historical address" });
+        customer.Name = "Current changed master name"; customer.Address = "Current changed master address"; // Frozen quote/invoice parties must remain historical.
+        foreach (var entity in entities) entity.Validate();
+        Directory.CreateDirectory(Path.Combine(directory, "evidence")); Directory.CreateDirectory(Path.Combine(directory, "objects"));
+        await File.WriteAllTextAsync(Path.Combine(directory, "evidence", "source-records.txt"), "Synthetic canonical source only. Historical party names, prices, accepted contract, provider acknowledgement and old source IDs were intentionally retained. No real provider was called.\n");
+        var evidence = await BundleFiles.Proof(directory, "evidence/source-records.txt");
+        var documents = new List<MigrationDocument>();
+        foreach (var selected in new[] { tenant, second })
+        {
+            var id = Guid.NewGuid(); var file = $"objects/{id:N}.txt"; var body = Encoding.UTF8.GetBytes(selected == tenant ? "Synthetic original historical contract bytes; never reconstructed from changed master data.\n" : "Synthetic archived original file bytes.\n");
+            await File.WriteAllBytesAsync(Path.Combine(directory, file), body); var proof = await BundleFiles.Proof(directory, file);
+            var data = new DocumentObject { Id = id, TenantId = selected.Id, UploadedBy = owner.Id, Name = "historical-original.txt", ContentType = "text/plain", Size = body.Length, Sha256 = proof.Sha256,
+                ObjectKey = $"legacy/r2/{id:N}", VersionId = null, State = selected == tenant ? "Ready" : "Archived", CreatedAt = at,
+                ProjectId = selected == tenant ? project.Id : null, ProjectKind = selected == tenant ? "projects" : null, SourceId = selected == tenant ? quote.Id : null,
+                SourceKind = selected == tenant ? "quotes" : null, SourceDigest = selected == tenant ? quote.IssuedDigest : "", RendererVersion = "legacy-source-retained" };
+            documents.Add(new("legacy-file-" + documents.Count, data, proof, "synthetic-r2-export", null));
+        }
+        var envelopes = entities.Select(entity =>
+        {
+            var contractual = entity is Quote { Status: not QuoteStatus.Draft } or Order or Invoice { Status: InvoiceStatus.Issued } or SupplierInvoice { Status: SupplierInvoiceStatus.Approved };
+            var data = MigrationJson.Element(entity); return new MigrationEntity(entity.Id.ToString(), BusinessRegistry.Entities.Single(x => x.Value == entity.GetType()).Key, data,
+                MigrationJson.Hash(data), contractual ? MigrationEvidence.Confirmed : MigrationEvidence.NotApplicable, entity is Quote ? MigrationEvidence.Confirmed : MigrationEvidence.NotApplicable, contractual ? evidence.File : null);
+        }).ToList();
+        var counters = new List<MigrationCounter>();
+        foreach (var selected in new[] { tenant, second }) foreach (var kind in new[] { "AN", "AU", "RE", "KO", "BE" })
+        { var value = selected == tenant ? kind switch { "AN" => 42, "AU" => 17, "RE" => 73, "KO" => 2, _ => 0 } : 0; counters.Add(new(selected.Id, kind, date.Year, value, $"{kind}-{date.Year}-{value + 1:D6}")); }
+        var historical = MigrationJson.Element(new { legacyAttemptId = "provider-row-9", state = "sent", providerReference = quote.Deliveries[0].ProviderReference, quoteId = quote.Id, quoteDigest = quote.IssuedDigest });
+        var bundle = new MigrationBundle(MigrationJson.Format, Guid.NewGuid(), "synthetic-canonical-d1-r2-fixture", "source-fixture-1", release, MigrationImport.MicrosecondNow(),
+            [new("legacy-tenant-a", tenant), new("legacy-tenant-b", second)], [owner, partner],
+            [new(tenant.Id, owner.Id, BusinessRole.ManagingDirector, true, 7), new(second.Id, owner.Id, BusinessRole.Worker, false, 3), new(tenant.Id, partner.Id, BusinessRole.Partner, true, 2)],
+            envelopes, documents, counters, [new("legacy-event-9", Guid.NewGuid(), tenant.Id, "dispatch", "quotes", quote.Id, at, historical, MigrationJson.Hash(historical), evidence.File)], [evidence], [], []);
+        return Controls(bundle);
+    }
+}

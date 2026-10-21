@@ -1,0 +1,113 @@
+<header class="page-heading"><div><p class="eyebrow">AUFTRAG UND PROJEKTBELEGE</p><h1>Nachkalkulation</h1><p>Vertrag, erfasste Kosten und eine ausdrücklich begründete Fertigstellungsprognose vergleichen.</p></div><a class="button secondary" routerLink="/orders">Zu den Aufträgen →</a></header>
+@if(!allowed()){<div class="alert warning">Diese Auswertung mit persönlichen Kostenansätzen ist für Geschäftsführung und Büro verfügbar.</div>}@else{
+@if(error()){<div class="alert error" role="alert">{{error()}}</div>}
+<section class="panel"><p class="eyebrow">AUFTRAG AUSWÄHLEN</p><div class="form-grid"><div class="form-field"><label for="cost-order-search">Aufträge durchsuchen</label><input id="cost-order-search" placeholder="Bezeichnung oder Nummer" maxlength="200" (input)="loadOrders($any($event.target).value)" [disabled]="busy()"></div><div class="form-field"><label for="cost-order">Auftrag für die Nachkalkulation</label><select id="cost-order" #costOrder="ngModel" [ngModel]="orderId" (ngModelChange)="changeOrder($event,costOrder)" [disabled]="busy()"><option value="">Bitte auswählen</option>@for(order of orders();track order.id){<option [value]="order.id">{{order['number']}} · {{name(order)}}</option>}</select></div></div><p class="small muted">Bis zu 100 Aufträge je Suche. Die Auswertung folgt den aktuellen Quellen dieses Projekts und schreibt keine Finanzbuchungen.</p>@if(loading()||busy()){<p role="status">{{busy()?'Projektquellen werden ausgewertet …':'Aufträge werden geladen …'}}</p>}</section>
+@if(capture();as capture){
+<section class="panel cost-result" aria-labelledby="cost-result-heading"><div class="panel-heading"><div><p class="eyebrow">LETZTER BERECHNETER STAND · {{date(capture.capturedAt)}}</p><h2 id="cost-result-heading">{{capture.report.contractSources[0].title}}</h2></div><button type="button" class="text-button" (click)="refresh()" [disabled]="busy()">Quellen neu einlesen</button></div>
+@if(dirty()){<div class="alert warning" role="status">Die Eingaben wurden geändert. Die angezeigten Ergebnisse stammen noch aus der letzten Berechnung. Bitte den Bericht mit den aktuellen Ansätzen neu berechnen.</div>}
+<div class="totals"><span>Angenommener Vertragswert<strong>{{money(capture.report.contractNet)}}</strong></span><span>Kalkulierte Kosten<strong>{{money(capture.report.plannedCost)}}</strong></span><span>Bereits bewertete Istkosten<strong>{{money(capture.report.knownActualCost)}}</strong></span></div>
+<div class="totals cost-completeness"><span>Vollständig bewertete Istkosten<strong [class.cost-unknown]="capture.report.actualCost===null">{{money(capture.report.actualCost)}}</strong></span><span>Prognose der Gesamtkosten<strong [class.cost-unknown]="capture.report.forecastCost===null">{{money(capture.report.forecastCost)}}</strong></span><span class="grand-total">Prognostizierter Überschuss<strong [class.cost-unknown]="capture.report.forecastMargin===null">{{money(capture.report.forecastMargin)}}</strong></span></div>
+<div class="form-grid cost-ratios"><p><strong>{{percent(capture.report.marginPercent)}}</strong><span class="document-date">Marge: Überschuss bezogen auf Vertragsnetto</span></p><p><strong>{{percent(capture.report.markupPercent)}}</strong><span class="document-date">Zuschlag: Überschuss bezogen auf prognostizierte Kosten</span></p></div><p class="small muted">Bereits bewertete Kosten können unvollständig sein. Vollständige Istkosten brauchen bewertete und freigegebene Quellen sowie Ihren beschriebenen Abgleich. Die Prognose benötigt zusätzlich eine eigene Restkostenschätzung.</p>
+@if(capture.report.missing.length){<details class="workflow-detail" open><summary>{{capture.report.missing.length}} offene Prüfschritte</summary><ul>@for(item of capture.report.missing;track $index){<li>{{missingDetail(item)}}</li>}</ul></details>}
+<details class="workflow-detail"><summary>Vertragsgrundlage aus Auftrag und angenommenen Nachträgen</summary><div class="table-wrap"><table><caption>Verbindliche Kalkulationsstände</caption><thead><tr><th>Vorgang</th><th>Vertragsnetto</th><th>Kalkulierte Kosten</th><th>Quellstand</th></tr></thead><tbody>@for(source of capture.report.contractSources;track source.kind+source.id){<tr><td data-label="Vorgang"><a [routerLink]="'/'+source.kind" [queryParams]="{selected:source.id}">{{source.title}}</a><span class="document-date">{{source.kind==='orders'?'Auftrag':'Angenommener Nachtrag'}}</span></td><td data-label="Vertragsnetto">{{money(source.contractNet)}}</td><td data-label="Kalkulierte Kosten">{{money(source.plannedCost)}}</td><td data-label="Quellstand">Revision {{source.revision}}<code class="evidence-code">{{source.digest}}</code></td></tr>}</tbody></table></div></details>
+</section>
+<section class="panel" aria-labelledby="cost-allocation-heading">
+  <p class="eyebrow">GEBUCHTE PROJEKTKOSTEN</p>
+  <h2 id="cost-allocation-heading">Lieferantenkosten verbindlich zuordnen</h2>
+  <p class="small muted">Eine gebuchte Nettoverteilung belegt einen Betrag dauerhaft für dieses Projekt. Mehrere Projektanteile dürfen zusammen das geprüfte Belegnetto nicht überschreiten. Die Buchung ist keine Zahlung. Änderungen erfolgen ausschließlich als dokumentierte Stornierung und neue Buchung.</p>
+  <div class="form-grid">
+    <div class="form-field full-width">
+      <label for="cost-alloc-search">Freigegebene Eingangsbelege durchsuchen</label>
+      <input id="cost-alloc-search" maxlength="200" placeholder="Nummer oder Bezeichnung" (input)="lookupSuppliers($any($event.target).value)" [disabled]="busy()">
+    </div>
+    <div class="form-field full-width">
+      <label for="cost-alloc-source">Beleg zur verbindlichen Verteilung</label>
+      <select id="cost-alloc-source" name="allocationInvoiceId" [ngModel]="allocationSupplierId" (ngModelChange)="allocationSourceChanged($event)" [disabled]="busy()">
+        <option value="">Bitte auswählen</option>
+        @for(invoice of supplierOptions();track invoice.id){<option [value]="invoice.id">{{invoice['number']}} · {{name(invoice)}}</option>}
+      </select>
+    </div>
+  </div>
+  @if(allocationSupplierId){
+    @if(allocationAvailable()!==null){<p class="small muted">Noch nicht verteilter Belegnettoanteil: <strong>{{money(allocationAvailable())}}</strong></p>}
+    <div class="form-grid">
+      <div class="form-field"><label for="cost-alloc-amount">Neuer Netto-Projektanteil (€)</label>
+        <input id="cost-alloc-amount" name="allocationAmount" type="number" [(ngModel)]="allocationNet" min="0.01" step="0.01" max="1000000000000" [disabled]="busy()">
+      </div>
+      <div class="form-field full-width"><label for="cost-alloc-reason">Begründung und Herkunft des Projektanteils</label>
+        <textarea id="cost-alloc-reason" name="allocationReason" [(ngModel)]="allocationReason" rows="2" maxlength="2000" [disabled]="busy()"></textarea>
+      </div>
+    </div>
+    @if(dirty()){<p class="small warning-text">Bitte zunächst die geänderten Kostenansätze neu berechnen. Eine verbindliche Zuordnung ist solange gesperrt.</p>}
+    <div class="detail-actions">
+      <button type="button" class="button primary" [disabled]="busy()||dirty()||!allocationNet||!allocationReason.trim()" (click)="postAllocation()">Projektanteil verbindlich buchen</button>
+    </div>
+    @if(activeAllocations().length){
+      <div class="table-wrap"><table><caption>Aktive gebuchte Verteilungen dieses Eingangsbelegs</caption>
+        <thead><tr><th>Projektbezug</th><th>Nettoanteil</th><th>Nachweis</th><th>Stornierung</th></tr></thead>
+        <tbody>@for(entry of activeAllocations();track entry.id){
+          <tr><td data-label="Projekt">{{entry.projectId===capture.report.projectId?'Aktuelles Projekt':'Anderes Projekt'}}</td>
+            <td data-label="Nettoanteil">{{money(entry.netAmount)}}</td>
+            <td data-label="Nachweis">{{entry.reason}}</td>
+            <td data-label="Stornierung">
+              @if(entry.projectId===capture.report.projectId){
+                <div class="form-field"><label [for]="'cost-alloc-undo-'+entry.id">Begründung</label>
+                  <input [id]="'cost-alloc-undo-'+entry.id" [name]="'cost-alloc-undo-'+entry.id" [(ngModel)]="allocationReverseReason" maxlength="2000" [disabled]="busy()">
+                </div>
+                <button type="button" class="button secondary" [disabled]="busy()||dirty()||!allocationReverseReason.trim()" (click)="reverseAllocation(entry)">Buchung stornieren</button>
+              }@else{<span class="small muted">Nur im zugehörigen Projekt bearbeiten</span>}
+            </td>
+          </tr>
+        }</tbody>
+      </table></div>
+    }
+  }
+  <p class="small muted">Gutschriften können nur im Umfang der ursprünglich gebuchten Kosten desselben Projekts verteilt werden. Ein bereits verrechneter Originalanteil ist gegen Stornierung gesperrt, solange dessen Gutschrift noch besteht. Die nächste Nachkalkulation verwendet die geprüften aktiven Buchungen automatisch.</p>
+</section>
+<form #costForm="ngForm" (ngSubmit)="calculate()">
+<fieldset class="quantity-form" [disabled]="busy()">
+@for(kind of kinds;track kind.key){<section class="panel"><div class="panel-heading"><div><p class="eyebrow">QUELLEN BEWERTEN</p><h2>{{kind.title}} · {{sources(kind.key).length}}</h2></div></div>
+@if(kind.key==='time-entries'){<p class="small muted">Der Server verwendet die freigegebene verstrichene Zeit abzüglich ihrer Pausen. Einen betriebsbezogenen Kostenstundensatz und dessen Quelle geben Sie ausdrücklich je Buchung an.</p>}
+@if(kind.key==='stock-movements'){<p class="small muted">Gebuchter Verbrauch zählt mit seinen dokumentierten Stückkosten, Rückgaben mindern den Ansatz. Wareneingänge werden nicht zusätzlich gezählt. Ein Ansatz von 0 € benötigt einen ausdrücklichen Nachweis.</p>}
+@if(kind.key==='supplier-invoices'){<p class="small muted">Freigegebene Eingangsbelege können entweder als unverbindlicher geprüfter Anteil bewertet oder oben verbindlich gebucht werden. Bereits gebuchte Fremdleistungen werden hier automatisch übernommen und sind vor manuellem Überschreiben geschützt. Materialkosten aus Verbrauch dürfen nicht doppelt angesetzt werden.</p>}
+@for(source of pagedSources(kind.key);track source.id){<article class="line-row cost-source" [attr.data-source-id]="source.id"><div class="line-heading"><h3>{{sourceTitle(source)}}</h3><a class="small" [routerLink]="'/'+source.kind" [queryParams]="{selected:source.id}">Quelle öffnen →</a></div><p>Ansatz in der letzten Berechnung: <strong>{{money(source.netCost)}}</strong></p>@if(source.missing){<p class="small warning-text">{{missingLabel(source.missing)}}</p>}
+@if(kind.key==='time-entries'){<label class="checkbox-field"><input type="checkbox" [name]="'use-time-'+source.id" [(ngModel)]="timeInputs[source.id].selected" (ngModelChange)="changed()" [disabled]="source.missing==='time_not_approved'"><span>Diese Zeitbuchung mit einem geprüften Stundensatz bewerten</span></label>@if(timeInputs[source.id].selected){<div class="form-grid"><div class="form-field"><label [for]="'hourly-'+source.id">Geprüfter Stundensatz (€ / Stunde)</label><input [id]="'hourly-'+source.id" [name]="'hourly-'+source.id" [type]="'number'" [(ngModel)]="timeInputs[source.id].hourlyCost" (ngModelChange)="changed()" min="0" max="100000" step="any" required></div><div class="form-field full-width"><label [for]="'hourly-evidence-'+source.id">Quelle des Stundensatzes</label><textarea [id]="'hourly-evidence-'+source.id" [name]="'hourly-evidence-'+source.id" [(ngModel)]="timeInputs[source.id].evidence" (ngModelChange)="changed()" required maxlength="2000" rows="2" placeholder="Geprüfte betriebliche Kostengrundlage und Stand"></textarea></div></div>}}
+@if(kind.key==='stock-movements'&&canConfirmZero(source)){<label class="checkbox-field"><input type="checkbox" [name]="'zero-'+source.id" [(ngModel)]="zeroInputs[source.id].selected" (ngModelChange)="changed()"><span>Kostenlosen Materialansatz von 0 € ausdrücklich bestätigen</span></label>@if(zeroInputs[source.id].selected){<div class="form-field"><label [for]="'zero-evidence-'+source.id">Nachweis für den kostenlosen Materialansatz</label><textarea [id]="'zero-evidence-'+source.id" [name]="'zero-evidence-'+source.id" [(ngModel)]="zeroInputs[source.id].evidence" (ngModelChange)="changed()" required maxlength="2000" rows="2" placeholder="Zum Beispiel belegte kostenfreie Ersatzlieferung"></textarea></div>}}
+@if(kind.key==='supplier-invoices'){<label class="checkbox-field"><input type="checkbox" [name]="'use-supplier-'+source.id" [(ngModel)]="supplierInputs[source.id].selected" (ngModelChange)="changed()" [disabled]="source.missing==='supplier_invoice_not_approved'||source.basis.startsWith('Posted allocation journal ')"><span>Zuordnung dieses Eingangsbelegs ausdrücklich bewerten</span></label>@if(supplierInputs[source.id].selected){<div class="form-grid"><div class="form-field"><label [for]="'treatment-'+source.id">Behandlung des Eingangsbelegs</label><select [id]="'treatment-'+source.id" [name]="'treatment-'+source.id" [(ngModel)]="supplierInputs[source.id].treatment" (ngModelChange)="treatmentChanged(source.id)" required><option value="">Bitte ausdrücklich auswählen</option><option value="ExternalService">Fremdleistung mit geprüftem Projektanteil</option><option value="StockValuation">Bereits über Materialbewegungen bewertet</option></select></div><div class="form-field"><label [for]="'supplier-net-'+source.id">Netto-Kostenanteil dieses Projekts (€)</label><input [id]="'supplier-net-'+source.id" [name]="'supplier-net-'+source.id" [type]="'number'" [(ngModel)]="supplierInputs[source.id].projectNet" (ngModelChange)="changed()" [readonly]="supplierInputs[source.id].treatment==='StockValuation'" required min="0" max="1000000000000" step="0.01"></div><div class="form-field full-width"><label [for]="'supplier-evidence-'+source.id">Grundlage der Belegzuordnung</label><textarea [id]="'supplier-evidence-'+source.id" [name]="'supplier-evidence-'+source.id" [(ngModel)]="supplierInputs[source.id].evidence" (ngModelChange)="changed()" required maxlength="2000" rows="2" placeholder="Geprüfter Projektanteil oder belegte Bewertung über Materialverbrauch"></textarea></div></div>@if(supplierInputs[source.id].treatment==='StockValuation'){<p class="small muted">Aus diesem Eingangsbeleg wird kein zusätzlicher Kostenbetrag angesetzt. Der Materialverbrauch trägt bereits seine eigene Bewertung.</p>}}}
+@if(kind.key==='supplier-invoices'&&isAdditionalSupplier(source.id)){<button type="button" class="text-button" (click)="removeSupplier(source.id)">Zusätzlichen Beleg aus der Bewertung entfernen</button>}
+<details class="workflow-detail"><summary>Quellstand und bisherigen Ansatz prüfen</summary><p class="small muted">Revision {{source.revision}} · {{source.id}}</p>@if(source.basis){<p>{{basisLabel(source.basis)}}</p>}@if(source.digest){<code class="evidence-code">{{source.digest}}</code>}</details></article>}@empty{<p class="small muted">Keine Quellen dieser Kategorie im aktuellen Bericht.</p>}
+@if(pages(kind.key)>1){<div class="pagination"><button type="button" class="button secondary" (click)="sourcePage[kind.key]=(sourcePage[kind.key]||1)-1" [disabled]="(sourcePage[kind.key]||1)===1">← Zurück</button><span>Seite {{sourcePage[kind.key]||1}} von {{pages(kind.key)}}</span><button type="button" class="button secondary" (click)="sourcePage[kind.key]=(sourcePage[kind.key]||1)+1" [disabled]="(sourcePage[kind.key]||1)>=pages(kind.key)">Weiter →</button></div>}
+@if(kind.key==='supplier-invoices'){<details class="workflow-detail"><summary>Weiteren freigegebenen Eingangsbeleg auswählen</summary><p class="small muted">Zusätzliche Belege können ausdrücklich einbezogen werden. Ein Beleg aus der Bestellung eines anderen Projekts wird zurückgewiesen.</p><div class="form-field"><label for="cost-supplier-search">Eingangsbelege durchsuchen</label><input id="cost-supplier-search" name="supplierSearch" maxlength="200" placeholder="Nummer oder Bezeichnung" (input)="lookupSuppliers($any($event.target).value)"></div><div class="form-field"><label for="cost-supplier-select">Freigegebener Eingangsbeleg</label><select id="cost-supplier-select" name="supplierId" [(ngModel)]="supplierId"><option value="">Bitte auswählen</option>@for(invoice of supplierOptions();track invoice.id){<option [value]="invoice.id">{{invoice['number']}} · {{name(invoice)}}</option>}</select></div><button type="button" class="button secondary" [disabled]="!supplierId" (click)="addSupplier()">Beleg zur Bewertung ergänzen</button></details>}
+</section>}
+<section class="panel"><p class="eyebrow">VOLLSTÄNDIGKEIT UND PROGNOSE</p><h2>Den geprüften Umfang beschreiben</h2><div class="form-field"><label for="cost-coverage">Abgleich der erfassten Kosten</label><textarea id="cost-coverage" name="coverage" [(ngModel)]="recordedCostsCoverage" (ngModelChange)="changed()" maxlength="2000" rows="3" placeholder="Welche erfassten Quellen wurden bis zu welchem Stand abgeglichen?"></textarea></div><p class="small muted">Ohne beschriebenen Abgleich bleiben vollständige Istkosten ungeklärt. Ihre Angabe bestätigt keine unbekannten Kosten außerhalb der erfassten Projektquellen.</p><label class="checkbox-field"><input type="checkbox" name="forecastEnabled" [(ngModel)]="forecastEnabled" (ngModelChange)="changed()"><span>Restkosten ausdrücklich schätzen</span></label>@if(forecastEnabled){<div class="form-grid"><div class="form-field"><label for="cost-remaining">Geschätzte verbleibende Kosten (€)</label><input id="cost-remaining" name="remainingCost" [type]="'number'" [(ngModel)]="remainingForecastCost" (ngModelChange)="changed()" required min="0" max="1000000000000" step="0.01"></div><div class="form-field full-width"><label for="cost-forecast-evidence">Grundlage der Restkostenschätzung</label><textarea id="cost-forecast-evidence" name="forecastEvidence" [(ngModel)]="forecastEvidence" (ngModelChange)="changed()" required maxlength="2000" rows="3" placeholder="Verbleibende Arbeit und Kostenansätze; auch ein Ansatz von 0 € benötigt eine Begründung"></textarea></div></div>}</section>
+</fieldset><div class="detail-actions"><button class="button primary" [disabled]="busy()||costForm.invalid">Bericht mit diesen Ansätzen berechnen</button><button type="button" class="button secondary" [disabled]="busy()||dirty()" (click)="download()">Aktuellen Bericht als JSON</button></div></form>
+<details class="panel"><summary>Herkunft, Grenzen und Aufbewahrung des Berichts</summary><p>Verfahren {{capture.report.methodVersion}}. Der Bericht bewahrt Vertragsquellen, Quellrevisionen, dokumentierte Ansätze, offene Prüfschritte und seinen Inhaltsdigest. Ein JSON-Download enthält genau diesen zurückgegebenen Stand.</p><code class="evidence-code">{{capture.report.digest}}</code><p>Manuell eingegebene Beleganteile gelten nur für diese Vorschau und reservieren keinen Betrag. Verbindlich gebuchte Projektanteile werden dagegen aus dem unveränderlichen Lieferantenkostenjournal übernommen, sind über alle Projekte begrenzt und benötigen eine eigene Stornierung. Dieser Bericht ersetzt keine Finanzbuchhaltung.</p><p class="small muted">Aktuelle Projektquellen, höchstens 5.000 je Kategorie. Eine bewusst gespeicherte, versionierte Prognose wird unveränderlich in der Projektakte aufbewahrt. Ungespeicherte Vorschauen bleiben flüchtig. Lohnkostenbasis, Gemeinkosten, Steuern und eine fachliche Abnahme werden durch diese Berechnung nicht festgelegt. Ungeklärte Werte bleiben auch im Download gekennzeichnet.</p></details>
+
+<section class="panel" aria-labelledby="cost-history-title">
+<div class="panel-heading"><div><p class="eyebrow">PRÜFSTAND UND HISTORIE</p><h2 id="cost-history-title">Prognosen versioniert speichern</h2></div></div>
+<p>Eine gespeicherte Prognose hält die geprüften Eingaben, Quellrevisionen, den Berechnungsdigest und die offenen Prüfschritte unveränderlich fest. Der Server gleicht vor jeder Speicherung die aktuellen Projektquellen erneut ab. Sie ersetzt keine Finanzbuchung.</p>
+<div class="form-field"><label for="cost-forecast-reason">Begründung für die neue Prognoseversion</label>
+<textarea id="cost-forecast-reason" name="costForecastReason" [(ngModel)]="forecastReason" maxlength="2000" rows="3" placeholder="Kostenstand, besondere Annahmen und Anlass dieser Version"></textarea></div>
+<div class="detail-actions"><button type="button" class="button primary" (click)="saveForecast()" [disabled]="busy()||dirty()||!forecastReason.trim()">Geprüften Stand dauerhaft speichern</button></div>
+@if(dirty()){<p class="small warning-text">Die Eingaben wurden verändert. Vor dem Speichern bitte den Bericht erneut berechnen.</p>}
+@if(forecastError()){<div class="alert warning" role="alert">{{forecastError()}}</div>}
+@if(forecasts().length){
+<div class="table-wrap"><table><caption>Gespeicherte Prognoseversionen für diesen Auftrag</caption><thead><tr><th>Version</th><th>Zeit und Begründung</th><th>Istkosten</th><th>Prognose</th><th>Überschuss</th><th>Aktion</th></tr></thead>
+<tbody>@for(item of forecasts();track item.id){<tr>
+<td data-label="Version">v{{item.version}}</td><td data-label="Zeit und Begründung">{{date(item.capturedAt)}}<span class="document-date">{{item.reason}}</span></td>
+<td data-label="Istkosten">{{money(item.actualCost)}}</td><td data-label="Prognose">{{money(item.forecastCost)}}</td><td data-label="Überschuss">{{money(item.forecastMargin)}}</td>
+<td data-label="Aktion"><button type="button" class="text-button" (click)="openForecast(item.id)" [disabled]="busy()">Prüfstand öffnen</button></td>
+</tr>}</tbody></table></div>
+}@else{<p class="small muted">Für diesen Auftrag wurde noch keine Prognose dauerhaft gespeichert.</p>}
+@if(openedForecast();as historical){
+<details class="workflow-detail" open><summary>Gespeicherter Prüfstand v{{historical.version}} · {{date(historical.capturedAt)}}</summary>
+<p>{{historical.reason}}</p>
+<div class="totals"><span>Festgehaltene Istkosten<strong>{{money(historical.report.actualCost)}}</strong></span><span>Festgehaltene Gesamtkosten<strong>{{money(historical.report.forecastCost)}}</strong></span><span>Festgehaltener Überschuss<strong>{{money(historical.report.forecastMargin)}}</strong></span></div>
+<p class="small muted">{{historical.report.missing.length}} offene Prüfhinweise zum Zeitpunkt der Speicherung · Version {{historical.version}} · Methode {{historical.report.methodVersion}}</p>
+<code class="evidence-code">{{historical.report.digest}}</code>
+<button type="button" class="button secondary" (click)="downloadForecast()" [disabled]="busy()">Diese Version als JSON herunterladen</button>
+</details>}
+</section>
+
+}
+}

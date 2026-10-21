@@ -1,0 +1,270 @@
+{
+  "schema": "firstblick.live-offline-evidence/1.0.0",
+  "synthetic": true,
+  "referenceCommit": "06b58921f206bd216f6c23408b735da091ef1e8e",
+  "uncommittedFrontendChangesIncluded": true,
+  "sourceFilesSha256": {
+    "src/app/core/auth.service.ts": "a9dac3999b25487fd1bf90434ede0a1d0cbb6df8f5613891620acde641f62d7c",
+    "src/app/core/api.service.ts": "0ac89392857e2b917ce04fe54487a64cab7aa39ceab9d675493097c168947ae6",
+    "src/app/core/transport.ts": "e7e30bfd7463541672ed8e6a9ed74930a5de9160795d24ddf324cf0941723a6c",
+    "src/app/core/offline-store.ts": "96ad7954af9ddce8d1e26f13ce808d7c3a6bacca78ffb7c07f4ac7a0b7a5db91",
+    "src/app/core/session-access.ts": "f9773aa16ac9224d4cb00380009392ccc079f00e5969c1617c4a5ae8460c34af",
+    "src/app/core/local-time.ts": "291d57a366252f16114378ef31681c346fcb0366fa909ad93dbdb0d7500477f0",
+    "src/app/pages/collection.component.ts": "2b5afc1e34e42c2d1c4aa1d2a6ccccdabeb374d9431aa8255677455874258c62",
+    "src/app/pages/login.component.ts": "1705c615a3ba5ab621e36214738d74156540ad16451e551cbfadf364cd0af48c",
+    "src/app/pages/offline.component.ts": "d7f5507d716dd975bc57af572de599337a35497bce21d4e606875de513d7a7d4",
+    "ngsw-config.json": "59c3788db016c00bc7649e31f22c8d35faee21c9d8dcc4c7de4b59aefeed68f8",
+    "playwright.offline.config.ts": "bc03dbff9e636f6a867d58db27a75743aa18283bbefd48ce6dc52e80b03a411e",
+    "tools/preview.mjs": "c3e1fdf834df29524639b5d13f24d15695cf52b108fbb7d8676059cf14ab1d74",
+    "tests/live/offline-workday.spec.ts": "1670942364dc4663281bf952cbb035e28f63d0720ac4a6f175f171435622bab9"
+  },
+  "productionBuild": {
+    "success": true,
+    "initialBundleKB": "376.95",
+    "angular": "22.2.3",
+    "node": "24.19.0",
+    "manifestSha256": "293464c606269bc925a1929925be1da86c969ff34fbdfaa3a74ed7abee0dc14b"
+  },
+  "verification": {
+    "unitTests": {
+      "passed": 39,
+      "failed": 0
+    },
+    "browserFixtures": {
+      "earlierFullRegression": {
+        "passed": 63,
+        "failed": 0
+      },
+      "latestPersonalRegression": {
+        "passed": 18,
+        "failed": 0
+      },
+      "newExplicitTimeZoneCases": {
+        "passed": 6,
+        "failed": 0
+      },
+      "note": "The earlier 63-case full fixture run preceded the UTC-offset editor addition. The 18 existing personal cases and 6 new time-zone cases passed after it. A complete combined 69-case fixture run has not yet been captured here."
+    },
+    "realOfflineWorkday": {
+      "passed": 3,
+      "failed": 0,
+      "skipped": 0,
+      "durationSeconds": 41.456652999999996,
+      "apiInterception": false,
+      "api": "Synthetic local ASP.NET application with actual PostgreSQL; production Angular bundle is served by a loopback-only reverse proxy.",
+      "test": "web/tests/live/offline-workday.spec.ts",
+      "serviceWorkerDataCacheContainsAuthenticatedApi": false
+    }
+  },
+  "issuesFoundAndCorrected": [
+    "Authenticated API requests explicitly bypass the application-shell service worker, including CSRF bootstrap. Browser offline emulation previously allowed a service-worker-originated auth request to reach the real API.",
+    "Session timeout now locks unsent field-work records until the same person authenticates and fresh server rights are checked. Explicit logout and verified account/capability revocation purge local data.",
+    "Repeated local clock hours require an explicit UTC offset. Invalid skipped local times are rejected; editing retains the stored instant and millisecond precision."
+  ],
+  "limits": [
+    "This demonstrates a full Chromium process restart using the same persistent profile. It does not simulate hardware loss or browser storage eviction.",
+    "The service worker caches application-shell assets only. Selected time/diary lists and project/employee option labels are deliberately stored in user-and-tenant-scoped IndexedDB.",
+    "Real offline workday viewports use the explicit device timezone Europe/Berlin. Repeated-hour/gap behavior is additionally checked in independent unit and browser fixtures."
+  ],
+  "runs": [
+    {
+      "synthetic": true,
+      "completedAt": "2026-10-20T06:28:38.309Z",
+      "project": "desktop",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "runtime": {
+        "browser": "155.0.8059.84",
+        "node": "v24.19.0",
+        "origin": "http://127.0.0.1:4300",
+        "productionServiceWorker": true,
+        "deviceTimeZone": "Europe/Berlin",
+        "serviceWorkerManifestSha256": "293464c606269bc925a1929925be1da86c969ff34fbdfaa3a74ed7abee0dc14b"
+      },
+      "setup": "Authenticated HTTP creates project and assigned shift; employee account binding and all field-work steps use the production UI.",
+      "resourceIds": {
+        "tenantId": "33ee2861-9964-4a1e-864b-43dbef4e68ec",
+        "workerUserId": "639450fc-8a14-48b2-aa8a-cf6f5d6f8d4a",
+        "employeeId": "09db309d-dcaa-4d09-be11-6e27df19860a",
+        "projectId": "7d323b19-b529-43fd-b42a-d04ff1afc668",
+        "assignmentId": "b2674083-d1b4-4322-b2a4-a848a8b93fba",
+        "timeEntryId": "5daba695-3387-496b-a10f-0e940890a2f2",
+        "diaryEntryId": "6d81f277-9e3e-4aa1-bd24-8b277adbeefd"
+      },
+      "assertions": {
+        "noApiInterception": true,
+        "realPersonallyLinkedWorker": true,
+        "ownEmployeeLockedInForms": true,
+        "realBrowserNetworkDisabled": true,
+        "scopedRelationOptionsAvailableOffline": true,
+        "twoDurableMutationsBeforeRestart": true,
+        "completeBrowserProcessRestartOffline": true,
+        "unchangedPayloadsAndIdempotencyKeysAfterRestart": true,
+        "expiredServerSessionLocksAndPreservesQueue": true,
+        "explicitPersonalReauthenticationBeforeReplay": true,
+        "realAuthorizationCheckedBeforeReplay": true,
+        "exactlyTwoPendingMutationsReplayed": true,
+        "serverIdempotencyPreventsDuplicateTimeEntry": true,
+        "timeAndPauseInstantsPreserved": true,
+        "noAuthenticatedApiResponsesInServiceWorkerCache": true,
+        "offlineLogoutPurgesLocalWorkAndSession": true,
+        "pendingServerLogoutCompletesOnReconnect": true,
+        "noHorizontalOverflow": true,
+        "browserErrors": []
+      },
+      "workday": {
+        "start": "2026-11-05T08:00:00.000Z",
+        "end": "2026-11-05T16:00:00.000Z",
+        "breakStart": "2026-11-05T12:00:00.000Z",
+        "breakEnd": "2026-11-05T12:30:00.000Z",
+        "netHours": "7.5"
+      },
+      "replayedKeys": [
+        {
+          "kind": "time-entries",
+          "key": "3cdedbe2-6571-40ba-8d5d-08602ce03a4a"
+        },
+        {
+          "kind": "diary-entries",
+          "key": "8876a199-b5b0-470f-a047-50ee5ee97257"
+        }
+      ],
+      "credentialsIncluded": false
+    },
+    {
+      "synthetic": true,
+      "completedAt": "2026-10-20T06:29:02.640Z",
+      "project": "mobile",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "runtime": {
+        "browser": "155.0.8059.84",
+        "node": "v24.19.0",
+        "origin": "http://127.0.0.1:4300",
+        "productionServiceWorker": true,
+        "deviceTimeZone": "Europe/Berlin",
+        "serviceWorkerManifestSha256": "293464c606269bc925a1929925be1da86c969ff34fbdfaa3a74ed7abee0dc14b"
+      },
+      "setup": "Authenticated HTTP creates project and assigned shift; employee account binding and all field-work steps use the production UI.",
+      "resourceIds": {
+        "tenantId": "33ee2861-9964-4a1e-864b-43dbef4e68ec",
+        "workerUserId": "639450fc-8a14-48b2-aa8a-cf6f5d6f8d4a",
+        "employeeId": "09db309d-dcaa-4d09-be11-6e27df19860a",
+        "projectId": "ae159597-0ee4-4e44-821f-1df6489ec606",
+        "assignmentId": "86bcb081-b230-4742-88a9-b971733b8bf4",
+        "timeEntryId": "860a63b6-1c3e-4eaa-8bef-2b9e696be025",
+        "diaryEntryId": "e8887195-4391-4106-acc7-c295a750cb3b"
+      },
+      "assertions": {
+        "noApiInterception": true,
+        "realPersonallyLinkedWorker": true,
+        "ownEmployeeLockedInForms": true,
+        "realBrowserNetworkDisabled": true,
+        "scopedRelationOptionsAvailableOffline": true,
+        "twoDurableMutationsBeforeRestart": true,
+        "completeBrowserProcessRestartOffline": true,
+        "unchangedPayloadsAndIdempotencyKeysAfterRestart": true,
+        "expiredServerSessionLocksAndPreservesQueue": true,
+        "explicitPersonalReauthenticationBeforeReplay": true,
+        "realAuthorizationCheckedBeforeReplay": true,
+        "exactlyTwoPendingMutationsReplayed": true,
+        "serverIdempotencyPreventsDuplicateTimeEntry": true,
+        "timeAndPauseInstantsPreserved": true,
+        "noAuthenticatedApiResponsesInServiceWorkerCache": true,
+        "offlineLogoutPurgesLocalWorkAndSession": true,
+        "pendingServerLogoutCompletesOnReconnect": true,
+        "noHorizontalOverflow": true,
+        "browserErrors": []
+      },
+      "workday": {
+        "start": "2026-11-09T08:00:00.000Z",
+        "end": "2026-11-09T16:00:00.000Z",
+        "breakStart": "2026-11-09T12:00:00.000Z",
+        "breakEnd": "2026-11-09T12:30:00.000Z",
+        "netHours": "7.5"
+      },
+      "replayedKeys": [
+        {
+          "kind": "time-entries",
+          "key": "75fefda0-44c6-4247-ad7e-4492f3604e16"
+        },
+        {
+          "kind": "diary-entries",
+          "key": "fb0258f2-e7e9-42bf-9b92-f31f75756977"
+        }
+      ],
+      "credentialsIncluded": false
+    },
+    {
+      "synthetic": true,
+      "completedAt": "2026-10-20T06:28:51.569Z",
+      "project": "tablet",
+      "viewport": {
+        "width": 1024,
+        "height": 768
+      },
+      "runtime": {
+        "browser": "155.0.8059.84",
+        "node": "v24.19.0",
+        "origin": "http://127.0.0.1:4300",
+        "productionServiceWorker": true,
+        "deviceTimeZone": "Europe/Berlin",
+        "serviceWorkerManifestSha256": "293464c606269bc925a1929925be1da86c969ff34fbdfaa3a74ed7abee0dc14b"
+      },
+      "setup": "Authenticated HTTP creates project and assigned shift; employee account binding and all field-work steps use the production UI.",
+      "resourceIds": {
+        "tenantId": "33ee2861-9964-4a1e-864b-43dbef4e68ec",
+        "workerUserId": "639450fc-8a14-48b2-aa8a-cf6f5d6f8d4a",
+        "employeeId": "09db309d-dcaa-4d09-be11-6e27df19860a",
+        "projectId": "6bf343dd-e0e8-4ebc-a927-e91d0926a46b",
+        "assignmentId": "ba0746d5-7ed7-4d88-bc96-2a1df33ca010",
+        "timeEntryId": "e025a4cc-77da-4910-b8cd-c2ec0e38d247",
+        "diaryEntryId": "1de18ad7-53d8-4f61-9024-25b116e1fd27"
+      },
+      "assertions": {
+        "noApiInterception": true,
+        "realPersonallyLinkedWorker": true,
+        "ownEmployeeLockedInForms": true,
+        "realBrowserNetworkDisabled": true,
+        "scopedRelationOptionsAvailableOffline": true,
+        "twoDurableMutationsBeforeRestart": true,
+        "completeBrowserProcessRestartOffline": true,
+        "unchangedPayloadsAndIdempotencyKeysAfterRestart": true,
+        "expiredServerSessionLocksAndPreservesQueue": true,
+        "explicitPersonalReauthenticationBeforeReplay": true,
+        "realAuthorizationCheckedBeforeReplay": true,
+        "exactlyTwoPendingMutationsReplayed": true,
+        "serverIdempotencyPreventsDuplicateTimeEntry": true,
+        "timeAndPauseInstantsPreserved": true,
+        "noAuthenticatedApiResponsesInServiceWorkerCache": true,
+        "offlineLogoutPurgesLocalWorkAndSession": true,
+        "pendingServerLogoutCompletesOnReconnect": true,
+        "noHorizontalOverflow": true,
+        "browserErrors": []
+      },
+      "workday": {
+        "start": "2026-11-07T08:00:00.000Z",
+        "end": "2026-11-07T16:00:00.000Z",
+        "breakStart": "2026-11-07T12:00:00.000Z",
+        "breakEnd": "2026-11-07T12:30:00.000Z",
+        "netHours": "7.5"
+      },
+      "replayedKeys": [
+        {
+          "kind": "diary-entries",
+          "key": "a04d11d9-9734-43c2-b056-51319b9da5d8"
+        },
+        {
+          "kind": "time-entries",
+          "key": "daec379c-ceb8-4178-98ce-6db7a0ca63f8"
+        }
+      ],
+      "credentialsIncluded": false
+    }
+  ],
+  "credentialsIncluded": false
+}
