@@ -29,12 +29,17 @@ public sealed class DiaryReportApiTests(PostgresApiFixture fixture) : IClassFixt
         Assert.Equal("diary_immutable", await Error(Send(author, HttpMethod.Put, $"/api/v1/diary-entries/{draft.Id}", submitted, submitted.Revision)));
         Assert.Equal("diary_immutable", await Error(Send(reviewer, HttpMethod.Delete, $"/api/v1/diary-entries/{draft.Id}", revision: submitted.Revision)));
         Assert.Equal("forbidden", await Error(Send(author, HttpMethod.Post, $"/api/v1/diary-entries/{draft.Id}/review", new { approve = true, digest = submitted.Submission!.Digest }, submitted.Revision)));
-        var approved = await Ok<DiaryEntry>(Send(reviewer, HttpMethod.Post, $"/api/v1/diary-entries/{draft.Id}/review", new { approve = true, digest = submitted.Submission!.Digest, notes = "Tagesstand geprüft" }, submitted.Revision));
+        var reviewKey = Guid.NewGuid().ToString("N");
+        var reviewBody = new { approve = true, digest = submitted.Submission!.Digest, notes = "Tagesstand geprüft" };
+        var approved = await Ok<DiaryEntry>(Send(reviewer, HttpMethod.Post, $"/api/v1/diary-entries/{draft.Id}/review", reviewBody, submitted.Revision, reviewKey));
         employee.Name = "Changed employee"; project.Name = "Changed project";
         await Ok<Employee>(Send(reviewer, HttpMethod.Put, $"/api/v1/employees/{employee.Id}", employee, employee.Revision));
         await Ok<Project>(Send(reviewer, HttpMethod.Put, $"/api/v1/projects/{project.Id}", project, project.Revision));
         Assert.Equal("Mitarbeiter Original", approved.Submission!.Content.EmployeeName); Assert.Equal("Projekt Original", approved.Submission.Content.ProjectName);
-        var document = await Ok<JsonElement>(Send(author, HttpMethod.Post, $"/api/v1/diary-entries/{draft.Id}/pdf", new { }, approved.Revision));
+        var pdfKey = Guid.NewGuid().ToString("N");
+        var document = await Ok<JsonElement>(Send(author, HttpMethod.Post, $"/api/v1/diary-entries/{draft.Id}/pdf", new { }, approved.Revision, pdfKey));
+        var replayedDocument = await Ok<JsonElement>(Send(author, HttpMethod.Post, $"/api/v1/diary-entries/{draft.Id}/pdf", new { }, approved.Revision, pdfKey));
+        Assert.Equal(document.GetProperty("id").GetGuid(), replayedDocument.GetProperty("id").GetGuid()); Assert.Equal(1, harness.Store.PutCount);
         var bytes = await Download(author, document);
         using var pdf = PdfReader.Open(new MemoryStream(bytes), PdfDocumentOpenMode.Import);
         Assert.True(pdf.PageCount >= 3);
@@ -49,7 +54,19 @@ public sealed class DiaryReportApiTests(PostgresApiFixture fixture) : IClassFixt
             var db = services.GetRequiredService<FirstBlickDbContext>();
             Assert.Equal(1, await db.Audit.IgnoreQueryFilters().CountAsync(a => a.TenantId == worker.TenantId && a.EntityId == draft.Id && a.Action == "diary.submit"));
             Assert.Equal(1, await db.Audit.IgnoreQueryFilters().CountAsync(a => a.TenantId == worker.TenantId && a.EntityId == draft.Id && a.Action == "diary.approve"));
+            var membership = await db.Memberships.IgnoreQueryFilters().SingleAsync(m => m.TenantId == manager.TenantId && m.UserId == manager.UserId);
+            membership.Role = BusinessRole.Office; await db.SaveChangesAsync();
         });
+        Assert.Equal("forbidden", await Error(Send(reviewer, HttpMethod.Post, $"/api/v1/diary-entries/{draft.Id}/review", reviewBody, submitted.Revision, reviewKey)));
+        await fixture.InScope(async services =>
+        {
+            var db = services.GetRequiredService<FirstBlickDbContext>();
+            await db.Entities.IgnoreQueryFilters().Where(e => e.TenantId == worker.TenantId && e.Kind == "schedule-assignments")
+                .ExecuteUpdateAsync(update => update.SetProperty(e => e.Archived, true));
+        });
+        Assert.Equal("not_found", await Error(Send(author, HttpMethod.Post, $"/api/v1/diary-entries/{draft.Id}/pdf", new { }, approved.Revision, pdfKey)));
+        Assert.Equal("not_found", await Error(Send(author, HttpMethod.Post, $"/api/v1/diary-entries/{draft.Id}/pdf", new { }, approved.Revision)));
+        Assert.Equal(1, harness.Store.PutCount);
     }
 
     [PostgresApiFact]
