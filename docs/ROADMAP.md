@@ -9,8 +9,7 @@ ergänzen unabhängige Parallelpfade um eine obere und untere Wärmewiderstandsa
 für ausgerichtete, ausdrücklich nichtmetallische Schichten. Neu sind die Core-Berechnung,
 `POST /api/v1/technical/thermal/inhomogeneous`, persistierbare
 `technical/runs` (`method=thermal.inhomogeneous`), unabhängige Zahlenbeispiele,
-Grenzfall- und HTTP-/PostgreSQL-Tests. Die nachgelagerte Angular-Fachmaske,
-Luftschichtkorrekturen und eine unabhängige normative Fachabnahme bleiben offen.
+Grenzfall- und HTTP-/PostgreSQL-Tests. Die Angular-Fachmaske für getrennte Flächenabschnitte, eigene Materialpfade, Flächenanteile, Quellen und Ausschluss metallischer Wärmebrücken wurde ergänzt. Sie verwendet den vorhandenen API-Endpunkt und die dokumentierte Projektablage; clientseitige Feld-, Schichtgrenzen- und Provenienzprüfungen sichern diese Teilfunktion zusätzlich ab. Luftschichtkorrekturen, mehrdimensionale Brückenberechnungen und eine unabhängige normative Fachabnahme bleiben offen.
 Die ursprünglich unverändert beibehaltenen 100 Roadmap-Checkboxen sind **keine**
 aktuelle Fertigstellungsstatistik.
 
