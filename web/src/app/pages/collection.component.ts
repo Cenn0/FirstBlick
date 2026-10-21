@@ -16,6 +16,7 @@ import { QuantityEvidenceComponent } from './quantity-evidence.component';
 import { FrozenCommercialSnapshot, InvoiceCalculation } from '../core/invoice.models';
 import { InvoiceEvidenceComponent } from './invoice-evidence.component';
 import { DiaryReportComponent } from './diary-report.component';
+import { CustomerContactsComponent } from './customer-contacts.component';
 
 type LineInput=QuantityLine;
 interface PauseInput { start: string; end: string; startOffset?:string; endOffset?:string }
@@ -23,7 +24,7 @@ type PurchaseInput=PurchaseLine;
 type Snapshot=FrozenCommercialSnapshot;
 
 @Component({
-  imports:[FormsModule,RouterLink,WorkflowPanelComponent,QuantityEvidenceComponent,InvoiceEvidenceComponent,DiaryReportComponent],
+  imports:[FormsModule,RouterLink,WorkflowPanelComponent,QuantityEvidenceComponent,InvoiceEvidenceComponent,DiaryReportComponent,CustomerContactsComponent],
   template:`@if(config();as config){
     <header class="page-heading"><div><p class="eyebrow">{{config.group}}</p><h1>{{config.title}}</h1><p>{{config.description}}</p></div>@if(!config.readonly && allowed() && writable()){<button class="button primary" (click)="create()"><span aria-hidden="true">+</span> {{config.singular}} anlegen</button>}</header>
     @if(!allowed()){<section class="panel empty-state"><h2>Dieser Bereich ist nicht verfügbar.</h2><p>Das Modul ist deaktiviert oder Ihr Konto hat keinen Zugriff.</p></section>}@else{
@@ -54,6 +55,7 @@ type Snapshot=FrozenCommercialSnapshot;
         @if(config.kind==='invoices'){@if(invoiceCalculation(item);as calculation){<app-invoice-evidence [value]="calculation" [snapshot]="snapshot(item)"></app-invoice-evidence>}}
         <app-workflow-panel [kind]="config.kind" [item]="item" (completed)="workflowCompleted($event)"></app-workflow-panel>
         @if(config.kind==='diary-entries'){<app-diary-report [item]="item" (completed)="workflowCompleted($event)"></app-diary-report>}
+        @if(config.kind==='customers'){<app-customer-contacts [item]="item" (completed)="workflowCompleted($event)"></app-customer-contacts>}
       </section>}
     }
     <dialog #editor class="editor-dialog" (cancel)="closeEditor()"><form #editForm="ngForm" (ngSubmit)="save()"><header class="dialog-heading"><div><p class="eyebrow">{{config.group}}</p><h2>{{editing() ? config.singular + ' bearbeiten' : config.singular + ' anlegen'}}</h2></div><button type="button" class="icon-button" (click)="closeEditor()" aria-label="Formular schließen">×</button></header><div class="dialog-body">@if(formError()){<div class="alert error" role="alert">{{formError()}}</div>}@if(missingEmployeeLink()){<div class="alert warning">Ihrem persönlichen Konto ist noch kein aktives Mitarbeiterprofil zugeordnet. Die Geschäftsführung kann die Verknüpfung unter Mitarbeiter herstellen.</div>}@if(config.kind==='equipment'&&equipmentLockedFields().length){<div class="alert information">@if(editing()?.['pendingInspectionId']){<p>Der geplante Prüfvorgang hält die Geräteidentität fest. Sagen Sie ihn vor einer Änderung der Bezeichnung, Inventarnummer, Art oder des Kennzeichens ab.</p>}@if(editing()?.['lastInspectionId']){<p>Der nächste Prüftermin wird aus einer dokumentierten Durchführung übernommen.</p>}@if(editing()?.['inspectionBlocked']){<p>Dieses Gerät bleibt bis zu einer erfolgreichen Folgeprüfung für Einsätze gesperrt.</p>}@if(auth.can('equipment-inspections.read')){<a routerLink="/equipment-inspections" [queryParams]="{equipmentId:editing()?.id}" (click)="closeEditor()">Prüf- und Wartungsakte öffnen →</a>}</div>}<div class="form-grid">

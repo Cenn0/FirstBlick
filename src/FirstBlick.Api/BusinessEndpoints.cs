@@ -22,6 +22,7 @@ public static class BusinessEndpoints
         PlanningWeekEndpoints.Map(api);
         MaintenanceEndpoints.Map(api);
         EquipmentInspectionEndpoints.Map(api);
+        CustomerContactEndpoints.Map(api);
         api.MapGet("/dashboard", Dashboard);
     }
 
@@ -47,7 +48,7 @@ public static class BusinessEndpoints
 #pragma warning disable EF1002
             var total = await db.Database.SqlQueryRaw<long>($"SELECT count(*) AS \"Value\" FROM \"Entities\" WHERE {predicate}", Parameters()).SingleAsync(ct);
             var parameters = Parameters().Concat([new NpgsqlParameter("limit", pageSize), new NpgsqlParameter("offset", checked((page - 1) * pageSize))]).ToArray();
-            var data = await db.Database.SqlQueryRaw<string>($"SELECT (\"Data\" - 'snapshot' - 'calculation' - 'contract' - 'lines' - 'deliveries' - 'fields' - 'values' || jsonb_build_object('net',COALESCE(\"Data\"->'snapshot'->'net',\"Data\"->'contract'->'net'),'gross',COALESCE(\"Data\"->'snapshot'->'gross',\"Data\"->'contract'->'gross')))::text AS \"Value\" FROM \"Entities\" WHERE {predicate} ORDER BY \"UpdatedAt\" DESC, \"Id\" LIMIT @limit OFFSET @offset", parameters).ToListAsync(ct);
+            var data = await db.Database.SqlQueryRaw<string>($"SELECT (\"Data\" - 'snapshot' - 'calculation' - 'contract' - 'lines' - 'deliveries' - 'fields' - 'values' - 'contacts' || jsonb_build_object('net',COALESCE(\"Data\"->'snapshot'->'net',\"Data\"->'contract'->'net'),'gross',COALESCE(\"Data\"->'snapshot'->'gross',\"Data\"->'contract'->'gross')))::text AS \"Value\" FROM \"Entities\" WHERE {predicate} ORDER BY \"UpdatedAt\" DESC, \"Id\" LIMIT @limit OFFSET @offset", parameters).ToListAsync(ct);
 #pragma warning restore EF1002
             return Results.Ok(new { items = data.Select(x => JsonSerializer.Deserialize<JsonElement>(x)), total, page, pageSize });
         }).WithName($"List_{kind}").WithTags(kind);

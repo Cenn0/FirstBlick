@@ -10,6 +10,9 @@ internal static class EditRules
             "command_required", "This record can only be created through its dedicated business command.");
         switch (e)
         {
+            case Customer customer:
+                Guard.Require(customer.Contacts is null || customer.Contacts.Count == 0,
+                    "command_required", "Customer contacts are created through their dedicated commands."); break;
             case Equipment equipment:
                 Guard.Require(equipment.PendingInspectionId is null && equipment.LastInspectionId is null && equipment.LastInspectionOn is null && !equipment.InspectionBlocked,
                     "command_required", "Equipment inspection evidence must be created by its dedicated workflow."); break;
@@ -40,6 +43,14 @@ internal static class EditRules
             "command_required", "Use the dedicated auditable command for this record.");
         switch (old)
         {
+            case Customer customer:
+                var nextCustomer = (Customer)next;
+                if (nextCustomer.Contacts is null) nextCustomer.Contacts = customer.Contacts;
+                else Guard.Require(ContentDigest.Of(nextCustomer.Contacts) == ContentDigest.Of(customer.Contacts ?? []),
+                    "contact_command_required", "Customer contacts cannot be replaced or removed through generic edits.");
+                // Preserve an absent historical field even if a generic client sends an empty list.
+                if (customer.Contacts is null && nextCustomer.Contacts?.Count == 0) nextCustomer.Contacts = null;
+                break;
             case Equipment equipment:
                 var changedEquipment = (Equipment)next;
                 Guard.Require(changedEquipment.PendingInspectionId == equipment.PendingInspectionId && changedEquipment.LastInspectionId == equipment.LastInspectionId

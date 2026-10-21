@@ -1,0 +1,34 @@
+<section aria-labelledby="contacts-title">
+  <div class="contacts-heading"><div><h3 id="contacts-title">Ansprechpartner</h3><p class="small muted">Weitere Kontakte für Objektleitung, Buchhaltung und Arbeiten vor Ort. Die bisherigen Kundenstammdaten bleiben erhalten.</p></div>
+    @if(writable()&&book()){<button type="button" class="button secondary" [disabled]="busy()||book()!.contacts.length>=100" (click)="edit()">Ansprechpartner hinzufügen</button>}
+  </div>
+  @if(error()){<div class="alert error" role="alert">{{error()}} <button type="button" class="text-button" [disabled]="busy()" (click)="load()">Ansprechpartner neu laden</button></div>}
+  @if(loading()){<p role="status">Ansprechpartner werden geladen …</p>}
+  @if(book();as book){
+    <div class="actions"><label for="contact-search">Kontakte filtern <input id="contact-search" [ngModel]="search()" (ngModelChange)="search.set($event)" maxlength="200" placeholder="Name, Funktion, E-Mail oder Telefon"></label>
+      <label class="checkbox-label"><input type="checkbox" [ngModel]="showArchived()" (ngModelChange)="showArchived.set($event)">Archivierte anzeigen</label></div>
+    @if(book.contacts.length>=100){<p class="alert information">Für diesen Kunden sind 100 Kontakte hinterlegt. Bestehende Einträge können weiterhin bearbeitet oder wiederhergestellt werden.</p>}
+    <div class="contact-list">@for(contact of visible();track contact.id){
+      <article class="contact-card" [attr.data-archived]="contact.archived"><h4>{{contact.name}}</h4>
+        @if(contact.isPrimary){<span class="badge">Hauptkontakt</span>}@if(contact.archived){<span class="badge">Archiviert</span>}
+        @if(contact.function){<p>{{contact.function}}</p>}@if(contact.email){<p>E-Mail: {{contact.email}}</p>}@if(contact.phone){<p>Telefon: {{contact.phone}}</p>}
+        @if(contact.notes){<p class="notes">{{contact.notes}}</p>}<p class="small muted">Stand: {{date(contact.updatedAt)}}</p>
+        @if(writable()){<div class="actions">@if(contact.archived){<button type="button" class="text-button" [disabled]="busy()" (click)="act('restore',contact.id)" [attr.aria-label]="contact.name+' wiederherstellen'">Wiederherstellen</button>}
+          @else{<button type="button" class="text-button" [disabled]="busy()" (click)="edit(contact)" [attr.aria-label]="contact.name+' bearbeiten'">Bearbeiten</button><button type="button" class="text-button" [disabled]="busy()" (click)="act('archive',contact.id)" [attr.aria-label]="contact.name+' archivieren'">Archivieren</button>}</div>}
+      </article>
+    }@empty{<p class="muted">{{book.contacts.length?'Keine Kontakte für diesen Filter.':'Noch keine zusätzlichen Ansprechpartner.'}}</p>}</div>
+    @if(editing()!==null&&writable()){
+      <form class="contact-editor" #contactForm="ngForm" (ngSubmit)="save()"><h4>{{editing()?'Ansprechpartner bearbeiten':'Neuer Ansprechpartner'}}</h4>
+        <fieldset [disabled]="busy()"><div class="form-grid">
+          <div class="form-field"><label for="contact-name">Name des Ansprechpartners *</label><input id="contact-name" name="contactName" [(ngModel)]="form.name" required maxlength="240"></div>
+          <div class="form-field"><label for="contact-function">Funktion / Zuständigkeit</label><input id="contact-function" name="contactFunction" [(ngModel)]="form.function" maxlength="240"></div>
+          <div class="form-field"><label for="contact-email">E-Mail des Ansprechpartners</label><input id="contact-email" name="contactEmail" type="email" [(ngModel)]="form.email" maxlength="254" email></div>
+          <div class="form-field"><label for="contact-phone">Telefon des Ansprechpartners</label><input id="contact-phone" name="contactPhone" type="tel" [(ngModel)]="form.phone" maxlength="80"></div>
+          <div class="form-field full-width"><label for="contact-notes">Hinweise zum Ansprechpartner</label><textarea id="contact-notes" name="contactNotes" [(ngModel)]="form.notes" rows="3" maxlength="2000"></textarea></div>
+          <label class="checkbox-label"><input type="checkbox" name="contactPrimary" [(ngModel)]="form.isPrimary">Als Hauptkontakt festlegen</label>
+        </div><p class="small muted">Ein neuer Hauptkontakt ersetzt die bisherige Zuordnung. Beim Archivieren bleiben die Kontaktdaten erhalten.</p></fieldset>
+        <div class="actions"><button type="submit" class="button primary" [disabled]="busy()||!contactForm.valid||!form.name.trim()">Ansprechpartner speichern</button><button type="button" class="button secondary" [disabled]="busy()" (click)="cancel()">Abbrechen</button></div>
+      </form>
+    }
+  }
+</section>
