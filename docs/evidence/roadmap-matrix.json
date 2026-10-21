@@ -127,7 +127,34 @@
     "ui-nine": "docs/checkpoint8-ui.md",
     "ci-eight": "docs/evidence/checkpoint8-ci.json",
     "asset-check": "scripts/production_assets.py",
-    "container-smoke": "scripts/container-smoke.py"
+    "container-smoke": "scripts/container-smoke.py",
+    "planning-week-docs": "docs/planning-week.md",
+    "planning-week-api": "src/FirstBlick.Api/PlanningWeekEndpoints.cs",
+    "planning-week-ui": "web/src/app/pages/planning-week.component.ts",
+    "planning-week-core-tests": "tests/FirstBlick.Core.Tests/Business/PlanningWeekTests.cs",
+    "planning-week-api-tests": "tests/FirstBlick.Api.Tests/PlanningWeekApiTests.cs",
+    "planning-week-client-tests": "web/tests/planning-week.test.ts",
+    "planning-week-browser": "web/tests/browser/planning-week.spec.ts",
+    "diary-docs": "docs/diary-reports.md",
+    "diary-workflow": "src/FirstBlick.Core/Business/DiaryWorkflow.cs",
+    "diary-api": "src/FirstBlick.Api/DiaryReportEndpoints.cs",
+    "diary-core-tests": "tests/FirstBlick.Core.Tests/Business/DiaryWorkflowTests.cs",
+    "diary-api-tests": "tests/FirstBlick.Api.Tests/DiaryReportApiTests.cs",
+    "diary-browser": "web/tests/browser/diary-report.spec.ts",
+    "warehouse-docs": "docs/warehouse-adjustments.md",
+    "inventory-reconciliation-tests": "tests/FirstBlick.Core.Tests/Business/InventoryReconciliationTests.cs",
+    "inventory-ui": "web/src/app/pages/inventory-control.component.ts",
+    "inventory-browser": "web/tests/browser/inventory-control.spec.ts",
+    "measurement-ui": "web/src/app/pages/measurements.component.ts",
+    "measurement-browser": "web/tests/browser/measurement-pdf.spec.ts",
+    "maintenance-docs": "docs/maintenance-workflow.md",
+    "maintenance-workflow": "src/FirstBlick.Core/Business/MaintenanceWorkflow.cs",
+    "maintenance-planner": "src/FirstBlick.Infrastructure/MaintenancePlanner.cs",
+    "maintenance-api": "src/FirstBlick.Api/MaintenanceEndpoints.cs",
+    "maintenance-core-tests": "tests/FirstBlick.Core.Tests/Business/MaintenanceWorkflowTests.cs",
+    "maintenance-api-tests": "tests/FirstBlick.Api.Tests/MaintenanceWorkflowApiTests.cs",
+    "maintenance-browser": "web/tests/browser/maintenance.spec.ts",
+    "quantity-docs": "docs/quantity-links.md"
   },
   "tasks": [
     {
@@ -420,8 +447,8 @@
     {
       "id": "DP-06-01",
       "status": "K",
-      "evidence": "[Planungsmodell][planning], Graph-/Editregeln in [Business API][business-api] und [Planungstests][planning-tests] prüfen Mitarbeiter-/Gerätebelegung sowie Abwesenheiten.",
-      "remaining": "Keine vollwertige grafische Disposition, Routenoptimierung oder realer Wochenplan-Abnahmefall.",
+      "evidence": "[Wochenarbeitsplatz][planning-week-docs], [Wochen-API][planning-week-api] und [Angular-Kalender][planning-week-ui] ergänzen Ressourcenfilter, Anlegen/Bearbeiten/Absagen und betriebliche Zeitzonen einschließlich Zeitumstellung. Die bestehenden [Planungsregeln][planning] prüfen Kollisionen, Abwesenheiten und Projektfenster. [Core-Tests][planning-week-core-tests], [HTTP-/PostgreSQL-Tests][planning-week-api-tests], [Clienttests][planning-week-client-tests] und [Browser-Fixtures][planning-week-browser] behandeln Grenzen, persönliche Sicht, Konflikte und verspätete Antworten.",
+      "remaining": "Routenoptimierung, automatische Fahrzeit-/Tarifbewertung und ein realer Wochenplan-Abnahmefall bleiben offen. Die Projektion ist auf 1.000 aktive Einsätze begrenzt; Filter können den Umfang einschränken. Fehlende oder mehrdeutige Mitternachtsgrenzen werden ausdrücklich abgewiesen.",
       "title": "Disposition mit Zeitfenstern und Ressourcen aufbauen"
     },
     {
@@ -434,8 +461,8 @@
     {
       "id": "DP-06-03",
       "status": "T",
-      "evidence": "[DiaryEntry][operations-model], [persönliche Collection UI][collections] und [3 echte Offline-Arbeitstage][live-offline] belegen projekt-/mitarbeiterbezogene Tagesberichte mit Browserprozessneustart und genau einmaliger Übertragung.",
-      "remaining": "Vollständige Rapport-PDFs, fachliche Freigabeabläufe und ein tatsächlich im Betrieb abgenommener Baustellentag fehlen.",
+      "evidence": "[Tagesrapport-Ablauf][diary-docs], [eingefrorene Einreichung/Prüfung][diary-workflow] und [HTTP-Kommandos][diary-api] ergänzen das vorhandene offlinefähige Bautagebuch um unabhängige interne Freigabe, begründete Rückgabe, erneute Einreichung und mehrseitiges, quellengebundenes PDF. [Core-Tests][diary-core-tests], [HTTP-/PostgreSQL-Tests][diary-api-tests] und [Browser-Fixtures][diary-browser] prüfen Identität/Digest, Rollen und Replay, konkurrierende Prüfung, Downloadbytes und Kontextwechsel.",
+      "remaining": "Ein tatsächlich im Betrieb abgenommener Baustellentag, Kundenabnahme, digitale Unterschrift und rechtssichere Langzeitarchivierung sind nicht nachgewiesen. Die interne Freigabe ersetzt diese Nachweise nicht; spätere Ergänzungen benötigen einen weiteren geprüften Bericht.",
       "title": "Bautagebuch und Rapporte erstellen"
     },
     {
@@ -497,15 +524,15 @@
     {
       "id": "DP-07-03",
       "status": "K",
-      "evidence": "[Receive/StockMovement][inventory], [Wareneingangskommando][field-api] und [PG-/Core-Tests][commercial-api-tests] verbuchen Teilmengen atomar mit Referenzen.",
-      "remaining": "Inventurdifferenzen, Rücklieferungen und alle lagerfachlichen Korrekturprozesse sind nicht vollständig belegt.",
+      "evidence": "[Lagerkorrekturen][warehouse-docs], [Bestandsregeln][inventory] und [Feldkommandos][field-api] ergänzen Teilwareneingänge um Inventur mit Beleg und frischem Buchstand, atomare Umlagerungspaare sowie originalgebundene Lieferanten-/Baustellenrückgaben. Eine Lieferantenretoure aus einem anderen Lager benötigt ein geprüftes direktes Transferpaar. Das paginierte Journal ist in der [Lagerprüfung][inventory-ui] bedienbar; [Core-Regressionen][inventory-reconciliation-tests], [HTTP-/PostgreSQL-Tests][commercial-api-tests] und [Browser-Fixtures][inventory-browser] behandeln Mengen-, Beleg- und Kontextgrenzen. Bestehende Bewegungsdigests bleiben erhalten.",
+      "remaining": "Reale Inventur-/Mehrlager-Abnahmen, mehrstufige Transferketten, physische Chargen-/Serienzuordnung, weitergehende Bewertungsvorschriften und externe Retourenbelege bleiben offen. Der direkte Transfer belegt eine Mengen-/Bewertungskette, keine einzelne physische Liefereinheit.",
       "title": "Wareneingang und Bestandsbewegungen erfassen"
     },
     {
       "id": "DP-07-04",
       "status": "K",
-      "evidence": "[Reserve/Consume/Release][inventory], [Feldkommandos][field-api] und [Parallelreservierungstests][commercial-api-tests] verbinden Projektverbrauch und verfügbare Bestände.",
-      "remaining": "Automatische Mengenplanung/Bedarf aus Dachaufmaß und repräsentative Mehrlagerpraxis fehlen.",
+      "evidence": "[Reserve/Consume/Release und ProjectReturn][inventory] binden die Baustellenrückgabe an Originalverbrauch und exakt passende Reservierung. In derselben Transaktion sinkt consumedQuantity und steigt releasedQuantity; der noch reservierte Rest bleibt unverändert. [Core-Regressionen][inventory-reconciliation-tests] und [konkurrierende HTTP-/PostgreSQL-Rückgaben][commercial-api-tests] prüfen atomare Zähler, Mengenrest und Replay. [QuantityEvidence/MaterialDemand][quantity-model] und [Mengentransfer-API][quantity-api] übernehmen weiterhin ausdrücklich geprüfte Bedarfe aus eingefrorenen Aufmaßen in einen Bestellentwurf.",
+      "remaining": "Vollautomatische regelbasierte Materialdisposition einschließlich realer Packungsgrößen/Lieferantenangebote und repräsentative Mehrlagerpraxis fehlen. Eine bewusst freigegebene Aufmaßumrechnung ist kein allgemeines normatives Materialbedarfsverfahren.",
       "title": "Projektverbrauch und Reservierung verbinden"
     },
     {
@@ -518,8 +545,8 @@
     {
       "id": "DP-07-06",
       "status": "T",
-      "evidence": "[PlanningInventoryTests][planning-tests] und [CommercialApiTests][commercial-api-tests] prüfen Teilwareneingang, Überreservierung, Verbrauch und unveränderliche Buchungen.",
-      "remaining": "Lieferdifferenz-/Rücklieferungs-/Inventurabläufe und vollständige betriebliche Einkaufsabnahme fehlen.",
+      "evidence": "[Lagerkorrekturen][warehouse-docs] führen Inventur-, Umlagerungs- und Rückgabefälle mit Belegrest, freiem Bestand, unveränderlichen Bewegungen und aktueller Rollenprüfung auch vor Replay aus. Lieferantenrückgaben rechnen den Bestellstatus zurück und erlauben Ersatzlieferungen. [Core-Tests][planning-tests], [Rückgabe-Regressionen][inventory-reconciliation-tests] und [HTTP-/PostgreSQL-Tests][commercial-api-tests] prüfen Doppel-/Parallelbuchung und Ablehnung ohne Teiländerung. Der [aufmaßgebundene Einkaufsentwurf][quantity-docs] bleibt an den bestehenden Freigabeweg gebunden.",
+      "remaining": "Lieferantengutschriften, Schadens-/Transportschadenabläufe, externe Bestell-/Retourenübermittlung und vollständige betriebliche Einkaufsabnahme fehlen. Die Lagerbuchung löst keine Zahlung, Gutschrift oder Lieferantenbenachrichtigung aus.",
       "title": "Einkaufsablauf und Differenzen absichern"
     },
     {
@@ -588,8 +615,8 @@
     {
       "id": "DP-09-02",
       "status": "T",
-      "evidence": "[MaintenanceContract][operations-model], [complete-Kommando][field-api] und [Monatsende-/Enddatumtests][operations-tests] führen fällige Termine deterministisch fort.",
-      "remaining": "Durchgängige automatische Termin-/Arbeitsauftrag-/Checklistenanlage und realer Wartungsfall fehlen.",
+      "evidence": "[Wartungsfolge][maintenance-docs], [Fachablauf][maintenance-workflow], [Kommandos][maintenance-api] und [Workerplanung][maintenance-planner] verbinden ausdrücklich konfigurierte Checklisten und Vorlauf mit manueller oder aktivierter automatischer Anlage von Wartungsprojekt und eingefrorenem Termin. Zugewiesene Mitarbeitende dokumentieren Prüfergebnisse; Managementabschluss schreibt Projekt, Termin und Folgetermin atomar fort. [Core-Tests][maintenance-core-tests], [HTTP-/PostgreSQL-Tests][maintenance-api-tests] und [Browser-Fixtures][maintenance-browser] prüfen Monatsendanker, Vertragsende, sichere Altbestandswerte, Doppelplanung, Rechte und unveränderliche Nachweise.",
+      "remaining": "Die fachliche Eignung betriebsspezifischer Checklisten und ein realer Wartungsfall sind nicht extern abgenommen. Automatische Feiertags-/Wochenendverschiebung, kaufmännische Auftrag-/Rechnungserzeugung und externe Kalenderintegration fehlen. Die automatische Anlage ist standardmäßig aus; Personaleinsätze werden in der bestehenden Disposition zugeordnet.",
       "title": "Wartungsverträge und wiederkehrende Termine führen"
     },
     {
@@ -616,8 +643,8 @@
     {
       "id": "DP-09-06",
       "status": "T",
-      "evidence": "[Briefingregeln][operations-model] und [Worker-PG-Tests][worker-tests] deduplizieren lokale Tage/DST und filtern aktuelle eigene Arbeit.",
-      "remaining": "Vollständiger echter Wartungs-/Morgenbriefingablauf über den gewählten Provider fehlt.",
+      "evidence": "[Briefingregeln][operations-model] und [Worker-PG-Tests][worker-tests] deduplizieren lokale Tage/DST und filtern aktuelle eigene Arbeit. Ergänzend verbindet die [Wartungsfolge][maintenance-docs] Vertrag, Arbeitsprojekt, dokumentierte Checkliste, Abschluss und nächsten Fälligkeitstermin. [HTTP-/PostgreSQL-Tests][maintenance-api-tests] prüfen zwei Scheduler, Betriebsdatum, Wiederherstellungssperre und entzogene Zuordnung vor Replay; [Browser-Fixtures][maintenance-browser] prüfen den bedienbaren Ablauf und Kontextwechsel.",
+      "remaining": "Vollständiger echter Wartungs-/Morgenbriefingablauf mit realen Betriebsdaten und Zustellung über einen gewählten Provider bleibt offen. Die automatische Wartungsanlage belegt weder einen laufenden Produktivworker noch Kalender-, E-Mail-, Push- oder WhatsApp-Zustellung.",
       "title": "Morgenbriefing und Wartungsablauf absichern"
     },
     {
@@ -637,8 +664,8 @@
     {
       "id": "DP-10-03",
       "status": "K",
-      "evidence": "[Sechs Aufmaßtypen][roof-model], [Technical-API/PDF][technical-api], [49 Domänenfälle][roof-tests] und [echtes Freeze][live-renovation] speichern Dimensionen, Quellen, Abzüge und unveränderliche Digests.",
-      "remaining": "Vertragliche Abzugsregeln und Geländeaufmaßabnahme fehlen; der eigene PDF-Endpunkt ist nicht als eigener vollständiger Browser-PDF-Fall belegt.",
+      "evidence": "[Aufmaßtypen][roof-model], [Technical-API/PDF][technical-api] und [Domänentests][roof-tests] speichern Maße und Abzüge unveränderlich. Die [Angular-Aufmaßakte][measurement-ui] prüft vor dem PDF-Download Quelle, Projekt, eingefrorenen Digest, Dateimetadaten, PDF-Kennung und SHA-256 der tatsächlichen Bytes. [Browser-Fixtures][measurement-browser] prüfen intakte und beschädigte Dateien sowie verspätete Downloads nach Betriebs-/Seitenwechsel; der aktuelle Zugriffskontext wird auch nach der asynchronen Hashprüfung erneut geprüft.",
+      "remaining": "Vertragliche Abzugsregeln, praktische Geländeaufnahme und unabhängige fachliche Abnahme bleiben offen. Kontrollierte Browserantworten ersetzen keinen realen Vermessungs- oder vollständigen Browser-/S3-Betriebsnachweis.",
       "title": "Aufmaß erfassen und nachweisen"
     },
     {
@@ -829,6 +856,26 @@
       "evidence": "[Architekturgrenzen][architecture] unterscheiden überprüfbare Fachlogik von ungeprüften Schlussfolgerungen.",
       "remaining": "Ein optionales Assistenzsystem mit Provenienz, Freigaben, Evaluation, Kosten- und Datenschutzkontrolle ist nicht implementiert.",
       "title": "Optionale Assistenz kontrolliert integrieren"
+    }
+  ],
+  "scopeUpdates": [
+    {
+      "recordedOn": "2026-10-21",
+      "tasks": [
+        "DP-06-01",
+        "DP-06-03",
+        "DP-07-03",
+        "DP-07-04",
+        "DP-07-06",
+        "DP-09-02",
+        "DP-09-06",
+        "DP-10-03"
+      ],
+      "scope": "Weekly planning, reviewed diary reports, warehouse corrections including reservation counters, recurring maintenance and measurement PDF downloads.",
+      "reclassifiesTasks": false,
+      "originalRoadmapCheckboxesChanged": false,
+      "classificationNote": "recordedAtUtc and counts retain the historical classification. The named task evidence and remaining scope are updated without reassessing all 100 original acceptance criteria.",
+      "verificationNote": "Source and test references distinguish Core/client tests, real HTTP/Identity/PostgreSQL tests and browser fixtures with controlled HTTP responses. Diary document tests use a versioned object-store test double. No aggregate test count or successful CI/Standards/Operations run of the final combined commit is claimed by this update."
     }
   ]
 }
