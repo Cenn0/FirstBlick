@@ -19,6 +19,7 @@ public static class ServiceRegistration
         services.AddMetrics();
         services.AddSingleton<FirstBlickTelemetry>();
         services.AddScoped<OutboxProcessor>();
+        services.AddScoped<MaintenancePlanner>();
         var endpoint = config["Storage:Endpoint"];
         if (!string.IsNullOrWhiteSpace(endpoint))
         {

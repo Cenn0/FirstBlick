@@ -8,6 +8,7 @@ public static class EntityProjection
 {
     public static string? UniqueKey(TenantEntity entity) => entity switch
     {
+        MaintenanceVisit v => $"contract:{v.ContractId:N}:due:{v.DueDate:yyyy-MM-dd}",
         Order o => $"quote:{o.QuoteId}",
         CollectionCase c => $"invoice:{c.InvoiceId}",
         Invoice i when i.Status == InvoiceStatus.Issued => $"number:{i.Number}",

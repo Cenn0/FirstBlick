@@ -15,6 +15,7 @@ public sealed class OutboxWorker(IServiceScopeFactory scopes, ILogger<OutboxWork
                 {
                     await using var schedulerScope = scopes.CreateAsyncScope();
                     await schedulerScope.ServiceProvider.GetRequiredService<OutboxProcessor>().ScheduleDueNotifications(stoppingToken);
+                    await schedulerScope.ServiceProvider.GetRequiredService<MaintenancePlanner>().ScheduleDue(DateTimeOffset.UtcNow, stoppingToken);
                     nextSchedule = DateTimeOffset.UtcNow.AddMinutes(1);
                 }
                 await using var scope = scopes.CreateAsyncScope();

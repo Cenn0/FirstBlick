@@ -6,7 +6,7 @@ internal static class EditRules
 {
     public static void EnsureGenericCreate(TenantEntity e, bool retainPurchaseLinks = false, bool retainElectronicOrigin = false)
     {
-        Guard.Require(e is not Order and not BankTransaction and not PaymentAllocation and not SupplierPaymentAllocation and not StockMovement and not FormSubmission and not TechnicalRecord and not PortalShare and not PortalFeedback and not MaterialDemand and not CollectionCase,
+        Guard.Require(e is not Order and not BankTransaction and not PaymentAllocation and not SupplierPaymentAllocation and not StockMovement and not FormSubmission and not TechnicalRecord and not PortalShare and not PortalFeedback and not MaterialDemand and not CollectionCase and not MaintenanceVisit,
             "command_required", "This record can only be created through its dedicated business command.");
         switch (e)
         {
@@ -32,7 +32,7 @@ internal static class EditRules
     public static void EnsureGenericUpdate(TenantEntity old, TenantEntity next)
     {
         Guard.Require(old.GetType() == next.GetType() && !old.Archived, "record_immutable", "This record cannot be edited.");
-        Guard.Require(old is not Order and not BankTransaction and not PaymentAllocation and not SupplierPaymentAllocation and not StockMovement and not FormSubmission and not MaterialReservation and not Acceptance and not TechnicalRecord and not PortalShare and not PortalFeedback and not MaterialDemand and not CollectionCase,
+        Guard.Require(old is not Order and not BankTransaction and not PaymentAllocation and not SupplierPaymentAllocation and not StockMovement and not FormSubmission and not MaterialReservation and not Acceptance and not TechnicalRecord and not PortalShare and not PortalFeedback and not MaterialDemand and not CollectionCase and not MaintenanceVisit,
             "command_required", "Use the dedicated auditable command for this record.");
         switch (old)
         {
@@ -65,7 +65,7 @@ internal static class EditRules
     }
     public static void EnsureArchivable(TenantEntity e)
     {
-        Guard.Require(e is not Order and not Invoice and not SupplierInvoice and not PaymentAllocation and not SupplierPaymentAllocation and not BankTransaction and not StockMovement and not MaterialReservation and not FormSubmission and not Acceptance and not TechnicalRecord and not PortalShare and not PortalFeedback and not MaterialDemand and not CollectionCase,
+        Guard.Require(e is not Order and not Invoice and not SupplierInvoice and not PaymentAllocation and not SupplierPaymentAllocation and not BankTransaction and not StockMovement and not MaterialReservation and not FormSubmission and not Acceptance and not TechnicalRecord and not PortalShare and not PortalFeedback and not MaterialDemand and not CollectionCase and not MaintenanceVisit,
             "record_immutable", "Business evidence is retained; use a correction or reversal.");
         if (e is Quote q) Guard.Require(q.Status == QuoteStatus.Draft, "quote_immutable", "Issued quote versions are retained.");
         if (e is ChangeOrder c) Guard.Require(c.Status != ChangeOrderStatus.Accepted, "change_immutable", "Accepted changes remain part of the contract and its financial history.");

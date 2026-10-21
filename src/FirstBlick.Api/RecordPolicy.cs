@@ -22,6 +22,7 @@ internal static class RecordPolicy
         var projectIds = assignments.Select(x => x.ProjectId).ToHashSet();
         if (kind == "schedule-assignments") return assignments.Select(x => x.Id).ToArray();
         if (kind == "projects") return projectIds.ToArray();
+        if (kind == "maintenance-visits") return (await store.All<MaintenanceVisit>(ct)).Where(x => projectIds.Contains(x.ProjectId)).Select(x => x.Id).ToArray();
         if (kind == "buildings") return (await store.All<Project>(ct)).Where(x => projectIds.Contains(x.Id)).Select(x => x.BuildingId).ToArray();
         if (kind == "tasks") return (await store.All<TaskItem>(ct)).Where(x => projectIds.Contains(x.ProjectId) || (x.AssignedEmployeeId.HasValue && own.Contains(x.AssignedEmployeeId.Value))).Select(x => x.Id).ToArray();
         if (kind == "defects") return (await store.All<Defect>(ct)).Where(x => projectIds.Contains(x.ProjectId)).Select(x => x.Id).ToArray();
@@ -111,6 +112,15 @@ internal static class GraphRules
             case Building building:
                 Guard.Require((await store.All<Project>(ct)).All(p => p.BuildingId != building.Id || p.CustomerId == building.CustomerId), "customer_mismatch", "Existing projects prevent changing this building to another customer."); break;
             case Project project:
+                var maintenanceProjectLinks = db.Links.Where(x => x.SourceKind == "maintenance-visits" && x.TargetKind == "projects" && x.TargetId == project.Id);
+                var maintenanceProjectRows = await db.Entities.Where(x => x.Kind == "maintenance-visits" && maintenanceProjectLinks.Any(l => l.SourceId == x.Id)).Select(x => x.Data).ToListAsync(ct);
+                foreach (var row in maintenanceProjectRows)
+                {
+                    var visit = AppJson.Read<MaintenanceVisit>(row); visit.Validate();
+                    Guard.Require(project.Type == ProjectType.Maintenance && project.CustomerId == visit.Terms!.CustomerId && project.BuildingId == visit.Terms.BuildingId
+                        && (visit.Status != MaintenanceVisitStatus.Completed || project.Status == ProjectStatus.Completed),
+                        "maintenance_project_mismatch", "Maintenance projects retain the original occurrence and completed history.");
+                }
                 var projectBuilding = await store.Get<Building>(project.BuildingId, ct);
                 Guard.Require(projectBuilding.CustomerId == project.CustomerId, "customer_mismatch", "The project customer must own its building record.");
                 Guard.Require((await store.All<Quote>(ct)).All(q => q.ProjectId != project.Id || q.CustomerId == project.CustomerId), "customer_mismatch", "Existing quotes prevent this customer change.");
@@ -171,7 +181,17 @@ internal static class GraphRules
             case Acceptance acceptance:
                 OperationsRules.EnsureAcceptance(acceptance, await store.All<Defect>(ct)); break;
             case MaintenanceContract contract:
-                Guard.Require((await store.Get<Building>(contract.BuildingId, ct)).CustomerId == contract.CustomerId, "customer_mismatch", "Maintenance customer and building must match."); break;
+                Guard.Require((await store.Get<Building>(contract.BuildingId, ct)).CustomerId == contract.CustomerId, "customer_mismatch", "Maintenance customer and building must match.");
+                var contractLinks = db.Links.Where(x => x.SourceKind == "maintenance-visits" && x.TargetKind == "maintenance-contracts" && x.TargetId == contract.Id);
+                var contractRows = await db.Entities.Where(x => x.Kind == "maintenance-visits" && contractLinks.Any(l => l.SourceId == x.Id)).Select(x => x.Data).ToListAsync(ct);
+                foreach (var row in contractRows)
+                {
+                    var visit = AppJson.Read<MaintenanceVisit>(row); visit.Validate();
+                    Guard.Require(contract.CustomerId == visit.Terms!.CustomerId && contract.BuildingId == visit.Terms.BuildingId
+                        && contract.StartDate == visit.Terms.StartDate && contract.IntervalMonths == visit.Terms.IntervalMonths,
+                        "maintenance_recurrence_in_use", "Planned maintenance retains its customer, building and recurrence anchor. Create a new contract for changed terms.");
+                }
+                break;
         }
     }
 

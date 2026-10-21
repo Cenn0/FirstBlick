@@ -125,7 +125,7 @@ public static class BusinessRegistry
         ["stock-movements"] = typeof(StockMovement), ["material-reservations"] = typeof(MaterialReservation),
         ["employees"] = typeof(Employee), ["time-entries"] = typeof(TimeEntry), ["absences"] = typeof(Absence),
         ["schedule-assignments"] = typeof(ScheduleAssignment), ["diary-entries"] = typeof(DiaryEntry),
-        ["defects"] = typeof(Defect), ["acceptances"] = typeof(Acceptance), ["maintenance-contracts"] = typeof(MaintenanceContract),
+        ["defects"] = typeof(Defect), ["acceptances"] = typeof(Acceptance), ["maintenance-contracts"] = typeof(MaintenanceContract), ["maintenance-visits"] = typeof(MaintenanceVisit),
         ["notification-preferences"] = typeof(NotificationPreference), ["training-records"] = typeof(TrainingRecord),
         ["form-definitions"] = typeof(FormDefinition), ["form-submissions"] = typeof(FormSubmission),
         ["equipment"] = typeof(Equipment), ["supplier-invoices"] = typeof(SupplierInvoice),
