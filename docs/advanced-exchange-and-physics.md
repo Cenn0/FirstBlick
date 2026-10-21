@@ -1,6 +1,6 @@
 # Verifizierbare Austausch- und Bauphysik-Abläufe (2026-10-21)
 
-Diese Beschreibung bezieht sich auf den **Entwicklungsbranch**, nicht auf eine Freigabe in `main`. Sie trennt Implementierung, XSD-/Normverfahren und tatsächliche Projekt-/Ausführungsfreigabe. Reale Geschäfts-, Klima- und Herstellerdaten werden nicht angenommen oder ergänzt.
+Diese Beschreibung erläutert den implementierten Quellstand. Ihre Aussagen gelten unabhängig vom Branch nur für Commits mit abgeschlossenen, erfolgreichen Qualitätsprüfungen; sie ist keine Freigabe eines konkreten Bauwerks. Sie trennt Implementierung, XSD-/Normverfahren und tatsächliche Projekt-/Ausführungsfreigabe. Reale Geschäfts-, Klima- und Herstellerdaten werden nicht angenommen oder ergänzt.
 
 ## E-Rechnungen und Buchungs-/Ausgabeketten (bereits im Basisbranch)
 

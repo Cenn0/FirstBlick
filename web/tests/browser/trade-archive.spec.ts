@@ -136,11 +136,21 @@ test('reopening a verified original protects unsaved catalogue edits until disca
   const f = await fixture(page); await page.goto('/trade-imports'); await inspect(page);
   await page.getByRole('checkbox', { name: 'Position 01.001 auswählen', exact: true }).check();
   await page.getByLabel('Eigene Materialkosten je Einheit (€) · 01.001', { exact: true }).fill('12,34'); await openDetail(page);
-  page.once('dialog', dialog => dialog.dismiss());
-  await archive(page).getByRole('button', { name: 'Original im Prüfbereich öffnen', exact: true }).click();
+  // Restoring downloads asynchronously, so a click may finish before the
+  // confirmation dialog is emitted. Await each actual dialog completion before
+  // registering the next handler, avoiding a stale one-shot Playwright listener.
+  async function attemptRestore(accept: boolean): Promise<void> {
+    const handled = new Promise<void>((resolve, reject) => {
+      page.once('dialog', dialog => {
+        void (accept ? dialog.accept() : dialog.dismiss()).then(resolve, reject);
+      });
+    });
+    await archive(page).getByRole('button', { name: 'Original im Prüfbereich öffnen', exact: true }).click();
+    await handled;
+  }
+  await attemptRestore(false);
   await expect(page.getByLabel('Eigene Materialkosten je Einheit (€) · 01.001', { exact: true })).toHaveValue('12,34');
-  page.once('dialog', dialog => dialog.accept());
-  await archive(page).getByRole('button', { name: 'Original im Prüfbereich öffnen', exact: true }).click();
+  await attemptRestore(true);
   await expect(page.getByRole('checkbox', { name: 'Position 01.001 auswählen', exact: true })).not.toBeChecked();
   await expect(page.getByRole('heading', { name: '2 · Leistungsverzeichnis sichten', exact: true })).toBeVisible(); expect(f.errors).toEqual([]);
 });
