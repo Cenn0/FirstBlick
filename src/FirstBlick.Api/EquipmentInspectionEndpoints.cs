@@ -28,6 +28,7 @@ public static class EquipmentInspectionEndpoints
 {
     public static void Map(RouteGroupBuilder api)
     {
+        EquipmentInspectionDocumentEndpoints.Map(api);
         api.MapGet("/equipment/inspection-worklist", Worklist).WithTags("equipment-inspections");
         api.MapGet("/equipment/{id:guid}/inspection-history", History).WithTags("equipment-inspections");
         api.MapGet("/equipment-inspections/{id:guid}", async (Guid id, [AsParameters] BusinessCommandServices c, CancellationToken ct) =>

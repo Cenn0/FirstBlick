@@ -4,13 +4,14 @@ import { RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import { AuthService } from '../core/auth.service';
 import { ApiError, errorMessage } from '../core/transport';
+import { EquipmentDocumentsComponent } from './equipment-documents.component';
 import { EquipmentHistory, EquipmentMutation, EquipmentRecord, EquipmentWorklist, EquipmentWorklistFilter,
   InspectionKind, InspectionResult, dueStatusLabels, equipmentDueStatus, equipmentKindLabels,
   inspectionKindLabels, inspectionStatusLabels, validEquipmentDate, validEquipmentHistory,
-  validEquipmentMutation, validEquipmentWorklist, validEquipmentId } from '../core/equipment-workflow.models';
+  validEquipmentMutation, validEquipmentWorklist, validEquipmentId, validEquipmentInspection, EquipmentInspection } from '../core/equipment-workflow.models';
 
 @Component({
-  selector: 'app-equipment-workflow', imports: [FormsModule, RouterLink],
+  selector: 'app-equipment-workflow', imports: [FormsModule, RouterLink, EquipmentDocumentsComponent],
   templateUrl: './equipment-workflow.component.html', styleUrl: './equipment-workflow.component.css'
 })
 export class EquipmentWorkflowComponent implements OnDestroy {
@@ -20,6 +21,7 @@ export class EquipmentWorkflowComponent implements OnDestroy {
   readonly writable = computed(() => this.allowed() && ['ManagingDirector', 'Office', 'SiteManager'].includes(this.auth.tenant()?.role || '')
     && this.auth.can('equipment-inspections.write') && this.auth.hasModule('purchasing') && !this.auth.offlineSession());
   readonly worklist = signal<EquipmentWorklist | null>(null); readonly detail = signal<EquipmentHistory | null>(null);
+  readonly linkedDocumentInspection = signal<EquipmentInspection | null>(null);
   readonly busy = signal(false); readonly listLoading = signal(false); readonly detailLoading = signal(false);
   readonly error = signal(''); readonly notice = signal(''); readonly stale = signal(false);
   readonly kinds = equipmentKindLabels; readonly inspectionKinds = inspectionKindLabels; readonly statuses = inspectionStatusLabels;
@@ -29,6 +31,7 @@ export class EquipmentWorkflowComponent implements OnDestroy {
   nextInspectionOn = ''; makeAvailable = false; completionConfirmed = false; cancellationReason = '';
   private generation = 0; private listVersion = 0; private detailVersion = 0; private selectedId = '';
   private linkedEquipment = new URLSearchParams(location.search).get('equipmentId');
+  private linkedInspection = new URLSearchParams(location.search).get('inspectionId');
 
   constructor() {
     effect(() => { this.auth.accessSignature(); untracked(() => this.reset()); });
@@ -36,13 +39,27 @@ export class EquipmentWorkflowComponent implements OnDestroy {
   ngOnDestroy(): void { this.generation++; this.listVersion++; this.detailVersion++; }
   private reset(): void {
     this.generation++; this.listVersion++; this.detailVersion++; this.selectedId = ''; this.search = ''; this.status = 'all'; this.page = 1;
-    this.worklist.set(null); this.detail.set(null); this.busy.set(false); this.listLoading.set(false); this.detailLoading.set(false);
+    this.worklist.set(null); this.detail.set(null); this.linkedDocumentInspection.set(null); this.busy.set(false); this.listLoading.set(false); this.detailLoading.set(false);
     this.error.set(''); this.notice.set(''); this.stale.set(false); this.clearForms();
     if (this.allowed()) {
       void this.loadList();
       const linked = this.linkedEquipment; this.linkedEquipment = null;
       if (validEquipmentId(linked)) void this.openEquipment(linked);
+      const inspection = this.linkedInspection; this.linkedInspection = null;
+      if (!validEquipmentId(linked) && validEquipmentId(inspection)) void this.openLinkedInspection(inspection);
     }
+  }
+  private async openLinkedInspection(id: string): Promise<void> {
+    const generation = this.generation, access = this.auth.accessSignature(), version = this.detailVersion;
+    try {
+      const raw = await this.api.get<EquipmentInspection>(`equipment-inspections/${id}`);
+      if (!this.current(generation, access) || version !== this.detailVersion) return;
+      const inspection = validEquipmentInspection(raw, raw?.equipmentId);
+      if (inspection.id !== id || inspection.status !== 'Completed') throw new Error('Die Prüfakte gehört nicht zum angeforderten Originalbeleg.');
+      await this.openEquipment(inspection.equipmentId);
+      if (this.current(generation, access) && this.selectedId === inspection.equipmentId && this.detail()?.equipment.id === inspection.equipmentId)
+        this.linkedDocumentInspection.set(inspection);
+    } catch (error) { if (this.current(generation, access)) this.error.set(equipmentError(error)); }
   }
   private current(generation: number, access: string): boolean {
     return generation === this.generation && access === this.auth.accessSignature() && this.allowed();
@@ -67,7 +84,7 @@ export class EquipmentWorkflowComponent implements OnDestroy {
     if (this.busy()) return; this.page = 1; this.clearSelection(); void this.loadList();
   }
   private clearSelection(): void {
-    this.detailVersion++; this.selectedId = ''; this.detail.set(null); this.detailLoading.set(false); this.stale.set(false); this.clearForms();
+    this.detailVersion++; this.selectedId = ''; this.detail.set(null); this.linkedDocumentInspection.set(null); this.detailLoading.set(false); this.stale.set(false); this.clearForms();
   }
   async listPage(delta: number): Promise<void> {
     if (this.busy() || this.listLoading()) return;
