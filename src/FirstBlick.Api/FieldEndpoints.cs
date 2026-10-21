@@ -10,6 +10,9 @@ public sealed record PurchaseReceiptRequest(Guid LineId, decimal Quantity, strin
 public sealed record MaterialReserveRequest(Guid ProjectId, decimal Quantity, string Location = "Hauptlager", DateOnly? RequiredOn = null);
 public sealed record MaterialConsumeRequest(decimal Quantity, decimal UnitCost);
 public sealed record MaterialReleaseRequest(decimal Quantity);
+public sealed record InventoryCountRequest(string Location, decimal ExpectedOnHand, decimal CountedOnHand, decimal UnitCost, string Reason);
+public sealed record MaterialTransferRequest(string FromLocation, string ToLocation, decimal Quantity, decimal UnitCost, string Reason);
+public sealed record MaterialReturnRequest(decimal Quantity, string Reason);
 public sealed record DefectResolutionRequest(string Resolution);
 public sealed record TrainingReviewRequest(string MentorFeedback);
 public sealed record FormSubmitRequest(Guid ProjectId, Dictionary<string, string> Values);
@@ -49,6 +52,58 @@ public static class FieldEndpoints
             Guard.Text(location, nameof(location), 120);
             return Results.Ok(InventoryRules.Balance(c.Scope.TenantId, id, location, await c.Store.All<StockMovement>(ct), await c.Store.All<MaterialReservation>(ct)));
         });
+        api.MapPost("/materials/{id:guid}/inventory-count", (Guid id, InventoryCountRequest body, [AsParameters] BusinessCommandServices c) =>
+            c.Execute("stock-movements", "stock.inventory_count", body, async ct =>
+            {
+                Guard.Require(c.Scope.Role is BusinessRole.ManagingDirector or BusinessRole.SiteManager,
+                    "forbidden", "A physical count correction requires a managing director or site manager.");
+                await c.Current<Material>(id, ct, false);
+                var movement = InventoryRules.CountAdjustment(c.Scope.TenantId, id, body.Location,
+                    body.ExpectedOnHand, body.CountedOnHand, body.UnitCost, body.Reason,
+                    await c.Store.All<StockMovement>(ct), await c.Store.All<MaterialReservation>(ct), DateTimeOffset.UtcNow);
+                await c.SaveNew(movement, "stock.inventory_count", ct);
+                return new { movement, balance = InventoryRules.Balance(c.Scope.TenantId, id, body.Location,
+                    await c.Store.All<StockMovement>(ct), await c.Store.All<MaterialReservation>(ct)) };
+            }));
+        api.MapPost("/materials/{id:guid}/transfer", (Guid id, MaterialTransferRequest body, [AsParameters] BusinessCommandServices c) =>
+            c.Execute("stock-movements", "stock.transfer", body, async ct =>
+            {
+                Guard.Require(c.Scope.Role is BusinessRole.ManagingDirector or BusinessRole.SiteManager,
+                    "forbidden", "A warehouse transfer requires a managing director or site manager.");
+                await c.Current<Material>(id, ct, false);
+                var movements = await c.Store.All<StockMovement>(ct);
+                var reservations = await c.Store.All<MaterialReservation>(ct);
+                var (outgoing, incoming) = InventoryRules.Transfer(c.Scope.TenantId, id,
+                    body.FromLocation, body.ToLocation, body.Quantity, body.UnitCost, body.Reason,
+                    movements, reservations, DateTimeOffset.UtcNow);
+                await c.SaveNew(outgoing, "stock.transfer_out", ct);
+                await c.SaveNew(incoming, "stock.transfer_in", ct);
+                return new { outgoing, incoming };
+            }));
+        api.MapPost("/stock-movements/{id:guid}/supplier-return", (Guid id, MaterialReturnRequest body, [AsParameters] BusinessCommandServices c) =>
+            c.Execute("stock-movements", "stock.supplier_return", body, async ct =>
+            {
+                Guard.Require(c.Scope.Role is BusinessRole.ManagingDirector or BusinessRole.Office or BusinessRole.SiteManager,
+                    "forbidden", "A supplier return requires an authorized purchasing role.");
+                var source = await c.Current<StockMovement>(id, ct);
+                Guard.Require(source.PurchaseOrderId.HasValue, "invalid_supplier_return", "The source is not a supplier receipt.");
+                var order = await c.Current<PurchaseOrder>(source.PurchaseOrderId.Value, ct, false);
+                var returned = InventoryRules.SupplierReturn(order, source, body.Quantity, body.Reason,
+                    await c.Store.All<StockMovement>(ct), await c.Store.All<MaterialReservation>(ct), DateTimeOffset.UtcNow);
+                await c.SaveNew(returned, "stock.supplier_return", ct);
+                await c.Store.Save(order, "purchase.return", false, ct);
+                return new { order, movement = returned };
+            }));
+        api.MapPost("/stock-movements/{id:guid}/project-return", (Guid id, MaterialReturnRequest body, [AsParameters] BusinessCommandServices c) =>
+            c.Execute("stock-movements", "stock.project_return", body, async ct =>
+            {
+                Guard.Require(c.Scope.Role is BusinessRole.ManagingDirector or BusinessRole.SiteManager,
+                    "forbidden", "A project material return requires a managing director or site manager.");
+                var source = await c.Current<StockMovement>(id, ct);
+                var returned = InventoryRules.ProjectReturn(source, body.Quantity, body.Reason,
+                    await c.Store.All<StockMovement>(ct), DateTimeOffset.UtcNow);
+                return await c.SaveNew(returned, "stock.project_return", ct);
+            })).Produces<StockMovement>();
         api.MapPost("/materials/{id:guid}/reserve", (Guid id, MaterialReserveRequest body, [AsParameters] BusinessCommandServices c) =>
             c.Execute("material-reservations", "material.reserve", body, async ct =>
             {
