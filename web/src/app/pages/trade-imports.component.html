@@ -21,3 +21,5 @@
   @if(pages()>1){<nav class="pagination" aria-label="Vorschauseiten"><button type="button" class="button secondary" [disabled]="page<=1||busy()" (click)="page=page-1">Vorherige Vorschauseite</button><span>Seite {{page}} von {{pages()}}</span><button type="button" class="button secondary" [disabled]="page>=pages()||busy()" (click)="page=page+1">Nächste Vorschauseite</button></nav>}
   @if(gaeb()||invoice()){<div class="detail-actions"><button type="button" class="button secondary" [disabled]="busy()" (click)="exportPreview()">Prüfstand als JSON exportieren</button><a routerLink="/catalog-items">Leistungskatalog öffnen →</a></div>}
 }
+
+@if (canGaeb()) { <app-gaeb-bid-exchange /> }

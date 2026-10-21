@@ -1,27 +1,21 @@
-# E-Rechnungen – sicherer XML-Previewvertrag, Profilvalidierung noch ausstehend
+# E-Rechnung in FirstBlick – getrennte Vorprüfung, Originalvalidator und Geschäftskette
 
-Stand: 20.10.2026. Die vorbereitete Empfangskomponente kann untrusted XML mit begrenzten Budgets, DTD-/XXE-Sperre und enger Typ-/Versionsabgrenzung lesen. Ihr Ergebnis ist **niemals** eine Freigabe zur Buchung, zum Versand oder zur steuerlichen Verwendung.
+**Stand: 21.10.2026.** Die alte v1-Vorschau ist weiterhin lediglich eine strukturelle XML-Sichtung; sie ist keine XRechnung-Konformitätserklärung. Zusätzlich existiert eine eigenständige, versionsgebundene **v2-Validierung** und ein expliziter Ein- und Ausgangsworkflow.
 
-## Unterstützte Vorprüfung
+## Verfahren und technische Grenzen
 
-`POST /api/v1/integrations/v1/e-invoice/preview` erwartet `application/xml` oder `text/xml`, UTF-8, höchstens 1 MiB. Der Endpoint fordert eine gültige persönliche Anmeldung, Mandantenmitgliedschaft und eine Finanzrolle (Geschäftsführung, Büro oder Buchhaltung).
+- `POST /api/v1/integrations/v1/e-invoice/preview`: strukturierte, begrenzte UBL-/CII-Sichtung, `externalValidationPerformed=false`. Weder Archivierung noch Buchung.
+- `POST /api/v1/integrations/v2/e-invoice/validate`: Original-XML mit lokal gepinntem KoSIT-Validator 1.6.3 und XRechnung-Konfiguration 3.0.2 (2026-08-31), XSD und Geschäftsregeln. Prüfung endet mit eigenem Prüfbericht und quellgebundenem Digest; "XML lesbar" bedeutet nicht "angenommen".
+- `.../e-invoice/import-preview` und `.../e-invoice/import`: abgenommene und ausdrücklich auf Lieferant, Rechnungsidentität und optionalen Bestellbezug abgebildete Rechnung; Speicherung als **Lieferantenrechnungsentwurf**, mit Original, Validatorbericht und menschlichem Prüfreceipt in getrennten versionierten Objekten. Der Import löst **keine Zahlung** aus.
+- Lieferantenrechnung freigeben bzw. ablehnen: dedizierte Business-API; Banktransaktionen nur lesend einlesen, daraus abgeglichene Zahlungszuordnungen mit getrennten Vorzeichen-/Skonto- und Rückabwicklungsregeln vornehmen.
+- `POST /api/v1/invoices/{id}/e-invoice/preview` und `.../export`: aus einer bereits ausgestellten und eingefrorenen Ausgangsrechnung wird nach menschlich geprüfter Steuer- und Empfängerzuordnung eine UBL-Ausgabe erzeugt, mit Originalregel-Validierung und versionierter Export-Evidenz. Kein automatischer Versand.
 
-- UBL 2.1: `Invoice` und `CreditNote` in den OASIS-Namensräumen mit eindeutigen Positionskennungen, expliziter Rechnungssumme, Nettobasis, Zahlbetrag, Währung EUR, Datum und beiden Geschäftspartnern.
-- UN/CEFACT CII: ein `CrossIndustryInvoice`-XML mit Typ 380/381, Kopfdaten, Waren-/Leistungszeilen sowie den Geldsummen. Die Typbenennung `CII-D16B-structure` ist eine *Strukturerkennung*, kein getesteter Release-Konformitätsnachweis.
-- Die Vorschau bindet Original-Bytes mit SHA-256, erhält Mengen, Währung, Beträge und Profilkennung ohne eine künstliche umsatzsteuerliche Klassifizierung.
-- Sie zeigt fehlende oder fragliche Kopf- und Positionsangaben als `reviewIssues`. `externalValidationPerformed=false` und `mayPostAutomatically=false` sind ausnahmslos fest vorgegeben.
+## Notwendige Einsatzvoraussetzungen
 
-Dateiendungen oder XML-Namensräume genügen **nicht** für eine XRechnung-Freigabe. Eingebettete XML-Anhänge aus ZUGFeRD-/Factur-X-PDF/A-3, XML-Signaturen, XML-Extensions, Lieferantenmatching, Dublettenbehandlung, Herkunftsbelege und das sichere Buchen von Eingangsbelegen werden nicht behauptet oder stillschweigend ausgeführt.
+Versionierte Objektspeicherung, kontrollierter Java-Validatorprozess, geprüfte Original-XSD/Schematron-Ressourcen, aktive Mandantenberechtigungen, passende Geschäftspartner- und Steuerkategorien, realistische Steuer-/Gutschriftreferenzen und korrekte Rechnungsstammdaten sind erforderlich. Jede Freigabe verwendet einen Digest des tatsächlich gesehenen Prüfstands. Revisionswechsel und abweichende XML-Originalbytes erzwingen eine erneute Prüfung.
 
-## Stand der Standards
+Das implementierte **XRechnung-UBL-Verfahren** deckt weder jede EN-16931-Syntaxvariante noch alle steuerlichen Spezialfälle ab. Insbesondere kein beliebiges ZUGFeRD-/Factur-X-PDF/A-3, keine automatische Peppol-Übertragung, keine DATEV-Schnittstellenzertifizierung und keine Steuerberater-/Archivierungsfreigabe. Technische Originalregelprüfung und rechtliche Konformität sind auseinanderzuhalten.
 
-- Der UBL-/CII-Formalvertrag zur europäischen EN 16931 verlangt vollständige XSD- und Schematron-Regeln; ein korrekt parsebares Dokument ist nicht notwendig geschäftsregelkonform.
-- KoSIT veröffentlicht eine **XRechnung-3.0.2**-Validator-Konfiguration mit Datum **2026-08-31**, KoSIT Validator 1.6.3 und den zugehörigen CEN-/CIUS-Regeln. Referenz: https://github.com/itplr-kosit/validator-configuration-xrechnung/releases/tag/v2026-08-31
-- Die gemeinsame ZUGFeRD-/Factur-X-Formatfamilie erhielt **ZUGFeRD 2.5.2 / Factur-X 1.09.2** im August 2026. Referenz: https://fnfe-mpe.org/factur-x/factur-x_en/
-- Für künftig reale XRechnung-Buchung und strukturierten Versand ist die isolierte Ausführung **der gepinnten KoSIT-Konfiguration inklusive XSD/Schematron**, ein Profil-/Codelisten-Testkorpus, validierte Netto-/Steuerbasis, Pflichtfeld- und Empfängerprüfung sowie Geschäftsfreigabe erforderlich. Das darf nicht mit dem heutigen Preview-Endpoint verwechselt werden.
+Die verbindlichen API-Verträge und Einschränkungen stehen in [erweiterte Austausch- und Bauphysik-Abläufe](advanced-exchange-and-physics.md). Die Original-Konfiguration und ihr festgelegter Hash werden in `scripts/standards-assets.py` gepflegt; die exakten Testläufe sind über GitHub Actions je Commit zu prüfen.
 
-## Technische Grenzen und Testbelege
-
-`src/FirstBlick.Core/Integrations/TradeXml.cs` sperrt DTD/Entity-Resolution, begrenzt XML-Größe, Elementzahl und Tiefe. `ElectronicInvoiceXml.cs` verwaltet die Syntaxerkennung und sichere Vorschau mit invariantem Dezimalformat. Der HTTP-Adapter ist `src/FirstBlick.Api/TradePreviewEndpoints.cs`.
-
-Core-Regressionsfälle: `tests/FirstBlick.Core.Tests/Integrations/ElectronicInvoiceXmlTests.cs`; echte HTTP-/PostgreSQL-Fälle: `tests/FirstBlick.Api.Tests/ElectronicInvoicePreviewApiTests.cs`. Eine erfolgreiche CI ist keine Prüfung mit dem externen KoSIT-Validator und keine fachrechtliche Abnahme. **DP-08-03 ist bis zur vollständigen, versionsgeprüften Import-/Exportkette nur teilweise umgesetzt.**
+Offizielle Quelle: https://github.com/itplr-kosit/validator-configuration-xrechnung/releases/tag/v2026-08-31

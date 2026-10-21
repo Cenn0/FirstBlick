@@ -123,6 +123,7 @@ IntegrationEndpoints.Map(api);
 TradePreviewEndpoints.Map(api);
 GaebCatalogEndpoints.Map(api);
 OfficialInvoiceEndpoints.Map(api);
+OfficialGaebExchangeEndpoints.Map(api);
 QuantityEndpoints.Map(api);
 CostEndpoints.Map(api);
 SupplierCostAllocationEndpoints.Map(api);

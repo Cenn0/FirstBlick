@@ -41,7 +41,8 @@ public sealed class TechnicalRecord : TenantEntity
 public static class TechnicalRecords
 {
     private static readonly JsonSerializerOptions Options = new(JsonSerializerDefaults.Web)
-    { MaxDepth = 32, UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow };
+    { MaxDepth = 32, UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
+        Converters = { new JsonStringEnumConverter(allowIntegerValues: false) } };
 
     public static JsonElement Evaluate(string method, JsonElement input)
     {
@@ -54,6 +55,9 @@ public static class TechnicalRecords
             "moisture.monthly-screening" => MonthlyMoistureScreening.Calculate(input.Deserialize<MonthlyMoistureScreeningInput>(Options)!),
             "roof.rectangle" => RoofGeometry.Rectangle(input.Deserialize<RectangularRoofInput>(Options)!),
             "roof.tapered-insulation" => TaperedInsulationCalculator.Calculate(input.Deserialize<TaperedInsulationInput>(Options)!),
+            "roof.tapered-board-layout" => TaperedBoardLayout.Calculate(input.Deserialize<TaperedBoardLayoutInput>(Options)!),
+            "moisture.iso13788.balance" => Iso13788Balance.Calculate(input.Deserialize<Iso13788BalanceInput>(Options)!),
+            "moisture.iso13788.drying" => Iso13788Balance.Dry(input.Deserialize<Iso13788DryingInput>(Options)!),
             "roof.polygon" => RoofGeometry.Calculate(input.Deserialize<PolygonRoofInput>(Options)!),
             "thermal-bridges" => ThermalBridgeCalculator.Aggregate(input.Deserialize<ThermalBridgeInput>(Options)!),
             _ => throw new DomainException("unsupported_method", "This calculation method has not been implemented and verified.")

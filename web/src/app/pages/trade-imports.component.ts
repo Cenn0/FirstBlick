@@ -1,3 +1,5 @@
+import { GaebBidExchangeComponent } from './gaeb-bid-exchange.component';
+import { TradeArchiveComponent } from './trade-archive.component';
 import { Component, DestroyRef, computed, effect, inject, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -7,10 +9,9 @@ import { TradePreviewService } from '../core/trade-preview.service';
 import { ApiError, errorMessage } from '../core/transport';
 import { decimalDisplay } from '../core/decimal-format';
 import { downloadBlob } from '../core/integrations.models';
-import { TradeArchiveComponent } from './trade-archive.component';
 import { CatalogPreview, CatalogReceipt, CatalogRequest, CatalogSelection, GaebPreview, InvoicePreview, TradeKind, TradeSource, canSelect, catalogRequest, costFields, emptySelection, readTradeSource, sameCatalogRequest, sourceBudget, validateCatalogPreview, validateCatalogReceipt, validateGaebPreview, validateInvoicePreview } from '../core/trade-import.models';
 
-@Component({ imports: [FormsModule, RouterLink, TradeArchiveComponent], templateUrl: './trade-imports.component.html', styleUrl: './trade-imports.component.css' })
+@Component({ imports: [FormsModule, RouterLink, GaebBidExchangeComponent, TradeArchiveComponent], templateUrl: './trade-imports.component.html', styleUrl: './trade-imports.component.css' })
 export class TradeImportsComponent {
   readonly auth = inject(AuthService); private readonly api = inject(ApiService); private readonly previews = inject(TradePreviewService);
   readonly canGaeb = computed(() => !!this.auth.scope() && this.auth.can('catalog-items.write'));

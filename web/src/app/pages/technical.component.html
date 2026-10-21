@@ -48,4 +48,5 @@
     <div class="form-field"><label for="calculationTitle">Berichtsbezeichnung</label><input id="calculationTitle" maxlength="240" [(ngModel)]="title" (ngModelChange)="attachmentEdited()"></div><div class="detail-actions"><button type="button" class="button primary" [disabled]="!projectId || !title.trim() || !!saved()" (click)="save()">Berechnung im Projekt speichern</button>@if(saved()){<button type="button" class="button secondary" (click)="pdf()">PDF erzeugen und herunterladen</button>}</div></fieldset>
     @if (saved(); as record) {<p role="status">Gespeichert: {{record.title}} · Revision {{record.revision}}</p><p>Berichtsdigest: <code class="digest">{{record.digest}}</code></p><a routerLink="/technical-results">Berechnungsverlauf öffnen →</a>}
   </section>}
+  <app-advanced-technical />
 }

@@ -2,6 +2,17 @@
 
 > Übernommen aus der Projektanalyse „DachPlaner Rework Roadmap“, 19.10.2026 (34 Seiten). Der Originalbericht umfasst 100 Aufgaben in 15 Epics. Diese Fassung erhält alle Aufgabenkennungen und ursprünglichen Abnahmekriterien. Ein implementierter Teilablauf bedeutet nicht automatisch, dass das gesamte Epic abgeschlossen ist.
 
+## Umsetzung der geprüften Fachmodule (21.10.2026)
+
+Die [erweiterte Fach- und Schnittstellendokumentation](advanced-exchange-and-physics.md) beschreibt die neuen, separat überprüfbaren Abläufe und Grenzen:
+
+- **DP-08-03:** Geprüftes XRechnung-XML anhand der gepinnten KoSIT-Konfiguration, manuell bestätigte Lieferantenrechnung mit Original-/Prüfbericht-/Prüfbelegversionen, Freigabe-/Zahlungsabgleich sowie validierter UBL-Rechnungsausgabe aus dem eingefrorenen Ist-Rechnungsstand. Keine automatische Banküberweisung, Peppol-Zustellung oder generelle ZUGFeRD-/DATEV-Freigabe.
+- **DP-12-02:** GAEB-X83/X84 anhand der originalen XSD 3.3/2021-05 prüfen; Angebote mit quell- und projektgebundener Prüffreigabe als X84 mit archiviertem X83-Original und eigener, gegen Datenbank-Fremdschlüssel referenzierter Exportakte ausgeben. Nur reguläre Positionen; phasenbedingt nicht darstellbare Freitexte sind ausdrücklich ausgewiesen.
+- **DP-11-04:** Monatsbilanzen für Kondensation/Verdunstung und mehrjährige Austrocknungsvergleiche nach dem bezeichneten ISO-13788:2012-Verfahren, mit Anwendungsgrenzen, Klimanachweisen und prüfsummengebundenen Projektläufen. Kein umfassender Nachweis der DIN 4108-3 oder unabhängige Fachabnahme; der dokumentierte Referenzwiderspruch bleibt offen.
+- **DP-11-05:** Rechteckiges, einachsiges Gefälleplattenraster mit expliziten Hersteller-/Katalogversions-/SKU-Eingaben, Stücklisten, Packmengen und Verschnitt. Kein bestätigter Herstellerkatalog, keine Innenentwässerung, keine normative Verlegefreigabe.
+
+Diese Fähigkeiten sind **technisch implementierte Teilumfänge**, keine pauschale Erledigung sämtlicher ursprünglicher Aufgaben und keine Zusage umfassender Norm-/Herstellerkonformität. Maßgeblich sind die **CI-, Standards- und Operations-Prüfergebnisse desselben finalen GitHub-Commits**. Ältere Checkpoints behalten ihre historische Aussage zum jeweiligen Quellstand; nachfolgende Abschnitte dokumentieren den früheren Stand.
+
 ## Weiterführung – Originale XML-Akten
 
 Die [Originalakten-Dokumentation](xml-originals.md) ergänzt **DP-08-03, DP-12-02 und DP-02-05** um einen zusammenhängenden Ablauf: strukturell geprüfte Originaldatei → bewusste Ablage → konkrete S3-Version und Eingangsbeleg → mandantengebundene Dublettenprüfung → wiederauffindbare Akte → erneut verifizierter Download oder Wiederaufnahme im Prüfbereich. GAEB-Akten zeigen die tatsächlich daraus übernommenen Katalogpositionen; ungespeicherte Kalkulationswerte werden bei der Wiederaufnahme nicht ohne Bestätigung verworfen.

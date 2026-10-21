@@ -79,7 +79,13 @@ public static class GaebBidWriter
         if (preview.ExchangePhase == "X84")
         {
             root = new XElement(source.Root);
-            root.Element(Target + "GAEBInfo")!.SetElementValue(Target + "Date", Date(input.BidDate));
+            var gaebInfo = root.Element(Target + "GAEBInfo")!;
+            gaebInfo.SetElementValue(Target + "Date", Date(input.BidDate));
+            // GAEB 3.3 requires information about the software ACTUALLY exporting this X84.
+            // Copying the original tender/bid producer into GAEBInfo would misstate provenance.
+            var producer = gaebInfo.Element(Target + "ProgSystem");
+            Guard.Require(producer is not null, "gaeb_missing_producer", "The original X84 lacks a producer field required for a truthful re-export.");
+            producer!.Value = "FirstBlick";
             var award = root.Element(Target + "Award")!;
             award.Element(Target + "CTR")!.ReplaceWith(Contractor(input.Bidder));
             UpdateBody(award.Element(Target + "BoQ")!.Element(Target + "BoQBody")!, byId);
@@ -144,26 +150,19 @@ public static class GaebBidWriter
                     target.Add(E("Qty", Decimal(price.Quantity)));
                     if (!price.NotOffered) target.Add(E("UP", Decimal(price.UnitPrice!.Value)), E("IT", Amount(price.LineNet)));
                     if (item.Element(ns + "VAT") is { } vat) target.Add(ConvertNamespace(vat));
+                    // X84 p/DetailTxt is restricted to bidder TextComplement records in
+                    // the official 2021-05 schema, not ordinary X83 paragraph text.
+                    // Emitting a literal p or fabricating a TextComplement violates the schema
+                    // or changes the commercial meaning of the tender. Keep original bytes
+                    // as separate evidence and record an explicit, reviewable phase exclusion.
                     var description = item.Element(ns + "Description");
                     if (description is not null)
                     {
-                        var detail = description.Element(ns + "CompleteText")?.Element(ns + "DetailTxt");
-                        var outline = description.Descendants(ns + "OutlineText").FirstOrDefault();
-                        if (detail is not null)
-                        {
-                            Guard.Require(!detail.Descendants().Any(x => x.Name.LocalName == "attachment"), "gaeb_bid_attachment",
-                                "X84 does not carry the original X83 attachment field. Resolve attachment delivery explicitly rather than silently discarding it.");
-                            target.Add(new XElement(Target + "Description", new XElement(Target + "CompleteText", ConvertNamespace(detail))));
-                        }
-                        else if (outline is not null)
-                        {
-                            var text = new XElement(Target + "Text");
-                            foreach (var fragment in outline.Descendants(ns + "TextOutlTxt")) foreach (var element in fragment.Elements()) text.Add(ConvertNamespace(element));
-                            Guard.Require(text.HasElements, "gaeb_bid_description", "The outline text cannot be represented as a complete X84 item description.");
-                            target.Add(new XElement(Target + "Description", new XElement(Target + "CompleteText", new XElement(Target + "DetailTxt", text))));
-                        }
-                        foreach (var field in description.Elements()) if (field.Name.LocalName != "CompleteText") excluded.Add($"Item[{price.OriginalItemId}]/Description/" + field.Name.LocalName);
-                        if (description.Element(ns + "CompleteText")?.Element(ns + "OutlineText") is not null) excluded.Add($"Item[{price.OriginalItemId}]/Description/CompleteText/OutlineText");
+                        Guard.Require(!description.Descendants().Any(x =>
+                                x.Name.LocalName is "TextComplement" or "attachment"),
+                            "gaeb_bidder_text_or_attachment",
+                            "The X83 item contains bidder TextComplement or attachment content requiring a dedicated, explicitly reviewed X84 mapping. Export without that mapping is prohibited.");
+                        excluded.Add($"Item[{price.OriginalItemId}]/Description: source tender long text and formatting omitted from X84 restricted bidder-text field; original X83 archived without modification");
                     }
                     if (item.Element(ns + "QU") is not null) excluded.Add($"Item[{price.OriginalItemId}]/QU (retained in original and bid receipt; X84 does not repeat the source unit field)");
                     list.Add(target);
