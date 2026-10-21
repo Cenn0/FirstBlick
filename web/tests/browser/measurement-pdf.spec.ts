@@ -42,7 +42,7 @@ async function fixture(page: Page, corrupt = false) {
 test('frozen measurement PDF is downloaded only after digest, project and bytes agree', async ({ page }) => {
   const f = await fixture(page);
   await page.goto('/measurements');
-  await page.getByRole('button', { name: 'Öffnen' }).click();
+  await page.getByRole('button', { name: 'Öffnen', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Festgehaltenes Aufmaß als geprüftes PDF herunterladen' })).toBeVisible();
   const download = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Festgehaltenes Aufmaß als geprüftes PDF herunterladen' }).click();
@@ -57,7 +57,7 @@ test('corrupt measurement PDF never reaches the download action', async ({ page 
   const f = await fixture(page, true); const downloads: string[] = [];
   page.on('download', download => downloads.push(download.suggestedFilename()));
   await page.goto('/measurements');
-  await page.getByRole('button', { name: 'Öffnen' }).click();
+  await page.getByRole('button', { name: 'Öffnen', exact: true }).click();
   await page.getByRole('button', { name: 'Festgehaltenes Aufmaß als geprüftes PDF herunterladen' }).click();
   await expect(page.getByRole('alert')).toContainText('SHA-256-Prüfsumme');
   expect(downloads).toEqual([]);
