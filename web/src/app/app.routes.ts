@@ -15,6 +15,7 @@ const authenticated: CanActivateFn = async (_route,state) => {
 export const routes: Routes = [
   ...['activate','recover','reset'].map(mode=>({path:mode,data:{mode},loadComponent:()=>import('./pages/account.component').then(m=>m.AccountComponent)})),
   { path: 'login', loadComponent: () => import('./pages/login.component').then(m => m.LoginComponent) },
+  { path: 'maintenance', canActivate: [authenticated], loadComponent: () => import('./pages/maintenance.component').then(m => m.MaintenanceComponent) },
   { path: 'overview', canActivate: [authenticated], loadComponent: () => import('./pages/dashboard.component').then(m => m.DashboardComponent) },
   { path: 'portal', canActivate: [authenticated], loadComponent: () => import('./pages/portal.component').then(m => m.PortalComponent) },
   { path: 'documents', canActivate: [authenticated], loadComponent: () => import('./pages/documents.component').then(m => m.DocumentsComponent) },

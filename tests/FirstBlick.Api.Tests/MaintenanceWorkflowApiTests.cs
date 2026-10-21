@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using FirstBlick.Core.Business;
 using FirstBlick.Core.Security;
 using FirstBlick.Infrastructure;
@@ -12,6 +13,33 @@ namespace FirstBlick.Api.Tests;
 
 public sealed class MaintenanceWorkflowApiTests(PostgresApiFixture fixture) : IClassFixture<PostgresApiFixture>
 {
+    [PostgresApiFact]
+    public async Task Legacy_raw_contract_without_new_fields_can_be_explicitly_configured_and_planned()
+    {
+        var (user, client, contract) = await Setup();
+        await fixture.InScope(async services =>
+        {
+            var db = services.GetRequiredService<FirstBlickDbContext>();
+            var row = await db.Entities.IgnoreQueryFilters().SingleAsync(x => x.TenantId == user.TenantId && x.Kind == "maintenance-contracts" && x.Id == contract.Id);
+            var legacy = JsonNode.Parse(row.Data)!.AsObject();
+            legacy.Remove("checklistTemplate"); legacy.Remove("automaticPlanning"); legacy.Remove("planningLeadDays");
+            row.Data = legacy.ToJsonString(); await db.SaveChangesAsync();
+        });
+        var raw = await Ok<JsonElement>(client.GetAsync($"/api/v1/maintenance-contracts/{contract.Id}"));
+        Assert.False(raw.TryGetProperty("checklistTemplate", out _)); Assert.False(raw.TryGetProperty("automaticPlanning", out _)); Assert.False(raw.TryGetProperty("planningLeadDays", out _));
+        Assert.Equal(0, await RunScheduler(new(2027, 1, 31, 8, 0, 0, TimeSpan.Zero)));
+        contract = await Ok<MaintenanceContract>(Send(client, HttpMethod.Post, $"/api/v1/maintenance-contracts/{contract.Id}/configure", new
+        {
+            active = true, automaticPlanning = false, planningLeadDays = 14,
+            checklistTemplate = new[] { new MaintenanceCheckTemplate("Bestandsvertrag prüfen", "Vom Betrieb ausdrücklich festgelegt") }
+        }, contract.Revision));
+        Assert.False(contract.AutomaticPlanning); Assert.Equal(14, contract.PlanningLeadDays);
+        var visit = await Plan(client, contract);
+        Assert.Equal("Bestandsvertrag prüfen", Assert.Single(visit.Checklist).Title);
+        Assert.Equal("Vom Betrieb ausdrücklich festgelegt", visit.Checklist[0].Instructions);
+        Assert.Equal(contract.Id, visit.ContractId);
+    }
+
     [PostgresApiFact]
     public async Task Plan_check_complete_and_next_occurrence_form_one_persistent_audited_chain()
     {
