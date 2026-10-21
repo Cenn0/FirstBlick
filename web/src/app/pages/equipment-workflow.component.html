@@ -1,0 +1,89 @@
+<header class="page-heading">
+  <div><p class="eyebrow">MATERIAL & GERÄTE</p><h1>Geräteprüfungen</h1><p>Prüftermine, Wartungen und Reparaturen mit ihren Nachweisen verfolgen.</p></div>
+  @if(allowed()){<a class="button secondary" routerLink="/equipment">Gerätestammdaten</a>}
+</header>
+@if(!allowed()){
+  <section class="panel empty-state"><h2>Zugriff eingeschränkt</h2><p>Die Prüfakte steht Geschäftsführung, Büro, Buchhaltung und Bauleitung mit entsprechender Leseberechtigung zur Verfügung.</p></section>
+}@else{
+  @if(error()){<p class="alert error" role="alert">{{error()}}</p>}
+  @if(notice()){<p class="alert information" role="status">{{notice()}}</p>}
+  @if(!auth.hasModule('purchasing')){<p class="alert">Das Modul Material & Geräte ist deaktiviert. Vorhandene Prüfnachweise bleiben lesbar.</p>}
+  <section class="panel filters">
+    <form (ngSubmit)="applyFilters()" class="filter-grid">
+      <div class="form-field"><label for="equipment-search">Gerät oder Inventarnummer suchen</label><input id="equipment-search" name="search" maxlength="200" [(ngModel)]="search" [disabled]="busy()"></div>
+      <div class="form-field"><label for="equipment-filter">Anzeige</label><select id="equipment-filter" name="status" [(ngModel)]="status" [disabled]="busy()"><option value="all">Alle Geräte und Fahrzeuge</option><option value="due">Heute fällig oder überfällig</option><option value="blocked">Mit Prüfsperre</option><option value="planned">Mit geplantem Prüfvorgang</option></select></div>
+      <button class="button primary" type="submit" [disabled]="busy()||listLoading()">Filter anwenden</button>
+      <button class="button secondary" type="button" (click)="refresh()" [disabled]="busy()||listLoading()">Liste aktualisieren</button>
+    </form>
+    @if(worklist();as list){<p class="small muted">Fälligkeiten zum {{date(list.businessDate)}} · Betriebszeitzone {{list.timeZone}}</p>}
+  </section>
+  <div class="equipment-grid">
+    <section class="panel">
+      <h2>Geräte und Fahrzeuge</h2>
+      @if(listLoading()){<p role="status">Geräteliste wird geladen …</p>}
+      @if(worklist();as list){
+        <ul class="selection-list">
+          @for(item of list.items;track item.id){
+            <li><button class="record-button" (click)="openEquipment(item.id)" [disabled]="busy()" [attr.aria-pressed]="detail()?.equipment?.id===item.id">
+              <strong>{{item.name}}</strong><span>{{item.inventoryNumber}} · {{kinds[item.kind]}}@if(item.registration){ · {{item.registration}}}</span>
+              <span [class.blocked-text]="isBlocked(item,list.businessDate)">{{availability(item,list.businessDate)}}</span>
+              <span>{{due(item,list.businessDate)}}@if(item.pendingInspectionId){ · Prüfvorgang geplant}</span>
+            </button></li>
+          }@empty{<li class="muted">Keine Geräte für diese Auswahl gefunden.</li>}
+        </ul>
+        <div class="pager"><button class="button small" type="button" (click)="listPage(-1)" [disabled]="page<=1||listLoading()||busy()">Vorherige Geräte</button><span>Seite {{list.page}} · {{list.total}} Geräte</span><button class="button small" type="button" (click)="listPage(1)" [disabled]="page*list.pageSize>=list.total||listLoading()||busy()">Weitere Geräte</button></div>
+      }
+    </section>
+    <div class="equipment-detail">
+      @if(detailLoading()){<p role="status">Geräteakte wird geladen …</p>}
+      @if(detail();as d){
+        <section class="panel">
+          <div class="section-title"><h2>{{d.equipment.name}}</h2><button class="button secondary small" (click)="reloadDetail()" [disabled]="busy()||detailLoading()">Geräteakte neu laden</button></div>
+          <p>{{kinds[d.equipment.kind]}} · Inventarnummer {{d.equipment.inventoryNumber}}@if(d.equipment.registration){ · {{d.equipment.registration}}}</p>
+          <dl class="equipment-facts"><div><dt>Standort</dt><dd>{{d.equipment.location||'Nicht angegeben'}}</dd></div><div><dt>Nächster Prüftermin</dt><dd>{{date(d.equipment.nextInspectionOn)}} · {{due(d.equipment,d.businessDate)}}</dd></div><div><dt>Disposition</dt><dd [class.blocked-text]="isBlocked(d.equipment,d.businessDate)">{{availability(d.equipment,d.businessDate)}}</dd></div></dl>
+          <p class="small muted">Ein Einsatz wird mit dem gesamten Zeitfenster in der Betriebszeitzone geprüft. Der Prüftermin gilt einschließlich dieses Tages.</p>
+          @if(d.affectedAssignmentCount>0){<div class="alert"><strong>{{d.affectedAssignmentCount}} bereits geplante Einsätze betroffen</strong><p>Prüfen Sie die betroffenen künftigen Einsätze und passen Sie ihre Gerätezuordnung an.</p><a routerLink="/planning-week">Wochenplan öffnen →</a></div>}
+          @if(stale()){<p class="alert">Die Geräteakte muss neu geladen werden, bevor Sie einen weiteren Prüfvorgang buchen. Ihre noch nicht gespeicherten Eingaben bleiben bis dahin sichtbar.</p>}
+          @if(d.pendingInspection;as pending){
+            <section class="planned-inspection" aria-labelledby="pending-heading"><h3 id="pending-heading">Geplant: {{pending.title}}</h3><p>{{inspectionKinds[pending.kind]}} am <strong>{{date(pending.scheduledOn)}}</strong></p>@if(pending.notes){<p class="preserve-lines">{{pending.notes}}</p>}</section>
+            @if(writable()){
+              <form (ngSubmit)="complete()" #completionForm="ngForm">
+                <fieldset [disabled]="busy()||detailLoading()||stale()"><legend>Durchführung dokumentieren</legend>
+                  <div class="form-grid">
+                    <div class="form-field"><label for="equipment-performed">Durchgeführt am</label><input id="equipment-performed" name="performed" type="date" [(ngModel)]="performedOn" [max]="d.businessDate" [min]="d.equipment.lastInspectionOn||'0001-01-01'" required></div>
+                    <div class="form-field"><label for="equipment-result">Ergebnis</label><select id="equipment-result" name="result" [(ngModel)]="result" (ngModelChange)="resultChanged()"><option value="Passed">Bestanden / erfolgreich durchgeführt</option><option value="Failed">Nicht bestanden / Mangel festgestellt</option></select></div>
+                    <div class="form-field"><label for="equipment-inspector">Prüfer / ausführende Stelle</label><input id="equipment-inspector" name="inspector" [(ngModel)]="inspector" maxlength="240" required></div>
+                    <div class="form-field"><label for="equipment-evidence">Prüfbericht / Belegreferenz</label><input id="equipment-evidence" name="evidence" [(ngModel)]="evidenceReference" maxlength="500" required><p class="small muted">Bezeichnung oder Nummer des zugehörigen Prüf- oder Werkstattberichts.</p></div>
+                    <div class="form-field full-width"><label for="equipment-completion-notes">Ergebnis und Feststellungen</label><textarea id="equipment-completion-notes" name="completion-notes" [(ngModel)]="completionNotes" maxlength="4000" rows="3" [required]="result==='Failed'"></textarea></div>
+                    @if(result==='Passed'){
+                      <div class="form-field"><label for="equipment-next-date">Nächster Prüftermin</label><input id="equipment-next-date" name="next-date" type="date" [(ngModel)]="nextInspectionOn" required><p class="small muted">Das Datum wird ausdrücklich vom Betrieb festgelegt und muss nach der Durchführung liegen.</p></div>
+                      <div class="form-field"><label class="checkbox-label"><input type="checkbox" name="make-available" [(ngModel)]="makeAvailable">Gerät ausdrücklich als verfügbar kennzeichnen</label><p class="small muted">Ohne Auswahl bleibt die bisherige Verfügbarkeit erhalten.</p></div>
+                    }@else{<p class="alert full-width">Mit diesem Ergebnis wird das Gerät für neue Einsätze gesperrt. Eine dokumentierte erfolgreiche Folgeprüfung kann die Prüfsperre aufheben.</p>}
+                    <label class="checkbox-label full-width"><input type="checkbox" name="completion-confirmed" [(ngModel)]="completionConfirmed">Ich habe die Angaben mit dem genannten Beleg abgeglichen.</label>
+                    <div class="full-width"><button class="button primary" type="submit" [disabled]="completionForm.invalid||!completionValid()">Prüfergebnis verbindlich speichern</button></div>
+                  </div>
+                </fieldset>
+              </form>
+              <details class="cancel-panel"><summary>Geplanten Vorgang absagen</summary><form (ngSubmit)="cancel()"><fieldset [disabled]="busy()||detailLoading()||stale()"><legend>Absage dokumentieren</legend><label for="equipment-cancellation">Grund der Absage</label><textarea id="equipment-cancellation" name="cancellation" [(ngModel)]="cancellationReason" maxlength="2000" rows="2" required></textarea><p class="small muted">Eine Absage ändert keine bestehende Prüfsperre oder Verfügbarkeit.</p><button class="button secondary" type="submit" [disabled]="!cancellationValid()">Vorgang mit Begründung absagen</button></fieldset></form></details>
+            }@else{<p class="muted">Geschäftsführung, Büro oder Bauleitung mit Schreibberechtigung dokumentieren die Durchführung.</p>}
+          }@else if(writable()){
+            <form (ngSubmit)="plan()" #planForm="ngForm"><fieldset [disabled]="busy()||detailLoading()||stale()"><legend>Prüfung, Wartung oder Reparatur planen</legend>
+              <div class="form-grid"><div class="form-field"><label for="equipment-plan-kind">Art des Vorgangs</label><select id="equipment-plan-kind" name="plan-kind" [(ngModel)]="planKind"><option value="Inspection">Prüfung</option><option value="Maintenance">Wartung</option><option value="Repair">Reparatur</option></select></div><div class="form-field"><label for="equipment-plan-date">Geplant am</label><input id="equipment-plan-date" name="plan-date" type="date" [(ngModel)]="planDate" required></div><div class="form-field full-width"><label for="equipment-plan-title">Bezeichnung des Vorgangs</label><input id="equipment-plan-title" name="plan-title" [(ngModel)]="planTitle" maxlength="240" required></div><div class="form-field full-width"><label for="equipment-plan-notes">Arbeitsumfang und Hinweise</label><textarea id="equipment-plan-notes" name="plan-notes" [(ngModel)]="planNotes" maxlength="4000" rows="3"></textarea></div><div class="full-width"><button class="button primary" type="submit" [disabled]="planForm.invalid||!planValid()">Prüfvorgang planen</button></div></div>
+            </fieldset></form>
+          }@else{<p class="muted">Für dieses Gerät ist kein Prüfvorgang geplant.</p>}
+        </section>
+        <section class="panel history"><h2>Prüf- und Wartungshistorie</h2><p class="small muted">Gespeicherte Durchführungen und Absagen bleiben mit dem damaligen Gerätestand erhalten.</p>
+          @for(item of d.items;track item.id){
+            <details class="history-record"><summary><span><strong>{{item.title}}</strong><span>{{inspectionKinds[item.kind]}} · geplant {{date(item.scheduledOn)}} · {{statuses[item.status]}}</span></span></summary>
+              <p class="small muted">Gerät bei Planung: {{item.equipmentSnapshot.name}} · {{item.equipmentSnapshot.inventoryNumber}}@if(item.equipmentSnapshot.registration){ · {{item.equipmentSnapshot.registration}}}</p>
+              @if(item.notes){<p class="preserve-lines">{{item.notes}}</p>}
+              @if(item.completion;as completion){<dl class="equipment-facts"><div><dt>Durchführung</dt><dd>{{date(completion.performedOn)}} · {{completion.result==='Passed'?'Bestanden / erfolgreich':'Nicht bestanden / Mangel'}}</dd></div><div><dt>Prüfer / Stelle</dt><dd>{{completion.inspector}}</dd></div><div><dt>Prüfbericht / Beleg</dt><dd>{{completion.evidenceReference}}</dd></div>@if(completion.nextInspectionOn){<div><dt>Festgelegter Folgetermin</dt><dd>{{date(completion.nextInspectionOn)}}</dd></div>}</dl>@if(completion.notes){<p class="preserve-lines">{{completion.notes}}</p>}<p class="small muted">Dokumentiert am {{date(completion.recordedAt)}}.</p>}
+              @if(item.cancellation;as cancellation){<p><strong>Absage:</strong> {{cancellation.reason}}</p><p class="small muted">Dokumentiert am {{date(cancellation.cancelledAt)}}.</p>}
+            </details>
+          }@empty{<p class="muted">Noch keine Prüfvorgänge dokumentiert.</p>}
+          <div class="pager"><button class="button small" type="button" (click)="historyPage(-1)" [disabled]="d.page<=1||detailLoading()||busy()">Vorherige Nachweise</button><span>Seite {{d.page}} · {{d.total}} Vorgänge</span><button class="button small" type="button" (click)="historyPage(1)" [disabled]="d.page*d.pageSize>=d.total||detailLoading()||busy()">Weitere Nachweise</button></div>
+        </section>
+      }@else if(!detailLoading()){<section class="panel empty-state"><h2>Geräteakte auswählen</h2><p>Öffnen Sie ein Gerät oder Fahrzeug, um einen Vorgang zu planen und die zugehörigen Nachweise zu lesen.</p></section>}
+    </div>
+  </div>
+}

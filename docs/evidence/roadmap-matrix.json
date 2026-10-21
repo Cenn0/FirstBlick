@@ -154,7 +154,19 @@
     "maintenance-core-tests": "tests/FirstBlick.Core.Tests/Business/MaintenanceWorkflowTests.cs",
     "maintenance-api-tests": "tests/FirstBlick.Api.Tests/MaintenanceWorkflowApiTests.cs",
     "maintenance-browser": "web/tests/browser/maintenance.spec.ts",
-    "quantity-docs": "docs/quantity-links.md"
+    "quantity-docs": "docs/quantity-links.md",
+    "transfer-chain": "src/FirstBlick.Core/Business/InventoryTransferChain.cs",
+    "transfer-chain-tests": "tests/FirstBlick.Core.Tests/Business/InventoryTransferChainTests.cs",
+    "transfer-chain-api-tests": "tests/FirstBlick.Api.Tests/InventoryTransferChainApiTests.cs",
+    "equipment-docs": "docs/equipment-inspections.md",
+    "equipment-workflow": "src/FirstBlick.Core/Business/EquipmentInspectionWorkflow.cs",
+    "equipment-api": "src/FirstBlick.Api/EquipmentInspectionEndpoints.cs",
+    "equipment-tests": "tests/FirstBlick.Core.Tests/Business/EquipmentInspectionWorkflowTests.cs",
+    "equipment-api-tests": "tests/FirstBlick.Api.Tests/EquipmentInspectionApiTests.cs",
+    "equipment-client-tests": "web/tests/equipment-workflow.test.ts",
+    "equipment-browser": "web/tests/browser/equipment-workflow.spec.ts",
+    "equipment-inventory-smoke": "scripts/equipment_inventory_smoke.py",
+    "migration-drill-source": "tools/FirstBlick.Operations/MigrationDrill.cs"
   },
   "tasks": [
     {
@@ -524,8 +536,8 @@
     {
       "id": "DP-07-03",
       "status": "K",
-      "evidence": "[Lagerkorrekturen][warehouse-docs], [Bestandsregeln][inventory] und [Feldkommandos][field-api] ergänzen Teilwareneingänge um Inventur mit Beleg und frischem Buchstand, atomare Umlagerungspaare sowie originalgebundene Lieferanten-/Baustellenrückgaben. Eine Lieferantenretoure aus einem anderen Lager benötigt ein geprüftes direktes Transferpaar. Das paginierte Journal ist in der [Lagerprüfung][inventory-ui] bedienbar; [Core-Regressionen][inventory-reconciliation-tests], [HTTP-/PostgreSQL-Tests][commercial-api-tests] und [Browser-Fixtures][inventory-browser] behandeln Mengen-, Beleg- und Kontextgrenzen. Bestehende Bewegungsdigests bleiben erhalten.",
-      "remaining": "Reale Inventur-/Mehrlager-Abnahmen, mehrstufige Transferketten, physische Chargen-/Serienzuordnung, weitergehende Bewertungsvorschriften und externe Retourenbelege bleiben offen. Der direkte Transfer belegt eine Mengen-/Bewertungskette, keine einzelne physische Liefereinheit.",
+      "evidence": "[Lagerkorrekturen][warehouse-docs], [Bestandsregeln][inventory] und [Feldkommandos][field-api] verbinden Wareneingänge, Inventur, atomare Umlagerungspaare und originalgebundene Rückgaben. [Mehrstufige Herkunftsketten][transfer-chain] binden jede Umlagerung ausdrücklich an einen Wareneingang oder bereits gebundenen Transfer; sie prüfen bis zu 32 Schritte, Verzweigungen, belegte Restmengen, Wert, Zeitfolge und freie Lagerbestände. Die [Lagerprüfung][inventory-ui] zeigt Quelle, Pfad und Rest. [Core][transfer-chain-tests], [HTTP-/PostgreSQL][transfer-chain-api-tests] und [Browser-Fixtures][inventory-browser] prüfen neue und historische Verträge. Alte Bewegungsdigests bleiben unverändert.",
+      "remaining": "Reale Inventur-/Mehrlager-Abnahmen, physische Chargen-/Serienzuordnung, weitergehende Bewertungsvorschriften und externe Retourenbelege bleiben offen. Die Mengen-/Bewertungskette identifiziert keine einzelne physische Liefereinheit. Historische ungebundene Transfers können nicht nachträglich als mehrstufige Herkunft ausgegeben werden.",
       "title": "Wareneingang und Bestandsbewegungen erfassen"
     },
     {
@@ -538,15 +550,15 @@
     {
       "id": "DP-07-05",
       "status": "T",
-      "evidence": "[Equipment][inventory] enthält Gerät/Fahrzeug, Kennzeichen, Ort, Prüfungstermin und Verfügbarkeit; [Planungstests][planning-tests] prüfen Ressourcenkollisionen.",
-      "remaining": "Wartungshistorie, Fahrtenbuch, Kilometer/Kosten, Prüfbelege und durchgängiger Flottenprozess fehlen.",
+      "evidence": "Der [Geräteprüfungsarbeitsplatz][equipment-docs] verbindet Fälligkeits-/Sperrfilter, geplante Prüfung/Wartung/Reparatur, unveränderliche Ergebnis- und Absagebelege sowie manuelle Folgetermine. [Core][equipment-workflow] und [API][equipment-api] sperren neue Zuordnungen nach negativem Ergebnis oder überschrittener Prüffrist und nennen betroffene bestehende Einsätze. [Corefälle][equipment-tests], [HTTP-/PostgreSQL-Fälle][equipment-api-tests], [Clientverträge][equipment-client-tests] und [responsive Browser-Fixtures][equipment-browser] prüfen Identität, Revision, Rechte, Zeitzone, Replay und Kontextwechsel. [Containerablauf][equipment-inventory-smoke] und [Migrationsdrill][migration-drill-source] enthalten erhaltene Prüfakten und gezielt abgewiesene falsche Herkunft.",
+      "remaining": "Fahrtenbuch, Kilometer-/Fahrzeugkosten, hochgeladene gerätegebundene Originalprüfberichte, automatische gesetzliche Fristen und unabhängige Kalender je Prüfart fehlen. Die Textreferenz ist kein archiviertes Original; eine dokumentierte Einsatzbeurteilung bestätigt keine gesetzliche Prüfberechtigung.",
       "title": "Geräte und Fahrzeuge verwalten"
     },
     {
       "id": "DP-07-06",
       "status": "T",
-      "evidence": "[Lagerkorrekturen][warehouse-docs] führen Inventur-, Umlagerungs- und Rückgabefälle mit Belegrest, freiem Bestand, unveränderlichen Bewegungen und aktueller Rollenprüfung auch vor Replay aus. Lieferantenrückgaben rechnen den Bestellstatus zurück und erlauben Ersatzlieferungen. [Core-Tests][planning-tests], [Rückgabe-Regressionen][inventory-reconciliation-tests] und [HTTP-/PostgreSQL-Tests][commercial-api-tests] prüfen Doppel-/Parallelbuchung und Ablehnung ohne Teiländerung. Der [aufmaßgebundene Einkaufsentwurf][quantity-docs] bleibt an den bestehenden Freigabeweg gebunden.",
-      "remaining": "Lieferantengutschriften, Schadens-/Transportschadenabläufe, externe Bestell-/Retourenübermittlung und vollständige betriebliche Einkaufsabnahme fehlen. Die Lagerbuchung löst keine Zahlung, Gutschrift oder Lieferantenbenachrichtigung aus.",
+      "evidence": "[Lagerkorrekturen][warehouse-docs] und [Herkunftsketten][transfer-chain] begrenzen Retouren zugleich durch Originalbeleg, jeden zugeordneten Transferrest und freien Zielbestand. [HTTP-/PostgreSQL-Tests][transfer-chain-api-tests] prüfen konkurrierende Quellallokationen, atomare Ablehnung, aktuelle Rolle vor Replay, Audit und Mandantengrenzen. Lieferantenrückgaben rechnen den Bestellstatus zurück; [Containerablauf][equipment-inventory-smoke] und [Migrationsdrill][migration-drill-source] verbinden mehrstufige Lagerwechsel, Retoure und erhaltene Bestände. Der [aufmaßgebundene Einkaufsentwurf][quantity-docs] bleibt an den bestehenden Freigabeweg gebunden.",
+      "remaining": "Lieferantengutschriften, Schadens-/Transportschadenabläufe, externe Bestell-/Retourenübermittlung und vollständige betriebliche Einkaufsabnahme fehlen. Die Lagerbuchung löst keine Zahlung, Gutschrift oder Lieferantenbenachrichtigung aus. Repräsentative Last großer Materialhistorien ist nicht nachgewiesen.",
       "title": "Einkaufsablauf und Differenzen absichern"
     },
     {
@@ -876,6 +888,19 @@
       "originalRoadmapCheckboxesChanged": false,
       "classificationNote": "recordedAtUtc and counts retain the historical classification. The named task evidence and remaining scope are updated without reassessing all 100 original acceptance criteria.",
       "verificationNote": "Source and test references distinguish Core/client tests, real HTTP/Identity/PostgreSQL tests and browser fixtures with controlled HTTP responses. Diary document tests use a versioned object-store test double. No aggregate test count or successful CI/Standards/Operations run of the final combined commit is claimed by this update."
+    },
+    {
+      "recordedOn": "2026-10-21",
+      "tasks": [
+        "DP-07-03",
+        "DP-07-05",
+        "DP-07-06"
+      ],
+      "scope": "Equipment inspection and maintenance evidence, dispatch availability, explicit multi-hop warehouse provenance and compatible canonical migration. DachPlaner remains a reference only.",
+      "reclassifiesTasks": false,
+      "originalRoadmapCheckboxesChanged": false,
+      "classificationNote": "The original 100 tasks and historical K/T/O counts are retained; the three updated rows describe newly implemented behavior and remaining scope.",
+      "verificationNote": "Core, real HTTP/Identity/PostgreSQL, client and responsive browser fixture tests are separate from the real container/restart and canonical migration checks. Successful execution must be verified on the published commit."
     }
   ]
 }

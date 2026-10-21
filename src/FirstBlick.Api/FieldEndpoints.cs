@@ -12,7 +12,7 @@ public sealed record MaterialReserveRequest(Guid ProjectId, decimal Quantity, st
 public sealed record MaterialConsumeRequest(decimal Quantity, decimal UnitCost);
 public sealed record MaterialReleaseRequest(decimal Quantity);
 public sealed record InventoryCountRequest(string Location, decimal ExpectedOnHand, decimal CountedOnHand, decimal UnitCost, string Reason, string EvidenceReference);
-public sealed record MaterialTransferRequest(string FromLocation, string ToLocation, decimal Quantity, decimal UnitCost, decimal ExpectedFromOnHand, string Reason);
+public sealed record MaterialTransferRequest(string FromLocation, string ToLocation, decimal Quantity, decimal UnitCost, decimal ExpectedFromOnHand, string Reason, Guid? TransferSourceId = null);
 public sealed record MaterialReturnRequest(decimal Quantity, string Reason);
 public sealed record MaterialSupplierReturnRequest(decimal Quantity, string Reason, Guid? ReturnTransferId = null);
 public sealed record DefectResolutionRequest(string Resolution);
@@ -80,6 +80,12 @@ public static class FieldEndpoints
 #pragma warning restore EF1002
             return Results.Ok(new { items = entries.Select(AppJson.Read<StockMovement>), total, page, pageSize });
         }).WithTags("inventory");
+        api.MapGet("/stock-movements/{id:guid}/transfer-chain", async (Guid id, [AsParameters] BusinessCommandServices c, CancellationToken ct) =>
+        {
+            await c.Commands.Authorize("stock-movements", false, ct);
+            var source = await c.Current<StockMovement>(id, ct, false);
+            return Results.Ok(InventoryTransferChain.Inspect(source, await c.Store.All<StockMovement>(ct)));
+        }).Produces<StockTransferTrace>().WithTags("inventory");
 
         api.MapPost("/materials/{id:guid}/inventory-count", (Guid id, InventoryCountRequest body, [AsParameters] BusinessCommandServices c) =>
             ExecuteInventory(c, "stock.inventory_count", body, async ct =>
@@ -103,7 +109,7 @@ public static class FieldEndpoints
                 var reservations = await c.Store.All<MaterialReservation>(ct);
                 var (outgoing, incoming) = InventoryRules.Transfer(c.Scope.TenantId, id,
                     body.FromLocation, body.ToLocation, body.Quantity, body.UnitCost, body.ExpectedFromOnHand, body.Reason,
-                    movements, reservations, DateTimeOffset.UtcNow);
+                    movements, reservations, DateTimeOffset.UtcNow, body.TransferSourceId);
                 await c.SaveNew(outgoing, "stock.transfer_out", ct);
                 await c.SaveNew(incoming, "stock.transfer_in", ct);
                 return new { outgoing, incoming };

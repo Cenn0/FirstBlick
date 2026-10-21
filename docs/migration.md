@@ -102,6 +102,8 @@ Die numerische Normalisierung arbeitet mit dezimalen Ziffern und Exponenten, nic
 
 Fachliche Dezimalwerte werden im vollständigen typisierten Fachdaten-JSON als Strings ausgegeben, beispielsweise `"1190"`; Enums verwenden ihre unveränderten Vertragsnamen, beispielsweise `Accepted`. Die Vorlage ist die tatsächliche serialisierte Definition. Unbekannte Eigenschaften, numerische Enum-Abkürzungen, implizit ergänzte Standardwerte oder ein nach der typisierten Deserialisierung abweichender Hash blockieren. Historische Fachdaten-Envelope-Zeiten und Dokumenterstellungszeiten müssen bereits zur Mikrosekundenauflösung von PostgreSQL passen; der Import kürzt keine historischen Zeitwerte stillschweigend.
 
+Eine eng begrenzte v1-Kompatibilitätsregel betrifft Lieferantenrechnungen ohne elektronischen Herkunftsbeleg: Alte Exporte dürfen die später ergänzte Eigenschaft `electronicSource` auslassen; neuere Exporte dürfen sie ausdrücklich als `null` enthalten. Prüfung, Import und Vergleich erhalten jeweils die ursprüngliche Form samt Einzel-SHA-256 und Herkunftsbeleg. Diese Regel erlaubt keine anderen ausgelassenen oder unbekannten Eigenschaften und entfernt niemals vorhandene elektronische Nachweise. Ein nachträglicher Wechsel zwischen fehlender Eigenschaft und `null` im Importziel gilt weiterhin als Abweichung.
+
 Ein Quellkontrollsatz enthält:
 
 - Anzahlen der Entitäten, Dokumente und Mitgliedschaften je Betrieb.

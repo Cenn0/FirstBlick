@@ -119,11 +119,12 @@ internal static class MigrationImport
         foreach (var original in check.Entities)
         {
             var kind = BusinessRegistry.Entities.Single(x => x.Value == original.GetType()).Key;
-            var originalJson = AppJson.Serialize(original); var entity = EffectiveEntity(original, at); var serialized = AppJson.Serialize(entity);
+            var envelope = sourceEntities[(original.TenantId, kind, original.Id)];
+            var originalJson = MigrationEntityJson.Serialize(original, envelope.Data); var entity = EffectiveEntity(original, at);
+            var serialized = MigrationEntityJson.Serialize(entity, envelope.Data);
             db.Entities.Add(new StoredEntity { TenantId = entity.TenantId, Kind = kind, Id = entity.Id, Revision = entity.Revision, CreatedAt = entity.CreatedAt,
                 UpdatedAt = entity.UpdatedAt, Archived = entity.Archived, Data = serialized, SearchText = EntityProjection.SearchText(serialized), UniqueKey = EntityProjection.UniqueKey(entity) });
             foreach (var reference in entity.References().Distinct()) db.Links.Add(new EntityLink { TenantId = entity.TenantId, SourceKind = kind, SourceId = entity.Id, TargetKind = reference.Kind, TargetId = reference.Id });
-            var envelope = sourceEntities[(entity.TenantId, kind, entity.Id)];
             AddReceipt(db, entity.TenantId, EntityKey(kind, entity.Id), check.Sha256, new { envelope.SourceId, kind, entity.Id, sourceSha256 = envelope.Sha256, importedSha256 = MigrationJson.HashJson(serialized),
                 envelope.ContractParties, envelope.DeliveryHistory, sourceEvidence = envelope.EvidenceFile is null ? null : bundle.EvidenceFiles.Single(x => x.File == envelope.EvidenceFile),
                 securityTransformation = entity.Revision != original.Revision ? "portal_grant_revoked" : "none", original = entity.Revision != original.Revision ? originalJson : null }, at);

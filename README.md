@@ -4,6 +4,8 @@ Business software for roofing contractors, built with **C# / ASP.NET Core 10** a
 
 FirstBlick connects customers, buildings, projects and field work with quotations, purchasing and invoicing. The rework follows a [100-task roadmap](docs/ROADMAP.md). Implementation is in progress; task titles are not claims that every feature is available.
 
+Active development takes place in FirstBlick. DachPlaner is retained solely as a reference for the rework and is no longer developed.
+
 ## Project documentation
 
 * [Checkpoint 11](docs/checkpoint11.md) — evidenced zero-cent final settlements, strengthened cost-source integrity and verified commit-specific CI/Operations.

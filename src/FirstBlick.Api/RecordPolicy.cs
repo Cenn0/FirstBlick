@@ -171,9 +171,13 @@ internal static class GraphRules
                 // Retain the references, but apply availability checks only to live assignments.
                 var assignedEmployee = await store.Get<Employee>(assignment.EmployeeId, ct);
                 Guard.Require(assignment.Cancelled || assignedEmployee.Active, "inactive_employee", "An inactive employee cannot be scheduled.");
-                foreach (var equipmentId in assignment.EquipmentIds)
-                    Guard.Require((await store.Get<Equipment>(equipmentId, ct)).Available || assignment.Cancelled,
-                        "equipment_unavailable", "A selected resource is unavailable.");
+                if (!assignment.Cancelled)
+                {
+                    var equipmentZoneId = await db.Tenants.Where(x => x.Id == scope.TenantId).Select(x => x.TimeZone).SingleAsync(ct);
+                    var equipmentZone = TimeZoneInfo.FindSystemTimeZoneById(equipmentZoneId);
+                    foreach (var equipmentId in assignment.EquipmentIds)
+                        EquipmentInspectionWorkflow.EnsureAssignable(await store.Get<Equipment>(equipmentId, ct), assignment.Start, assignment.End, equipmentZone);
+                }
                 await ValidateWindow(await store.Get<Project>(assignment.ProjectId, ct), assignment, db, scope, ct);
                 PlanningRules.EnsureAssignment(assignment, await store.All<ScheduleAssignment>(ct), await store.All<Absence>(ct)); break;
             case Absence absence:
