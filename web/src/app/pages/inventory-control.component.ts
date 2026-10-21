@@ -97,6 +97,24 @@ const modes: { key: StockMode; name: string }[] = [
                 </select>
                 <p>Es werden nur passende Original-Wareneingänge beziehungsweise projektgebundene Verbräuche angezeigt.</p>
               </div>
+              @if (mode === 'supplierReturn') {
+                <div class="form-field full-width"><label for="stock-return-transfer">Rückgabe nach Lagerumbuchung</label>
+                  <select id="stock-return-transfer" name="stock-return-transfer" [(ngModel)]="returnTransferId" [disabled]="transferLoading()">
+                    <option value="">Aus dem ursprünglichen Wareneingangslager zurückgeben</option>
+                    @for (transfer of transferReceipts(); track transfer.id) {
+                      <option [value]="transfer.id">{{transfer.location}} · {{decimal(transfer.quantity)}} · {{transfer.occurredAt.slice(0,10)}} · {{transfer.id.slice(0,8)}}</option>
+                    }
+                  </select>
+                  <p>Für eine Rückgabe aus einem anderen Lager den passenden Umbuchungsbeleg auswählen. Der Server prüft Ausgangslager, Mengen, Bewertung und freien Zielbestand.</p>
+                  @if (transferTotal() > 25) {
+                    <div class="detail-actions">
+                      <button type="button" class="button secondary" [disabled]="busy() || transferLoading() || transferPage <= 1" (click)="loadTransferReceipts(transferPage-1)">Vorherige Umbuchungen</button>
+                      <span>Umbuchungen · Seite {{transferPage}}</span>
+                      <button type="button" class="button secondary" [disabled]="busy() || transferLoading() || transferPage*25 >= transferTotal()" (click)="loadTransferReceipts(transferPage+1)">Weitere Umbuchungen</button>
+                    </div>
+                  }
+                </div>
+              }
             }
             @if (mode !== 'count') {
               <div class="form-field"><label for="stock-quantity">Menge</label>
@@ -148,6 +166,7 @@ export class InventoryControlComponent {
   private readonly api = inject(ApiService);
   readonly auth = inject(AuthService);
   private generation = 0;
+  private transferGeneration = 0;
   readonly allowed = computed(() => this.auth.hasModule('purchasing') && this.auth.can('stock-movements.read'));
   readonly busy = signal(false);
   readonly error = signal('');
@@ -156,6 +175,9 @@ export class InventoryControlComponent {
   readonly balance = signal<Balance | null>(null);
   readonly movements = signal<Movement[]>([]);
   readonly total = signal(0);
+  readonly transferReceipts = signal<Movement[]>([]);
+  readonly transferTotal = signal(0);
+  readonly transferLoading = signal(false);
   readonly modes = modes;
   materialSearch = '';
   materialId = '';
@@ -167,6 +189,8 @@ export class InventoryControlComponent {
   evidenceReference = '';
   destination = '';
   sourceId = '';
+  returnTransferId = '';
+  transferPage = 1;
   page = 1;
   sourceMovements(): Movement[] {
     return this.movements().filter(x => this.mode === 'supplierReturn'
@@ -183,6 +207,7 @@ export class InventoryControlComponent {
     this.materials.set([]); this.balance.set(null); this.movements.set([]); this.total.set(0);
     this.quantity = ''; this.unitCost = ''; this.reason = ''; this.evidenceReference = ''; this.destination = ''; this.sourceId = '';
     this.page = 1; this.busy.set(false); this.error.set(''); this.notice.set('');
+    this.clearTransfers();
     if (this.allowed()) void this.searchMaterials();
   }
   private current(generation: number, access: string): boolean {
@@ -211,7 +236,9 @@ export class InventoryControlComponent {
   switchMode(mode: StockMode): void {
     if (this.busy()) return;
     this.mode = mode; this.sourceId = ''; this.quantity = ''; this.unitCost = ''; this.reason = ''; this.evidenceReference = '';
+    this.clearTransfers();
     this.notice.set(''); this.error.set('');
+    if (mode === 'supplierReturn') void this.loadTransferReceipts(1);
   }
   selectMaterial(): void {
     this.invalidateSelection();
@@ -224,9 +251,31 @@ export class InventoryControlComponent {
     this.generation++; this.balance.set(null); this.movements.set([]); this.total.set(0);
     this.page = 1; this.sourceId = ''; this.quantity = ''; this.unitCost = ''; this.reason = '';
     this.evidenceReference = ''; this.destination = ''; this.busy.set(false); this.notice.set(''); this.error.set('');
+    this.clearTransfers();
+  }
+  private clearTransfers(): void {
+    this.transferGeneration++;
+    this.returnTransferId = ''; this.transferPage = 1; this.transferReceipts.set([]);
+    this.transferTotal.set(0); this.transferLoading.set(false);
+  }
+  async loadTransferReceipts(page: number): Promise<void> {
+    if (!this.materialId || !this.allowed() || this.mode !== 'supplierReturn' || page < 1) return;
+    const gen = this.generation, access = this.auth.accessSignature(), transferGen = ++this.transferGeneration;
+    const current = () => this.current(gen, access) && transferGen === this.transferGeneration && this.mode === 'supplierReturn';
+    this.transferLoading.set(true); this.returnTransferId = '';
+    try {
+      const result = await this.api.get<Page<Movement>>(`materials/${this.materialId}/movements?kind=TransferIn&page=${page}`);
+      if (!current()) return;
+      if (!Array.isArray(result.items) || !Number.isInteger(result.total) || result.total < 0
+        || result.items.some(item => item.kind !== 'TransferIn' || item.materialId !== this.materialId
+          || typeof item.id !== 'string' || typeof item.location !== 'string' || typeof item.occurredAt !== 'string'))
+        throw new Error('Die Umbuchungsbelege konnten nicht eindeutig geprüft werden.');
+      this.transferReceipts.set(result.items); this.transferTotal.set(result.total); this.transferPage = page;
+    } catch (error) { if (current()) this.error.set(errorMessage(error)); }
+    finally { if (current()) this.transferLoading.set(false); }
   }
   async searchMaterials(): Promise<void> {
-    if (!this.allowed() || this.busy()) return;
+    if (!this.allowed() || this.busy() || this.transferLoading()) return;
     const gen = ++this.generation, access = this.auth.accessSignature();
     this.busy.set(true); this.error.set('');
     try {
@@ -249,6 +298,7 @@ export class InventoryControlComponent {
       if (![balance.onHand, balance.reserved, balance.available].every(x => typeof x === 'string' && /^-?\d+(?:\.\d+)?$/.test(x))
         || !Array.isArray(history.items) || !Number.isInteger(history.total)) throw new Error('Unvollständiger Lagerstand vom Server.');
       this.balance.set(balance); this.movements.set(history.items); this.total.set(history.total);
+      if (this.mode === 'supplierReturn') await this.loadTransferReceipts(1);
     } catch (error) { if (this.current(gen, access)) this.error.set(errorMessage(error)); }
     finally { if (this.current(gen, access)) this.busy.set(false); }
   }
@@ -256,11 +306,12 @@ export class InventoryControlComponent {
     if (page < 1) return; this.page = page; this.sourceId = ''; void this.refresh();
   }
   canSubmit(): boolean {
-    if (!this.permitted(this.mode) || this.busy() || !this.balance() || !this.reason.trim()) return false;
+    if (!this.permitted(this.mode) || this.busy() || this.transferLoading() || !this.balance() || !this.reason.trim()) return false;
     if (this.mode === 'count') return !!this.evidenceReference.trim() && this.amount(this.quantity, true) !== null && this.amount(this.unitCost, true) !== null;
     if (this.amount(this.quantity, false) === null) return false;
     if (this.mode === 'transfer') return !!this.destination.trim() && this.amount(this.unitCost, true) !== null;
-    return !!this.sourceMovements().some(x => x.id === this.sourceId);
+    return !!this.sourceMovements().some(x => x.id === this.sourceId)
+      && (!this.returnTransferId || this.transferReceipts().some(x => x.id === this.returnTransferId));
   }
   async submit(): Promise<void> {
     if (!this.canSubmit() || !this.materialId || !this.balance()) return;
@@ -279,7 +330,8 @@ export class InventoryControlComponent {
         const source = this.sourceMovements().find(x => x.id === this.sourceId);
         if (!source) throw new Error('Den Originalbeleg erneut auswählen.');
         await this.api.command(`stock-movements/${source.id}/${this.mode === 'supplierReturn' ? 'supplier-return' : 'project-return'}`,
-          { quantity: this.amount(this.quantity, false), reason: this.reason.trim() }, source.revision);
+          { quantity: this.amount(this.quantity, false), reason: this.reason.trim(),
+            ...(this.mode === 'supplierReturn' && this.returnTransferId ? { returnTransferId: this.returnTransferId } : {}) }, source.revision);
       }
       if (!this.current(gen, access)) return;
       this.quantity = ''; this.sourceId = ''; this.reason = ''; this.evidenceReference = '';

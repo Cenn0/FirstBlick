@@ -73,4 +73,75 @@ public sealed class InventoryReconciliationTests
         receipt.PostedDigest = InventoryRules.MovementDigest(receipt);
         return receipt;
     }
+
+    [Fact]
+    public void Supplier_return_from_a_direct_transfer_reduces_the_destination_and_retains_both_source_references()
+    {
+        var order = Purchase();
+        var receipt = InventoryRules.Receive(order, order.Lines[0].Id, 10m, [], "A", BusinessFixture.Now);
+        var receiptDigest = receipt.PostedDigest;
+        var (outgoing, incoming) = InventoryRules.Transfer(order.TenantId, receipt.MaterialId,
+            "A", "B", 4m, 5m, 10m, "Direct transfer", [receipt], [], BusinessFixture.Now);
+        var returned = InventoryRules.SupplierReturn(order, receipt, 2m, "Return from B",
+            [receipt, outgoing, incoming], [], BusinessFixture.Now, incoming.Id);
+        Assert.Equal("B", returned.Location);
+        Assert.Equal(receipt.Id.ToString("D"), returned.Reference);
+        Assert.Equal(incoming.Id, returned.ReturnTransferId);
+        Assert.Contains(returned.References(), reference => reference.Id == incoming.Id);
+        Assert.Equal(8m, InventoryRules.ReceivedQuantity(order, order.Lines[0].Id, [receipt, outgoing, incoming, returned]));
+        Assert.Equal(new StockBalance(6m, 0m, 6m), InventoryRules.Balance(order.TenantId,
+            receipt.MaterialId, "A", [receipt, outgoing, incoming, returned], []));
+        Assert.Equal(new StockBalance(2m, 0m, 2m), InventoryRules.Balance(order.TenantId,
+            receipt.MaterialId, "B", [receipt, outgoing, incoming, returned], []));
+        Assert.Equal(receiptDigest, InventoryRules.MovementDigest(receipt));
+        returned.ReturnTransferId = null;
+        Assert.Equal("movement_immutable", Assert.Throws<DomainException>(returned.Validate).Code);
+    }
+
+    [Fact]
+    public void Other_stock_at_the_destination_cannot_expand_the_returnable_transfer_quantity()
+    {
+        var order = Purchase();
+        var receipt = InventoryRules.Receive(order, order.Lines[0].Id, 10m, [], "A", BusinessFixture.Now);
+        var (outgoing, incoming) = InventoryRules.Transfer(order.TenantId, receipt.MaterialId,
+            "A", "B", 4m, 5m, 10m, "Direct transfer", [receipt], [], BusinessFixture.Now);
+        var first = InventoryRules.SupplierReturn(order, receipt, 3m, "First partial return",
+            [receipt, outgoing, incoming], [], BusinessFixture.Now, incoming.Id);
+        var otherStock = new StockMovement { TenantId = order.TenantId, MaterialId = receipt.MaterialId,
+            Kind = StockMovementKind.Receipt, Quantity = 10m, Location = "B", UnitCost = 5m, OccurredAt = BusinessFixture.Now };
+        otherStock.PostedDigest = InventoryRules.MovementDigest(otherStock);
+        Assert.Equal("supplier_return_transfer_exceeded", Assert.Throws<DomainException>(() =>
+            InventoryRules.SupplierReturn(order, receipt, 2m, "Cannot borrow the other stock's provenance",
+                [receipt, outgoing, incoming, first, otherStock], [], BusinessFixture.Now, incoming.Id)).Code);
+    }
+
+    [Theory]
+    [InlineData("different-origin")]
+    [InlineData("different-value")]
+    [InlineData("missing-outbound")]
+    [InlineData("foreign-tenant")]
+    public void Supplier_return_rejects_unmatched_or_unrelated_transfer_evidence(string error)
+    {
+        var order = Purchase();
+        var receipt = InventoryRules.Receive(order, order.Lines[0].Id, 10m, [], "A", BusinessFixture.Now);
+        var (outgoing, incoming) = InventoryRules.Transfer(order.TenantId, receipt.MaterialId,
+            "A", "B", 4m, 5m, 10m, "Direct transfer", [receipt], [], BusinessFixture.Now);
+        if (error == "different-origin") outgoing.Location = "Other";
+        if (error == "different-value") incoming.UnitCost = outgoing.UnitCost = 6m;
+        if (error == "foreign-tenant") incoming.TenantId = outgoing.TenantId = Guid.NewGuid();
+        outgoing.PostedDigest = InventoryRules.MovementDigest(outgoing);
+        incoming.PostedDigest = InventoryRules.MovementDigest(incoming);
+        StockMovement[] movements = error == "missing-outbound" ? [receipt, incoming] : [receipt, outgoing, incoming];
+        Assert.Equal("invalid_return_transfer", Assert.Throws<DomainException>(() =>
+            InventoryRules.SupplierReturn(order, receipt, 1m, "Unmatched transfer",
+                movements, [], BusinessFixture.Now, incoming.Id)).Code);
+    }
+
+    private static PurchaseOrder Purchase()
+    {
+        var order = new PurchaseOrder { TenantId = BusinessFixture.Tenant, SupplierId = Guid.NewGuid(),
+            Title = "Synthetic supplier return", Lines = [new() { MaterialId = Guid.NewGuid(), Description = "Tiles", Quantity = 10m, UnitNet = 5m }] };
+        InventoryRules.Order(order, "TEST-RETURN");
+        return order;
+    }
 }

@@ -334,6 +334,21 @@ public sealed class CommercialApiTests(PostgresApiFixture fixture) : IClassFixtu
             $"/api/v1/purchase-orders/{order.Id}/receive",
             new { lineId = order.Lines[0].Id, quantity = 2m, location = "A" }, currentOrder.Revision));
         Assert.Equal("Received", replacement.GetProperty("order").GetProperty("status").GetString());
+        var transfer = await Ok<JsonElement>(Send(client, HttpMethod.Post, $"/api/v1/materials/{material.Id}/transfer",
+            new { fromLocation = "A", toLocation = "B", quantity = 3m, unitCost = 5m, expectedFromOnHand = 9m, reason = "Direct transfer before supplier return" }));
+        var incoming = AppJson.Read<StockMovement>(transfer.GetProperty("incoming").GetRawText());
+        var transferList = await Ok<JsonElement>(client.GetAsync($"/api/v1/materials/{material.Id}/movements?kind=TransferIn"));
+        Assert.Equal(1, transferList.GetProperty("total").GetInt32());
+        Assert.Equal(incoming.Id, transferList.GetProperty("items")[0].GetProperty("id").GetGuid());
+        var transferredReturn = await Ok<JsonElement>(Send(client, HttpMethod.Post,
+            $"/api/v1/stock-movements/{receipt.Id}/supplier-return",
+            new { quantity = 1m, reason = "Return from warehouse B", returnTransferId = incoming.Id }, receipt.Revision));
+        var storedReturn = AppJson.Read<StockMovement>(transferredReturn.GetProperty("movement").GetRawText());
+        Assert.Equal("B", storedReturn.Location);
+        Assert.Equal(incoming.Id, storedReturn.ReturnTransferId);
+        Assert.Equal(new StockBalance(2m, 0m, 2m),
+            await Ok<StockBalance>(client.GetAsync($"/api/v1/materials/{material.Id}/stock?location=B")));
+        storedReturn.Validate();
         var other = await fixture.CreateTenant("Another synthetic business");
         var outsider = await fixture.CreateUser(other.Id);
         var otherClient = await fixture.Login(outsider);

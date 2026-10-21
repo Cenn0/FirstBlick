@@ -94,6 +94,8 @@ public sealed class StockMovement : TenantEntity
     public Guid? PurchaseOrderId { get; set; }
     public Guid? PurchaseLineId { get; set; }
     public Guid? ReservationId { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public Guid? ReturnTransferId { get; set; }
     public string Location { get; set; } = "Hauptlager";
     public StockMovementKind Kind { get; set; }
     /// <summary>Positive receipts/returns/inbound transfers; negative consumption/outbound transfers; signed adjustments.</summary>
@@ -107,6 +109,9 @@ public sealed class StockMovement : TenantEntity
     {
         ValidateCommon(); Guard.Id(MaterialId, nameof(MaterialId)); Guard.OptionalId(ProjectId, nameof(ProjectId));
         Guard.OptionalId(PurchaseOrderId, nameof(PurchaseOrderId)); Guard.OptionalId(PurchaseLineId, nameof(PurchaseLineId)); Guard.OptionalId(ReservationId, nameof(ReservationId));
+        Guard.OptionalId(ReturnTransferId, nameof(ReturnTransferId));
+        Guard.Require(ReturnTransferId is null || Kind == StockMovementKind.SupplierReturn,
+            "invalid_return_transfer", "Only a supplier return can reference its prior warehouse transfer.");
         Guard.Require(PurchaseOrderId.HasValue == PurchaseLineId.HasValue, "invalid_purchase_reference", "A purchase movement requires both order and line reference.");
         Guard.Text(Location, nameof(Location), 120); Guard.Utc(OccurredAt, nameof(OccurredAt)); Guard.Text(Reference, nameof(Reference), 240, false);
         Guard.Text(Reason, nameof(Reason), 2000, Kind == StockMovementKind.Adjustment); Guard.Range(Quantity, -1_000_000m, 1_000_000m, nameof(Quantity));
@@ -134,6 +139,7 @@ public sealed class StockMovement : TenantEntity
         if (ProjectId is { } project) yield return BusinessRegistry.Reference<Project>(project);
         if (PurchaseOrderId is { } purchase) yield return BusinessRegistry.Reference<PurchaseOrder>(purchase);
         if (ReservationId is { } reservation) yield return BusinessRegistry.Reference<MaterialReservation>(reservation);
+        if (ReturnTransferId is { } transfer) yield return BusinessRegistry.Reference<StockMovement>(transfer);
     }
 }
 
@@ -178,11 +184,19 @@ public sealed record StockBalance(decimal OnHand, decimal Reserved, decimal Avai
 public static class InventoryRules
 {
     public static string PurchaseDigest(PurchaseOrder order) => ContentDigest.Of(new { order.TenantId, order.Id, order.SupplierId, order.ProjectId, order.Number, order.Title, order.Currency, order.Lines });
-    public static string MovementDigest(StockMovement movement) => ContentDigest.Of(new
-    {
-        movement.TenantId, movement.Id, movement.MaterialId, movement.ProjectId, movement.PurchaseOrderId, movement.PurchaseLineId,
-        movement.ReservationId, movement.Location, movement.Kind, movement.Quantity, movement.UnitCost, movement.OccurredAt, movement.Reference, movement.Reason
-    });
+    public static string MovementDigest(StockMovement movement) => movement.ReturnTransferId is null
+        // Keep the byte contract of existing posted movements unchanged.
+        ? ContentDigest.Of(new
+        {
+            movement.TenantId, movement.Id, movement.MaterialId, movement.ProjectId, movement.PurchaseOrderId, movement.PurchaseLineId,
+            movement.ReservationId, movement.Location, movement.Kind, movement.Quantity, movement.UnitCost, movement.OccurredAt, movement.Reference, movement.Reason
+        })
+        : ContentDigest.Of(new
+        {
+            movement.TenantId, movement.Id, movement.MaterialId, movement.ProjectId, movement.PurchaseOrderId, movement.PurchaseLineId,
+            movement.ReservationId, movement.Location, movement.Kind, movement.Quantity, movement.UnitCost, movement.OccurredAt, movement.Reference, movement.Reason,
+            movement.ReturnTransferId
+        });
 
     public static void Order(PurchaseOrder order, string number)
     {
@@ -292,7 +306,7 @@ public static class InventoryRules
     /// <summary>Return existing, unreserved stock to the supplier against one auditable receipt.</summary>
     public static StockMovement SupplierReturn(PurchaseOrder order, StockMovement originalReceipt,
         decimal quantity, string reason, IReadOnlyCollection<StockMovement> movements,
-        IReadOnlyCollection<MaterialReservation> reservations, DateTimeOffset now)
+        IReadOnlyCollection<MaterialReservation> reservations, DateTimeOffset now, Guid? returnTransferId = null)
     {
         order.Validate(); originalReceipt.Validate();
         Guard.Range(quantity, .000001m, 1_000_000m, nameof(quantity));
@@ -307,14 +321,42 @@ public static class InventoryRules
         var previous = movements.Where(m => m.Kind == StockMovementKind.SupplierReturn
             && m.TenantId == order.TenantId && m.Reference == originalReceipt.Id.ToString("D")).Sum(x => -x.Quantity);
         Guard.Require(previous + quantity <= originalReceipt.Quantity, "supplier_return_exceeded", "The supplier return exceeds the unreturned quantity of this receipt.");
-        var balance = Balance(order.TenantId, originalReceipt.MaterialId, originalReceipt.Location, movements, reservations);
+        var location = originalReceipt.Location;
+        if (returnTransferId is { } transferId)
+        {
+            Guard.Id(transferId, nameof(returnTransferId));
+            var incoming = movements.SingleOrDefault(m => m.Id == transferId && m.TenantId == order.TenantId);
+            Guard.Require(incoming is not null, "invalid_return_transfer", "The warehouse transfer receipt is unavailable.");
+            incoming.Validate();
+            var outgoing = movements.Where(m => m.TenantId == order.TenantId && m.Kind == StockMovementKind.TransferOut
+                && m.Reference == incoming.Reference).ToArray();
+            Guard.Require(!incoming.Archived && incoming.Kind == StockMovementKind.TransferIn && incoming.PostedDigest.Length == 64
+                && incoming.MaterialId == originalReceipt.MaterialId && incoming.UnitCost == originalReceipt.UnitCost
+                && incoming.OccurredAt >= originalReceipt.OccurredAt && outgoing.Length == 1
+                && Guid.TryParse(incoming.Reference, out var correlation) && correlation != Guid.Empty,
+                "invalid_return_transfer", "A return from another warehouse requires a matching posted direct transfer.");
+            var source = outgoing[0]; source.Validate();
+            Guard.Require(!source.Archived && source.PostedDigest.Length == 64
+                && source.MaterialId == incoming.MaterialId && source.UnitCost == incoming.UnitCost
+                && source.OccurredAt == incoming.OccurredAt && source.Quantity == -incoming.Quantity
+                && source.Location == originalReceipt.Location && incoming.Location != source.Location,
+                "invalid_return_transfer", "The transfer must originate at the original receipt warehouse with matching quantity and value.");
+            var returnedFromTransfer = movements.Where(m => m.TenantId == order.TenantId
+                && m.Kind == StockMovementKind.SupplierReturn && m.ReturnTransferId == transferId).ToArray();
+            foreach (var previousReturn in returnedFromTransfer) previousReturn.Validate();
+            Guard.Require(quantity - returnedFromTransfer.Sum(m => m.Quantity) <= incoming.Quantity,
+                "supplier_return_transfer_exceeded", "The transfer's remaining returnable quantity would be exceeded.");
+            location = incoming.Location;
+        }
+        var balance = Balance(order.TenantId, originalReceipt.MaterialId, location, movements, reservations);
         Guard.Require(quantity <= balance.Available, "stock_reserved", "Only physically available, unreserved stock can be returned to the supplier.");
         var movement = new StockMovement
         {
             TenantId = order.TenantId, MaterialId = originalReceipt.MaterialId,
             ProjectId = originalReceipt.ProjectId, PurchaseOrderId = order.Id, PurchaseLineId = originalReceipt.PurchaseLineId,
-            Kind = StockMovementKind.SupplierReturn, Quantity = -quantity, Location = originalReceipt.Location,
-            UnitCost = originalReceipt.UnitCost, OccurredAt = now, Reference = originalReceipt.Id.ToString("D"), Reason = reason
+            Kind = StockMovementKind.SupplierReturn, Quantity = -quantity, Location = location,
+            UnitCost = originalReceipt.UnitCost, OccurredAt = now, Reference = originalReceipt.Id.ToString("D"), Reason = reason,
+            ReturnTransferId = returnTransferId
         };
         movement.Validate(); movement.PostedDigest = MovementDigest(movement);
         order.Status = ReceiptStatus(order, movements.Append(movement).ToArray());

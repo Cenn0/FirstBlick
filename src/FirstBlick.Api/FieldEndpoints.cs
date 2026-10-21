@@ -14,6 +14,7 @@ public sealed record MaterialReleaseRequest(decimal Quantity);
 public sealed record InventoryCountRequest(string Location, decimal ExpectedOnHand, decimal CountedOnHand, decimal UnitCost, string Reason, string EvidenceReference);
 public sealed record MaterialTransferRequest(string FromLocation, string ToLocation, decimal Quantity, decimal UnitCost, decimal ExpectedFromOnHand, string Reason);
 public sealed record MaterialReturnRequest(decimal Quantity, string Reason);
+public sealed record MaterialSupplierReturnRequest(decimal Quantity, string Reason, Guid? ReturnTransferId = null);
 public sealed record DefectResolutionRequest(string Resolution);
 public sealed record TrainingReviewRequest(string MentorFeedback);
 public sealed record FormSubmitRequest(Guid ProjectId, Dictionary<string, string> Values);
@@ -54,18 +55,20 @@ public static class FieldEndpoints
             return Results.Ok(InventoryRules.Balance(c.Scope.TenantId, id, location, await c.Store.All<StockMovement>(ct), await c.Store.All<MaterialReservation>(ct)));
         });
         api.MapGet("/materials/{id:guid}/movements", async (Guid id, [AsParameters] BusinessCommandServices c,
-            CancellationToken ct, string location = "", int page = 1) =>
+            CancellationToken ct, string location = "", int page = 1, string kind = "") =>
         {
             await c.Commands.Authorize("stock-movements", false, ct);
             await c.Current<Material>(id, ct, false);
             Guard.Text(location, nameof(location), 120, false);
+            Guard.Require(kind.Length == 0 || Enum.GetNames<StockMovementKind>().Contains(kind),
+                "invalid_kind", "The requested stock movement kind is not supported.");
             Guard.Require(page is >= 1 and <= 100_000, "invalid_page", "Page must be between 1 and 100000.");
             const int pageSize = 25;
             NpgsqlParameter[] Parameters() => [
                 new("tenant", c.Scope.TenantId), new("material", id.ToString("D")),
-                new("location", location)
+                new("location", location), new("movementKind", kind)
             ];
-            const string predicate = "\"" + "TenantId\"=@tenant AND \"Kind\"='stock-movements' AND NOT \"Archived\" AND \"Data\"->>'materialId'=@material AND (@location='' OR \"Data\"->>'location'=@location)";
+            const string predicate = "\"" + "TenantId\"=@tenant AND \"Kind\"='stock-movements' AND NOT \"Archived\" AND \"Data\"->>'materialId'=@material AND (@location='' OR \"Data\"->>'location'=@location) AND (@movementKind='' OR \"Data\"->>'kind'=@movementKind)";
 #pragma warning disable EF1002
             var total = await c.Db.Database.SqlQueryRaw<long>(
                 $"SELECT count(*) AS \"Value\" FROM \"Entities\" WHERE {predicate}", Parameters()).SingleAsync(ct);
@@ -105,14 +108,14 @@ public static class FieldEndpoints
                 await c.SaveNew(incoming, "stock.transfer_in", ct);
                 return new { outgoing, incoming };
             }));
-        api.MapPost("/stock-movements/{id:guid}/supplier-return", (Guid id, MaterialReturnRequest body, [AsParameters] BusinessCommandServices c) =>
+        api.MapPost("/stock-movements/{id:guid}/supplier-return", (Guid id, MaterialSupplierReturnRequest body, [AsParameters] BusinessCommandServices c) =>
             ExecuteInventory(c, "stock.supplier_return", body, async ct =>
             {
                 var source = await c.Current<StockMovement>(id, ct);
                 Guard.Require(source.PurchaseOrderId.HasValue, "invalid_supplier_return", "The source is not a supplier receipt.");
                 var order = await c.Current<PurchaseOrder>(source.PurchaseOrderId.Value, ct, false);
                 var returned = InventoryRules.SupplierReturn(order, source, body.Quantity, body.Reason,
-                    await c.Store.All<StockMovement>(ct), await c.Store.All<MaterialReservation>(ct), DateTimeOffset.UtcNow);
+                    await c.Store.All<StockMovement>(ct), await c.Store.All<MaterialReservation>(ct), DateTimeOffset.UtcNow, body.ReturnTransferId);
                 await c.SaveNew(returned, "stock.supplier_return", ct);
                 await c.Store.Save(order, "purchase.return", false, ct);
                 return new { order, movement = returned };

@@ -3,6 +3,7 @@ import { expect, Page, test } from '@playwright/test';
 const materialId = '11111111-1111-4111-8111-111111111111';
 const receiptId = '22222222-2222-4222-8222-222222222222';
 const consumptionId = '33333333-3333-4333-8333-333333333333';
+const transferId = '44444444-4444-4444-8444-444444444444';
 
 async function fixture(page: Page, role = 'ManagingDirector') {
   const requests: { path: string; body: Record<string, unknown>; headers: Record<string, string> }[] = [];
@@ -11,7 +12,8 @@ async function fixture(page: Page, role = 'ManagingDirector') {
   let nextId = 10;
   const movements = [
     { id: receiptId, revision: 1, materialId, kind: 'Receipt', quantity: '10', location: 'Hauptlager', occurredAt: '2026-10-21T08:00:00Z', reference: 'BE-001', reason: '', unitCost: '2' },
-    { id: consumptionId, revision: 1, materialId, kind: 'Consumption', quantity: '-2', location: 'Hauptlager', occurredAt: '2026-10-21T09:00:00Z', reference: '', reason: '', unitCost: '2' }
+    { id: consumptionId, revision: 1, materialId, kind: 'Consumption', quantity: '-2', location: 'Hauptlager', occurredAt: '2026-10-21T09:00:00Z', reference: '', reason: '', unitCost: '2' },
+    { id: transferId, revision: 1, materialId, kind: 'TransferIn', quantity: '2', location: 'Aussenlager', occurredAt: '2026-10-21T10:00:00Z', reference: '55555555-5555-4555-8555-555555555555', reason: 'Direct transfer', unitCost: '2' }
   ];
   page.on('pageerror', error => errors.push(error.message));
   await page.route('**/api/v1/**', async route => {
@@ -22,10 +24,11 @@ async function fixture(page: Page, role = 'ManagingDirector') {
     if (path === 'auth/csrf') return route.fulfill({ json: {}, headers: { 'Set-Cookie': 'XSRF-TOKEN=synthetic; Path=/; SameSite=Strict' } });
     if (path === 'materials') return route.fulfill({ json: { items: [{ id: materialId, revision: 1, name: 'Synthetic tiles', unit: 'Stk' }], total: 1, page: 1, pageSize: 25 } });
     if (path === `materials/${materialId}/stock`) return route.fulfill({ json: { onHand: String(onHand), reserved: String(reserved), available: String(onHand-reserved) } });
-    if (path === `materials/${materialId}/movements`) return route.fulfill({ json: {
-      items: movements.filter(m => m.location === (url.searchParams.get('location') || 'Hauptlager')),
-      total: movements.length, page: 1, pageSize: 25
-    } });
+    if (path === `materials/${materialId}/movements`) {
+      const items = movements.filter(m => (!url.searchParams.get('location') || m.location === url.searchParams.get('location'))
+        && (!url.searchParams.get('kind') || m.kind === url.searchParams.get('kind')));
+      return route.fulfill({ json: { items, total: items.length, page: 1, pageSize: 25 } });
+    }
     if (req.method() === 'POST') {
       const body = req.postDataJSON() as Record<string, unknown>;
       requests.push({ path, body, headers: req.headers() });
@@ -144,5 +147,26 @@ test('a rejected stock command retains the error and entered evidence while refr
   await expect(page.getByRole('alert')).toContainText('Der Bestand wurde inzwischen geändert.');
   await expect(page.getByLabel('Inventurbeleg', { exact: true })).toHaveValue('COUNT-2026-002');
   expect(f.requests).toEqual([]);
+  expect(f.errors).toEqual([]);
+});
+
+test('supplier return can select a matching direct transfer into another warehouse', async ({ page }) => {
+  const f = await fixture(page);
+  await page.goto('/inventory-control');
+  const select = page.getByLabel('Material auswählen');
+  await expect(select.locator('option')).toHaveCount(2);
+  await select.selectOption(materialId);
+  await page.getByRole('tab', { name: 'Lieferantenrückgabe' }).click();
+  const transfers = page.getByLabel('Rückgabe nach Lagerumbuchung');
+  await expect(transfers.locator('option')).toHaveCount(2);
+  await page.getByLabel('Ursprüngliche gebuchte Bewegung').selectOption(receiptId);
+  await transfers.selectOption(transferId);
+  await page.getByLabel('Menge', { exact: true }).fill('1');
+  await page.getByLabel('Begründung / Belegreferenz').fill('Supplier accepted the transferred stock');
+  await page.getByRole('button', { name: 'Beleggebundene Bewegung buchen' }).click();
+  await expect(page.getByText('Bestandsbewegung mit Buchungsbeleg erfasst.', { exact: false })).toBeVisible();
+  expect(f.requests).toHaveLength(1);
+  expect(f.requests[0].body).toMatchObject({ quantity: '1', returnTransferId: transferId });
+  expect(f.requests[0].path).toBe(`stock-movements/${receiptId}/supplier-return`);
   expect(f.errors).toEqual([]);
 });
