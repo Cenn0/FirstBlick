@@ -1,7 +1,7 @@
 using System.Net;
 using System.Text.Json;
-using FirstBlick.Api;
 using FirstBlick.Core.Business;
+using FirstBlick.Infrastructure.Persistence;
 using FirstBlick.Core.Security;
 using FirstBlick.Core.Technical;
 using static FirstBlick.Api.Tests.PostgresApiFixture;
