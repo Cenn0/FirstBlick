@@ -272,6 +272,10 @@ public static class FieldEndpoints
             c.Execute("maintenance-contracts", "maintenance.complete", body, async ct =>
             {
                 var contract = await c.Current<MaintenanceContract>(id, ct); var project = await c.Current<Project>(body.ProjectId, ct, false);
+                var occurrenceKey = $"contract:{contract.Id:N}:due:{body.ExpectedDueDate:yyyy-MM-dd}";
+                Guard.Require(!await c.Db.Entities.AnyAsync(x => x.Kind == "maintenance-visits" && x.UniqueKey == occurrenceKey, ct)
+                    && !await c.Db.Links.AnyAsync(x => x.SourceKind == "maintenance-visits" && x.TargetKind == "projects" && x.TargetId == project.Id, ct),
+                    "maintenance_visit_required", "This occurrence has a planned checklist; complete it through its maintenance visit.");
                 Guard.Require(project.Type == ProjectType.Maintenance && project.Status == ProjectStatus.Completed
                     && project.CustomerId == contract.CustomerId && project.BuildingId == contract.BuildingId,
                     "maintenance_project_mismatch", "Completion requires a completed maintenance project for this contract's customer and building.");

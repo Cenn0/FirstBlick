@@ -1,0 +1,47 @@
+<header class="page-heading"><div><p class="eyebrow">WIEDERKEHRENDE ARBEIT</p><h1>Wartungsplanung</h1><p>Verträge vorbereiten, Wartungen durchführen und Folgetermine nachvollziehen.</p></div>@if(allowed()){<button class="button" (click)="refresh()" [disabled]="loading()||busy()">Listen aktualisieren</button>}</header>
+@if(!allowed()){<section class="panel"><h2>Zugriff eingeschränkt</h2><p>Für diesen Bereich ist ein entsprechender Betriebszugang erforderlich.</p></section>}
+@else{
+  @if(error()){<p class="alert error" role="alert">{{error()}}</p>}
+  @if(notice()){<p class="alert success" role="status">{{notice()}}</p>}
+  @if(loading()){<p role="status">Wartungen werden geladen …</p>}
+  @if(!auth.hasModule('maintenance')){<p class="alert">Das Wartungsmodul ist deaktiviert. Vorhandene Termine können weiterhin gelesen werden.</p>}
+  <div class="maintenance-grid">
+    <section class="panel">
+      @if(managers()){
+        <div class="section-title"><h2>Wartungsverträge</h2><a routerLink="/maintenance-contracts">Verträge verwalten</a></div>
+        <ul class="selection-list">@for(c of contracts();track c.id){<li><button class="record-button" (click)="selectContract(c.id)" [disabled]="busy()" [attr.aria-pressed]="contract()?.id===c.id"><strong>{{c.title}}</strong><span>Nächster Termin: {{date(c.nextDueDate)}} · {{c.active?'Aktiv':'Pausiert'}}</span></button></li>}@empty{<li class="muted">Auf dieser Seite sind keine Wartungsverträge vorhanden.</li>}</ul>
+        <div class="pager"><button class="button small" (click)="contractPaging(-1)" [disabled]="contractPage()<=1||loading()||busy()">Vorherige Verträge</button><span>Seite {{contractPage()}} · {{contractTotal()}} Verträge</span><button class="button small" (click)="contractPaging(1)" [disabled]="contractPage()*25>=contractTotal()||loading()||busy()">Weitere Verträge</button></div>
+      }
+      <div class="section-title"><h2>Wartungstermine</h2>@if(contract()){<button class="text-button" (click)="allVisits()" [disabled]="busy()">Alle Verträge anzeigen</button>}</div>
+      <p class="muted">{{contract()?'Termine des ausgewählten Vertrags.':'Die für Sie sichtbaren Wartungen.'}}</p>
+      <ul class="selection-list">@for(v of visits();track v.id){<li><button class="record-button" (click)="openVisit(v.id)" [disabled]="busy()" [attr.aria-pressed]="visit()?.id===v.id"><strong>{{v.title}} · {{date(v.dueDate)}}</strong><span>{{status(v.status)}} · {{v.completedChecks}} von {{v.totalChecks}} geprüft</span></button></li>}@empty{<li class="muted">Noch keine Wartungstermine vorhanden.</li>}</ul>
+      <div class="pager"><button class="button small" (click)="visitPaging(-1)" [disabled]="visitPage()<=1||loading()||busy()">Vorherige Termine</button><span>Seite {{visitPage()}} · {{visitTotal()}} Termine</span><button class="button small" (click)="visitPaging(1)" [disabled]="visitPage()*25>=visitTotal()||loading()||busy()">Weitere Termine</button></div>
+    </section>
+    <div>
+      @if(contract();as c){
+        <section class="panel"><h2>{{c.title}}</h2><p>{{c.scope}}</p><p><strong>Fällig am {{date(c.nextDueDate)}}</strong> · Intervall: {{c.intervalMonths}} Monate</p>
+          <form (ngSubmit)="saveConfiguration()" #configuration="ngForm"><fieldset [disabled]="!canManage()||busy()"><legend>Wartungsablauf</legend>
+            <label class="checkbox-label"><input name="active" type="checkbox" [(ngModel)]="active">Vertrag aktiv</label>
+            <label class="checkbox-label"><input name="automatic" type="checkbox" [(ngModel)]="automatic">Wartungsprojekt und Checkliste automatisch anlegen</label>
+            <label for="maintenance-lead">Vorlauf in Kalendertagen</label><input id="maintenance-lead" name="lead" type="number" min="0" max="365" step="1" [(ngModel)]="leadDays" required>
+            <p class="small muted">Die automatische Planung legt den jeweils nächsten offenen Termin an. Die Fälligkeit folgt der Zeitzone des Betriebs. Ein laufender Worker ist erforderlich.</p>
+            <h3>Checkliste für neue Termine</h3>
+            @for(item of template;track $index;let i=$index){<div class="template-check"><label [for]="'check-title-'+i">Prüfschritt {{i+1}}</label><input [id]="'check-title-'+i" [name]="'title-'+i" [(ngModel)]="item.title" required maxlength="240"><label [for]="'check-instructions-'+i">Arbeitsanweisung {{i+1}}</label><textarea [id]="'check-instructions-'+i" [name]="'instructions-'+i" [(ngModel)]="item.instructions" maxlength="4000" rows="2"></textarea><button class="text-button" type="button" (click)="removeCheck(i)">Prüfschritt {{i+1}} entfernen</button></div>}
+            <div class="actions"><button class="button" type="button" (click)="addCheck()" [disabled]="template.length>=50">Prüfschritt hinzufügen</button><button class="button primary" type="submit" [disabled]="configuration.invalid||!templateValid()||!configurationChanged()">Wartungsablauf speichern</button></div>
+          </fieldset></form>
+          <p class="small muted">Gespeicherte Termine behalten ihre bisherige Checkliste. Änderungen gelten für anschließend angelegte Termine.</p>
+          @if(configurationChanged()){<p class="muted">Speichern Sie die Änderungen, bevor Sie einen Termin anlegen.</p>}
+          <button class="button primary" type="button" (click)="plan()" [disabled]="!canManage()||busy()||!c.active||configurationChanged()||!c.checklistTemplate.length">Termin {{date(c.nextDueDate)}} anlegen oder öffnen</button>
+        </section>
+      }
+      @if(visit();as v){
+        <section class="panel visit-panel"><div class="section-title"><h2>Wartung vom {{date(v.dueDate)}}</h2><span class="badge">{{status(v.status)}}</span></div><h3>{{v.terms.title}}</h3><p class="scope-text">{{v.terms.scope}}</p><p class="muted">Vertragsstand {{v.contractRevision}} · {{v.checklist.length}} Prüfschritte</p><a routerLink="/projects" [queryParams]="{selected:v.projectId}">Zugehöriges Wartungsprojekt öffnen →</a>
+          @for(check of v.checklist;track check.id;let i=$index){<form (ngSubmit)="saveCheck(check)" class="visit-check"><fieldset [disabled]="!canCheck()||busy()||v.status==='Completed'"><legend>{{i+1}}. {{check.title}}</legend><p class="scope-text">{{check.instructions}}</p><label [for]="'result-'+check.id">Ergebnis für {{check.title}}</label><select [id]="'result-'+check.id" [name]="'state-'+check.id" [(ngModel)]="checkEdits[check.id].state"><option value="Pending">Noch offen</option><option value="Done">Erledigt</option><option value="NotApplicable">Nicht anwendbar – Begründung erforderlich</option></select><label [for]="'note-'+check.id">Bemerkung zu {{check.title}}</label><textarea [id]="'note-'+check.id" [name]="'note-'+check.id" [(ngModel)]="checkEdits[check.id].note" maxlength="4000" rows="2"></textarea>@if(v.status==='Planned'){<button class="button" type="submit" [disabled]="!checkEnabled(check)">Ergebnis {{i+1}} speichern</button>}</fieldset>@if(check.recordedAt){<p class="small muted">Gespeichert am {{date(check.recordedAt)}}.</p>}</form>}
+          @if(v.status==='Completed'){<div class="completion"><h3>Abschluss</h3><p class="scope-text">{{v.completionNotes}}</p><p>Abgeschlossen am {{date(v.completedAt)}}. Nächster Intervalltermin: <strong>{{date(v.nextDueDate)}}</strong>.</p><p class="small muted">Bei beendetem oder pausiertem Vertrag wird kein weiterer Termin automatisch angelegt.</p></div>}
+          @else if(canManage()){<form (ngSubmit)="complete()"><fieldset [disabled]="busy()"><legend>Wartung abschließen</legend><label for="maintenance-completion">Abschlussbericht</label><textarea id="maintenance-completion" name="completion" [(ngModel)]="completionNotes" maxlength="8000" rows="3" required></textarea><p class="small muted">Alle Prüfschritte benötigen ein gespeichertes Ergebnis. Der Abschluss beendet das Wartungsprojekt, erhält die Checkliste und setzt den Vertragsfolgetermin.</p><button class="button primary" type="submit" [disabled]="!completeEnabled()">Wartung und Projekt abschließen</button></fieldset></form>}
+          @else if(v.status==='Planned'){<p class="muted">Die Bauleitung oder Verwaltung schließt die Wartung nach Prüfung aller Ergebnisse ab.</p>}
+        </section>
+      }@else if(!contract()){<section class="panel empty-state"><h2>Wartung auswählen</h2><p>Öffnen Sie einen Termin, um seine Checkliste zu bearbeiten oder den Abschluss nachzulesen.</p></section>}
+    </div>
+  </div>
+}
