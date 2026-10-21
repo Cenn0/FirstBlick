@@ -100,7 +100,7 @@ export class InventoryControlsComponent {
   private requiredNumber(value: number | null, name: string, allowZero = false): number {
     if (typeof value !== 'number' || !Number.isFinite(value) ||
         (allowZero ? value < 0 : value <= 0) || value > 1_000_000 ||
-        Math.round(value * 1_000_000) !== value * 1_000_000)
+        Math.abs(value - Math.round(value * 1_000_000) / 1_000_000) > 1e-10)
       throw new Error(name + ': gültigen Wert mit höchstens sechs Nachkommastellen eingeben.');
     return value;
   }
@@ -204,7 +204,7 @@ export class InventoryControlsComponent {
       if (!order.lines.some(x => x.id === this.purchaseLineId)) throw new Error('Eine Bestellposition auswählen.');
       const result = await this.api.command<{ order: PurchaseOrder; correction: { id: string } }>(
         `purchase-orders/${order.id}/supplier-return`,
-        { lineId: this.purchaseLineId, quantity: this.requiredNumber(this.quantity),
+        { lineId: this.purchaseLineId, quantity: this.requiredNumber(this.quantity, 'Retourenmenge'),
           location: this.requiredText(this.location, 'Lagerort', 120),
           supplierCreditReference: this.requiredText(this.evidenceReference, 'Lieferantenbeleg', 240),
           reason: this.requiredText(this.reason, 'Retourengrund', 2000) }, order.revision);
