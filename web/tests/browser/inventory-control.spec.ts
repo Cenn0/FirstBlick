@@ -10,8 +10,8 @@ async function fixture(page: Page, role = 'ManagingDirector') {
   let onHand = 10, reserved = 4;
   let nextId = 10;
   const movements = [
-    { id: receiptId, revision: 1, materialId, kind: 'Receipt', quantity: 10, location: 'Hauptlager', occurredAt: '2026-10-21T08:00:00Z', reference: 'BE-001', reason: '', unitCost: 2 },
-    { id: consumptionId, revision: 1, materialId, kind: 'Consumption', quantity: -2, location: 'Hauptlager', occurredAt: '2026-10-21T09:00:00Z', reference: '', reason: '', unitCost: 2 }
+    { id: receiptId, revision: 1, materialId, kind: 'Receipt', quantity: '10', location: 'Hauptlager', occurredAt: '2026-10-21T08:00:00Z', reference: 'BE-001', reason: '', unitCost: '2' },
+    { id: consumptionId, revision: 1, materialId, kind: 'Consumption', quantity: '-2', location: 'Hauptlager', occurredAt: '2026-10-21T09:00:00Z', reference: '', reason: '', unitCost: '2' }
   ];
   page.on('pageerror', error => errors.push(error.message));
   await page.route('**/api/v1/**', async route => {
@@ -21,7 +21,7 @@ async function fixture(page: Page, role = 'ManagingDirector') {
         modules: ['core', 'purchasing'], capabilities: ['*'] }] } });
     if (path === 'auth/csrf') return route.fulfill({ json: {}, headers: { 'Set-Cookie': 'XSRF-TOKEN=synthetic; Path=/; SameSite=Strict' } });
     if (path.startsWith('materials?')) return route.fulfill({ json: { items: [{ id: materialId, revision: 1, name: 'Synthetic tiles', unit: 'Stk' }], total: 1, page: 1, pageSize: 25 } });
-    if (path === `materials/${materialId}/stock`) return route.fulfill({ json: { onHand, reserved, available: onHand - reserved } });
+    if (path === `materials/${materialId}/stock`) return route.fulfill({ json: { onHand: String(onHand), reserved: String(reserved), available: String(onHand-reserved) } });
     if (path === `materials/${materialId}/movements`) return route.fulfill({ json: {
       items: movements.filter(m => m.location === (url.searchParams.get('location') || 'Hauptlager')),
       total: movements.length, page: 1, pageSize: 25
@@ -29,10 +29,10 @@ async function fixture(page: Page, role = 'ManagingDirector') {
     if (req.method() === 'POST') {
       const body = req.postDataJSON() as Record<string, unknown>;
       requests.push({ path, body, headers: req.headers() });
-      if (path.endsWith('/inventory-count')) onHand = body['countedOnHand'] as number;
-      else if (path.endsWith('/transfer')) onHand -= body['quantity'] as number;
-      else if (path.endsWith('/supplier-return')) onHand -= body['quantity'] as number;
-      else if (path.endsWith('/project-return')) onHand += body['quantity'] as number;
+      if (path.endsWith('/inventory-count')) onHand = Number(body['countedOnHand']);
+      else if (path.endsWith('/transfer')) onHand -= Number(body['quantity']);
+      else if (path.endsWith('/supplier-return')) onHand -= Number(body['quantity']);
+      else if (path.endsWith('/project-return')) onHand += Number(body['quantity']);
       nextId++;
       return route.fulfill({ json: { id: String(nextId), result: 'synthetic-only' } });
     }
@@ -55,7 +55,7 @@ test('warehouse count, transfer and linked returns are explicit and discard stal
   await page.getByRole('button', { name: 'Beleggebundene Bewegung buchen' }).click();
   await expect(page.getByText('Bestandsbewegung mit Buchungsbeleg erfasst.', { exact: false })).toBeVisible();
   expect(f.requests[0].path).toBe(`materials/${materialId}/inventory-count`);
-  expect(f.requests[0].body).toMatchObject({ expectedOnHand: 10, countedOnHand: 9, location: 'Hauptlager' });
+  expect(f.requests[0].body).toMatchObject({ expectedOnHand: '10', countedOnHand: '9', location: 'Hauptlager' });
   expect(f.requests[0].headers['idempotency-key']).toMatch(/^[a-f0-9-]{36}$/i);
   await page.getByRole('tab', { name: 'Lagerumbuchung' }).click();
   await page.getByLabel('Ziellagerort').fill('Aussenlager');
@@ -64,7 +64,7 @@ test('warehouse count, transfer and linked returns are explicit and discard stal
   await page.getByLabel('Begründung / Belegreferenz').fill('Relocation record');
   await page.getByRole('button', { name: 'Beleggebundene Bewegung buchen' }).click();
   await expect.poll(() => f.requests.length).toBe(2);
-  expect(f.requests[1].body).toMatchObject({ fromLocation: 'Hauptlager', toLocation: 'Aussenlager', quantity: 2 });
+  expect(f.requests[1].body).toMatchObject({ fromLocation: 'Hauptlager', toLocation: 'Aussenlager', quantity: '2' });
   await page.getByRole('tab', { name: 'Lieferantenrückgabe' }).click();
   await page.getByLabel('Ursprüngliche gebuchte Bewegung').selectOption(receiptId);
   await page.getByLabel('Menge', { exact: true }).fill('1');
