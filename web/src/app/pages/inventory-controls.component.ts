@@ -184,7 +184,7 @@ export class InventoryControlsComponent {
       const result = await this.api.command<{ reservation: Reservation; correction: { id: string } }>(
         `material-reservations/${reservation.id}/return`,
         { consumptionMovementId: this.validId(this.consumptionMovementId),
-          quantity: this.requiredNumber(this.quantity),
+          quantity: this.requiredNumber(this.quantity, 'Rückgabemenge'),
           reason: this.requiredText(this.reason, 'Rückgabebegründung', 2000) }, reservation.revision);
       if (!result.correction?.id) throw new Error('Es liegt kein Buchungsbeleg vor.');
       this.reservation.set(result.reservation);
