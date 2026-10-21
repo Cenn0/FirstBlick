@@ -1,4 +1,5 @@
 import { GaebBidExchangeComponent } from './gaeb-bid-exchange.component';
+import { TradeArchiveComponent } from './trade-archive.component';
 import { Component, DestroyRef, computed, effect, inject, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -10,7 +11,7 @@ import { decimalDisplay } from '../core/decimal-format';
 import { downloadBlob } from '../core/integrations.models';
 import { CatalogPreview, CatalogReceipt, CatalogRequest, CatalogSelection, GaebPreview, InvoicePreview, TradeKind, TradeSource, canSelect, catalogRequest, costFields, emptySelection, readTradeSource, sameCatalogRequest, sourceBudget, validateCatalogPreview, validateCatalogReceipt, validateGaebPreview, validateInvoicePreview } from '../core/trade-import.models';
 
-@Component({ imports: [FormsModule, RouterLink, GaebBidExchangeComponent], templateUrl: './trade-imports.component.html', styleUrl: './trade-imports.component.css' })
+@Component({ imports: [FormsModule, RouterLink, GaebBidExchangeComponent, TradeArchiveComponent], templateUrl: './trade-imports.component.html', styleUrl: './trade-imports.component.css' })
 export class TradeImportsComponent {
   readonly auth = inject(AuthService); private readonly api = inject(ApiService); private readonly previews = inject(TradePreviewService);
   readonly canGaeb = computed(() => !!this.auth.scope() && this.auth.can('catalog-items.write'));
@@ -28,6 +29,11 @@ export class TradeImportsComponent {
   private reset(): void { this.generation++; this.busy.set(false); this.error.set(''); this.notice.set(''); this.file.set(null); this.source = null; this.gaeb.set(null); this.invoice.set(null); this.mapping.set(null); this.receipt.set(null); this.selections.set([]); this.reviewedRequest = null; this.importKey = ''; this.blockedCompletion.set(false); this.consent = false; this.page = 1; }
   chooseKind(kind: TradeKind): void { if (kind === this.kind()) return; this.kind.set(kind); this.reset(); }
   chooseFile(event: Event): void { const input = event.target as HTMLInputElement, chosen = input.files?.[0]; input.value = ''; this.reset(); if (!chosen) return; try { sourceBudget(chosen.size); this.file.set(chosen); } catch (error) { this.error.set(errorMessage(error)); } }
+  restoreOriginal(file: File): void {
+    if (this.busy() || !this.allowed()) return;
+    if (this.selections().length && !this.receipt() && !window.confirm('Ungespeicherte Katalogauswahl und Kalkulationswerte verwerfen und die gespeicherte Originaldatei öffnen?')) return;
+    this.reset(); this.file.set(file); void this.inspect();
+  }
   private failed(error: unknown, generation: number, access: string): void {
     if (!this.current(generation, access)) return;
     if (error instanceof ApiError && [401, 403, 423].includes(error.status)) this.reset();

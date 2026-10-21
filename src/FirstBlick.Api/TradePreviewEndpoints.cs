@@ -11,6 +11,7 @@ public static class TradePreviewEndpoints
 {
     public static void Map(RouteGroupBuilder api)
     {
+        TradeSourceEndpoints.Map(api);
         api.MapPost("/integrations/v1/e-invoice/preview", async (HttpContext http, TenantScope scope,
             CommandExecutor commands) =>
         {
