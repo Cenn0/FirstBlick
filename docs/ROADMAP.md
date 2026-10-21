@@ -1,5 +1,8 @@
 # FirstBlick – Rework-Roadmap
 
+> **Umsetzungsschritt 21.10.2026 (DP-07-03/DP-07-04):** Die [Lagerkorrekturen und Rückgaben](inventory-corrections.md) ergänzen physische Inventurdifferenzen, atomare Umlagerungen, Projektmaterialrückgaben und separate Lieferantenretouren mit eigener Angular-Bedienung, Quellbelegen und Tests. Die [Abschlussmatrix für die 49 ursprünglich als K eingestuften Aufgaben](roadmap-k-closure-2026-10-21.md) hält die noch benötigten Einzelabnahmen fest. Eine Implementierung des beschriebenen Teilumfangs oder erfolgreiche CI **schließt nicht** die gesamte Originalanforderung ab.
+
+
 > Übernommen aus der Projektanalyse „DachPlaner Rework Roadmap“, 19.10.2026 (34 Seiten). Der Originalbericht umfasst 100 Aufgaben in 15 Epics. Diese Fassung erhält alle Aufgabenkennungen und ursprünglichen Abnahmekriterien. Ein implementierter Teilablauf bedeutet nicht automatisch, dass das gesamte Epic abgeschlossen ist.
 
 ## Fortsetzung – inhomogene Wärmedämmaufbauten (21.10.2026)
