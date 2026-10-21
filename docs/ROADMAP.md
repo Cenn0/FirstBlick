@@ -2,6 +2,18 @@
 
 > Übernommen aus der Projektanalyse „DachPlaner Rework Roadmap“, 19.10.2026 (34 Seiten). Der Originalbericht umfasst 100 Aufgaben in 15 Epics. Diese Fassung erhält alle Aufgabenkennungen und ursprünglichen Abnahmekriterien. Ein implementierter Teilablauf bedeutet nicht automatisch, dass das gesamte Epic abgeschlossen ist.
 
+## Fortsetzung – inhomogene Wärmedämmaufbauten (21.10.2026)
+
+**DP-11-03 / M5, technischer Teilumfang:** Die [Widerstandsgrenzen für Sparrendächer](inhomogeneous-thermal.md)
+ergänzen unabhängige Parallelpfade um eine obere und untere Wärmewiderstandsabschätzung
+für ausgerichtete, ausdrücklich nichtmetallische Schichten. Neu sind die Core-Berechnung,
+`POST /api/v1/technical/thermal/inhomogeneous`, persistierbare
+`technical/runs` (`method=thermal.inhomogeneous`), unabhängige Zahlenbeispiele,
+Grenzfall- und HTTP-/PostgreSQL-Tests. Die nachgelagerte Angular-Fachmaske,
+Luftschichtkorrekturen und eine unabhängige normative Fachabnahme bleiben offen.
+Die ursprünglich unverändert beibehaltenen 100 Roadmap-Checkboxen sind **keine**
+aktuelle Fertigstellungsstatistik.
+
 ## Umsetzung der geprüften Fachmodule (21.10.2026)
 
 Die [erweiterte Fach- und Schnittstellendokumentation](advanced-exchange-and-physics.md) beschreibt die neuen, separat überprüfbaren Abläufe und Grenzen:
