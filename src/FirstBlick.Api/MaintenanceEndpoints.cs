@@ -2,6 +2,7 @@ using FirstBlick.Core.Business;
 using FirstBlick.Core.Security;
 using FirstBlick.Infrastructure;
 using FirstBlick.Infrastructure.Persistence;
+using System.Security.Cryptography;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -60,6 +61,17 @@ public static class MaintenanceEndpoints
             var visit = await c.Current<MaintenanceVisit>(id, ct, false); visit.Validate();
             c.Http.Response.Headers.ETag = $"\"{visit.Revision}\""; return Results.Ok(visit);
         }).Produces<MaintenanceVisit>();
+        api.MapGet("/maintenance-visits/{id:guid}/calendar", async (Guid id, long revision, [AsParameters] BusinessCommandServices c, CancellationToken ct) =>
+        {
+            await c.Commands.Authorize("maintenance-visits", false, ct);
+            var visit = await c.Current<MaintenanceVisit>(id, ct, false);
+            Guard.Require(revision > 0 && visit.Revision == revision, "revision_conflict", "The maintenance occurrence changed. Open its current revision before exporting.");
+            var bytes = MaintenanceCalendar.Export(visit);
+            c.Http.Response.Headers.CacheControl = "private, no-store";
+            c.Http.Response.Headers.ETag = $"\"{visit.Revision}\"";
+            c.Http.Response.Headers["X-Content-SHA256"] = Convert.ToHexStringLower(SHA256.HashData(bytes));
+            return Results.File(bytes, MaintenanceCalendar.ContentType, MaintenanceCalendar.FileName(visit));
+        }).Produces(StatusCodes.Status200OK, contentType: "text/calendar");
         api.MapPost("/maintenance-visits/{id:guid}/check", (Guid id, MaintenanceCheckRequest body, [AsParameters] BusinessCommandServices c) =>
             c.Commands.Execute(c.Http, "maintenance-visits", "maintenance.check", body, async ct =>
             {

@@ -1,4 +1,6 @@
 using System.Net;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using FirstBlick.Core.Business;
@@ -13,6 +15,76 @@ namespace FirstBlick.Api.Tests;
 
 public sealed class MaintenanceWorkflowApiTests(PostgresApiFixture fixture) : IClassFixture<PostgresApiFixture>
 {
+    [PostgresApiFact]
+    public async Task Calendar_download_is_an_integrity_bound_read_of_the_opened_persisted_revision()
+    {
+        var (user, client, contract) = await Setup(); var visit = await Plan(client, contract);
+        var path = $"/api/v1/maintenance-visits/{visit.Id}/calendar?revision={visit.Revision}";
+        using var response = await client.GetAsync(path);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("text/calendar", response.Content.Headers.ContentType!.MediaType);
+        Assert.Equal("utf-8", response.Content.Headers.ContentType.CharSet);
+        Assert.Equal("attachment", response.Content.Headers.ContentDisposition!.DispositionType);
+        Assert.Contains(visit.Id.ToString("N"), response.Content.Headers.ContentDisposition.FileNameStar);
+        Assert.True(response.Headers.CacheControl!.NoStore); Assert.True(response.Headers.CacheControl.Private);
+        Assert.Equal($"\"{visit.Revision}\"", response.Headers.ETag!.Tag);
+        var bytes = await response.Content.ReadAsByteArrayAsync();
+        Assert.Equal(Convert.ToHexStringLower(SHA256.HashData(bytes)), response.Headers.GetValues("X-Content-SHA256").Single());
+        Assert.Equal(MaintenanceCalendar.Export(await fixture.Read<MaintenanceVisit>(user.TenantId, visit.Id)), bytes);
+        using var repeated = await client.GetAsync(path); Assert.Equal(bytes, await repeated.Content.ReadAsByteArrayAsync());
+        var text = Encoding.UTF8.GetString(bytes).Replace("\r\n ", "", StringComparison.Ordinal);
+        Assert.Contains("UID:" + MaintenanceCalendar.Uid(visit), text);
+        Assert.Contains("DTSTART;VALUE=DATE:20270131", text); Assert.Contains("DTEND;VALUE=DATE:20270201", text);
+        Assert.DoesNotContain(contract.Scope, text); Assert.DoesNotContain(visit.Checklist[0].Title, text);
+        var stored = await fixture.Read<MaintenanceVisit>(user.TenantId, visit.Id); Assert.Equal(visit.Revision, stored.Revision);
+        await Error(client.GetAsync($"/api/v1/maintenance-visits/{visit.Id}/calendar?revision=999"), "revision_conflict", HttpStatusCode.Conflict);
+    }
+
+    [PostgresApiFact]
+    public async Task Calendar_export_respects_tenant_assignment_revocation_and_disabled_module_read_policy()
+    {
+        var (owner, client, contract) = await Setup(); var visit = await Plan(client, contract);
+        var path = $"/api/v1/maintenance-visits/{visit.Id}/calendar?revision={visit.Revision}";
+        var (_, other, _) = await Setup(); await Error(other.GetAsync(path), "not_found", HttpStatusCode.NotFound);
+        using var anonymous = fixture.Client(); using var denied = await anonymous.GetAsync(path); Assert.Equal(HttpStatusCode.Unauthorized, denied.StatusCode);
+        var worker = await fixture.CreateUser(owner.TenantId, BusinessRole.Worker); var workerClient = await fixture.Login(worker);
+        await Error(workerClient.GetAsync(path), "not_found", HttpStatusCode.NotFound);
+        var employee = await Create<Employee>(client, "employees", new() { Name = "Calendar worker", UserId = worker.UserId, Active = true });
+        var assignment = await Create<ScheduleAssignment>(client, "schedule-assignments", new()
+        { Title = "Calendar maintenance", EmployeeId = employee.Id, ProjectId = visit.ProjectId,
+          Start = new(2027, 1, 31, 8, 0, 0, TimeSpan.Zero), End = new(2027, 1, 31, 10, 0, 0, TimeSpan.Zero) });
+        using var assigned = await workerClient.GetAsync(path); Assert.Equal(HttpStatusCode.OK, assigned.StatusCode);
+        assignment.Cancelled = true; await Ok<ScheduleAssignment>(Send(client, HttpMethod.Put, $"/api/v1/schedule-assignments/{assignment.Id}", assignment, assignment.Revision));
+        await Error(workerClient.GetAsync(path), "not_found", HttpStatusCode.NotFound);
+        await fixture.InScope(async services =>
+        {
+            var db = services.GetRequiredService<FirstBlickDbContext>(); var tenant = await db.Tenants.SingleAsync(x => x.Id == owner.TenantId);
+            tenant.Modules = ["core"]; await db.SaveChangesAsync();
+        });
+        using var disabled = await client.GetAsync(path); Assert.Equal(HttpStatusCode.OK, disabled.StatusCode);
+        await fixture.InScope(async services =>
+        {
+            var db = services.GetRequiredService<FirstBlickDbContext>();
+            var membership = await db.Memberships.SingleAsync(x => x.TenantId == owner.TenantId && x.UserId == owner.UserId);
+            membership.Active = false; await db.SaveChangesAsync();
+        });
+        await Error(client.GetAsync(path), "forbidden", HttpStatusCode.Forbidden);
+    }
+
+    [PostgresApiFact]
+    public async Task Completed_calendar_keeps_uid_and_due_date_but_old_download_revision_is_rejected()
+    {
+        var (_, client, contract) = await Setup(); var visit = await Plan(client, contract); var uid = MaintenanceCalendar.Uid(visit); var oldRevision = visit.Revision;
+        foreach (var check in visit.Checklist.ToArray()) visit = await Record(client, visit, check.Id);
+        visit = await Ok<MaintenanceVisit>(Send(client, HttpMethod.Post, $"/api/v1/maintenance-visits/{visit.Id}/complete", new { notes = "Private final inspection report" }, visit.Revision));
+        await Error(client.GetAsync($"/api/v1/maintenance-visits/{visit.Id}/calendar?revision={oldRevision}"), "revision_conflict", HttpStatusCode.Conflict);
+        using var response = await client.GetAsync($"/api/v1/maintenance-visits/{visit.Id}/calendar?revision={visit.Revision}");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode); var text = (await response.Content.ReadAsStringAsync()).Replace("\r\n ", "", StringComparison.Ordinal);
+        Assert.Contains("UID:" + uid, text); Assert.Contains("SEQUENCE:" + (visit.Revision - 1), text);
+        Assert.Contains("SUMMARY:Wartung abgeschlossen: ", text); Assert.Contains("X-FIRSTBLICK-MAINTENANCE-STATUS:Completed", text);
+        Assert.DoesNotContain("Private final inspection report", text); Assert.DoesNotContain("\r\nSTATUS:COMPLETED", text);
+    }
+
     [PostgresApiFact]
     public async Task Legacy_raw_contract_without_new_fields_can_be_explicitly_configured_and_planned()
     {
