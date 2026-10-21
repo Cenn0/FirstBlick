@@ -5,13 +5,15 @@ const projectId = '10000000-0000-4000-8000-000000000001';
 const employeeId = '10000000-0000-4000-8000-000000000002';
 const equipmentId = '10000000-0000-4000-8000-000000000003';
 const assignmentId = '10000000-0000-4000-8000-000000000004';
+const secondEquipmentId = '10000000-0000-4000-8000-000000000007';
 const assignment = { id: assignmentId, revision: 4, projectId, projectName: 'Synthetisches Dachprojekt',
   employeeId, employeeName: 'Testmitarbeiter', title: 'Wartung am Sonntag',
   start: '2026-10-25T01:30:12.345Z', end: '2026-10-25T03:30:45.123Z',
   equipmentIds: [equipmentId], equipment: [{ id: equipmentId, name: 'Prüffahrzeug' }], days: ['2026-10-25'] };
 
-async function fixture(page: Page, options: { role?: string; corrupt?: boolean; disabled?: boolean } = {}) {
-  let rows = [{ ...assignment }], revoked = false, rejectWrite = false;
+async function fixture(page: Page, options: { role?: string; corrupt?: boolean; disabled?: boolean; inactiveEmployee?: boolean; title?: string; pagedLookups?: boolean } = {}) {
+  const original = { ...assignment, title: options.title ?? assignment.title };
+  let rows = [{ ...original }], revoked = false, rejectWrite = false;
   let deferred: Promise<void> | null = null;
   const mutations: { method: string; body: any; revision?: string; key?: string }[] = [];
   const weeks: string[] = [];
@@ -49,15 +51,22 @@ async function fixture(page: Page, options: { role?: string; corrupt?: boolean; 
     if (['projects', 'employees', 'equipment'].includes(path)) {
       const pageNumber = Number(url.searchParams.get('page') || 1);
       const item = path === 'projects' ? { id: projectId, revision: 1, name: assignment.projectName }
-        : path === 'employees' ? { id: employeeId, revision: 1, name: assignment.employeeName, active: true }
+        : path === 'employees' ? { id: employeeId, revision: 1, name: assignment.employeeName, active: !options.inactiveEmployee }
           : { id: equipmentId, revision: 1, name: 'Prüffahrzeug', available: true };
-      return route.fulfill({ json: { items: [item], total: 1, page: pageNumber, pageSize: 25 } });
+      const second = { ...item,
+        id: path === 'equipment' ? secondEquipmentId : path === 'projects'
+          ? '10000000-0000-4000-8000-000000000005' : '10000000-0000-4000-8000-000000000006',
+        name: path === 'equipment' ? 'Zusatzfahrzeug' : path === 'projects' ? 'Weiteres Projekt' : 'Weiterer Mitarbeiter' };
+      const all = options.pagedLookups ? [item, ...Array.from({ length: 24 }, (_, index) => ({ ...item,
+        id: `20000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`, name: `${path} Suchtreffer ${index + 1}` })), second] : [item];
+      return route.fulfill({ json: { items: all.slice((pageNumber - 1) * 25, pageNumber * 25), total: all.length, page: pageNumber, pageSize: 25 } });
     }
     if (path.startsWith('schedule-assignments') && ['POST', 'PUT'].includes(request.method())) {
       const body = request.postDataJSON();
       mutations.push({ method: request.method(), body, revision: request.headers()['if-match'], key: request.headers()['idempotency-key'] });
       if (rejectWrite) return route.fulfill({ status: 409, json: { status: 409, code: 'planning_conflict', detail: 'Das Prüfgerät ist bereits eingeplant.' } });
-      const saved = { ...assignment, ...body, id: body.id || assignmentId, revision: body.id ? 5 : 1 };
+      const saved = { ...original, ...body, id: body.id || assignmentId, revision: body.id ? 5 : 1,
+        equipment: body.equipmentIds.map((id: string) => ({ id, name: id === equipmentId ? 'Prüffahrzeug' : 'Zusatzfahrzeug' })) };
       rows = [saved]; return route.fulfill({ json: saved });
     }
     return route.fulfill({ json: { items: [], total: 0, page: 1, pageSize: 25 } });
@@ -107,6 +116,70 @@ test('editing retains later repeated-hour identity and revision; cancellation up
   await page.getByRole('button', { name: 'Änderungen speichern', exact: true }).click();
   await expect(page.locator('.dispatch-entry')).toHaveCount(0);
   expect(api.mutations[1]).toMatchObject({ revision: '"5"', body: { cancelled: true } });
+});
+
+test('an inactive assigned employee can be cancelled after lookup while active edits stay blocked', async ({ page }) => {
+  const api = await fixture(page, { inactiveEmployee: true }); await page.goto('/planning-week?weekStart=2026-10-19');
+  await page.getByText('Stammdaten suchen und Wochenplan filtern', { exact: true }).click();
+  await page.getByRole('button', { name: 'Mitarbeiter laden', exact: true }).click();
+  await page.getByRole('button', { name: 'Wartung am Sonntag bearbeiten', exact: true }).click();
+  await expect(page.getByLabel('Mitarbeiter', { exact: true })).toHaveValue(employeeId);
+  await expect(page.locator(`#dispatch-employee option[value="${employeeId}"]`)).toBeDisabled();
+  await page.getByRole('button', { name: 'Änderungen speichern', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('Projekt, Mitarbeiter und Betriebsmittel');
+  expect(api.mutations).toEqual([]);
+  await page.getByLabel('Diesen Einsatz absagen', { exact: true }).check();
+  await expect(page.locator(`#dispatch-employee option[value="${employeeId}"]`)).toBeEnabled();
+  await page.getByRole('button', { name: 'Änderungen speichern', exact: true }).click();
+  await expect(page.locator('.editor')).toHaveCount(0);
+  await expect(page.locator('.dispatch-entry')).toHaveCount(0);
+  expect(api.mutations).toHaveLength(1);
+  expect(api.mutations[0]).toMatchObject({ method: 'PUT', revision: '"4"', body: {
+    id: assignmentId, projectId, employeeId, cancelled: true, start: assignment.start, end: assignment.end, equipmentIds: [equipmentId]
+  } });
+});
+
+for (const length of [201, 240]) {
+  test(`an existing ${length}-character assignment title can be saved unchanged`, async ({ page }) => {
+    const title = 'Dachwartung '.padEnd(length, 'x');
+    const api = await fixture(page, { title }); await page.goto('/planning-week?weekStart=2026-10-19');
+    await page.getByRole('button', { name: title + ' bearbeiten', exact: true }).click();
+    await expect(page.getByLabel('Einsatzbezeichnung', { exact: true })).toHaveValue(title);
+    await expect(page.getByLabel('Einsatzbezeichnung', { exact: true })).toHaveAttribute('maxlength', '240');
+    await expect(page.getByRole('button', { name: 'Änderungen speichern', exact: true })).toBeEnabled();
+    await page.getByRole('button', { name: 'Änderungen speichern', exact: true }).click();
+    await expect(page.locator('.editor')).toHaveCount(0);
+    await expect(page.locator('.dispatch-entry')).toContainText(title);
+    expect(api.mutations).toHaveLength(1);
+    expect(api.mutations[0]).toMatchObject({ method: 'PUT', revision: '"4"', body: { title } });
+  });
+}
+
+test('selected master data survives lookup pagination and is cleared when the business changes', async ({ page }) => {
+  const api = await fixture(page, { pagedLookups: true }); await page.goto('/planning-week?weekStart=2026-10-19');
+  await page.getByText('Stammdaten suchen und Wochenplan filtern', { exact: true }).click();
+  for (const name of ['Projekte laden', 'Mitarbeiter laden', 'Geräte / Fahrzeuge laden']) await page.getByRole('button', { name, exact: true }).click();
+  await page.getByRole('button', { name: 'Einsatz anlegen', exact: true }).click();
+  await page.getByLabel('Einsatzbezeichnung', { exact: true }).fill('Einsatz mit zwei Fahrzeugen');
+  await page.getByLabel('Projekt', { exact: true }).selectOption(projectId);
+  await page.getByLabel('Mitarbeiter', { exact: true }).selectOption(employeeId);
+  await page.getByLabel('Prüffahrzeug', { exact: true }).check();
+  for (const name of ['Projekte nächste Seite', 'Mitarbeiter nächste Seite', 'Geräte / Fahrzeuge nächste Seite']) await page.getByRole('button', { name, exact: true }).click();
+  await expect(page.getByLabel('Projekt', { exact: true })).toHaveValue(projectId);
+  await expect(page.getByLabel('Mitarbeiter', { exact: true })).toHaveValue(employeeId);
+  await expect(page.getByLabel('Prüffahrzeug', { exact: true })).toBeChecked();
+  await page.getByLabel('Zusatzfahrzeug', { exact: true }).check();
+  await page.getByRole('button', { name: 'Einsatz speichern', exact: true }).click();
+  await expect(page.locator('.editor')).toHaveCount(0);
+  await expect(page.locator('.dispatch-entry')).toContainText('Einsatz mit zwei Fahrzeugen');
+  expect(api.mutations).toHaveLength(1);
+  expect(api.mutations[0]).toMatchObject({ method: 'POST', body: { projectId, employeeId, equipmentIds: [equipmentId, secondEquipmentId] } });
+  await page.getByLabel('Betrieb', { exact: true }).selectOption('tenant-b');
+  await page.getByRole('button', { name: 'Einsatz anlegen', exact: true }).click();
+  await expect(page.locator(`#dispatch-project option[value="${projectId}"]`)).toHaveCount(0);
+  await expect(page.locator(`#dispatch-employee option[value="${employeeId}"]`)).toHaveCount(0);
+  await expect(page.getByLabel('Prüffahrzeug', { exact: true })).toHaveCount(0);
+  await expect(page.getByLabel('Zusatzfahrzeug', { exact: true })).toHaveCount(0);
 });
 
 test('ambiguous times require an offset and nonexistent times cannot be submitted', async ({ page }) => {

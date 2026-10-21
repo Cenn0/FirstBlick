@@ -50,6 +50,7 @@ export class PlanningWeekComponent {
   readonly lookupKinds: LookupKind[] = ['projects', 'employees', 'equipment'];
   readonly labels: Record<LookupKind, string> = { projects: 'Projekte', employees: 'Mitarbeiter', equipment: 'Geräte / Fahrzeuge' };
   lookups: Record<LookupKind, Lookup> = { projects: emptyLookup(), employees: emptyLookup(), equipment: emptyLookup() };
+  private selectedLookupItems: Record<LookupKind, Entity[]> = { projects: [], employees: [], equipment: [] };
   filterProject = ''; filterEmployee = ''; filterEquipment = '';
   monday = mondayOf(new Date().toISOString().slice(0, 10));
   title = ''; projectId = ''; employeeId = ''; equipmentIds: string[] = [];
@@ -72,6 +73,7 @@ export class PlanningWeekComponent {
   private reset(): void {
     this.generation++; this.week.set(null); this.editorOpen.set(false); this.editing = null;
     this.lookups = { projects: emptyLookup(), employees: emptyLookup(), equipment: emptyLookup() };
+    this.selectedLookupItems = { projects: [], employees: [], equipment: [] };
     this.filterProject = ''; this.filterEmployee = ''; this.filterEquipment = '';
     this.clearForm(); this.error.set(''); this.notice.set(''); this.busy.set(false);
     if (this.allowed()) void this.load();
@@ -133,12 +135,30 @@ export class PlanningWeekComponent {
           || result.page !== page || result.pageSize !== 25
           || result.items.some(item => !item || typeof item.id !== 'string' || typeof item['name'] !== 'string'))
         throw new Error('Die Stammdatenliste ist unvollständig.');
+      // Preserve only selected, already verified options across pages. Fresh rows
+      // update their earlier status before the retained selection is rebuilt.
+      const known = new Map(this.options(kind).map(item => [item.id, item]));
+      for (const item of result.items) {
+        if (item.archived) known.delete(item.id);
+        else known.set(item.id, item);
+      }
+      this.selectedLookupItems[kind] = [...this.selectedLookupIds(kind)]
+        .flatMap(id => known.has(id) ? [known.get(id)!] : []);
       this.lookups[kind] = { ...this.lookups[kind], items: result.items.filter(item => !item.archived), total: result.total, page };
     } catch (error) { if (this.current(generation, access)) this.error.set(errorMessage(error)); }
     finally { if (this.current(generation, access)) this.busy.set(false); }
   }
+  private selectedLookupIds(kind: LookupKind): Set<string> {
+    const ids = kind === 'projects' ? [this.projectId, this.filterProject, this.editing?.projectId]
+      : kind === 'employees' ? [this.employeeId, this.filterEmployee, this.editing?.employeeId]
+        : [...this.equipmentIds, this.filterEquipment, ...(this.editing?.equipmentIds ?? [])];
+    return new Set(ids.filter((id): id is string => !!id));
+  }
   options(kind: LookupKind): Entity[] {
     const items = [...this.lookups[kind].items];
+    const ids = this.selectedLookupIds(kind);
+    for (const item of this.selectedLookupItems[kind])
+      if (ids.has(item.id) && !items.some(value => value.id === item.id)) items.push(item);
     const selected = this.editing;
     const previous = !selected ? [] : kind === 'projects'
       ? [{ id: selected.projectId, revision: 1, name: selected.projectName }]
@@ -178,10 +198,10 @@ export class PlanningWeekComponent {
     this.busy.set(true); this.error.set(''); this.notice.set(''); let saved = false;
     try {
       if (!this.options('projects').some(item => item.id === this.projectId)
-          || !this.options('employees').some(item => item.id === this.employeeId && item['active'] !== false)
+          || !this.options('employees').some(item => item.id === this.employeeId && (this.cancelled || item['active'] !== false))
           || this.equipmentIds.some(id => !this.options('equipment').some(item => item.id === id)))
         throw new Error('Projekt, Mitarbeiter und Betriebsmittel aus den aktuellen Listen auswählen.');
-      if (!this.title.trim() || this.title.length > 200) throw new Error('Eine Einsatzbezeichnung mit höchstens 200 Zeichen ist erforderlich.');
+      if (!this.title.trim() || this.title.length > 240) throw new Error('Eine Einsatzbezeichnung mit höchstens 240 Zeichen ist erforderlich.');
       const start = resolveEditedBusinessTime(this.startLocal, zone, this.startOffset, this.editing?.start);
       const end = resolveEditedBusinessTime(this.endLocal, zone, this.endOffset, this.editing?.end);
       if (Date.parse(end) <= Date.parse(start)) throw new Error('Das Einsatzende muss nach dem Beginn liegen.');
