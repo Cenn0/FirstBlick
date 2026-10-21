@@ -23,6 +23,8 @@ public static class TechnicalEndpoints
         { await commands.Authorize("technical-results", true, ct); return Results.Ok(MonthlyMoistureScreening.Calculate(input)); }).WithTags("technical");
         api.MapPost("/technical/thermal/parallel", async (ParallelThermalInput input, CommandExecutor commands, CancellationToken ct) =>
         { await commands.Authorize("technical-results", true, ct); return Results.Ok(ThermalCalculator.CalculateParallelPaths(input)); }).WithTags("technical");
+        api.MapPost("/technical/thermal/inhomogeneous", async (InhomogeneousThermalInput input, CommandExecutor commands, CancellationToken ct) =>
+        { await commands.Authorize("technical-results", true, ct); return Results.Ok(InhomogeneousThermalCalculator.Calculate(input)); }).WithTags("technical");
         api.MapPost("/technical/roof/rectangle", async (RectangularRoofInput input, CommandExecutor commands, CancellationToken ct) =>
         { await commands.Authorize("technical-results", true, ct); return Results.Ok(RoofGeometry.Rectangle(input)); }).WithTags("technical");
         api.MapPost("/technical/roof/tapered-board-layout", async (TaperedBoardLayoutInput input, CommandExecutor commands, CancellationToken ct) =>
