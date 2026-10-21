@@ -20,7 +20,7 @@ async function fixture(page: Page, role = 'ManagingDirector') {
       activeTenantId: 'tenant-a', tenants: [{ id: 'tenant-a', name: 'Synthetic warehouse', role,
         modules: ['core', 'purchasing'], capabilities: ['*'] }] } });
     if (path === 'auth/csrf') return route.fulfill({ json: {}, headers: { 'Set-Cookie': 'XSRF-TOKEN=synthetic; Path=/; SameSite=Strict' } });
-    if (path.startsWith('materials?')) return route.fulfill({ json: { items: [{ id: materialId, revision: 1, name: 'Synthetic tiles', unit: 'Stk' }], total: 1, page: 1, pageSize: 25 } });
+    if (path === 'materials') return route.fulfill({ json: { items: [{ id: materialId, revision: 1, name: 'Synthetic tiles', unit: 'Stk' }], total: 1, page: 1, pageSize: 25 } });
     if (path === `materials/${materialId}/stock`) return route.fulfill({ json: { onHand: String(onHand), reserved: String(reserved), available: String(onHand-reserved) } });
     if (path === `materials/${materialId}/movements`) return route.fulfill({ json: {
       items: movements.filter(m => m.location === (url.searchParams.get('location') || 'Hauptlager')),
