@@ -3,6 +3,7 @@ using FirstBlick.Core.Security;
 using FirstBlick.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace FirstBlick.Api;
 
@@ -10,6 +11,10 @@ public sealed record PurchaseReceiptRequest(Guid LineId, decimal Quantity, strin
 public sealed record MaterialReserveRequest(Guid ProjectId, decimal Quantity, string Location = "Hauptlager", DateOnly? RequiredOn = null);
 public sealed record MaterialConsumeRequest(decimal Quantity, decimal UnitCost);
 public sealed record MaterialReleaseRequest(decimal Quantity);
+public sealed record InventoryCountRequest(string Location, decimal ExpectedOnHand, decimal CountedOnHand, decimal UnitCost, string Reason, string EvidenceReference);
+public sealed record MaterialTransferRequest(string FromLocation, string ToLocation, decimal Quantity, decimal UnitCost, decimal ExpectedFromOnHand, string Reason);
+public sealed record MaterialReturnRequest(decimal Quantity, string Reason);
+public sealed record MaterialSupplierReturnRequest(decimal Quantity, string Reason, Guid? ReturnTransferId = null);
 public sealed record DefectResolutionRequest(string Resolution);
 public sealed record TrainingReviewRequest(string MentorFeedback);
 public sealed record FormSubmitRequest(Guid ProjectId, Dictionary<string, string> Values);
@@ -49,6 +54,84 @@ public static class FieldEndpoints
             Guard.Text(location, nameof(location), 120);
             return Results.Ok(InventoryRules.Balance(c.Scope.TenantId, id, location, await c.Store.All<StockMovement>(ct), await c.Store.All<MaterialReservation>(ct)));
         });
+        api.MapGet("/materials/{id:guid}/movements", async (Guid id, [AsParameters] BusinessCommandServices c,
+            CancellationToken ct, string location = "", int page = 1, string kind = "") =>
+        {
+            await c.Commands.Authorize("stock-movements", false, ct);
+            await c.Current<Material>(id, ct, false);
+            Guard.Text(location, nameof(location), 120, false);
+            Guard.Require(kind.Length == 0 || Enum.GetNames<StockMovementKind>().Contains(kind),
+                "invalid_kind", "The requested stock movement kind is not supported.");
+            Guard.Require(page is >= 1 and <= 100_000, "invalid_page", "Page must be between 1 and 100000.");
+            const int pageSize = 25;
+            NpgsqlParameter[] Parameters() => [
+                new("tenant", c.Scope.TenantId), new("material", id.ToString("D")),
+                new("location", location), new("movementKind", kind)
+            ];
+            const string predicate = "\"" + "TenantId\"=@tenant AND \"Kind\"='stock-movements' AND NOT \"Archived\" AND \"Data\"->>'materialId'=@material AND (@location='' OR \"Data\"->>'location'=@location) AND (@movementKind='' OR \"Data\"->>'kind'=@movementKind)";
+#pragma warning disable EF1002
+            var total = await c.Db.Database.SqlQueryRaw<long>(
+                $"SELECT count(*) AS \"Value\" FROM \"Entities\" WHERE {predicate}", Parameters()).SingleAsync(ct);
+            var paged = Parameters().Concat([new NpgsqlParameter("limit", pageSize),
+                new NpgsqlParameter("offset", checked((page - 1) * pageSize))]).ToArray();
+            var entries = await c.Db.Database.SqlQueryRaw<string>(
+                $"SELECT \"Data\"::text AS \"Value\" FROM \"Entities\" WHERE {predicate} ORDER BY \"CreatedAt\" DESC, \"Id\" DESC LIMIT @limit OFFSET @offset",
+                paged).ToListAsync(ct);
+#pragma warning restore EF1002
+            return Results.Ok(new { items = entries.Select(AppJson.Read<StockMovement>), total, page, pageSize });
+        }).WithTags("inventory");
+
+        api.MapPost("/materials/{id:guid}/inventory-count", (Guid id, InventoryCountRequest body, [AsParameters] BusinessCommandServices c) =>
+            ExecuteInventory(c, "stock.inventory_count", body, async ct =>
+            {
+                await c.Current<Material>(id, ct, false);
+                var movements = await c.Store.All<StockMovement>(ct);
+                var reservations = await c.Store.All<MaterialReservation>(ct);
+                var movement = InventoryRules.CountAdjustment(c.Scope.TenantId, id, body.Location,
+                    body.ExpectedOnHand, body.CountedOnHand, body.UnitCost, body.Reason, body.EvidenceReference,
+                    movements, reservations, DateTimeOffset.UtcNow);
+                var balance = InventoryRules.Balance(c.Scope.TenantId, id, body.Location,
+                    movements.Append(movement), reservations);
+                await c.SaveNew(movement, "stock.inventory_count", ct);
+                return new { movement, balance };
+            }));
+        api.MapPost("/materials/{id:guid}/transfer", (Guid id, MaterialTransferRequest body, [AsParameters] BusinessCommandServices c) =>
+            ExecuteInventory(c, "stock.transfer", body, async ct =>
+            {
+                await c.Current<Material>(id, ct, false);
+                var movements = await c.Store.All<StockMovement>(ct);
+                var reservations = await c.Store.All<MaterialReservation>(ct);
+                var (outgoing, incoming) = InventoryRules.Transfer(c.Scope.TenantId, id,
+                    body.FromLocation, body.ToLocation, body.Quantity, body.UnitCost, body.ExpectedFromOnHand, body.Reason,
+                    movements, reservations, DateTimeOffset.UtcNow);
+                await c.SaveNew(outgoing, "stock.transfer_out", ct);
+                await c.SaveNew(incoming, "stock.transfer_in", ct);
+                return new { outgoing, incoming };
+            }));
+        api.MapPost("/stock-movements/{id:guid}/supplier-return", (Guid id, MaterialSupplierReturnRequest body, [AsParameters] BusinessCommandServices c) =>
+            ExecuteInventory(c, "stock.supplier_return", body, async ct =>
+            {
+                var source = await c.Current<StockMovement>(id, ct);
+                Guard.Require(source.PurchaseOrderId.HasValue, "invalid_supplier_return", "The source is not a supplier receipt.");
+                var order = await c.Current<PurchaseOrder>(source.PurchaseOrderId.Value, ct, false);
+                var returned = InventoryRules.SupplierReturn(order, source, body.Quantity, body.Reason,
+                    await c.Store.All<StockMovement>(ct), await c.Store.All<MaterialReservation>(ct), DateTimeOffset.UtcNow, body.ReturnTransferId);
+                await c.SaveNew(returned, "stock.supplier_return", ct);
+                await c.Store.Save(order, "purchase.return", false, ct);
+                return new { order, movement = returned };
+            }, allowOffice: true));
+        api.MapPost("/stock-movements/{id:guid}/project-return", (Guid id, MaterialReturnRequest body, [AsParameters] BusinessCommandServices c) =>
+            ExecuteInventory(c, "stock.project_return", body, async ct =>
+            {
+                var source = await c.Current<StockMovement>(id, ct);
+                Guard.Require(source.ReservationId.HasValue, "invalid_project_return", "The source is not a reservation consumption.");
+                var reservation = await c.Current<MaterialReservation>(source.ReservationId.Value, ct, false);
+                var returned = InventoryRules.ProjectReturn(reservation, source, body.Quantity, body.Reason,
+                    await c.Store.All<StockMovement>(ct), DateTimeOffset.UtcNow);
+                await c.SaveNew(returned, "stock.project_return", ct);
+                await c.Store.Save(reservation, "material.return", false, ct);
+                return returned;
+            })).Produces<StockMovement>();
         api.MapPost("/materials/{id:guid}/reserve", (Guid id, MaterialReserveRequest body, [AsParameters] BusinessCommandServices c) =>
             c.Execute("material-reservations", "material.reserve", body, async ct =>
             {
@@ -74,6 +157,18 @@ public static class FieldEndpoints
                 await c.Store.Save(reservation, "material.release", false, ct); return reservation;
             })).Produces<MaterialReservation>();
     }
+
+    private static Task<IResult> ExecuteInventory(BusinessCommandServices c, string action, object input,
+        Func<CancellationToken, Task<object>> mutation, bool allowOffice = false) =>
+        c.Commands.Execute(c.Http, "stock-movements", action, input, mutation, _ =>
+        {
+            // Run after the tenant lock and current membership reload, including on
+            // idempotent replay: an old receipt does not preserve a revoked stock role.
+            Guard.Require(c.Scope.Role is BusinessRole.ManagingDirector or BusinessRole.SiteManager
+                || allowOffice && c.Scope.Role == BusinessRole.Office,
+                "forbidden", "Your current role does not allow this stock correction.");
+            return Task.CompletedTask;
+        });
 
     private static void MapPeople(RouteGroupBuilder api)
     {

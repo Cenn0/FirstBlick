@@ -2,6 +2,14 @@
 
 > Übernommen aus der Projektanalyse „DachPlaner Rework Roadmap“, 19.10.2026 (34 Seiten). Der Originalbericht umfasst 100 Aufgaben in 15 Epics. Diese Fassung erhält alle Aufgabenkennungen und ursprünglichen Abnahmekriterien. Ein implementierter Teilablauf bedeutet nicht automatisch, dass das gesamte Epic abgeschlossen ist.
 
+## Fortsetzung – Inventur/Rückgaben und Aufmaßbericht (21.10.2026)
+
+**DP-07-03 / DP-07-06:** Die [Lagerkorrekturen](warehouse-adjustments.md) erweitern Wareneingänge und Verbrauch um vorzeichenrichtige, gebuchte Inventurdifferenzen, atomare Transfers und originalgebundene Lieferanten-/Baustellenrückgaben. Die Bestell-Erfüllungsmenge berücksichtigt explizite Lieferantenrückgaben und erlaubt Ersatzlieferungen. Eine begrenzte Journal-API und die Angular-Maske „Lagerprüfung“ stellen die Funktionen Rollen und Mandanten entsprechend bereit; Core-/HTTP-/Browserregressionen prüfen die Daten- und Bediengrenzen. Reale Bestandszählungen, Lieferantengutschriften und umfassende Bewertungsvorschriften bleiben offen.
+
+**DP-10-03:** Ein festgehaltenes Aufmaß kann aus der Aufmaßakte als PDF erzeugt und heruntergeladen werden. Vor der Ausgabe werden Projekt, Ursprungsobjekt, eingefrorener Digest, MIME-Typ, Dateigröße, PDF-Kennung und SHA-256 der tatsächlichen Bytes verglichen; beschädigte Dateien werden nicht angeboten. Ein echter Geländeaufmaß- und Vertragsabzug-Nachweis bleibt fachlich abzunehmen.
+
+Die ältere **49 K / 41 T / 10 O**-Inventur bezeichnet belegte technische Kerne, nicht fertig abgenommene Anforderungen. Diese Teilumsetzung ist keine Neubewertung sämtlicher 100 ursprünglicher Roadmap-Aufgaben.
+
 ## Fortsetzung – inhomogene Wärmedämmaufbauten (21.10.2026)
 
 **DP-11-03 / M5, technischer Teilumfang:** Die [Widerstandsgrenzen für Sparrendächer](inhomogeneous-thermal.md)
