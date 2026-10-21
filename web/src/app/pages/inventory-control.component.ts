@@ -192,7 +192,7 @@ export class InventoryControlComponent {
   private amount(value: string, allowZero: boolean): string | null {
     try {
       const amount = decimalInput(value);
-      if (!/^\\d+(?:\\.\\d{1,6})?$/.test(amount)) return null;
+      if (!/^\d+(?:\.\d{1,6})?$/.test(amount)) return null;
       const range = Number(amount);
       return range <= 1_000_000 && (range > 0 || allowZero) ? amount : null;
     } catch { return null; }
@@ -238,7 +238,7 @@ export class InventoryControlComponent {
         this.api.get<Page<Movement>>(`materials/${materialId}/movements?location=${encodeURIComponent(location)}&page=${this.page}`)
       ]);
       if (!this.current(gen, access)) return;
-      if (![balance.onHand, balance.reserved, balance.available].every(x => typeof x === 'string' && /^-?\\d+(?:\\.\\d+)?$/.test(x))
+      if (![balance.onHand, balance.reserved, balance.available].every(x => typeof x === 'string' && /^-?\d+(?:\.\d+)?$/.test(x))
         || !Array.isArray(history.items) || !Number.isInteger(history.total)) throw new Error('Unvollständiger Lagerstand vom Server.');
       this.balance.set(balance); this.movements.set(history.items); this.total.set(history.total);
     } catch (error) { if (this.current(gen, access)) this.error.set(errorMessage(error)); }
