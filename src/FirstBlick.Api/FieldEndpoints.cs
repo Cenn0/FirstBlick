@@ -84,12 +84,15 @@ public static class FieldEndpoints
                 Guard.Require(c.Scope.Role is BusinessRole.ManagingDirector or BusinessRole.SiteManager,
                     "forbidden", "A physical count correction requires a managing director or site manager.");
                 await c.Current<Material>(id, ct, false);
+                var movements = await c.Store.All<StockMovement>(ct);
+                var reservations = await c.Store.All<MaterialReservation>(ct);
                 var movement = InventoryRules.CountAdjustment(c.Scope.TenantId, id, body.Location,
                     body.ExpectedOnHand, body.CountedOnHand, body.UnitCost, body.Reason,
-                    await c.Store.All<StockMovement>(ct), await c.Store.All<MaterialReservation>(ct), DateTimeOffset.UtcNow);
+                    movements, reservations, DateTimeOffset.UtcNow);
+                var balance = InventoryRules.Balance(c.Scope.TenantId, id, body.Location,
+                    movements.Append(movement), reservations);
                 await c.SaveNew(movement, "stock.inventory_count", ct);
-                return new { movement, balance = InventoryRules.Balance(c.Scope.TenantId, id, body.Location,
-                    await c.Store.All<StockMovement>(ct), await c.Store.All<MaterialReservation>(ct)) };
+                return new { movement, balance };
             }));
         api.MapPost("/materials/{id:guid}/transfer", (Guid id, MaterialTransferRequest body, [AsParameters] BusinessCommandServices c) =>
             c.Execute("stock-movements", "stock.transfer", body, async ct =>
