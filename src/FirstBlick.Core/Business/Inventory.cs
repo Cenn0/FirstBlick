@@ -86,7 +86,7 @@ public sealed class PurchaseOrder : TenantEntity
     }
 }
 
-public enum StockMovementKind { Receipt, Consumption, Return, Adjustment, TransferIn, TransferOut }
+public enum StockMovementKind { Receipt, Consumption, Return, Adjustment, TransferIn, TransferOut, SupplierReturn }
 public sealed class StockMovement : TenantEntity
 {
     public Guid MaterialId { get; set; }
@@ -115,9 +115,17 @@ public sealed class StockMovement : TenantEntity
         Guard.Require(Kind switch
         {
             StockMovementKind.Receipt or StockMovementKind.Return or StockMovementKind.TransferIn => Quantity > 0,
-            StockMovementKind.Consumption or StockMovementKind.TransferOut => Quantity < 0,
+            StockMovementKind.Consumption or StockMovementKind.TransferOut or StockMovementKind.SupplierReturn => Quantity < 0,
             StockMovementKind.Adjustment => true, _ => false
         }, "invalid_quantity_direction", "The quantity sign does not match the movement kind.");
+        if (Kind == StockMovementKind.SupplierReturn)
+        {
+            Guard.Require(PurchaseOrderId.HasValue && PurchaseLineId.HasValue && ReservationId is null,
+                "invalid_supplier_return", "A supplier return must identify its original purchase order and line.");
+            Guard.Require(Guid.TryParse(Reference, out var receiptId) && receiptId != Guid.Empty,
+                "invalid_supplier_return", "A supplier return must identify the original receipt.");
+            Guard.Text(Reason, nameof(Reason), 2000);
+        }
         if (!string.IsNullOrEmpty(PostedDigest)) Guard.Require(PostedDigest == InventoryRules.MovementDigest(this), "movement_immutable", "Posted stock movements are immutable; post a compensating movement.");
     }
     public override IEnumerable<EntityReference> References()
@@ -188,7 +196,7 @@ public static class InventoryRules
         Guard.Require(order.Status is PurchaseOrderStatus.Ordered or PurchaseOrderStatus.PartiallyReceived, "invalid_transition", "Only outstanding purchase orders can receive goods.");
         var line = order.Lines.SingleOrDefault(x => x.Id == lineId);
         Guard.Require(line is not null, "missing_line", "The purchase line does not exist.");
-        var already = movements.Where(x => x.TenantId == order.TenantId && x.PurchaseOrderId == order.Id && x.PurchaseLineId == lineId).Sum(x => x.Quantity);
+        var already = ReceivedQuantity(order, lineId, movements);
         Guard.Require(already + quantity <= line!.Quantity, "over_receipt", "The receipt exceeds the ordered quantity. Resolve the purchasing discrepancy first.");
         var receipt = new StockMovement
         {
@@ -197,9 +205,22 @@ public static class InventoryRules
             OccurredAt = now, Reference = order.Number
         };
         receipt.Validate(); receipt.PostedDigest = MovementDigest(receipt);
-        order.Status = order.Lines.All(x => movements.Where(m => m.TenantId == order.TenantId && m.PurchaseOrderId == order.Id && m.PurchaseLineId == x.Id).Sum(m => m.Quantity)
-            + (x.Id == lineId ? quantity : 0) >= x.Quantity) ? PurchaseOrderStatus.Received : PurchaseOrderStatus.PartiallyReceived;
+        order.Status = ReceiptStatus(order, movements.Append(receipt));
         return receipt;
+    }
+
+    /// <summary>Only posted purchase receipts and their explicit supplier returns count against order fulfillment.</summary>
+    public static decimal ReceivedQuantity(PurchaseOrder order, Guid lineId, IEnumerable<StockMovement> movements) =>
+        movements.Where(x => x.TenantId == order.TenantId && x.PurchaseOrderId == order.Id
+            && x.PurchaseLineId == lineId && x.Kind is StockMovementKind.Receipt or StockMovementKind.SupplierReturn).Sum(x => x.Quantity);
+
+    public static PurchaseOrderStatus ReceiptStatus(PurchaseOrder order, IReadOnlyCollection<StockMovement> movements)
+    {
+        order.Validate();
+        var net = order.Lines.Select(line => ReceivedQuantity(order, line.Id, movements)).ToArray();
+        Guard.Require(net.All(x => x >= 0), "invalid_purchase_balance", "A supplier return cannot exceed its purchase receipts.");
+        return net.Zip(order.Lines, (received, line) => received >= line.Quantity).All(done => done)
+            ? PurchaseOrderStatus.Received : net.Any(x => x > 0) ? PurchaseOrderStatus.PartiallyReceived : PurchaseOrderStatus.Ordered;
     }
 
     public static StockBalance Balance(Guid tenantId, Guid materialId, string location, IEnumerable<StockMovement> movements, IEnumerable<MaterialReservation> reservations)
@@ -236,5 +257,115 @@ public static class InventoryRules
         reservation.Validate(); Guard.Range(quantity, 0.000001m, 1_000_000m, nameof(quantity));
         Guard.Require(quantity <= reservation.Quantity - reservation.ConsumedQuantity - reservation.ReleasedQuantity, "reservation_exceeded", "Release exceeds the remaining reservation.");
         reservation.ReleasedQuantity += quantity;
+    }
+    /// <summary>
+    /// Correct a physical count without changing earlier posted movements. A caller must
+    /// supply the on-hand quantity they inspected, preventing a stale count from silently
+    /// replacing newer receipts or consumption.
+    /// </summary>
+    public static StockMovement CountAdjustment(Guid tenantId, Guid materialId, string location,
+        decimal expectedOnHand, decimal countedOnHand, decimal unitCost, string reason,
+        IReadOnlyCollection<StockMovement> movements, IReadOnlyCollection<MaterialReservation> reservations, DateTimeOffset now)
+    {
+        Guard.Text(location, nameof(location), 120);
+        Guard.Text(reason, nameof(reason), 2000);
+        Guard.Range(expectedOnHand, 0, 1_000_000m, nameof(expectedOnHand));
+        Guard.Range(countedOnHand, 0, 1_000_000m, nameof(countedOnHand));
+        Guard.Range(unitCost, 0, 1_000_000m, nameof(unitCost));
+        var balance = Balance(tenantId, materialId, location, movements, reservations);
+        Guard.Require(balance.OnHand == expectedOnHand, "stale_stock_count", "The stock changed since the physical count was inspected.");
+        Guard.Require(countedOnHand >= balance.Reserved, "stock_reserved", "The counted quantity cannot fall below existing reservations.");
+        var difference = countedOnHand - balance.OnHand;
+        Guard.Require(difference != 0, "unchanged_stock_count", "The physical count agrees with the ledger; no adjustment is necessary.");
+        var movement = new StockMovement
+        {
+            TenantId = tenantId, MaterialId = materialId, Location = location,
+            Kind = StockMovementKind.Adjustment, Quantity = difference, UnitCost = unitCost,
+            OccurredAt = now, Reason = reason, Reference = "Physical inventory count"
+        };
+        movement.Validate();
+        movement.PostedDigest = MovementDigest(movement);
+        return movement;
+    }
+
+    /// <summary>Return existing, unreserved stock to the supplier against one auditable receipt.</summary>
+    public static StockMovement SupplierReturn(PurchaseOrder order, StockMovement originalReceipt,
+        decimal quantity, string reason, IReadOnlyCollection<StockMovement> movements,
+        IReadOnlyCollection<MaterialReservation> reservations, DateTimeOffset now)
+    {
+        order.Validate(); originalReceipt.Validate();
+        Guard.Range(quantity, .000001m, 1_000_000m, nameof(quantity));
+        Guard.Text(reason, nameof(reason), 2000);
+        Guard.Require(originalReceipt.Kind == StockMovementKind.Receipt
+            && originalReceipt.TenantId == order.TenantId && originalReceipt.PurchaseOrderId == order.Id
+            && originalReceipt.PurchaseLineId is { } lineId
+            && order.Lines.Any(x => x.Id == lineId && x.MaterialId == originalReceipt.MaterialId),
+            "invalid_supplier_return", "The return must refer to a posted receipt of this purchase.");
+        var previous = movements.Where(m => m.Kind == StockMovementKind.SupplierReturn
+            && m.TenantId == order.TenantId && m.Reference == originalReceipt.Id.ToString("D")).Sum(x => -x.Quantity);
+        Guard.Require(previous + quantity <= originalReceipt.Quantity, "supplier_return_exceeded", "The supplier return exceeds the unreturned quantity of this receipt.");
+        var balance = Balance(order.TenantId, originalReceipt.MaterialId, originalReceipt.Location, movements, reservations);
+        Guard.Require(quantity <= balance.Available, "stock_reserved", "Only physically available, unreserved stock can be returned to the supplier.");
+        var movement = new StockMovement
+        {
+            TenantId = order.TenantId, MaterialId = originalReceipt.MaterialId,
+            ProjectId = originalReceipt.ProjectId, PurchaseOrderId = order.Id, PurchaseLineId = originalReceipt.PurchaseLineId,
+            Kind = StockMovementKind.SupplierReturn, Quantity = -quantity, Location = originalReceipt.Location,
+            UnitCost = originalReceipt.UnitCost, OccurredAt = now, Reference = originalReceipt.Id.ToString("D"), Reason = reason
+        };
+        movement.Validate(); movement.PostedDigest = MovementDigest(movement);
+        order.Status = ReceiptStatus(order, movements.Append(movement).ToArray());
+        return movement;
+    }
+
+    /// <summary>Reverse actual project consumption, never an unposted reservation or a different project's usage.</summary>
+    public static StockMovement ProjectReturn(StockMovement consumption, decimal quantity, string reason,
+        IReadOnlyCollection<StockMovement> movements, DateTimeOffset now)
+    {
+        consumption.Validate();
+        Guard.Range(quantity, .000001m, 1_000_000m, nameof(quantity));
+        Guard.Text(reason, nameof(reason), 2000);
+        Guard.Require(consumption.Kind == StockMovementKind.Consumption
+            && consumption.ProjectId.HasValue && consumption.ReservationId.HasValue && consumption.PostedDigest != "",
+            "invalid_project_return", "The project return must refer to a posted reservation consumption.");
+        var previous = movements.Where(m => m.TenantId == consumption.TenantId
+            && m.Kind == StockMovementKind.Return && m.Reference == consumption.Id.ToString("D")).Sum(m => m.Quantity);
+        Guard.Require(previous + quantity <= -consumption.Quantity, "project_return_exceeded", "The project return exceeds the original consumption.");
+        var movement = new StockMovement
+        {
+            TenantId = consumption.TenantId, MaterialId = consumption.MaterialId,
+            ProjectId = consumption.ProjectId, ReservationId = consumption.ReservationId,
+            Kind = StockMovementKind.Return, Quantity = quantity, Location = consumption.Location,
+            UnitCost = consumption.UnitCost, OccurredAt = now, Reference = consumption.Id.ToString("D"), Reason = reason
+        };
+        movement.Validate(); movement.PostedDigest = MovementDigest(movement);
+        return movement;
+    }
+
+    /// <summary>One atomic command creates two signed postings bound by a shared reference.</summary>
+    public static (StockMovement Out, StockMovement In) Transfer(Guid tenantId, Guid materialId,
+        string fromLocation, string toLocation, decimal quantity, decimal unitCost, string reason,
+        IReadOnlyCollection<StockMovement> movements, IReadOnlyCollection<MaterialReservation> reservations, DateTimeOffset now)
+    {
+        Guard.Text(fromLocation, nameof(fromLocation), 120);
+        Guard.Text(toLocation, nameof(toLocation), 120);
+        Guard.Text(reason, nameof(reason), 2000);
+        Guard.Require(!string.Equals(fromLocation.Trim(), toLocation.Trim(), StringComparison.OrdinalIgnoreCase),
+            "same_stock_location", "The destination must be a different warehouse location.");
+        Guard.Range(quantity, .000001m, 1_000_000m, nameof(quantity));
+        Guard.Range(unitCost, 0, 1_000_000m, nameof(unitCost));
+        var balance = Balance(tenantId, materialId, fromLocation, movements, reservations);
+        Guard.Require(quantity <= balance.Available, "stock_reserved", "A transfer cannot take stock reserved for projects.");
+        var reference = Guid.NewGuid().ToString("D");
+        StockMovement Create(StockMovementKind kind, string location, decimal signed) => new()
+        {
+            TenantId = tenantId, MaterialId = materialId, Kind = kind, Location = location,
+            Quantity = signed, UnitCost = unitCost, Reference = reference, Reason = reason, OccurredAt = now
+        };
+        var outgoing = Create(StockMovementKind.TransferOut, fromLocation, -quantity);
+        var incoming = Create(StockMovementKind.TransferIn, toLocation, quantity);
+        outgoing.Validate(); incoming.Validate();
+        outgoing.PostedDigest = MovementDigest(outgoing); incoming.PostedDigest = MovementDigest(incoming);
+        return (outgoing, incoming);
     }
 }
