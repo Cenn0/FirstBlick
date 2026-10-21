@@ -15,6 +15,7 @@ FirstBlick connects customers, buildings, projects and field work with quotation
 * [Source baseline and reference workflows](docs/BASELINE.md) — evidence and limits of the starting point.
 * [Background processing](docs/jobs.md) — leases, crash recovery, delivery uncertainty and provider configuration.
 * [Technical methods](docs/technical-methods.md) — independent arithmetic, reference cases and applicability limits.
+* [Inhomogeneous roof thermal estimate](docs/inhomogeneous-thermal.md) — separated resistance bounds, independent synthetic reference and explicit exclusion of metal bridges or normative approval.
 * [Measurement quantity transfer](docs/quantity-links.md) — reviewed quote quantities, retained partial-invoice evidence, material demands and purchase drafts.
 * [Source-based cost analysis](docs/cost-analysis.md) — contract/change sources, labor, stock and supplier valuations, plus immutable, manually reviewed forecast versions; missing costs remain unknown.
 * [Supplier project-cost allocations](docs/supplier-cost-allocations.md) — auditable invoice-linked project allocation and reversal journal, separate from accounting and payment.
