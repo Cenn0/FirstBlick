@@ -20,7 +20,7 @@ public static class FieldEndpoints
 {
     public static void Map(RouteGroupBuilder api)
     {
-        MapInventory(api); MapPeople(api); MapForms(api); MapMaintenance(api);
+        MapInventory(api); InventoryCorrectionEndpoints.Map(api); MapPeople(api); MapForms(api); MapMaintenance(api);
     }
 
     private static void MapInventory(RouteGroupBuilder api)
