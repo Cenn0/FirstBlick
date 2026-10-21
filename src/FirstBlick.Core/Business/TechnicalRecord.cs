@@ -56,6 +56,7 @@ public static class TechnicalRecords
             "roof.rectangle" => RoofGeometry.Rectangle(input.Deserialize<RectangularRoofInput>(Options)!),
             "roof.tapered-insulation" => TaperedInsulationCalculator.Calculate(input.Deserialize<TaperedInsulationInput>(Options)!),
             "roof.tapered-board-layout" => TaperedBoardLayout.Calculate(input.Deserialize<TaperedBoardLayoutInput>(Options)!),
+            "roof.tapered-assembly" => TaperedRoofAssembly.Calculate(input.Deserialize<TaperedRoofAssemblyInput>(Options)!),
             "moisture.iso13788.balance" => Iso13788Balance.Calculate(input.Deserialize<Iso13788BalanceInput>(Options)!),
             "moisture.iso13788.drying" => Iso13788Balance.Dry(input.Deserialize<Iso13788DryingInput>(Options)!),
             "roof.polygon" => RoofGeometry.Calculate(input.Deserialize<PolygonRoofInput>(Options)!),
