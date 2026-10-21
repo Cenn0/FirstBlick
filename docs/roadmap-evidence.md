@@ -1,5 +1,8 @@
 # Nachweismatrix für alle 100 Roadmap-Aufgaben
 
+> **Fortsetzung 21.10.2026:** Diese Nachweismatrix hat ihren Prüfstand am 20.10.2026 und darf nicht als heutige Abnahmequote ausgegeben werden. Die [Einzelprüfliste der 49 K-Aufgaben](roadmap-k-closure-2026-10-21.md) erhält die offenen Kriterien. Die [Lagerkorrekturen](inventory-corrections.md) adressieren neue Teilumfänge für DP-07-03 und DP-07-04; ihre CI-Evidenz gehört an den jeweils geprüften Commit.
+
+
 Prüfstand: 20.10.2026. Diese unabhängige Quell-/Nachweissichtung übernimmt alle 100 Kennungen und Titel aus [ROADMAP.md](ROADMAP.md). Sie bewertet den tatsächlich vorgefundenen Implementierungsumfang und die benannten Tests. Sie verändert keine Roadmap-Checkbox und ersetzt weder die individuellen Abnahmekriterien des Originalberichts noch eine Entscheidung des Betriebs.
 
 ## Bedeutung der Statusangaben
