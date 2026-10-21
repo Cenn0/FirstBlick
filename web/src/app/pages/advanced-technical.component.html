@@ -20,8 +20,8 @@
     @if (notice()) {<div class="alert information" role="status">{{notice()}}</div>}
     <div [id]="'advanced-panel-'+mode()" role="tabpanel" [attr.aria-labelledby]="'advanced-tab-'+mode()">
       <div class="alert warning">
-        @if (mode()==='boards') {
-          Ein beschränkter Verlege- und Bestellvorschlag für ein rechteckiges Dach mit <strong>einer durchgehenden Tiefkante</strong>.
+        @if (mode()==='boards' || mode()==='assembly') {
+          Ein beschränkter Verlege- und Bestellvorschlag für ein rechteckiges Dach mit <strong>einachsigen Gefällefeldern und durchgehenden Tiefkanten</strong>.
           Die Herstellereigenschaften sind ungeprüfte, vom Benutzer eingetragene Werte. Keine Entwässerungs-, Brandschutz-, Windsog- oder Ausführungsfreigabe.
         } @else {
           Die Berechnung führt das <strong>stationäre Monats-Diffusionsverfahren nach ISO 13788:2012</strong> aus.
@@ -31,18 +31,43 @@
       </div>
       <form #advancedForm="ngForm" (ngSubmit)="calculate()">
         <fieldset [disabled]="busy()">
-          @if (mode()==='boards') {
-            <h3>Dachfeld und Entwässerungsrichtung</h3>
+          @if (mode()==='boards' || mode()==='assembly') {
+            <h3>{{mode()==='assembly' ? 'Gesamtdach und Teilfelder' : 'Dachfeld und Entwässerungsrichtung'}}</h3>
             <div class="form-grid">
               <div class="form-field"><label for="ab-length">Rechteckige Dachlänge (m)</label><input id="ab-length" name="ab-length" type="number" step="any" min=".01" max="1000" required [(ngModel)]="roofLengthM" (ngModelChange)="edited()"></div>
               <div class="form-field"><label for="ab-width">Dachbreite (m)</label><input id="ab-width" name="ab-width" type="number" step="any" min=".01" max="1000" required [(ngModel)]="roofWidthM" (ngModelChange)="edited()"></div>
-              <div class="form-field"><label for="ab-thin">Dicke an der Tiefkante (m)</label><input id="ab-thin" name="ab-thin" type="number" min=".01" max="2" step="any" required [(ngModel)]="lowEdgeThicknessM" (ngModelChange)="edited()"></div>
-              <div class="form-field"><label for="ab-slope">Konstantes Gefälle (%)</label><input id="ab-slope" name="ab-slope" type="number" min=".01" max="10" step="any" required [(ngModel)]="slopePercent" (ngModelChange)="edited()"></div>
-              <div class="form-field"><label for="ab-axis">Steigende Achse ab Tiefkante</label><select id="ab-axis" name="ab-axis" [(ngModel)]="flowAxis" (ngModelChange)="edited()"><option value="AlongLength">Entlang der Dachlänge (x)</option><option value="AlongWidth">Entlang der Dachbreite (y)</option></select></div>
-              <div class="form-field"><label for="ab-low">Position der Tiefkante</label><select id="ab-low" name="ab-low" [(ngModel)]="lowEdgeAtCoordinateZero" (ngModelChange)="edited()"><option [ngValue]="true">Bei x/y = 0</option><option [ngValue]="false">Am entgegengesetzten Feldrand</option></select></div>
+              @if (mode()==='boards') {
+                <div class="form-field"><label for="ab-thin">Dicke an der Tiefkante (m)</label><input id="ab-thin" name="ab-thin" type="number" min=".01" max="2" step="any" required [(ngModel)]="lowEdgeThicknessM" (ngModelChange)="edited()"></div>
+                <div class="form-field"><label for="ab-slope">Konstantes Gefälle (%)</label><input id="ab-slope" name="ab-slope" type="number" min=".01" max="10" step="any" required [(ngModel)]="slopePercent" (ngModelChange)="edited()"></div>
+                <div class="form-field"><label for="ab-axis">Steigende Achse ab Tiefkante</label><select id="ab-axis" name="ab-axis" [(ngModel)]="flowAxis" (ngModelChange)="edited()"><option value="AlongLength">Entlang der Dachlänge (x)</option><option value="AlongWidth">Entlang der Dachbreite (y)</option></select></div>
+                <div class="form-field"><label for="ab-low">Position der Tiefkante</label><select id="ab-low" name="ab-low" [(ngModel)]="lowEdgeAtCoordinateZero" (ngModelChange)="edited()"><option [ngValue]="true">Bei x/y = 0</option><option [ngValue]="false">Am entgegengesetzten Feldrand</option></select></div>
+              } @else {
+                <div class="form-field full-width"><label for="ab-plan">Planrevision und Prüfstand</label><input id="ab-plan" name="ab-plan" required maxlength="200" [(ngModel)]="planRevision" (ngModelChange)="edited()" placeholder="Datum, Plan- und Versionsnummer"></div>
+              }
               <div class="form-field full-width"><label for="ab-source">Quelle der Abmessungen</label><input id="ab-source" name="ab-source" required maxlength="500" [(ngModel)]="measuredRoofSource" (ngModelChange)="edited()" placeholder="Aufmaß, Planstand, Maßkette, Datum"></div>
-              <div class="form-field full-width"><label for="ab-drain">Fachlich geprüfte Entwässerungsvorgabe</label><textarea id="ab-drain" name="ab-drain" rows="2" required maxlength="1000" [(ngModel)]="drainageDesignReview" (ngModelChange)="edited()" placeholder="Anordnung der Tiefkante, zugehöriger externer Plan und Prüfer"></textarea></div>
+              <div class="form-field full-width"><label for="ab-drain">Fachlich geprüfte Entwässerungsvorgabe</label><textarea id="ab-drain" name="ab-drain" rows="2" required maxlength="1000" [(ngModel)]="drainageDesignReview" (ngModelChange)="edited()" placeholder="Außen liegende Tiefkanten, Dachplan und Fachprüfer"></textarea></div>
             </div>
+            @if (mode()==='assembly') {
+              <h3>Teilfelder im gemeinsamen Dachkoordinatensystem</h3>
+              <p>Die Felder müssen das gesamte Rechteck lückenfrei und überlappungsfrei abdecken. An gemeinsamen Kanten darf kein Dickensprung entstehen. Innenabläufe und Kehlen werden nicht berechnet.</p>
+              @for (field of roofFields; track $index; let i=$index) {
+                <section class="line-row">
+                  <div class="line-heading"><h4>Dachfeld {{i+1}}</h4><button type="button" class="text-button danger-text" [disabled]="roofFields.length<=1" (click)="removeRoofField(i)">Entfernen</button></div>
+                  <div class="form-grid">
+                    <div class="form-field"><label [for]="'af-id-'+i">Feldkennung</label><input [id]="'af-id-'+i" [name]="'af-id-'+i" required maxlength="100" [(ngModel)]="field.fieldId" (ngModelChange)="edited()"></div>
+                    <div class="form-field"><label [for]="'af-x-'+i">Feldursprung x (m)</label><input [id]="'af-x-'+i" [name]="'af-x-'+i" type="number" step="any" min="0" required [(ngModel)]="field.originX" (ngModelChange)="edited()"></div>
+                    <div class="form-field"><label [for]="'af-y-'+i">Feldursprung y (m)</label><input [id]="'af-y-'+i" [name]="'af-y-'+i" type="number" step="any" min="0" required [(ngModel)]="field.originY" (ngModelChange)="edited()"></div>
+                    <div class="form-field"><label [for]="'af-length-'+i">Feldlänge (m)</label><input [id]="'af-length-'+i" [name]="'af-length-'+i" type="number" step="any" min=".01" required [(ngModel)]="field.roofLengthM" (ngModelChange)="edited()"></div>
+                    <div class="form-field"><label [for]="'af-width-'+i">Feldbreite (m)</label><input [id]="'af-width-'+i" [name]="'af-width-'+i" type="number" step="any" min=".01" required [(ngModel)]="field.roofWidthM" (ngModelChange)="edited()"></div>
+                    <div class="form-field"><label [for]="'af-thin-'+i">Dicke an Feld-Tiefkante (m)</label><input [id]="'af-thin-'+i" [name]="'af-thin-'+i" type="number" step="any" min=".01" max="2" required [(ngModel)]="field.lowEdgeThicknessM" (ngModelChange)="edited()"></div>
+                    <div class="form-field"><label [for]="'af-slope-'+i">Gefälle (%)</label><input [id]="'af-slope-'+i" [name]="'af-slope-'+i" type="number" step="any" min=".01" max="10" required [(ngModel)]="field.slopePercent" (ngModelChange)="edited()"></div>
+                    <div class="form-field"><label [for]="'af-axis-'+i">Feldgefälleachse</label><select [id]="'af-axis-'+i" [name]="'af-axis-'+i" [(ngModel)]="field.flowAxis" (ngModelChange)="edited()"><option value="AlongLength">x</option><option value="AlongWidth">y</option></select></div>
+                    <div class="form-field"><label [for]="'af-low-'+i">Tiefkante</label><select [id]="'af-low-'+i" [name]="'af-low-'+i" [(ngModel)]="field.lowEdgeAtCoordinateZero" (ngModelChange)="edited()"><option [ngValue]="true">Bei Feldkoordinate 0</option><option [ngValue]="false">Gegenüberliegender Feldrand</option></select></div>
+                  </div>
+                </section>
+              }
+              <button type="button" class="button secondary" [disabled]="roofFields.length>=32" (click)="addRoofField()">+ Dachfeld hinzufügen</button>
+            }
             <h3>Herstellerkatalog und Produktreihe</h3>
             <div class="form-grid">
               <div class="form-field"><label for="ab-manufacturer">Hersteller</label><input id="ab-manufacturer" name="ab-manufacturer" required maxlength="200" [(ngModel)]="manufacturer" (ngModelChange)="edited()"></div>
@@ -131,7 +156,7 @@
           <h3>Rechenlauf und Herkunft</h3>
           <p>Verfahren: <code>{{value.provenance.methodId}}</code>; Revision {{value.provenance.methodVersion}}</p>
           <p>SHA-256 der normalisierten Eingaben: <code class="digest">{{value.provenance.inputSha256}}</code></p>
-          @if (mode()==='boards') {
+          @if (mode()==='boards' || mode()==='assembly') {
             <dl class="result-list">
               <div><dt>Belegte Fläche</dt><dd>{{number(value['roofAreaM2'])}} m²</dd></div>
               <div><dt>Platten im Feld</dt><dd>{{value['installedBoards']}}</dd></div>
