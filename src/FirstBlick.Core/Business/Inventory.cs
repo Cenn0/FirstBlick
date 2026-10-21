@@ -296,7 +296,7 @@ public static class InventoryRules
         order.Validate(); originalReceipt.Validate();
         Guard.Range(quantity, .000001m, 1_000_000m, nameof(quantity));
         Guard.Text(reason, nameof(reason), 2000);
-        Guard.Require(originalReceipt.Kind == StockMovementKind.Receipt
+        Guard.Require(originalReceipt.Kind == StockMovementKind.Receipt && originalReceipt.PostedDigest != ""
             && originalReceipt.TenantId == order.TenantId && originalReceipt.PurchaseOrderId == order.Id
             && originalReceipt.PurchaseLineId is { } lineId
             && order.Lines.Any(x => x.Id == lineId && x.MaterialId == originalReceipt.MaterialId),
