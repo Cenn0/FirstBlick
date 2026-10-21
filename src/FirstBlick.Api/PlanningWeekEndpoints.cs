@@ -15,12 +15,14 @@ public static class PlanningWeekEndpoints
 {
     public sealed record AssignmentItem(Guid Id, long Revision, Guid EmployeeId, string EmployeeName,
         Guid ProjectId, string ProjectName, string Title, DateTimeOffset Start, DateTimeOffset End,
-        IReadOnlyList<Guid> EquipmentIds, IReadOnlyList<DateOnly> Days);
+        IReadOnlyList<Guid> EquipmentIds, IReadOnlyList<ResourceItem> Equipment, IReadOnlyList<DateOnly> Days);
+    public sealed record ResourceItem(Guid Id, string Name);
 
     public static void Map(RouteGroupBuilder api)
     {
         api.MapGet("/planning/week", async (string weekStart, CommandExecutor commands,
-            TenantScope scope, FirstBlickDbContext db, EntityStore store, CancellationToken ct) =>
+            TenantScope scope, FirstBlickDbContext db, CancellationToken ct,
+            Guid? employeeId = null, Guid? projectId = null, Guid? equipmentId = null) =>
         {
             await commands.Authorize("schedule-assignments", false, ct);
             Guard.Require(DateOnly.TryParseExact(weekStart, "yyyy-MM-dd",
@@ -30,12 +32,24 @@ public static class PlanningWeekEndpoints
                 .Select(x => x.TimeZone).SingleAsync(ct);
             var zone = TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
             var days = PlanningWeek.Boundaries(monday, zone);
-            var visible = await RecordPolicy.VisibleIds("schedule-assignments", scope, store, ct);
+            Guard.OptionalId(employeeId, nameof(employeeId));
+            Guard.OptionalId(projectId, nameof(projectId));
+            Guard.OptionalId(equipmentId, nameof(equipmentId));
+            // Match RecordPolicy's own-assignment scope without loading the assignment history.
+            var restricted = scope.Role is BusinessRole.Worker or BusinessRole.Trainer;
+            var ownEmployees = restricted ? await db.Database.SqlQueryRaw<string>("""
+                SELECT "Id"::text AS "Value" FROM "Entities"
+                WHERE "TenantId"=@tenant AND "Kind"='employees' AND NOT "Archived"
+                  AND "Data"->>'userId'=@user AND COALESCE("Data"->>'active','false')='true'
+                """, new NpgsqlParameter("tenant", scope.TenantId),
+                new NpgsqlParameter("user", scope.UserId.ToString("D"))).ToArrayAsync(ct) : [];
             NpgsqlParameter[] Params() =>
             [
                 new("tenant", scope.TenantId), new("start", days[0].StartUtc),
-                new("end", days[^1].EndUtc), new("all", visible is null),
-                new("visible", visible ?? Array.Empty<Guid>())
+                new("end", days[^1].EndUtc), new("all", !restricted), new("own", ownEmployees),
+                new("employee", employeeId?.ToString("D") ?? ""),
+                new("project", projectId?.ToString("D") ?? ""),
+                new("equipment", equipmentId?.ToString("D") ?? "")
             ];
             const string sql = """
                 SELECT "Data"::text AS "Value" FROM "Entities"
@@ -43,7 +57,10 @@ public static class PlanningWeekEndpoints
                   AND COALESCE("Data"->>'cancelled','false')='false'
                   AND ("Data"->>'start')::timestamptz < @end
                   AND ("Data"->>'end')::timestamptz > @start
-                  AND (@all OR "Id" = ANY(@visible))
+                  AND (@all OR "Data"->>'employeeId' = ANY(@own))
+                  AND (@employee='' OR "Data"->>'employeeId'=@employee)
+                  AND (@project='' OR "Data"->>'projectId'=@project)
+                  AND (@equipment='' OR ("Data"->'equipmentIds') ? @equipment)
                 ORDER BY ("Data"->>'start')::timestamptz, "Id"
                 LIMIT 1001
                 """;
@@ -64,6 +81,7 @@ public static class PlanningWeekEndpoints
             // Only the already-authorized assignment rows define which project and staff labels may be returned.
             var employeeIds = assignments.Select(x => x.EmployeeId).Distinct().ToArray();
             var projectIds = assignments.Select(x => x.ProjectId).Distinct().ToArray();
+            var equipmentIds = assignments.SelectMany(x => x.EquipmentIds).Distinct().ToArray();
             var employees = await db.Entities.AsNoTracking().Where(x => x.TenantId == scope.TenantId
                     && x.Kind == "employees" && employeeIds.Contains(x.Id))
                 .ToDictionaryAsync(x => x.Id, x => x.Data, ct);
@@ -72,12 +90,18 @@ public static class PlanningWeekEndpoints
                 .ToDictionaryAsync(x => x.Id, x => x.Data, ct);
             var names = employees.ToDictionary(x => x.Key, x => AppJson.Read<Employee>(x.Value).Name);
             var projectNames = projects.ToDictionary(x => x.Key, x => AppJson.Read<Project>(x.Value).Name);
+            var equipment = await db.Entities.AsNoTracking().Where(x => x.TenantId == scope.TenantId
+                    && x.Kind == "equipment" && equipmentIds.Contains(x.Id))
+                .ToDictionaryAsync(x => x.Id, x => x.Data, ct);
+            var equipmentNames = equipment.ToDictionary(x => x.Key, x => AppJson.Read<Equipment>(x.Value).Name);
             var result = assignments.Select(a => new AssignmentItem(
                 a.Id, a.Revision, a.EmployeeId, names.GetValueOrDefault(a.EmployeeId, "Nicht verfügbar"),
                 a.ProjectId, projectNames.GetValueOrDefault(a.ProjectId, "Nicht verfügbar"),
                 a.Title, a.Start, a.End, a.EquipmentIds,
+                a.EquipmentIds.Select(id => new ResourceItem(id, equipmentNames.GetValueOrDefault(id, "Nicht verfügbar"))).ToArray(),
                 PlanningWeek.DaysCovered(a.Start, a.End, days))).ToArray();
             return Results.Ok(new { weekStart = monday, timeZone = zone.Id, days, assignments = result,
+                filters = new { employeeId, projectId, equipmentId },
                 count = result.Length, maxAssignments = PlanningWeek.MaximumAssignments,
                 note = "Business-local day boundaries; no route optimisation, travel-time validation or attendance approval." });
         }).WithTags("planning");
