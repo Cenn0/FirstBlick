@@ -19,6 +19,7 @@ public static class BusinessEndpoints
         }
         CommercialEndpoints.Map(api);
         FieldEndpoints.Map(api);
+        PlanningWeekEndpoints.Map(api);
         api.MapGet("/dashboard", Dashboard);
     }
 

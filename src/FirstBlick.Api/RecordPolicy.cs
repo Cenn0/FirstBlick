@@ -157,8 +157,13 @@ internal static class GraphRules
                 var order = await store.Get<Order>(invoice.OrderId, ct);
                 Guard.Require(order.CustomerId == invoice.CustomerId, "customer_mismatch", "Invoice and order customers must match."); break;
             case ScheduleAssignment assignment:
-                Guard.Require((await store.Get<Employee>(assignment.EmployeeId, ct)).Active, "inactive_employee", "An inactive employee cannot be scheduled.");
-                foreach (var equipmentId in assignment.EquipmentIds) Guard.Require((await store.Get<Equipment>(equipmentId, ct)).Available, "equipment_unavailable", "A selected resource is unavailable.");
+                // Cancellation releases an existing slot even if a person or vehicle became unavailable.
+                // Retain the references, but apply availability checks only to live assignments.
+                var assignedEmployee = await store.Get<Employee>(assignment.EmployeeId, ct);
+                Guard.Require(assignment.Cancelled || assignedEmployee.Active, "inactive_employee", "An inactive employee cannot be scheduled.");
+                foreach (var equipmentId in assignment.EquipmentIds)
+                    Guard.Require((await store.Get<Equipment>(equipmentId, ct)).Available || assignment.Cancelled,
+                        "equipment_unavailable", "A selected resource is unavailable.");
                 await ValidateWindow(await store.Get<Project>(assignment.ProjectId, ct), assignment, db, scope, ct);
                 PlanningRules.EnsureAssignment(assignment, await store.All<ScheduleAssignment>(ct), await store.All<Absence>(ct)); break;
             case Absence absence:
