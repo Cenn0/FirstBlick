@@ -9,6 +9,7 @@ import urllib.parse
 import urllib.request
 import uuid
 from production_assets import check_production_assets
+from trade_sources_smoke import check_trade_sources
 
 root = pathlib.Path(__file__).resolve().parent.parent
 config = {}
@@ -61,7 +62,8 @@ else:
     customer = call("POST", "/api/v1/customers", {"name": "Container verification customer"}, tenant)
 assert customer["name"] == "Container verification customer"
 assert call("GET", "/api/v1/customers/" + customer["id"], tenant=tenant)["name"] == customer["name"]
+originals = check_trade_sources(call, client, base, tenant, previous.get("originalSources"))
 call("POST", "/api/v1/auth/logout", {})
-report = {"status": "passed", "completedAt": datetime.datetime.now(datetime.timezone.utc).isoformat(), "customerId": customer["id"], "previousCustomerPreservedAcrossRestart": bool(previous), "productionAssets": assets, "checks": ["database readiness", "production HTML/CSP/screen stylesheet", "CSRF", "bootstrap login", "tenant membership", "authenticated create/read", "logout"]}
+report = {"status": "passed", "completedAt": datetime.datetime.now(datetime.timezone.utc).isoformat(), "customerId": customer["id"], "previousCustomerPreservedAcrossRestart": bool(previous), "productionAssets": assets, "originalSources": originals, "checks": ["database readiness", "production HTML/CSP/screen stylesheet", "CSRF", "bootstrap login", "tenant membership", "authenticated create/read", "original XML persistence, versioned S3 and byte-exact download", "logout"]}
 (folder / "container-smoke.json").write_text(json.dumps(report, indent=2) + "\n")
 print(json.dumps(report, indent=2))

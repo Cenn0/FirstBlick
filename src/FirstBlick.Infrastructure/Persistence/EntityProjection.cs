@@ -19,6 +19,7 @@ public static class EntityProjection
         RoofRevision r when r.PreviousRevisionId.HasValue => $"previous:{r.PreviousRevisionId}",
         MaterialDemand d when d.Status != MaterialDemandStatus.Cancelled => $"measurement:{d.Evidence.MeasurementId}:line:{d.Evidence.MeasurementLineId}:material:{d.MaterialId}",
         CatalogItem c when c.GaebOrigin is { } origin => $"gaeb:{origin.SourceSha256}:line:{ContentDigest.Of(origin.PositionKey)}",
+        TradeSource s => $"sha256:{s.Sha256}",
         _ => null
     };
 

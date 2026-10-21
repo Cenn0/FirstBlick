@@ -2,7 +2,15 @@
 
 > Übernommen aus der Projektanalyse „DachPlaner Rework Roadmap“, 19.10.2026 (34 Seiten). Der Originalbericht umfasst 100 Aufgaben in 15 Epics. Diese Fassung erhält alle Aufgabenkennungen und ursprünglichen Abnahmekriterien. Ein implementierter Teilablauf bedeutet nicht automatisch, dass das gesamte Epic abgeschlossen ist.
 
-## Aktueller Arbeitsstand – Checkpoint 13
+## Weiterführung – Originale XML-Akten
+
+Die [Originalakten-Dokumentation](xml-originals.md) ergänzt **DP-08-03, DP-12-02 und DP-02-05** um einen zusammenhängenden Ablauf: strukturell geprüfte Originaldatei → bewusste Ablage → konkrete S3-Version und Eingangsbeleg → mandantengebundene Dublettenprüfung → wiederauffindbare Akte → erneut verifizierter Download oder Wiederaufnahme im Prüfbereich. GAEB-Akten zeigen die tatsächlich daraus übernommenen Katalogpositionen; ungespeicherte Kalkulationswerte werden bei der Wiederaufnahme nicht ohne Bestätigung verworfen.
+
+Die Implementierung umfasst Backend, responsive Angular-Bedienung, Core-/HTTP-/PostgreSQL-Regressionen, Browser-Vertragstests und einen erweiterten tatsächlichen Containerablauf mit PostgreSQL/S3, Sicherung und Neustart. Die zugehörigen Ausführungsergebnisse werden für den konkret veröffentlichten Commit in [Folge-PR #2](https://github.com/Cenn0/FirstBlick/pull/2) nachgewiesen. Ein vorhandener Test oder Workflow ist für sich kein bestandener Lauf.
+
+Die Dateiaufbewahrung **bucht keine Rechnung**, erzeugt ohne gesonderte bestätigte Katalogübernahme keine Leistung und behauptet weder vollständige Profil-/XSD-/Schematron-Konformität noch ein zertifiziertes Langzeitarchiv. Die weiter erforderliche vollständige E-Rechnungs- und GAEB-Verarbeitung bleibt offen. Die untenstehenden ursprünglichen Aufgaben werden deshalb nicht pauschal abgehakt; die historischen Gesamtzählungen werden durch diesen Teilumfang nicht in einen neuen Fertigstellungsprozentsatz umgedeutet.
+
+## Vorheriger Arbeitsstand – Checkpoint 13
 
 [Checkpoint 13](checkpoint13.md) beschreibt die neuen durchgängigen Bedienabläufe und ihre konkreten Testbelege. Die [Bedienungs- und Vertragsdokumentation](calculation-and-trade-workbenches.md) erklärt Eingaben, Speicherung, Importbestätigung und bewusst nicht unterstützte Fälle.
 

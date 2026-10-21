@@ -1,0 +1,30 @@
+@if (allowed()) {
+<section class="panel original-archive" aria-labelledby="original-heading">
+  <h2 id="original-heading">Originalakte & Herkunft</h2>
+  <p>Originalbytes dauerhaft ablegen oder eine vorhandene Datei erneut prüfen. Die Akte ist keine Buchung, keine Normprüfung und kein zertifiziertes Langzeitarchiv.</p>
+  @if(error()){<div class="alert error" role="alert">{{error()}}</div>}
+  @if(notice()){<div class="alert information" role="status">{{notice()}}</div>}
+  <div class="archive-actions">
+    @if(canCapture()){<button type="button" class="button primary" [disabled]="!file()||!previewSha()||busy()||locked()" (click)="capture()">Geprüftes XML-Original ablegen</button>}
+    <button type="button" class="button secondary" [disabled]="busy()||locked()" (click)="load()">Originalakten öffnen</button>
+  </div>
+  @if(captured();as receipt){<div class="capture-receipt"><strong>{{receipt.source.fileName}}</strong><p>Eingangsbeleg: <code>{{receipt.source.id}}</code></p><button type="button" class="button secondary" [disabled]="busy()||locked()" (click)="inspect(receipt.source)">Gespeicherte Originalakte prüfen</button></div>}
+  @if(opened()) {
+    @if(busy()){<p role="status">Originalakte wird geprüft …</p>}
+    @if(listing();as page){
+      <p>{{page.total}} Originalakten · Seite {{page.page}}. Listenmetadaten ersetzen keine erneute Byteprüfung.</p>
+      @if(!page.total){<p>Noch keine Originaldateien dieses Verfahrens abgelegt.</p>}
+      <div class="original-list">@for(source of page.items;track source.id){<article><strong>{{source.fileName}}</strong><span>{{source.size}} Byte · Eingang {{source.receivedAt}}</span><code>{{source.sha256}}</code><button type="button" class="button secondary" [disabled]="busy()||locked()" (click)="inspect(source)">Originalakte {{source.fileName}} prüfen</button></article>}</div>
+      @if(page.total>20){<nav class="archive-actions" aria-label="Originalakten-Seiten"><button type="button" class="button secondary" [disabled]="page.page<=1||busy()||locked()" (click)="load(page.page-1)">Vorherige Aktenseite</button><button type="button" class="button secondary" [disabled]="page.page*page.pageSize>=page.total||busy()||locked()" (click)="load(page.page+1)">Nächste Aktenseite</button></nav>}
+    }
+    @if(detail();as record){
+      <section class="original-detail"><h3>Geprüfte Originalakte: {{record.source.fileName}}</h3><p>{{summary()}}</p>
+        <p>Diese konkrete Dateiversion wurde vollständig zurückgelesen und mit ihrem Eingangsbeleg verglichen. Die nachfolgende Sichtung bleibt strukturell; sie ist keine XSD-/Schematron-Konformitätsbestätigung.</p>
+        <dl><dt>Original-SHA-256</dt><dd><code>{{record.source.sha256}}</code></dd><dt>Speicherversion</dt><dd><code>{{record.source.objectVersionId}}</code></dd><dt>Erfasst durch Konto</dt><dd><code>{{record.source.receivedBy}}</code></dd><dt>Eingang (UTC)</dt><dd>{{record.source.receivedAt}}</dd><dt>Belegdigest</dt><dd><code>{{record.source.digest}}</code></dd></dl>
+        <div class="archive-actions"><button type="button" class="button secondary" [disabled]="busy()||locked()" (click)="original(false)">Originaldatei herunterladen</button><button type="button" class="button primary" [disabled]="busy()||locked()" (click)="original(true)">Original im Prüfbereich öffnen</button></div>
+        @if(kind()==='gaeb'){<h4>Aus dieser Datei übernommene Katalogpositionen</h4><p>Aktuelle Katalogeinträge mit unveränderlicher Quellzuordnung; kein eingefrorener Preisstand.</p>@for(item of record.catalogItems;track item.id){<p><a routerLink="/catalog-items" [queryParams]="{selected:item.id}">{{item.positionKey}} · {{item.name}}</a> · {{item.unit}} @if(item.archived){<span>· archiviert</span>}</p>}@empty{<p>Noch keine übernommene Katalogposition dieser Originaldatei gefunden.</p>}}
+      </section>
+    }
+  }
+</section>
+}
