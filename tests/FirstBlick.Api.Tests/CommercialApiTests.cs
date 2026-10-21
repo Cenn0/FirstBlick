@@ -218,6 +218,113 @@ public sealed class CommercialApiTests(PostgresApiFixture fixture) : IClassFixtu
         });
     }
 
+    [PostgresApiFact]
+    public async Task Physical_count_and_transfer_require_fresh_stock_snapshot_and_preserve_reservations()
+    {
+        var (person, client) = await Session();
+        var material = await Create<Material>(client, "materials", new() { Name = "Synthetic counted tiles", Unit = "Stk" });
+        var supplier = await Create<Supplier>(client, "suppliers", new() { Name = "Synthetic warehouse supplier" });
+        var purchase = await Create<PurchaseOrder>(client, "purchase-orders", new() { SupplierId = supplier.Id,
+            Title = "Warehouse initial receipt", Lines = [new() { MaterialId = material.Id, Description = "Tiles", Quantity = 10m, UnitNet = 2m }] });
+        purchase = await Ok<PurchaseOrder>(Send(client, HttpMethod.Post, $"/api/v1/purchase-orders/{purchase.Id}/issue", new { }, purchase.Revision));
+        await Ok<JsonElement>(Send(client, HttpMethod.Post, $"/api/v1/purchase-orders/{purchase.Id}/receive",
+            new { lineId = purchase.Lines[0].Id, quantity = 10m, location = "A" }, purchase.Revision));
+        var graph = await ProjectGraph(client);
+        await Ok<MaterialReservation>(Send(client, HttpMethod.Post, $"/api/v1/materials/{material.Id}/reserve",
+            new { projectId = graph.Project.Id, quantity = 8m, location = "A" }, material.Revision));
+        var count = new { location = "A", expectedOnHand = 10m, countedOnHand = 9m, unitCost = 2m, reason = "Signed synthetic physical count sheet" };
+        await Error(Send(client, HttpMethod.Post, $"/api/v1/materials/{material.Id}/inventory-count",
+            new { location = "A", expectedOnHand = 9m, countedOnHand = 8m, unitCost = 2m, reason = count.reason }),
+            HttpStatusCode.BadRequest, "stale_stock_count");
+        await Error(Send(client, HttpMethod.Post, $"/api/v1/materials/{material.Id}/inventory-count",
+            new { location = "A", expectedOnHand = 10m, countedOnHand = 7m, unitCost = 2m, reason = count.reason }),
+            HttpStatusCode.BadRequest, "stock_reserved");
+        var posted = await Ok<JsonElement>(Send(client, HttpMethod.Post, $"/api/v1/materials/{material.Id}/inventory-count", count));
+        Assert.Equal(-1m, posted.GetProperty("movement").GetProperty("quantity").Deserialize<decimal>(AppJson.Options));
+        Assert.Equal(9m, posted.GetProperty("balance").GetProperty("onHand").Deserialize<decimal>(AppJson.Options));
+        await Error(Send(client, HttpMethod.Post, $"/api/v1/materials/{material.Id}/inventory-count", count),
+            HttpStatusCode.BadRequest, "stale_stock_count");
+        var transferBody = new { fromLocation = "A", toLocation = "B", quantity = 1m, unitCost = 2m, reason = "Controlled stock relocation" };
+        await Error(Send(client, HttpMethod.Post, $"/api/v1/materials/{material.Id}/transfer",
+            new { fromLocation = "A", toLocation = "B", quantity = 2m, unitCost = 2m, reason = transferBody.reason }),
+            HttpStatusCode.BadRequest, "stock_reserved");
+        var transfer = await Ok<JsonElement>(Send(client, HttpMethod.Post, $"/api/v1/materials/{material.Id}/transfer", transferBody));
+        Assert.Equal(transfer.GetProperty("outgoing").GetProperty("reference").GetString(),
+            transfer.GetProperty("incoming").GetProperty("reference").GetString());
+        Assert.Equal(new StockBalance(8m, 8m, 0m),
+            await Ok<StockBalance>(client.GetAsync($"/api/v1/materials/{material.Id}/stock?location=A")));
+        Assert.Equal(new StockBalance(1m, 0m, 1m),
+            await Ok<StockBalance>(client.GetAsync($"/api/v1/materials/{material.Id}/stock?location=B")));
+        await fixture.InScope(async services =>
+        {
+            var db = services.GetRequiredService<FirstBlickDbContext>();
+            Assert.Equal(1, await db.Audit.IgnoreQueryFilters().CountAsync(x => x.TenantId == person.TenantId && x.Action == "stock.inventory_count"));
+            Assert.Equal(1, await db.Audit.IgnoreQueryFilters().CountAsync(x => x.TenantId == person.TenantId && x.Action == "stock.transfer_out"));
+            Assert.Equal(1, await db.Audit.IgnoreQueryFilters().CountAsync(x => x.TenantId == person.TenantId && x.Action == "stock.transfer_in"));
+        });
+        var accounting = await fixture.CreateUser(person.TenantId, BusinessRole.Accounting);
+        var accountant = await fixture.Login(accounting);
+        await Error(Send(accountant, HttpMethod.Post, $"/api/v1/materials/{material.Id}/transfer", transferBody),
+            HttpStatusCode.Forbidden, "forbidden");
+    }
+
+    [PostgresApiFact]
+    public async Task Supplier_and_project_returns_are_receipt_bound_idempotent_and_concurrently_safe()
+    {
+        var (person, client) = await Session(); var graph = await ProjectGraph(client);
+        var supplier = await Create<Supplier>(client, "suppliers", new() { Name = "Synthetic returns supplier" });
+        var material = await Create<Material>(client, "materials", new() { Name = "Synthetic roof rolls", Unit = "Stk" });
+        var order = await Create<PurchaseOrder>(client, "purchase-orders", new() { SupplierId = supplier.Id,
+            ProjectId = graph.Project.Id, Title = "Ten rolls",
+            Lines = [new() { MaterialId = material.Id, Description = "Rolls", Quantity = 10m, UnitNet = 5m }] });
+        order = await Ok<PurchaseOrder>(Send(client, HttpMethod.Post, $"/api/v1/purchase-orders/{order.Id}/issue", new { }, order.Revision));
+        var received = await Ok<JsonElement>(Send(client, HttpMethod.Post, $"/api/v1/purchase-orders/{order.Id}/receive",
+            new { lineId = order.Lines[0].Id, quantity = 10m, location = "A" }, order.Revision));
+        var receipt = AppJson.Read<StockMovement>(received.GetProperty("receipt").GetRawText());
+        var reservation = await Ok<MaterialReservation>(Send(client, HttpMethod.Post, $"/api/v1/materials/{material.Id}/reserve",
+            new { projectId = graph.Project.Id, quantity = 7m, location = "A" }, material.Revision));
+        await Error(Send(client, HttpMethod.Post, $"/api/v1/stock-movements/{receipt.Id}/supplier-return",
+            new { quantity = 4m, reason = "Over reserved quantity" }, receipt.Revision),
+            HttpStatusCode.BadRequest, "stock_reserved");
+        var body = new { quantity = 2m, reason = "Synthetic replacement accepted by the supplier" };
+        var key = Guid.NewGuid().ToString("N");
+        var returned = await Ok<JsonElement>(Send(client, HttpMethod.Post,
+            $"/api/v1/stock-movements/{receipt.Id}/supplier-return", body, receipt.Revision, key));
+        Assert.Equal("PartiallyReceived", returned.GetProperty("order").GetProperty("status").GetString());
+        var replay = await Send(client, HttpMethod.Post,
+            $"/api/v1/stock-movements/{receipt.Id}/supplier-return", body, receipt.Revision, key);
+        Assert.Equal("true", replay.Headers.GetValues("Idempotency-Replayed").Single());
+        Assert.Equal(returned.GetProperty("movement").GetProperty("id").GetString(),
+            (await Ok<JsonElement>(Task.FromResult(replay))).GetProperty("movement").GetProperty("id").GetString());
+        Assert.Equal(new StockBalance(8m, 7m, 1m),
+            await Ok<StockBalance>(client.GetAsync($"/api/v1/materials/{material.Id}/stock?location=A")));
+        var consumed = await Ok<JsonElement>(Send(client, HttpMethod.Post,
+            $"/api/v1/material-reservations/{reservation.Id}/consume",
+            new { quantity = 3m, unitCost = 5m }, reservation.Revision));
+        var consumption = AppJson.Read<StockMovement>(consumed.GetProperty("movement").GetRawText());
+        var projectReturn = await Ok<StockMovement>(Send(client, HttpMethod.Post,
+            $"/api/v1/stock-movements/{consumption.Id}/project-return",
+            new { quantity = 2m, reason = "Unused rolls returned from site" }, consumption.Revision));
+        Assert.Equal(StockMovementKind.Return, projectReturn.Kind);
+        Assert.Equal(consumption.Id.ToString("D"), projectReturn.Reference);
+        await Error(Send(client, HttpMethod.Post, $"/api/v1/stock-movements/{consumption.Id}/project-return",
+            new { quantity = 2m, reason = "Duplicate site return" }, consumption.Revision),
+            HttpStatusCode.BadRequest, "project_return_exceeded");
+        Assert.Equal(new StockBalance(7m, 4m, 3m),
+            await Ok<StockBalance>(client.GetAsync($"/api/v1/materials/{material.Id}/stock?location=A")));
+        // A supplier return can be re-received only through the original order's outstanding quantity.
+        var currentOrder = await fixture.Read<PurchaseOrder>(person.TenantId, order.Id);
+        var replacement = await Ok<JsonElement>(Send(client, HttpMethod.Post,
+            $"/api/v1/purchase-orders/{order.Id}/receive",
+            new { lineId = order.Lines[0].Id, quantity = 2m, location = "A" }, currentOrder.Revision));
+        Assert.Equal("Received", replacement.GetProperty("order").GetProperty("status").GetString());
+        var other = await fixture.CreateTenant("Another synthetic business");
+        var outsider = await fixture.CreateUser(other.Id);
+        var otherClient = await fixture.Login(outsider);
+        await Error(Send(otherClient, HttpMethod.Post, $"/api/v1/stock-movements/{receipt.Id}/supplier-return",
+            body, receipt.Revision), HttpStatusCode.NotFound, "not_found");
+    }
+
     private async Task<(ApiTestUser Person, HttpClient Client)> Session()
     {
         var tenant = await fixture.CreateTenant(); var person = await fixture.CreateUser(tenant.Id); return (person, await fixture.Login(person));
