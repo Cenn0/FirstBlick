@@ -86,7 +86,7 @@ public sealed class PurchaseOrder : TenantEntity
     }
 }
 
-public enum StockMovementKind { Receipt, Consumption, Return, Adjustment, TransferIn, TransferOut }
+public enum StockMovementKind { Receipt, Consumption, Return, Adjustment, TransferIn, TransferOut, SupplierReturn }
 public sealed class StockMovement : TenantEntity
 {
     public Guid MaterialId { get; set; }
@@ -115,7 +115,7 @@ public sealed class StockMovement : TenantEntity
         Guard.Require(Kind switch
         {
             StockMovementKind.Receipt or StockMovementKind.Return or StockMovementKind.TransferIn => Quantity > 0,
-            StockMovementKind.Consumption or StockMovementKind.TransferOut => Quantity < 0,
+            StockMovementKind.Consumption or StockMovementKind.TransferOut or StockMovementKind.SupplierReturn => Quantity < 0,
             StockMovementKind.Adjustment => true, _ => false
         }, "invalid_quantity_direction", "The quantity sign does not match the movement kind.");
         if (!string.IsNullOrEmpty(PostedDigest)) Guard.Require(PostedDigest == InventoryRules.MovementDigest(this), "movement_immutable", "Posted stock movements are immutable; post a compensating movement.");
@@ -188,7 +188,7 @@ public static class InventoryRules
         Guard.Require(order.Status is PurchaseOrderStatus.Ordered or PurchaseOrderStatus.PartiallyReceived, "invalid_transition", "Only outstanding purchase orders can receive goods.");
         var line = order.Lines.SingleOrDefault(x => x.Id == lineId);
         Guard.Require(line is not null, "missing_line", "The purchase line does not exist.");
-        var already = movements.Where(x => x.TenantId == order.TenantId && x.PurchaseOrderId == order.Id && x.PurchaseLineId == lineId).Sum(x => x.Quantity);
+        var already = movements.Where(x => !x.Archived && x.TenantId == order.TenantId && x.PurchaseOrderId == order.Id && x.PurchaseLineId == lineId && x.Kind is StockMovementKind.Receipt or StockMovementKind.SupplierReturn).Sum(x => x.Quantity);
         Guard.Require(already + quantity <= line!.Quantity, "over_receipt", "The receipt exceeds the ordered quantity. Resolve the purchasing discrepancy first.");
         var receipt = new StockMovement
         {
@@ -197,7 +197,7 @@ public static class InventoryRules
             OccurredAt = now, Reference = order.Number
         };
         receipt.Validate(); receipt.PostedDigest = MovementDigest(receipt);
-        order.Status = order.Lines.All(x => movements.Where(m => m.TenantId == order.TenantId && m.PurchaseOrderId == order.Id && m.PurchaseLineId == x.Id).Sum(m => m.Quantity)
+        order.Status = order.Lines.All(x => movements.Where(m => !m.Archived && m.TenantId == order.TenantId && m.PurchaseOrderId == order.Id && m.PurchaseLineId == x.Id && m.Kind is StockMovementKind.Receipt or StockMovementKind.SupplierReturn).Sum(m => m.Quantity)
             + (x.Id == lineId ? quantity : 0) >= x.Quantity) ? PurchaseOrderStatus.Received : PurchaseOrderStatus.PartiallyReceived;
         return receipt;
     }
