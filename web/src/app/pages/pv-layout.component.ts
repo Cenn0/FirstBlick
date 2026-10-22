@@ -20,7 +20,8 @@ const emptyDraft = (): PvDraft => ({
     <header class="page-heading"><div><p class="eyebrow">DACH & BERECHNUNG · PV</p>
       <h1>Geometrische PV-Modulbelegung</h1>
       <p>Rechteckige Dachfläche, gemessene Moduldaten und explizite Hindernisse.</p></div>
-      <a class="button secondary" routerLink="/technical">Zurück zu den Fachwerkzeugen</a></header>
+      <div class="actions"><a class="button secondary" routerLink="/technical/pv-set">Mehrere Dachflächen</a>
+      <a class="button secondary" routerLink="/technical">Zurück zu den Fachwerkzeugen</a></div></header>
     @if (!allowed()) {
       <section class="panel empty-state"><h2>Zugriff eingeschränkt</h2>
         <p>Technisches Modul und Berechtigungen für technische Ergebnisse erforderlich.</p></section>
