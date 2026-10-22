@@ -4,6 +4,8 @@ using FirstBlick.Core.Business;
 using FirstBlick.Core.Security;
 using FirstBlick.Core.Technical;
 using FirstBlick.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using static FirstBlick.Api.Tests.PostgresApiFixture;
 
 namespace FirstBlick.Api.Tests;
@@ -98,5 +100,23 @@ public sealed class RoofActionsApiTests(PostgresApiFixture fixture) : IClassFixt
                 valueSource = "Synthetic" } }
         });
         Assert.Equal(HttpStatusCode.BadRequest, missingCoefficient.StatusCode);
+    }
+
+    [PostgresApiFact]
+    public async Task Revoked_membership_denies_all_three_previews_despite_an_existing_login_cookie()
+    {
+        var tenant = await fixture.CreateTenant();
+        var person = await fixture.CreateUser(tenant.Id);
+        using var client = await fixture.Login(person);
+        await fixture.InScope(async services => {
+            var db = services.GetRequiredService<FirstBlickDbContext>();
+            var membership = await db.Memberships.SingleAsync(x => x.TenantId == tenant.Id && x.UserId == person.UserId);
+            membership.Active = false; membership.Revision++; await db.SaveChangesAsync();
+        });
+        foreach (var mode in new[] { "drainage", "wind", "snow" })
+        {
+            using var denied = await Send(client, HttpMethod.Post, "/api/v1/technical/roof/" + mode, Input(mode));
+            Assert.Equal(HttpStatusCode.Forbidden, denied.StatusCode);
+        }
     }
 }

@@ -8,6 +8,8 @@ Active development takes place in FirstBlick. DachPlaner is retained solely as a
 
 ## Project documentation
 
+* [Supplied wind, snow and drainage cases](docs/roof-actions.md) — local signed pressures, horizontal snow zones and independent emergency-flow balances with explicit sources and retained project evidence.
+
 * [PV module layout](docs/pv-module-layout.md) — non-normative rectangular roof-plane placement with exclusions, explicit clearance, and auditable project calculations.
 
 * [Project templates](docs/project-templates.md) — reviewed calendar-day task previews, atomic adoption and retained application/source evidence.

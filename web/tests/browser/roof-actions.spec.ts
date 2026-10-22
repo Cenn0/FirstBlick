@@ -60,6 +60,8 @@ for (const mode of ['drainage', 'wind', 'snow'] as RoofAction[]) {
     await page.locator('#action-title').fill('Synthetic reviewed ' + mode);
     await page.getByRole('button', { name: 'Im Projekt speichern' }).click();
     await expect(page.getByRole('status')).toContainText('gespeichert');
+    await expect(page.getByRole('link', { name: 'Gespeicherten Rechenstand öffnen' })).toHaveAttribute('href',
+      '/technical-results?selected=20000000-0000-4000-8000-000000000001');
     expect(f.calls.at(-1)?.body).toMatchObject({ projectId, method: 'roof.' + mode, input: actionInputs[mode] });
     expect(f.errors).toEqual([]);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);

@@ -64,6 +64,7 @@ def check_roof_actions(call, client, base, tenant, previous=None):
         assert saved["projectId"] == project_id and saved["method"] == "roof." + mode
         assert saved["input"] == inputs[mode] and _digest(saved) == evidence["recordSha256"]
         document = evidence["document"]
+        assert get("documents/" + document["id"]) == document, "Stored PDF metadata or immutable version changed"
         request = urllib.request.Request(base + "/api/v1/documents/" + document["id"] + "/download",
             headers={"X-Tenant-Id": tenant, "Accept": "application/pdf"})
         with client.open(request, timeout=30) as response:

@@ -30,7 +30,7 @@
         <div class="form-grid"><div class="form-field"><label for="action-project">Projekt aus der Suche</label><select id="action-project" [(ngModel)]="projectId"><option value="">Bitte auswählen</option>@for (project of projects(); track project.id) {<option [value]="project.id">{{project['name']}}</option>}</select></div><div class="form-field"><label for="action-title">Berichtsbezeichnung</label><input id="action-title" maxlength="240" [(ngModel)]="title"></div></div>
         <button type="button" class="button primary" (click)="save()">Im Projekt speichern</button>
       </fieldset>
-      @if (saved(); as record) {<p><a [routerLink]="['/technical-results']" [queryParams]="{id:record['id']}">Gespeicherten Rechenstand öffnen</a></p>}
+      @if (saved(); as record) {<p><a [routerLink]="['/technical-results']" [queryParams]="{selected:record['id']}">Gespeicherten Rechenstand öffnen</a></p>}
     </section>
   }
 }

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Json.Nodes;
 using FirstBlick.Core.Business;
 using FirstBlick.Core.Technical;
 
@@ -144,5 +145,28 @@ public sealed class RoofActionsTests
         restored = JsonSerializer.Deserialize<TechnicalRecord>(JsonSerializer.Serialize(record, Json), Json)!;
         restored.Result = JsonSerializer.SerializeToElement(new { fabricated = true });
         Assert.Throws<DomainException>(restored.Validate);
+    }
+
+    [Theory]
+    [InlineData("roof.drainage")]
+    [InlineData("roof.wind")]
+    [InlineData("roof.snow")]
+    public void Every_JSON_input_property_is_required_even_when_zero_is_a_valid_value(string method)
+    {
+        object input = method switch { "roof.drainage" => Drainage(), "roof.wind" => Wind(), _ => Snow() };
+        var root = JsonNode.Parse(JsonSerializer.Serialize(input, input.GetType(), Json))!.AsObject();
+        foreach (var property in root.ToArray())
+        {
+            var incomplete = root.DeepClone().AsObject();
+            incomplete.Remove(property.Key);
+            Assert.Throws<JsonException>(() => TechnicalRecords.Evaluate(method, JsonSerializer.SerializeToElement(incomplete)));
+        }
+        var rowsKey = method == "roof.drainage" ? "catchments" : "zones";
+        foreach (var property in root[rowsKey]![0]!.AsObject().ToArray())
+        {
+            var incomplete = root.DeepClone();
+            incomplete[rowsKey]![0]!.AsObject().Remove(property.Key);
+            Assert.Throws<JsonException>(() => TechnicalRecords.Evaluate(method, JsonSerializer.SerializeToElement(incomplete)));
+        }
     }
 }
