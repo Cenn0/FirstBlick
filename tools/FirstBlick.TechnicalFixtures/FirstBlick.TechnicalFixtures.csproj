@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType></PropertyGroup>
+  <ItemGroup><ProjectReference Include="../../src/FirstBlick.Core/FirstBlick.Core.csproj" /></ItemGroup>
+  <ItemGroup><Compile Include="../../src/FirstBlick.Infrastructure/Persistence/DecimalStringConverter.cs" Link="DecimalStringConverter.cs" /></ItemGroup>
+</Project>

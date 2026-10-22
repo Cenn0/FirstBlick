@@ -37,7 +37,17 @@ public sealed class ErrorMiddleware(RequestDelegate next, ILogger<ErrorMiddlewar
 {
     public async Task InvokeAsync(HttpContext context)
     {
-        try { await next(context); }
+        try
+        {
+            await next(context);
+            // Content-type endpoint selection can emit an empty 415 before model binding runs.
+            // Preserve explicit responses and apply the API problem contract only to that empty rejection.
+            if (!context.Response.HasStarted && context.Request.Path.StartsWithSegments("/api")
+                && context.Response.StatusCode == StatusCodes.Status415UnsupportedMediaType
+                && (context.Response.ContentLength is null or 0) && string.IsNullOrEmpty(context.Response.ContentType))
+                await WriteProblem(context, StatusCodes.Status415UnsupportedMediaType, "invalid_request",
+                    "The request content type is not supported by this endpoint.");
+        }
         catch (Exception e) when (!context.Response.HasStarted)
         {
             var (status, code, detail) = e switch
@@ -57,13 +67,18 @@ public sealed class ErrorMiddleware(RequestDelegate next, ILogger<ErrorMiddlewar
                 _ => (500, "server_error", "The operation failed. No successful result has been confirmed.")
             };
             if (status >= 500) logger.LogError("Request {TraceId} failed with {ExceptionType}", context.TraceIdentifier, e.GetType().Name);
-            context.Response.Clear();
-            context.Response.Headers.CacheControl = "no-store";
-            context.Response.Headers["X-Content-Type-Options"] = "nosniff";
-            context.Response.Headers["X-Frame-Options"] = "SAMEORIGIN";
-            await Results.Problem(statusCode: status, title: code, detail: detail,
-                extensions: new Dictionary<string, object?> { ["code"] = code, ["traceId"] = context.TraceIdentifier }).ExecuteAsync(context);
+            await WriteProblem(context, status, code, detail);
         }
+    }
+
+    private static Task WriteProblem(HttpContext context, int status, string code, string detail)
+    {
+        context.Response.Clear();
+        context.Response.Headers.CacheControl = "no-store";
+        context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+        context.Response.Headers["X-Frame-Options"] = "SAMEORIGIN";
+        return Results.Problem(statusCode: status, title: code, detail: detail,
+            extensions: new Dictionary<string, object?> { ["code"] = code, ["traceId"] = context.TraceIdentifier }).ExecuteAsync(context);
     }
 }
 

@@ -2,6 +2,16 @@
 
 > Übernommen aus der Projektanalyse „DachPlaner Rework Roadmap“, 19.10.2026 (34 Seiten). Der Originalbericht umfasst 100 Aufgaben in 15 Epics. Diese Fassung erhält alle Aufgabenkennungen und ursprünglichen Abnahmekriterien. Ein implementierter Teilablauf bedeutet nicht automatisch, dass das gesamte Epic abgeschlossen ist.
 
+## Technische API-Verträge und echte Dezimal-Ausgaben (23.10.2026)
+
+**DP-02-02/DP-12-04 bleiben T.** [18 technische Rechenvorschauen](api-calculation-contracts.md) erhalten explizite OpenAPI-Ergebnis-/Fehlerschemas und einen HTTP-geprüften versionierten Mindestvertrag. Fehlerhafte Minimal-API-Bindung verwendet jetzt auch außerhalb der Entwicklung den vorhandenen generischen Problem-Details-Pfad. Dies ersetzt keine vollständige API-Kompatibilitätsprüfung oder Webhookzustellung.
+
+Der zusätzliche echte HTTP-/Projektablagenvergleich für sechs synthetische Fachfälle sichert **DP-11-04/05** gegen eine zuvor in reinen Core-Fixtures unsichtbare Grenze: Vorschau-Geldwerte werden als Dezimalstrings übertragen, eingebettete technische Ergebnis-JSON kann sie als Zahlen enthalten. Ausschließlich diese benannten Geldfelder werden centgenau normalisiert; Maße und Quellen bleiben streng gebunden. Alle vier Aufgaben bleiben Teilumfänge. Endgültige CI-/Operations-/Standards-Ergebnisse sind in [PR #20](https://github.com/Cenn0/FirstBlick/pull/20) nachzuvollziehen.
+
+## Erweiterte Fachmasken und fixierte 46er-Arbeitsmenge (23.10.2026)
+
+**DP-11-04/05 bleiben T.** [Die erweiterten Clientverträge](advanced-technical-client.md) ergänzen Mengen-/Wasserbilanzen, Eingabe-/Quellenbindung, unveränderte Vorschau bei Projektablage, Grenzflächenhöchstmengen und eigenständige UI-Regressionen. Sie sind keine normative oder Herstellerabnahme. Die [fixierten ursprünglichen 46 Teilaufgaben](roadmap-closeout.md) erhalten ihren Nenner und benennen Software-Restarbeit sowie benötigte externe Grundlagen. Die aktuelle Zählung bleibt **49 K / 49 T / 2 O**; die ursprünglichen Abnahmekriterien werden nicht abgehakt. Tatsächliche Laufnachweise stehen am endgültigen Commit in [PR #20](https://github.com/Cenn0/FirstBlick/pull/20).
+
 ## Fortsetzung – vorgegebene Wind-, Schnee- und Abflussfälle (22.10.2026)
 
 - **DP-11-06:** [Lokale Winddruckfälle](roof-actions.md) führen getrennte äußere/innere Bezugsdrücke und vorgegebene Beiwerte zu richtungsgebundenem Nettodruck, Sog und lokaler Normalkraft. Standort-/Zonenwahl, dynamische Antwort, Lastkombinationen, Befestiger und Standsicherheitsprüfung bleiben offen.

@@ -8,6 +8,11 @@ Active development takes place in FirstBlick. DachPlaner is retained solely as a
 
 ## Project documentation
 
+* [Technical OpenAPI minimum](docs/api-calculation-contracts.md) — 18 explicit calculation contracts, non-development binding errors and actual preview/project JSON comparisons.
+
+* [Original 46 partial-task closeout register](docs/roadmap-closeout.md) — fixed scope, remaining implementation, dependencies and external acceptance inputs.
+* [Advanced moisture/insulation client contracts](docs/advanced-technical-client.md) — input/result checks, interface maxima, immutable preview binding and core-derived browser fixtures.
+
 * [Supplied wind, snow and drainage cases](docs/roof-actions.md) — local signed pressures, horizontal snow zones and independent emergency-flow balances with explicit sources and retained project evidence.
 
 * [PV module layout](docs/pv-module-layout.md) — non-normative rectangular roof-plane placement with exclusions, explicit clearance, and auditable project calculations.
