@@ -45,96 +45,7 @@ internal static class MigrationDrill
             Require.That(result.Report.State == "Blocked" && (expectedIssue is null || result.Report.Issues.Any(expectedIssue)),
                 "Migration accepted negative fixture or missed the expected rule " + name + "."); negatives.Add(name);
         }
-        await Reject("supplier-invoice-missing-other-default", ChangeSupplierInvoiceShape(bundle, value => value.Remove("reviewNote")),
-            issue => issue.Location.StartsWith("supplier-invoices/", StringComparison.Ordinal) && issue.Message.Contains("complete canonical typed JSON", StringComparison.Ordinal));
-        await Reject("supplier-invoice-unknown-property", ChangeSupplierInvoiceShape(bundle, value => value["unexpectedLegacyProperty"] = null),
-            issue => issue.Location.StartsWith("supplier-invoices/", StringComparison.Ordinal) && issue.Message == nameof(JsonException));
-        await Reject("changed-frozen-price", Change<Quote>(bundle, quote => quote.Lines[0].UnitMaterialCost += 1m));
-        await Reject("missing-historical-parties", Change<Quote>(bundle, quote => quote.Presentation = null));
-        await Reject("unknown-dispatch-state", Change<Quote>(bundle, quote => quote.Deliveries[0].State = DeliveryState.Uncertain));
-        await Reject("missing-tenant-reference", Change<Project>(bundle, project => project.CustomerId = Guid.NewGuid()));
-        await Reject("unknown-method-version", Change<TechnicalRecord>(bundle, calculation => { calculation.MethodVersion = "999.0.0"; calculation.Digest = TechnicalRecords.Digest(calculation); }));
-        var invalidZone = AppJson.Read<BusinessTenant>(AppJson.Serialize(bundle.Tenants[0].Data)); invalidZone.TimeZone = "Synthetic/Unavailable_Zone";
-        await Reject("unknown-business-timezone", bundle with { Tenants = [bundle.Tenants[0] with { Data = invalidZone }, .. bundle.Tenants.Skip(1)] });
-        var customerBankId = checkedSource.Entities.OfType<PaymentAllocation>().Single().BankTransactionId;
-        await Reject("cross-ledger-bank-overallocation", Change<SupplierPaymentAllocation>(bundle, allocation =>
-        { allocation.BankTransactionId = customerBankId; allocation.PostedDigest = PayablesWorkflow.AllocationDigest(allocation); }, x => x.Direction == SupplierPaymentDirection.Refund));
-        await Reject("warehouse-transfer-pair-mismatch", Change<StockMovement>(bundle, movement =>
-        { movement.Quantity -= 1m; movement.PostedDigest = InventoryRules.MovementDigest(movement); }, x => x.Kind == StockMovementKind.TransferOut));
-        await Reject("supplier-return-wrong-source", Change<StockMovement>(bundle, movement =>
-        { movement.Reference = Guid.NewGuid().ToString("D"); movement.PostedDigest = InventoryRules.MovementDigest(movement); }, x => x.Kind == StockMovementKind.SupplierReturn));
-        await Reject("project-return-wrong-value", Change<StockMovement>(bundle, movement =>
-        { movement.UnitCost += 1m; movement.PostedDigest = InventoryRules.MovementDigest(movement); }, x => x.Kind == StockMovementKind.Return));
-        await Reject("warehouse-chain-cycle", Change<StockMovement>(bundle, movement =>
-        { movement.TransferSourceId = movement.Id; movement.PostedDigest = InventoryRules.MovementDigest(movement); }, x => x.Kind == StockMovementKind.TransferIn));
-        await Reject("warehouse-branch-overallocation-with-other-stock", OverallocateWarehouseBranch(bundle),
-            issue => issue.Code == "invalid_transfer_chain" && issue.Message.Contains("over-allocates a source quantity", StringComparison.Ordinal));
-        await Reject("purchase-receipt-status-mismatch", Change<PurchaseOrder>(bundle, purchase => purchase.Status = PurchaseOrderStatus.Received),
-            issue => issue.Message == "Imported purchase order status differs from its net purchase receipts and supplier returns.");
-        await Reject("stock-movement-after-export", Change<StockMovement>(bundle, movement =>
-        { movement.OccurredAt = bundle.ExportedAt.AddTicks(10); movement.PostedDigest = InventoryRules.MovementDigest(movement); }, x => x.Kind == StockMovementKind.Adjustment),
-            issue => issue.Message == "Historical inventory movements cannot postdate the export.");
-        await Reject("archived-stock-movement", Change<StockMovement>(bundle, movement => movement.Archived = true, x => x.Kind == StockMovementKind.Adjustment),
-            issue => issue.Message == "Historical inventory movements cannot be archived out of the active stock ledger.");
-        await Reject("equipment-result-projection-mismatch", Change<Equipment>(bundle, equipment => equipment.LastInspectionOn = equipment.LastInspectionOn!.Value.AddDays(-1)));
-        await Reject("equipment-missing-planned-check", Change<Equipment>(bundle, equipment => equipment.PendingInspectionId = null));
-        var outOfOrderEquipment = Change<EquipmentInspection>(bundle, inspection =>
-        {
-            var changed = inspection.Completion! with { PerformedOn = inspection.Completion.PerformedOn.AddDays(-1) };
-            inspection.Completion = changed with { Digest = EquipmentInspectionWorkflow.CompletionDigest(inspection, changed) };
-        }, x => x.Completion?.Result == EquipmentInspectionResult.Passed);
-        outOfOrderEquipment = Change<Equipment>(outOfOrderEquipment, equipment => equipment.LastInspectionOn = equipment.LastInspectionOn!.Value.AddDays(-1));
-        await Reject("equipment-out-of-order-performance", outOfOrderEquipment);
-        await Reject("equipment-unknown-historical-actor", Change<EquipmentInspection>(bundle, inspection =>
-        {
-            var changed = inspection.Completion! with { RecordedBy = Guid.NewGuid() };
-            inspection.Completion = changed with { Digest = EquipmentInspectionWorkflow.CompletionDigest(inspection, changed) };
-        }, x => x.Status == EquipmentInspectionStatus.Completed));
-        await Reject("equipment-original-wrong-completion-digest", ChangeInspectionDocument(bundle, document => document.SourceDigest = new string('0', 64)),
-            issue => issue.Message == "An equipment inspection original must bind to the sealed completion digest.");
-        var otherCompletedInspection = checkedSource.Entities.OfType<EquipmentInspection>().Single(x => x.Completion?.Result == EquipmentInspectionResult.Passed);
-        await Reject("equipment-original-swapped-source", ChangeInspectionDocument(bundle, document => document.SourceId = otherCompletedInspection.Id),
-            issue => issue.Message == "An equipment inspection original must bind to the sealed completion digest.");
-        var scheduledInspection = checkedSource.Entities.OfType<EquipmentInspection>().Single(x => x.Status == EquipmentInspectionStatus.Scheduled);
-        await Reject("equipment-original-unperformed-source", ChangeInspectionDocument(bundle, document =>
-        { document.SourceId = scheduledInspection.Id; document.SourceDigest = scheduledInspection.ScopeDigest; }),
-            issue => issue.Message == "An equipment inspection original must refer to a completed inspection.");
-        var cancelledInspection = checkedSource.Entities.OfType<EquipmentInspection>().Single(x => x.Status == EquipmentInspectionStatus.Cancelled);
-        await Reject("equipment-original-cancelled-source", ChangeInspectionDocument(bundle, document =>
-        { document.SourceId = cancelledInspection.Id; document.SourceDigest = cancelledInspection.Cancellation!.Digest; }),
-            issue => issue.Message == "An equipment inspection original must refer to a completed inspection.");
-        await Reject("equipment-original-cross-tenant-source", ChangeInspectionDocument(bundle, document => document.TenantId = bundle.Tenants[1].Data.Id),
-            issue => issue.Message.StartsWith("Missing tenant-qualified equipment-inspections reference", StringComparison.Ordinal));
-        await Reject("equipment-original-project-rebinding", ChangeInspectionDocument(bundle, document =>
-        { document.ProjectId = checkedSource.Entities.OfType<Project>().Single().Id; document.ProjectKind = "projects"; }),
-            issue => issue.Message == "An equipment inspection original must retain its supported document format and independent equipment source.");
-        await Reject("equipment-original-changed-format-marker", ChangeInspectionDocument(bundle, document => document.RendererVersion = "unverified-original"),
-            issue => issue.Message == "An equipment inspection original must retain its supported document format and independent equipment source.");
-        await Reject("equipment-original-before-completion", ChangeInspectionDocument(bundle, document => document.CreatedAt = checkedSource.Entities.OfType<EquipmentInspection>()
-            .Single(x => x.Id == document.SourceId).Completion!.RecordedAt.AddTicks(-10)),
-            issue => issue.Message == "An equipment inspection original cannot predate its sealed completion or postdate the export.");
-        await Reject("equipment-original-after-export", ChangeInspectionDocument(bundle, document => document.CreatedAt = bundle.ExportedAt.AddTicks(10)),
-            issue => issue.Message == "An equipment inspection original cannot predate its sealed completion or postdate the export.");
-        await Reject("equipment-original-missing-version", ChangeInspectionDocument(bundle, document => document.VersionId = null),
-            issue => issue.Message == "An equipment inspection original must retain its immutable source version.");
-        await Reject("customer-contact-unknown-creator", Change<Customer>(bundle, customer =>
-            customer.Contacts![0] = customer.Contacts[0] with { CreatedBy = Guid.NewGuid() }),
-            issue => issue.Message == "A historical actor/user must retain a supplied tenant membership, including inactive members.");
-        await Reject("customer-contact-unknown-editor", Change<Customer>(bundle, customer =>
-            customer.Contacts![0] = customer.Contacts[0] with { UpdatedBy = Guid.NewGuid() }),
-            issue => issue.Message == "A historical actor/user must retain a supplied tenant membership, including inactive members.");
-        await Reject("customer-contact-unknown-archiver", Change<Customer>(bundle, customer =>
-        {
-            var index = customer.Contacts!.FindIndex(contact => contact.Archived); var actor = Guid.NewGuid();
-            customer.Contacts[index] = customer.Contacts[index] with { UpdatedBy = actor, ArchivedBy = actor };
-        }), issue => issue.Message == "A historical actor/user must retain a supplied tenant membership, including inactive members.");
-        await Reject("customer-contact-after-customer-envelope", Change<Customer>(bundle, customer =>
-            customer.Contacts![0] = customer.Contacts[0] with { UpdatedAt = customer.UpdatedAt.AddTicks(10) }),
-            issue => issue.Message == "Customer contact history must fit its retained customer envelope and export date.");
-        await RejectOperationalLedgerSources(bundle, checkedSource.Entities, Reject);
-        var collision = bundle.Counters.Select(x => x.Kind == "AN" && x.Value > 0 ? x with { Value = x.Value - 1, ExpectedNextNumber = $"AN-{x.Year}-{x.Value:D6}" } : x).ToList();
-        await Reject("numbering-collision", Controls(bundle with { Counters = collision }));
-        await Reject("explicit-unresolved-source", bundle with { Uncertainties = [new("legacy_delivery_unknown", "Synthetic old export lacks provider acknowledgement; the original uncertainty is retained.", bundle.Tenants[0].Data.Id, "quotes", checkedSource.Entities.OfType<Quote>().Single().Id, bundle.EvidenceFiles[0].File)] });
+        await RejectCanonicalSources(bundle, checkedSource.Entities, Reject);
         // A malformed numeric exponent must produce a concrete Blocked dry-run
         // report, rather than disappearing into a generic unreported exception.
         await File.WriteAllTextAsync(Path.Combine(sourceDirectory, "migration.json"), "{\"format\":\"firstblick.migration.v1\",\"sourceEvidence\":1e9999999999999999999}");
@@ -300,6 +211,105 @@ internal static class MigrationDrill
         await MigrationJson.WriteReport(Path.Combine(directory, "migration-drill.json"), report); return report;
     }
 
+    // The container drill and isolated canonical-source harness execute the same
+    // mutations, so fixture interactions cannot hide behind a narrower local suite.
+    private static async Task RejectCanonicalSources(MigrationBundle bundle, IEnumerable<TenantEntity> original,
+        Func<string, MigrationBundle, Func<MigrationIssue, bool>?, Task> reject)
+    {
+        var entities = original.ToArray();
+        Task Reject(string name, MigrationBundle altered, Func<MigrationIssue, bool>? expectedIssue = null) =>
+            reject(name, altered, expectedIssue);
+        await Reject("supplier-invoice-missing-other-default", ChangeSupplierInvoiceShape(bundle, value => value.Remove("reviewNote")),
+            issue => issue.Location.StartsWith("supplier-invoices/", StringComparison.Ordinal) && issue.Message.Contains("complete canonical typed JSON", StringComparison.Ordinal));
+        await Reject("supplier-invoice-unknown-property", ChangeSupplierInvoiceShape(bundle, value => value["unexpectedLegacyProperty"] = null),
+            issue => issue.Location.StartsWith("supplier-invoices/", StringComparison.Ordinal) && issue.Message == nameof(JsonException));
+        await Reject("changed-frozen-price", Change<Quote>(bundle, quote => quote.Lines[0].UnitMaterialCost += 1m));
+        await Reject("missing-historical-parties", Change<Quote>(bundle, quote => quote.Presentation = null));
+        await Reject("unknown-dispatch-state", Change<Quote>(bundle, quote => quote.Deliveries[0].State = DeliveryState.Uncertain));
+        await Reject("missing-tenant-reference", Change<Project>(bundle, project => project.CustomerId = Guid.NewGuid()));
+        await Reject("unknown-method-version", Change<TechnicalRecord>(bundle, calculation => { calculation.MethodVersion = "999.0.0"; calculation.Digest = TechnicalRecords.Digest(calculation); }));
+        var invalidZone = AppJson.Read<BusinessTenant>(AppJson.Serialize(bundle.Tenants[0].Data)); invalidZone.TimeZone = "Synthetic/Unavailable_Zone";
+        await Reject("unknown-business-timezone", bundle with { Tenants = [bundle.Tenants[0] with { Data = invalidZone }, .. bundle.Tenants.Skip(1)] });
+        var customerBankId = entities.OfType<PaymentAllocation>().Single().BankTransactionId;
+        await Reject("cross-ledger-bank-overallocation", Change<SupplierPaymentAllocation>(bundle, allocation =>
+        { allocation.BankTransactionId = customerBankId; allocation.PostedDigest = PayablesWorkflow.AllocationDigest(allocation); }, x => x.Direction == SupplierPaymentDirection.Refund));
+        await Reject("warehouse-transfer-pair-mismatch", Change<StockMovement>(bundle, movement =>
+        { movement.Quantity -= 1m; movement.PostedDigest = InventoryRules.MovementDigest(movement); }, x => x.Kind == StockMovementKind.TransferOut));
+        await Reject("supplier-return-wrong-source", Change<StockMovement>(bundle, movement =>
+        { movement.Reference = Guid.NewGuid().ToString("D"); movement.PostedDigest = InventoryRules.MovementDigest(movement); }, x => x.Kind == StockMovementKind.SupplierReturn));
+        await Reject("project-return-wrong-value", Change<StockMovement>(bundle, movement =>
+        { movement.UnitCost += 1m; movement.PostedDigest = InventoryRules.MovementDigest(movement); }, x => x.Kind == StockMovementKind.Return));
+        await Reject("warehouse-chain-cycle", Change<StockMovement>(bundle, movement =>
+        { movement.TransferSourceId = movement.Id; movement.PostedDigest = InventoryRules.MovementDigest(movement); }, x => x.Kind == StockMovementKind.TransferIn));
+        await Reject("warehouse-branch-overallocation-with-other-stock", OverallocateWarehouseBranch(bundle),
+            issue => issue.Code == "invalid_transfer_chain" && issue.Message.Contains("over-allocates a source quantity", StringComparison.Ordinal));
+        await Reject("purchase-receipt-status-mismatch", Change<PurchaseOrder>(bundle, purchase => purchase.Status = PurchaseOrderStatus.Received),
+            issue => issue.Message == "Imported purchase order status differs from its net purchase receipts and supplier returns.");
+        await Reject("stock-movement-after-export", Change<StockMovement>(bundle, movement =>
+        { movement.OccurredAt = bundle.ExportedAt.AddTicks(10); movement.PostedDigest = InventoryRules.MovementDigest(movement); }, x => x.Kind == StockMovementKind.Adjustment),
+            issue => issue.Message == "Historical inventory movements cannot postdate the export.");
+        await Reject("archived-stock-movement", Change<StockMovement>(bundle, movement => movement.Archived = true, x => x.Kind == StockMovementKind.Adjustment),
+            issue => issue.Message == "Historical inventory movements cannot be archived out of the active stock ledger.");
+        await Reject("equipment-result-projection-mismatch", Change<Equipment>(bundle, equipment => equipment.LastInspectionOn = equipment.LastInspectionOn!.Value.AddDays(-1)));
+        await Reject("equipment-missing-planned-check", Change<Equipment>(bundle, equipment => equipment.PendingInspectionId = null));
+        var outOfOrderEquipment = Change<EquipmentInspection>(bundle, inspection =>
+        {
+            var changed = inspection.Completion! with { PerformedOn = inspection.Completion.PerformedOn.AddDays(-1) };
+            inspection.Completion = changed with { Digest = EquipmentInspectionWorkflow.CompletionDigest(inspection, changed) };
+        }, x => x.Completion?.Result == EquipmentInspectionResult.Passed);
+        outOfOrderEquipment = Change<Equipment>(outOfOrderEquipment, equipment => equipment.LastInspectionOn = equipment.LastInspectionOn!.Value.AddDays(-1));
+        await Reject("equipment-out-of-order-performance", outOfOrderEquipment);
+        await Reject("equipment-unknown-historical-actor", Change<EquipmentInspection>(bundle, inspection =>
+        {
+            var changed = inspection.Completion! with { RecordedBy = Guid.NewGuid() };
+            inspection.Completion = changed with { Digest = EquipmentInspectionWorkflow.CompletionDigest(inspection, changed) };
+        }, x => x.Status == EquipmentInspectionStatus.Completed));
+        await Reject("equipment-original-wrong-completion-digest", ChangeInspectionDocument(bundle, document => document.SourceDigest = new string('0', 64)),
+            issue => issue.Message == "An equipment inspection original must bind to the sealed completion digest.");
+        var otherCompletedInspection = entities.OfType<EquipmentInspection>().Single(x => x.Completion?.Result == EquipmentInspectionResult.Passed);
+        await Reject("equipment-original-swapped-source", ChangeInspectionDocument(bundle, document => document.SourceId = otherCompletedInspection.Id),
+            issue => issue.Message == "An equipment inspection original must bind to the sealed completion digest.");
+        var scheduledInspection = entities.OfType<EquipmentInspection>().Single(x => x.Status == EquipmentInspectionStatus.Scheduled);
+        await Reject("equipment-original-unperformed-source", ChangeInspectionDocument(bundle, document =>
+        { document.SourceId = scheduledInspection.Id; document.SourceDigest = scheduledInspection.ScopeDigest; }),
+            issue => issue.Message == "An equipment inspection original must refer to a completed inspection.");
+        var cancelledInspection = entities.OfType<EquipmentInspection>().Single(x => x.Status == EquipmentInspectionStatus.Cancelled);
+        await Reject("equipment-original-cancelled-source", ChangeInspectionDocument(bundle, document =>
+        { document.SourceId = cancelledInspection.Id; document.SourceDigest = cancelledInspection.Cancellation!.Digest; }),
+            issue => issue.Message == "An equipment inspection original must refer to a completed inspection.");
+        await Reject("equipment-original-cross-tenant-source", ChangeInspectionDocument(bundle, document => document.TenantId = bundle.Tenants[1].Data.Id),
+            issue => issue.Message.StartsWith("Missing tenant-qualified equipment-inspections reference", StringComparison.Ordinal));
+        await Reject("equipment-original-project-rebinding", ChangeInspectionDocument(bundle, document =>
+        { document.ProjectId = entities.OfType<Project>().Single().Id; document.ProjectKind = "projects"; }),
+            issue => issue.Message == "An equipment inspection original must retain its supported document format and independent equipment source.");
+        await Reject("equipment-original-changed-format-marker", ChangeInspectionDocument(bundle, document => document.RendererVersion = "unverified-original"),
+            issue => issue.Message == "An equipment inspection original must retain its supported document format and independent equipment source.");
+        await Reject("equipment-original-before-completion", ChangeInspectionDocument(bundle, document => document.CreatedAt = entities.OfType<EquipmentInspection>()
+            .Single(x => x.Id == document.SourceId).Completion!.RecordedAt.AddTicks(-10)),
+            issue => issue.Message == "An equipment inspection original cannot predate its sealed completion or postdate the export.");
+        await Reject("equipment-original-after-export", ChangeInspectionDocument(bundle, document => document.CreatedAt = bundle.ExportedAt.AddTicks(10)),
+            issue => issue.Message == "An equipment inspection original cannot predate its sealed completion or postdate the export.");
+        await Reject("equipment-original-missing-version", ChangeInspectionDocument(bundle, document => document.VersionId = null),
+            issue => issue.Message == "An equipment inspection original must retain its immutable source version.");
+        await Reject("customer-contact-unknown-creator", ChangeContact(bundle, contact => !contact.Archived,
+            (_, contact) => contact with { CreatedBy = Guid.NewGuid() }),
+            issue => issue.Message == "A historical actor/user must retain a supplied tenant membership, including inactive members.");
+        await Reject("customer-contact-unknown-editor", ChangeContact(bundle, contact => !contact.Archived,
+            (_, contact) => contact with { UpdatedBy = Guid.NewGuid() }),
+            issue => issue.Message == "A historical actor/user must retain a supplied tenant membership, including inactive members.");
+        await Reject("customer-contact-unknown-archiver", ChangeContact(bundle, contact => contact.Archived, (_, contact) =>
+        {
+            var actor = Guid.NewGuid(); return contact with { UpdatedBy = actor, ArchivedBy = actor };
+        }), issue => issue.Message == "A historical actor/user must retain a supplied tenant membership, including inactive members.");
+        await Reject("customer-contact-after-customer-envelope", ChangeContact(bundle, contact => !contact.Archived,
+            (customer, contact) => contact with { UpdatedAt = customer.UpdatedAt.AddTicks(10) }),
+            issue => issue.Message == "Customer contact history must fit its retained customer envelope and export date.");
+        await RejectOperationalLedgerSources(bundle, entities, Reject);
+        var collision = bundle.Counters.Select(x => x.Kind == "AN" && x.Value > 0 ? x with { Value = x.Value - 1, ExpectedNextNumber = $"AN-{x.Year}-{x.Value:D6}" } : x).ToList();
+        await Reject("numbering-collision", Controls(bundle with { Counters = collision }));
+        await Reject("explicit-unresolved-source", bundle with { Uncertainties = [new("legacy_delivery_unknown", "Synthetic old export lacks provider acknowledgement; the original uncertainty is retained.", bundle.Tenants[0].Data.Id, "quotes", entities.OfType<Quote>().Single().Id, bundle.EvidenceFiles[0].File)] });
+    }
+
     private static async Task WriteBundle(string directory, MigrationBundle bundle) => await File.WriteAllTextAsync(Path.Combine(directory, "migration.json"), JsonSerializer.Serialize(bundle, MigrationJson.Options));
     private static MigrationBundle ChangeSupplierInvoiceShape(MigrationBundle bundle, Action<JsonObject> mutation)
     {
@@ -319,6 +329,14 @@ internal static class MigrationDrill
         var entity = AppJson.Read<T>(list[index].Data.GetRawText()); mutation(entity); var data = MigrationJson.Element(entity);
         list[index] = list[index] with { Data = data, Sha256 = MigrationJson.Hash(data) }; return Controls(bundle with { Entities = list });
     }
+    private static MigrationBundle ChangeContact(MigrationBundle bundle, Func<CustomerContact, bool> select,
+        Func<Customer, CustomerContact, CustomerContact> mutation) => Change<Customer>(bundle, customer =>
+    {
+        var index = customer.Contacts!.FindIndex(contact => select(contact));
+        // An archived contact seals its last editor/time to its archiver/time.
+        // Select a contact whose other invariants remain valid for this fault.
+        customer.Contacts[index] = mutation(customer, customer.Contacts[index]);
+    }, customer => customer.Contacts?.Any(select) == true);
     private static MigrationBundle ChangeInspectionDocument(MigrationBundle bundle, Action<DocumentObject> mutation)
     {
         var documents = bundle.Documents.ToList(); var index = documents.FindIndex(x => x.Data.SourceKind == "equipment-inspections");

@@ -111,7 +111,7 @@ public static class CustomerCommunicationWorkflow
             TenantId = customer.TenantId, CreatedAt = now, UpdatedAt = now, CustomerId = customer.Id, CustomerName = customer.Name,
             Channel = request.Channel, Direction = request.Direction, OccurredAt = request.OccurredAt,
             Subject = request.Subject.Trim(), Text = request.Text, Contact = contactSnapshot,
-            Project = project is null ? null : new(project.Id, project.Name, project.Number), RecordedAt = now, RecordedBy = actor
+            Project = project is null ? null : new(project.Id, project.Name, project.Number ?? ""), RecordedAt = now, RecordedBy = actor
         };
         entry.Digest = Digest(entry); entry.Validate(); return entry;
     }

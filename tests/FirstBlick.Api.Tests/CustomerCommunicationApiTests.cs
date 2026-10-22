@@ -57,6 +57,19 @@ public sealed class CustomerCommunicationApiTests(PostgresApiFixture fixture) : 
     }
 
     [PostgresApiFact]
+    public async Task Legacy_null_project_number_is_normalized_only_in_the_new_snapshot()
+    {
+        var s = await Setup(); var project = await ProjectFor(s.Client, s.Customer); project.Number = null!;
+        project = await Ok<Project>(Send(s.Client, HttpMethod.Put, $"/api/v1/projects/{project.Id}", project, project.Revision));
+        var retained = await Stored(s.Owner.TenantId, project.Id);
+        var created = await Ok<CustomerCommunicationChange>(Send(s.Client, HttpMethod.Post, Path(s.Customer),
+            Request() with { ProjectId = project.Id }, s.Customer.Revision));
+        Assert.Equal("", created.Entry.Project!.Number); created.Entry.Validate();
+        Assert.Equal(retained, await Stored(s.Owner.TenantId, project.Id));
+        Assert.Null((await fixture.Read<Project>(s.Owner.TenantId, project.Id)).Number);
+    }
+
+    [PostgresApiFact]
     public async Task Missing_stale_and_concurrent_revisions_cannot_write_two_entries()
     {
         var s = await Setup();
@@ -160,6 +173,31 @@ public sealed class CustomerCommunicationApiTests(PostgresApiFixture fixture) : 
         await Error(Send(s.Client, HttpMethod.Put, $"/api/v1/projects/{project.Id}", project, project.Revision), "communication_project");
         Assert.Equal(customer.Id, (await fixture.Read<Project>(s.Owner.TenantId, project.Id)).CustomerId);
         await Ok<CustomerCommunicationsView>(s.Client.GetAsync(Path(customer)));
+    }
+
+    [PostgresApiFact]
+    public async Task Restored_archived_customer_history_remains_readable_but_blocks_new_commands_and_replay()
+    {
+        var s = await Setup(); var key = Guid.NewGuid().ToString("N"); var body = Request();
+        var created = await Ok<CustomerCommunicationChange>(Send(s.Client, HttpMethod.Post, Path(s.Customer), body, s.Customer.Revision, key));
+        var original = await Stored(s.Owner.TenantId, created.Entry.Id);
+        // Canonical migration may retain an already archived master. The public
+        // archive command correctly refuses to manufacture this state once linked.
+        await fixture.InScope(async services =>
+        {
+            var db = services.GetRequiredService<FirstBlickDbContext>();
+            var row = await db.Entities.IgnoreQueryFilters().SingleAsync(x => x.TenantId == s.Owner.TenantId && x.Kind == "customers" && x.Id == s.Customer.Id);
+            var customer = AppJson.Read<Customer>(row.Data); customer.Archived = true; customer.Validate();
+            row.Data = AppJson.Serialize(customer); row.Archived = true; await db.SaveChangesAsync();
+        });
+        var retainedCustomer = await Stored(s.Owner.TenantId, s.Customer.Id);
+        var history = await Ok<CustomerCommunicationsView>(s.Client.GetAsync(Path(s.Customer)));
+        Assert.True(history.CustomerArchived); Assert.Equal(created.Entry.Id, Assert.Single(history.Items).Entry.Id);
+        await Error(Send(s.Client, HttpMethod.Post, Path(s.Customer), body, created.CustomerRevision), "not_found", HttpStatusCode.NotFound);
+        await Error(Send(s.Client, HttpMethod.Post, Path(s.Customer), body, s.Customer.Revision, key), "not_found", HttpStatusCode.NotFound);
+        await Error(Send(s.Client, HttpMethod.Post, VoidPath(s.Customer, created.Entry.Id), new CustomerCommunicationVoidRequest(created.Entry.Digest, "Korrektur"), created.CustomerRevision), "not_found", HttpStatusCode.NotFound);
+        Assert.Equal(original, await Stored(s.Owner.TenantId, created.Entry.Id));
+        Assert.Equal(retainedCustomer, await Stored(s.Owner.TenantId, s.Customer.Id));
     }
 
     [PostgresApiFact]

@@ -9,7 +9,7 @@ namespace FirstBlick.Api;
 
 public sealed record CustomerCommunicationItem(CustomerCommunication Entry, CustomerCommunicationVoid? Voiding);
 public sealed record CustomerCommunicationsView(Guid CustomerId, Guid TenantId, string CustomerName, long CustomerRevision,
-    string TimeZone, IReadOnlyList<CustomerCommunicationItem> Items, long Total, int Page, int PageSize);
+    string TimeZone, bool CustomerArchived, IReadOnlyList<CustomerCommunicationItem> Items, long Total, int Page, int PageSize);
 public sealed record CustomerCommunicationChange(Guid CustomerId, Guid TenantId, string CustomerName, long CustomerRevision,
     CustomerCommunication Entry, CustomerCommunicationVoid? Voiding);
 public sealed record CustomerCommunicationVoidRequest(string SourceDigest, string Reason);
@@ -20,7 +20,7 @@ public static class CustomerCommunicationEndpoints
     {
         api.MapGet("/customers/{id:guid}/communications", History).WithTags("customer-communications");
         api.MapPost("/customers/{id:guid}/communications", (Guid id, CustomerCommunicationRequest body, [AsParameters] BusinessCommandServices c) =>
-            c.Execute("customer-communications", "customer.communication_record", body, async ct =>
+            c.Commands.Execute(c.Http, "customer-communications", "customer.communication_record", body, async ct =>
             {
                 var customer = await c.Current<Customer>(id, ct);
                 Project? project = body.ProjectId is { } projectId ? await c.Current<Project>(projectId, ct, false) : null;
@@ -28,10 +28,10 @@ public static class CustomerCommunicationEndpoints
                 await c.Store.Save(entry, "customer.communication_recorded", true, ct);
                 await c.Store.Save(customer, "customer.communication_record", false, ct);
                 return Change(customer, entry, null);
-            })).Produces<CustomerCommunicationChange>();
+            }, async ct => { _ = await c.Current<Customer>(id, ct, false); })).Produces<CustomerCommunicationChange>();
         api.MapPost("/customers/{id:guid}/communications/{entryId:guid}/void", (Guid id, Guid entryId,
             CustomerCommunicationVoidRequest body, [AsParameters] BusinessCommandServices c) =>
-            c.Execute("customer-communications", "customer.communication_void", body, async ct =>
+            c.Commands.Execute(c.Http, "customer-communications", "customer.communication_void", body, async ct =>
             {
                 var customer = await c.Current<Customer>(id, ct);
                 var entry = await c.Store.Get<CustomerCommunication>(entryId, ct); entry.Validate();
@@ -44,14 +44,15 @@ public static class CustomerCommunicationEndpoints
                 await c.Store.Save(voiding, "customer.communication_voided", true, ct);
                 await c.Store.Save(customer, "customer.communication_void", false, ct);
                 return Change(customer, entry, voiding);
-            })).Produces<CustomerCommunicationChange>();
+            }, async ct => { _ = await c.Current<Customer>(id, ct, false); })).Produces<CustomerCommunicationChange>();
     }
 
     private static async Task<IResult> History(Guid id, [AsParameters] BusinessCommandServices c, CancellationToken ct, int page = 1)
     {
         await using var transaction = await c.Db.Database.BeginTransactionAsync(IsolationLevel.RepeatableRead, ct);
         await c.Commands.Authorize("customer-communications", false, ct);
-        var customer = await c.Current<Customer>(id, ct, false); customer.Validate();
+        await RecordPolicy.EnsureVisible("customers", id, c.Scope, c.Store, ct);
+        var customer = await c.Store.Get<Customer>(id, ct); customer.Validate();
         var links = c.Db.Links.Where(x => x.SourceKind == "customer-communications" && x.TargetKind == "customers" && x.TargetId == id);
         var query = c.Db.Entities.AsNoTracking().Where(x => x.Kind == "customer-communications" && links.Any(l => l.SourceId == x.Id));
         var total = await query.LongCountAsync(ct);
@@ -94,7 +95,7 @@ public static class CustomerCommunicationEndpoints
         var items = entries.Select(entry => new CustomerCommunicationItem(entry, voidings.GetValueOrDefault(entry.Id))).ToArray();
         await transaction.CommitAsync(ct);
         c.Http.Response.Headers.ETag = $"\"{customer.Revision}\"";
-        return Results.Ok(new CustomerCommunicationsView(id, c.Scope.TenantId, customer.Name, customer.Revision, browserZone, items, total, page, pageSize));
+        return Results.Ok(new CustomerCommunicationsView(id, c.Scope.TenantId, customer.Name, customer.Revision, browserZone, customer.Archived, items, total, page, pageSize));
     }
 
     private static CustomerCommunicationChange Change(Customer customer, CustomerCommunication entry, CustomerCommunicationVoid? voiding)

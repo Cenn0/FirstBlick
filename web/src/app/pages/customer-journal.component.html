@@ -1,0 +1,43 @@
+<section aria-labelledby="customer-journal-title">
+  <div class="journal-heading"><div><h3 id="customer-journal-title">Kommunikationsakte</h3><p class="small muted">Telefonate, Besprechungen und bereits geführte Nachrichten zum Kunden dokumentieren.</p></div>
+    <button class="button secondary" type="button" (click)="toggle()" [disabled]="busy()" [attr.aria-expanded]="opened()">{{opened()?'Kommunikationsakte schließen':'Kommunikationsakte öffnen'}}</button></div>
+  @if(opened()){
+    @if(error()){<div class="alert error" role="alert">{{error()}}</div>}@if(notice()){<p role="status" class="alert success">{{notice()}}</p>}
+    @if(loading()){<p role="status">Kommunikationsakte wird geladen …</p>}
+    <div class="journal-actions"><button class="button secondary" type="button" (click)="load(1,true)" [disabled]="busy()||loading()">Kommunikationsakte neu laden</button>
+      @if(writable()){<button class="button primary" type="button" (click)="newEntry()" [disabled]="!actionAllowed()">Kommunikation dokumentieren</button>}</div>
+    @if(stale()){<p class="alert warning">Laden Sie die Kommunikationsakte neu und prüfen Sie den gespeicherten Stand, bevor Sie weitere Einträge erfassen.</p>}
+    @if(journal();as book){
+      @if(book.customerArchived){<p class="alert information">Dieser Kunde ist archiviert. Die historische Kommunikationsakte bleibt lesbar; neue Einträge und Stornierungen sind gesperrt.</p>}
+      <p class="small muted">{{book.total}} Einträge · neueste Kommunikation zuerst · Betriebszeitzone {{book.timeZone}}</p>
+      @if(editing()&&writable()){
+        <form class="journal-editor" (ngSubmit)="save()" #journalForm="ngForm"><h4>Kommunikation erfassen</h4><fieldset [disabled]="busy()||loading()||stale()"><div class="form-grid">
+          <div class="form-field"><label for="journal-channel">Art der Kommunikation</label><select id="journal-channel" name="channel" [(ngModel)]="channel" (ngModelChange)="channelChanged()"><option value="Telephone">Telefonat</option><option value="Email">E-Mail</option><option value="Meeting">Besprechung</option><option value="Note">Interne Notiz</option></select></div>
+          <div class="form-field"><label for="journal-direction">Richtung</label><select id="journal-direction" name="direction" [(ngModel)]="direction" [disabled]="channel==='Note'"><option value="Incoming">Eingehend</option><option value="Outgoing">Ausgehend</option><option value="Internal">Intern</option></select></div>
+          <div class="form-field"><label for="journal-occurred">Datum und Uhrzeit der Kommunikation</label><input id="journal-occurred" name="occurred" type="datetime-local" step="1" [(ngModel)]="occurredLocal" (ngModelChange)="offset='';confirmed=false" required><small>{{book.timeZone}}</small>
+            @if(choices().length>1){<label for="journal-offset">Zeitversatz der Kommunikation</label><select id="journal-offset" name="offset" [(ngModel)]="offset" required><option value="">Doppelte Ortsstunde: auswählen</option>@for(choice of choices();track choice.offset){<option [value]="choice.offset">{{choice.label}}</option>}</select>}</div>
+          <div class="form-field"><label for="journal-contact">Ansprechpartner zur Kommunikation</label><select id="journal-contact" name="contact" [(ngModel)]="contactId" [disabled]="contactsLoading()"><option value="">Ohne Ansprechpartner</option>@for(contact of contacts();track contact.id){<option [value]="contact.id">{{contact.name}}@if(contact.function){ · {{contact.function}}}</option>}</select>@if(contactsLoading()){<small role="status">Ansprechpartner werden geladen …</small>}</div>
+          <div class="form-field full-width"><label for="journal-subject">Betreff der Kommunikation *</label><input id="journal-subject" name="subject" [(ngModel)]="subject" maxlength="240" required></div>
+          <div class="form-field full-width"><label for="journal-text">Inhalt und Vereinbarungen *</label><textarea id="journal-text" name="text" [(ngModel)]="text" rows="5" maxlength="20000" required></textarea></div>
+          @if(auth.can('projects.read')){<div class="full-width"><app-ledger-picker kind="projects" label="Projekt" [customerId]="book.customerId" [selection]="project()" [disabled]="busy()||stale()" (chosen)="project.set($event)" /></div>}
+          <label class="checkbox-label full-width"><input type="checkbox" name="confirmed" [(ngModel)]="confirmed">Angaben geprüft; der Eintrag wird unveränderlich dokumentiert.</label>
+        </div><p class="small muted">Hier wird eine bereits geführte Kommunikation erfasst. Eine E-Mail wird dadurch nicht versendet. Korrekturen erfolgen durch Stornierung und einen neuen Eintrag.</p></fieldset>
+          <div class="journal-actions"><button class="button primary" type="submit" [disabled]="journalForm.invalid||!saveAllowed()">Kommunikation speichern</button><button class="button secondary" type="button" (click)="cancel()" [disabled]="busy()">Erfassung abbrechen</button></div>
+        </form>
+      }
+      <div class="journal-list">@for(item of book.items;track item.entry.id){
+        <article class="journal-entry" [attr.data-voided]="!!item.voiding"><h4>{{item.entry.subject}}</h4><p class="small"><span class="badge">{{channels[item.entry.channel]}}</span><span class="badge">{{directions[item.entry.direction]}}</span>@if(item.voiding){<span class="badge">Storniert</span>} · {{date(item.entry.occurredAt)}}</p>
+          @if(item.entry.contact;as contact){<p class="small">Ansprechpartner: <strong>{{contact.name}}</strong>@if(contact.function){ · {{contact.function}}}@if(contact.email){ · {{contact.email}}}@if(contact.phone){ · {{contact.phone}}}</p>}
+          @if(item.entry.project;as project){<p class="small">Projekt: <a routerLink="/projects" [queryParams]="{selected:project.id}">{{project.name}}@if(project.number){ · {{project.number}}}</a></p>}
+          <p class="journal-text">{{item.entry.text}}</p><p class="small muted">Dokumentiert am {{date(item.entry.recordedAt)}} · damaliger Kunde: {{item.entry.customerName}}</p>
+          @if(item.voiding;as voiding){<p><strong>Stornierungsgrund:</strong> {{voiding.reason}}</p><p class="small muted">Storniert am {{date(voiding.voidedAt)}}. Der ursprüngliche Inhalt bleibt lesbar.</p>}
+          @else if(writable()){
+            @if(voiding()===item.entry.id){<form class="void-form" (ngSubmit)="voidEntry(item)"><label [for]="'void-'+item.entry.id">Grund der Stornierung *</label><textarea [id]="'void-'+item.entry.id" name="voidReason" [(ngModel)]="voidReason" maxlength="2000" rows="2" required [disabled]="busy()||stale()"></textarea><div class="journal-actions"><button class="button secondary" type="submit" [disabled]="!actionAllowed()||!voidReason.trim()">Eintrag mit Grund stornieren</button><button class="text-button" type="button" (click)="cancel()" [disabled]="busy()">Stornierung abbrechen</button></div></form>}
+            @else{<button class="text-button" type="button" (click)="beginVoid(item)" [disabled]="!actionAllowed()" [attr.aria-label]="item.entry.subject+' stornieren'">Eintrag stornieren</button>}
+          }
+        </article>
+      }@empty{<p class="muted">Noch keine Kommunikation dokumentiert.</p>}</div>
+      <div class="journal-pager"><button class="button secondary" type="button" (click)="load(book.page-1,false)" [disabled]="book.page<=1||loading()||busy()">Neuere Kommunikation</button><span>Seite {{book.page}} · {{book.total}} Einträge</span><button class="button secondary" type="button" (click)="load(book.page+1,false)" [disabled]="book.page*book.pageSize>=book.total||loading()||busy()">Ältere Kommunikation</button></div>
+    }
+  }
+</section>

@@ -26,6 +26,7 @@ export const routes: Routes = [
   { path: 'quantity-links', canActivate: [authenticated], loadComponent: () => import('./pages/quantity-links.component').then(m => m.QuantityLinksComponent) },
   { path: 'inventory-control', canActivate: [authenticated], loadComponent: () => import('./pages/inventory-control.component').then(m => m.InventoryControlComponent) },
   { path: 'equipment-inspections', canActivate: [authenticated], loadComponent: () => import('./pages/equipment-workflow.component').then(m => m.EquipmentWorkflowComponent) },
+  { path: 'vehicle-ledger', canActivate: [authenticated], loadComponent: () => import('./pages/vehicle-ledger.component').then(m => m.VehicleLedgerComponent) },
   { path: 'cost-analysis', canActivate: [authenticated], loadComponent: () => import('./pages/cost-analysis.component').then(m => m.CostAnalysisComponent) },
   ...['collections','collection-cases'].map(path=>({path,canActivate:[authenticated],loadComponent:()=>import('./pages/collections-workflow.component').then(m=>m.CollectionsWorkflowComponent)})),
   ...['form-definitions','form-submissions'].map(kind=>({path:kind,canActivate:[authenticated],data:{kind},loadComponent:()=>import('./pages/forms.component').then(m=>m.FormsComponent)})),

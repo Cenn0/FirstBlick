@@ -2,7 +2,17 @@
 
 > Übernommen aus der Projektanalyse „DachPlaner Rework Roadmap“, 19.10.2026 (34 Seiten). Der Originalbericht umfasst 100 Aufgaben in 15 Epics. Diese Fassung erhält alle Aufgabenkennungen und ursprünglichen Abnahmekriterien. Ein implementierter Teilablauf bedeutet nicht automatisch, dass das gesamte Epic abgeschlossen ist.
 
-## Aktuelle Fortsetzung – Kundenkontakte, Prüfungsoriginale und Wartungskalender (21.10.2026)
+## Aktuelle Fortsetzung – Kommunikationsakte, Fahrten und Fahrzeugkosten (22.10.2026)
+
+**Entwicklungsziel ist ausschließlich FirstBlick. DachPlaner bleibt Referenz.**
+
+- **DP-04-01 / DP-09-03:** Die [Kommunikationsakte](customer-communications.md) dokumentiert Telefonate, E-Mails, Besprechungen und interne Notizen beim Kunden, optional mit Ansprechpartner und zugehörigem Projekt. Sie erhält die damaligen Bezeichnungen und unveränderlichen Originalinhalte. Korrekturen werden mit Grund, Person, Zeitpunkt und exaktem Originaldigest separat gespeichert. Verlauf, Seitenwechsel und Erfassung sind in Angular bedienbar; Zeitzone, aktuelle Rechte, Kundenrevision und Idempotenz werden geprüft. Historische Akten archivierter Kunden bleiben lesbar. Automatische Postfach-/Chatübernahme, Versand, Kundenzusammenführung und vollständige Feldänderungshistorien bleiben offen.
+- **DP-07-05:** Der Arbeitsplatz [Fahrten und Fahrzeugkosten](vehicle-ledger.md) verbindet Fahrzeug-/Fahrersuche, abgeschlossene Fahrten mit Kilometerständen, belegreferenzierte EUR-Kosten, begründete Stornos und Monatsauswertung. Die gesamte aktive Historie begrenzt Kilometerfolge und Fahrzeug-/Fahrerüberschneidungen; die Monatsanzeige ist keine Prüfgrenze. Originale, historische Bezeichnungen und Stornos bleiben getrennt erhalten. Die Funktion ist eine betriebliche Aufzeichnung ohne Zusage eines steuerlich anerkannten Fahrtenbuchs oder automatischer Buchhaltung. Telematik, umfassende Kostenintegration und automatische gesetzliche Prüffristen bleiben offen.
+- **Datenübernahme und Betriebsablauf:** [Migrationsprüfung](../tools/FirstBlick.Operations/MigrationGraph.cs) und [Drill](../tools/FirstBlick.Operations/MigrationDrill.cs) prüfen historische Quellen, Akteure, Digests, Zeitfolge und aktive Fahrten. Der neue [Container-/Neustartablauf](../scripts/customer_vehicle_ledgers_smoke.py) erzeugt die Daten über die tatsächliche API und vergleicht danach unveränderte Originale und wirksame Summen. Core-/HTTP-/Clientfälle und responsive Browser-Fixtures ergänzen diese Prüfungen. Erfolgreiche Ausführung ist jeweils am veröffentlichten Commit durch CI, Standards und Operations zu belegen.
+
+Die [Nachweismatrix](roadmap-evidence.md) und [JSON-Fassung](evidence/roadmap-matrix.json) aktualisieren die drei genannten Aufgaben. Ihre Gesamtklassifikation bleibt **T**. Die Inventarzählung **49 K / 45 T / 6 O** ist unverändert und bezeichnet weder eine Fertigstellungsquote noch eine neue Abnahme aller 100 Anforderungen. Ursprüngliche Aufgaben und Abnahmekriterien bleiben erhalten.
+
+## Vorherige Fortsetzung – Kundenkontakte, Prüfungsoriginale und Wartungskalender (21.10.2026)
 
 **Entwicklungsziel ist ausschließlich FirstBlick. DachPlaner bleibt Referenz und wird nicht weiterentwickelt.**
 

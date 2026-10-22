@@ -97,7 +97,9 @@ Browserfälle verwenden kontrollierte HTTP-Antworten. Ausführungsnachweise und
 GitHub-Prüfungen gelten für den jeweiligen veröffentlichten Commit; die Existenz
 einer Testdatei ist noch kein bestandener Prüflauf.
 
-Innerhalb DP-04-01 bleiben insbesondere eine vollständige kundenbezogene
-Kommunikationshistorie, automatische Dublettenbereinigung, die bewusste Zusammenführung
-von Kunden und externe Kontaktsynchronisierung offen. Der Hauptkontakt löst keinen
+Die [Kommunikationsakte](customer-communications.md) ergänzt manuell dokumentierte
+Gespräche mit eingefrorenen Ansprechpartner- und Projektangaben. Innerhalb DP-04-01
+bleiben insbesondere automatische Mail-/Chatübernahme, vollständige Feldänderungshistorien,
+Dublettenbereinigung, die bewusste Zusammenführung von Kunden und externe
+Kontaktsynchronisierung offen. Der Hauptkontakt löst keinen
 Versand aus und ändert keine bereits eingefrorenen Angebote, Aufträge oder Rechnungen.

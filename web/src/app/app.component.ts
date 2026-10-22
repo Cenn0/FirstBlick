@@ -27,6 +27,7 @@ import { errorMessage } from './core/transport';
                   <a class="nav-item" [routerLink]="'/' + module.kind" routerLinkActive="active" (click)="menuOpen.set(false)"><span class="nav-icon" aria-hidden="true">{{module.icon}}</span>{{module.title}}</a>
                 }
                 @if(group.name==='Material & Geräte'&&['ManagingDirector','Office','Accounting','SiteManager'].includes(auth.tenant()?.role||'')&&auth.can('equipment-inspections.read')){<a class="nav-item" routerLink="/equipment-inspections" routerLinkActive="active" (click)="menuOpen.set(false)"><span class="nav-icon" aria-hidden="true">✓</span>Geräteprüfungen</a>}
+                @if(group.name==='Material & Geräte'&&['ManagingDirector','Office','Accounting','SiteManager'].includes(auth.tenant()?.role||'')&&auth.can('vehicle-trips.read')&&auth.can('vehicle-costs.read')){<a class="nav-item" routerLink="/vehicle-ledger" routerLinkActive="active" (click)="menuOpen.set(false)"><span class="nav-icon" aria-hidden="true">↗</span>Fahrten & Fahrzeugkosten</a>}
               </div>
             }
             <div class="nav-group"><p class="nav-group-label">Werkzeuge</p>
