@@ -5,13 +5,15 @@ import { ApiService, Entity, Page } from '../core/api.service';
 import { AuthService } from '../core/auth.service';
 import { ApiError, errorMessage } from '../core/transport';
 import { verifiedMaintenanceCalendar } from '../core/maintenance-calendar';
+import { MaintenanceExecutionPlan, MaintenancePlanningPreview, MaintenanceWeekday, MaintenanceWorkdayPolicy,
+  validatedExecutionPlan, validatedMaintenancePreview, validatedWorkdayPolicy, workdayPolicyFromForm } from '../core/maintenance-workdays';
 
 interface CheckTemplate { title: string; instructions: string }
-interface Contract extends Entity { title: string; scope: string; nextDueDate: string; intervalMonths: number; active: boolean; automaticPlanning: boolean; planningLeadDays: number; checklistTemplate: CheckTemplate[] }
+interface Contract extends Entity { title: string; scope: string; nextDueDate: string; intervalMonths: number; active: boolean; automaticPlanning: boolean; planningLeadDays: number; checklistTemplate: CheckTemplate[]; workdays?: MaintenanceWorkdayPolicy | null }
 type CheckState = 'Pending' | 'Done' | 'NotApplicable';
 interface Check extends CheckTemplate { id: string; state: CheckState; note: string; recordedBy: string | null; recordedAt: string | null }
-interface Visit extends Entity { contractId: string; contractRevision: number; projectId: string; dueDate: string; terms: { title: string; scope: string }; scopeDigest: string; checklist: Check[]; status: 'Planned' | 'Completed'; completionNotes: string; completedAt: string | null; nextDueDate: string | null }
-interface VisitSummary extends Entity { contractId: string; projectId: string; dueDate: string; title: string; status: 'Planned' | 'Completed'; totalChecks: number; completedChecks: number }
+interface Visit extends Entity { contractId: string; contractRevision: number; projectId: string; dueDate: string; executionPlan?: MaintenanceExecutionPlan | null; terms: { title: string; scope: string }; scopeDigest: string; checklist: Check[]; status: 'Planned' | 'Completed'; completionNotes: string; completedAt: string | null; nextDueDate: string | null }
+interface VisitSummary extends Entity { contractId: string; projectId: string; dueDate: string; scheduledDate?: string; title: string; status: 'Planned' | 'Completed'; totalChecks: number; completedChecks: number }
 
 @Component({
   selector: 'app-maintenance', imports: [FormsModule, RouterLink],
@@ -28,6 +30,13 @@ export class MaintenanceComponent implements OnDestroy {
   readonly busy = signal(false); readonly loading = signal(false); readonly error = signal(''); readonly notice = signal('');
   readonly contractPage = signal(1); readonly contractTotal = signal(0); readonly visitPage = signal(1); readonly visitTotal = signal(0);
   active = true; automatic = false; leadDays = 14; template: CheckTemplate[] = []; completionNotes = '';
+  readonly planningPreview = signal<MaintenancePlanningPreview | null>(null);
+  readonly weekdayOptions: { value: MaintenanceWeekday; label: string }[] = [
+    { value: 'Monday', label: 'Montag' }, { value: 'Tuesday', label: 'Dienstag' }, { value: 'Wednesday', label: 'Mittwoch' },
+    { value: 'Thursday', label: 'Donnerstag' }, { value: 'Friday', label: 'Freitag' }, { value: 'Saturday', label: 'Samstag' }, { value: 'Sunday', label: 'Sonntag' }
+  ];
+  useWorkdays = false; workdays: MaintenanceWeekday[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+  excludedDates = ''; previewConfirmed = false;
   checkEdits: Record<string, { state: CheckState; note: string }> = {};
   private generation = 0; private detailVersion = 0; private listVersion = 0;
 
@@ -35,6 +44,7 @@ export class MaintenanceComponent implements OnDestroy {
     effect(() => { this.auth.accessSignature(); const allowed = this.allowed(); untracked(() => {
       this.generation++; this.detailVersion++; this.listVersion++; this.contracts.set([]); this.contract.set(null); this.visits.set([]); this.visit.set(null);
       this.busy.set(false); this.loading.set(false); this.error.set(''); this.notice.set(''); this.template = []; this.checkEdits = {}; this.completionNotes = '';
+      this.clearPreview(); this.useWorkdays = false; this.excludedDates = '';
       this.contractPage.set(1); this.visitPage.set(1); this.contractTotal.set(0); this.visitTotal.set(0);
       if (allowed) void this.refresh();
     }); });
@@ -43,8 +53,20 @@ export class MaintenanceComponent implements OnDestroy {
   date(value: string | null | undefined): string { return value ? value.slice(0, 10).split('-').reverse().join('.') : '–'; }
   status(value: string): string { return value === 'Completed' ? 'Abgeschlossen' : 'Geplant'; }
   private current(generation: number, access: string): boolean { return generation === this.generation && access === this.auth.accessSignature() && this.allowed(); }
-  configurationChanged(): boolean { const c = this.contract(); return !c || this.active !== c.active || this.automatic !== c.automaticPlanning || Number(this.leadDays) !== c.planningLeadDays || JSON.stringify(this.template) !== JSON.stringify(c.checklistTemplate); }
-  templateValid(): boolean { return this.template.length > 0 && this.template.length <= 50 && this.template.every(x => !!x.title.trim() && x.title.length <= 240 && x.instructions.length <= 4000) && Number.isInteger(Number(this.leadDays)) && Number(this.leadDays) >= 0 && Number(this.leadDays) <= 365; }
+  configurationChanged(): boolean {
+    const c = this.contract();
+    try { return !c || this.active !== c.active || this.automatic !== c.automaticPlanning || Number(this.leadDays) !== c.planningLeadDays
+      || JSON.stringify(this.template) !== JSON.stringify(c.checklistTemplate) || JSON.stringify(this.workdayPolicy()) !== JSON.stringify(c.workdays ?? null); }
+    catch { return true; }
+  }
+  private workdayPolicy(): MaintenanceWorkdayPolicy | null { return workdayPolicyFromForm(this.useWorkdays, this.workdays, this.excludedDates); }
+  workdayError(): string { try { this.workdayPolicy(); return ''; } catch (error) { return error instanceof Error ? error.message : 'Prüfen Sie die Arbeitstage.'; } }
+  toggleWorkday(day: MaintenanceWeekday, selected: boolean): void { this.workdays = selected ? [...this.workdays.filter(x => x !== day), day] : this.workdays.filter(x => x !== day); }
+  private clearPreview(): void { this.planningPreview.set(null); this.previewConfirmed = false; }
+  previewRequired(): boolean { return !!this.contract()?.workdays || !!this.planningPreview()?.workdays; }
+  canPlan(): boolean { const c = this.contract(); return !!c && this.canManage() && !this.busy() && !this.loading() && c.active
+    && !this.configurationChanged() && !!c.checklistTemplate.length && (!this.previewRequired() || !!this.planningPreview() && this.previewConfirmed); }
+  templateValid(): boolean { return this.template.length > 0 && this.template.length <= 50 && this.template.every(x => !!x.title.trim() && x.title.length <= 240 && x.instructions.length <= 4000) && Number.isInteger(Number(this.leadDays)) && Number(this.leadDays) >= 0 && Number(this.leadDays) <= 365 && !this.workdayError(); }
   completeEnabled(): boolean { const v = this.visit(); return this.canManage() && !this.busy() && !!v && v.status === 'Planned' && v.checklist.every(x => x.state !== 'Pending' && this.checkEdits[x.id]?.state === x.state && this.checkEdits[x.id]?.note === x.note) && !!this.completionNotes.trim(); }
   checkEnabled(check: Check): boolean { const edit = this.checkEdits[check.id]; return this.canCheck() && !this.busy() && this.visit()?.status === 'Planned' && !!edit && (edit.state !== 'NotApplicable' || !!edit.note.trim()); }
   addCheck(): void { if (this.canManage() && !this.busy() && this.template.length < 50) this.template.push({ title: '', instructions: '' }); }
@@ -67,7 +89,7 @@ export class MaintenanceComponent implements OnDestroy {
   async visitPaging(delta: number): Promise<void> { if (this.loading() || this.busy()) return; this.visitPage.update(x => Math.max(1, x + delta)); await this.refresh(); }
   async selectContract(id: string): Promise<void> {
     if (!this.managers() || this.busy()) return; const generation = this.generation, access = this.auth.accessSignature(), version = ++this.detailVersion;
-    this.contract.set(null); this.visit.set(null); this.template = []; this.error.set(''); this.notice.set(''); this.loading.set(true);
+    this.contract.set(null); this.visit.set(null); this.template = []; this.clearPreview(); this.error.set(''); this.notice.set(''); this.loading.set(true);
     try {
       const value = await this.api.get<Contract>(`maintenance-contracts/${id}`);
       if (!this.current(generation, access) || version !== this.detailVersion) return;
@@ -75,7 +97,7 @@ export class MaintenanceComponent implements OnDestroy {
     } catch (error) { if (this.current(generation, access) && version === this.detailVersion) this.error.set(maintenanceError(error)); }
     finally { if (this.current(generation, access) && version === this.detailVersion) this.loading.set(false); }
   }
-  async allVisits(): Promise<void> { if (this.busy()) return; this.detailVersion++; this.contract.set(null); this.visit.set(null); this.template = []; this.visitPage.set(1); await this.refresh(); }
+  async allVisits(): Promise<void> { if (this.busy()) return; this.detailVersion++; this.contract.set(null); this.visit.set(null); this.template = []; this.clearPreview(); this.visitPage.set(1); await this.refresh(); }
   async openVisit(id: string): Promise<void> {
     if (!this.allowed() || this.busy()) return; const generation = this.generation, access = this.auth.accessSignature(), version = ++this.detailVersion;
     this.visit.set(null); this.checkEdits = {}; this.completionNotes = ''; this.error.set(''); this.loading.set(true);
@@ -113,15 +135,34 @@ export class MaintenanceComponent implements OnDestroy {
   async saveConfiguration(): Promise<void> {
     const c = this.contract(); if (!c || !this.canManage() || this.busy() || !this.templateValid()) return;
     await this.mutation(async () => {
-      const result = await this.api.command<Contract>(`maintenance-contracts/${c.id}/configure`, { active: this.active, automaticPlanning: this.automatic, planningLeadDays: Number(this.leadDays), checklistTemplate: this.template.map(x => ({ ...x })) }, c.revision);
+      const workdays = this.workdayPolicy();
+      const result = await this.api.command<Contract>(`maintenance-contracts/${c.id}/configure`, { active: this.active, automaticPlanning: this.automatic, planningLeadDays: Number(this.leadDays), checklistTemplate: this.template.map(x => ({ ...x })),
+        ...(workdays || c.workdays ? { updateWorkdays: true, workdays } : {}) }, c.revision);
       return () => { this.setContract(result, c.id); this.notice.set('Wartungsablauf gespeichert. Bereits angelegte Termine behalten ihre eigene Checkliste.'); };
     });
   }
+  async loadPlanningPreview(): Promise<void> {
+    const c = this.contract(); if (!c || !this.canManage() || this.busy() || this.loading() || this.configurationChanged() || !c.active) return;
+    const generation = this.generation, access = this.auth.accessSignature(), version = this.detailVersion;
+    this.clearPreview(); this.busy.set(true); this.error.set(''); this.notice.set('');
+    try {
+      const result = await this.api.get<unknown>(`maintenance-contracts/${encodeURIComponent(c.id)}/planning-preview?revision=${c.revision}`);
+      if (!this.current(generation, access) || version !== this.detailVersion || this.contract()?.id !== c.id || this.contract()?.revision !== c.revision) return;
+      this.planningPreview.set(validatedMaintenancePreview(result, { tenantId: this.auth.activeTenantId(), contractId: c.id, contractRevision: c.revision, dueDate: c.nextDueDate }));
+    } catch (error) { if (this.current(generation, access) && version === this.detailVersion) this.error.set(maintenanceError(error)); }
+    finally { if (this.current(generation, access)) this.busy.set(false); }
+  }
   async plan(): Promise<void> {
-    const c = this.contract(); if (!c || !this.canManage() || this.busy() || !c.active || this.configurationChanged() || !c.checklistTemplate.length) return;
+    const c = this.contract(); if (!c || !this.canPlan()) return;
+    const preview = this.planningPreview();
     await this.mutation(async () => {
-      const result = await this.api.command<Visit>(`maintenance-contracts/${c.id}/schedule`, { expectedDueDate: c.nextDueDate }, c.revision);
-      return () => { this.setVisit(result); this.notice.set('Wartungsprojekt und Checkliste sind angelegt. Ein bereits vorhandener Termin wird wieder geöffnet.'); };
+      const result = await this.api.command<Visit>(`maintenance-contracts/${c.id}/schedule`, { expectedDueDate: c.nextDueDate,
+        ...(preview ? { reviewedPreviewDigest: preview.digest } : {}) }, c.revision);
+      return () => {
+        if (result.contractId !== c.id || result.dueDate !== c.nextDueDate || preview && (result.executionPlan?.scheduledDate ?? result.dueDate) !== preview.scheduledDate)
+          throw new Error('Der angelegte Wartungstermin passt nicht zur bestätigten Ausführungsvorschau.');
+        this.setVisit(result); this.clearPreview(); this.notice.set('Wartungsprojekt und Checkliste sind angelegt. Ein bereits vorhandener Termin wird wieder geöffnet.');
+      };
     });
   }
   async saveCheck(check: Check): Promise<void> {
@@ -140,14 +181,14 @@ export class MaintenanceComponent implements OnDestroy {
       const result = await this.api.command<Visit>(`maintenance-visits/${v.id}/complete`, { notes: this.completionNotes }, v.revision);
       // Retain the confirmed completion even when the subsequent list refresh fails.
       // Re-select the contract to obtain its new revision before scheduling another occurrence.
-      return () => { this.setVisit(result, v.id); if (this.contract()?.id === v.contractId) { this.contract.set(null); this.template = []; }
+      return () => { this.setVisit(result, v.id); if (this.contract()?.id === v.contractId) { this.contract.set(null); this.template = []; this.clearPreview(); }
         this.notice.set('Wartung und Projekt abgeschlossen. Der Folgetermin wurde vom ursprünglichen Vertragsdatum berechnet.'); };
     });
   }
   private async mutation(work: () => Promise<() => void>): Promise<void> {
     const generation = this.generation, access = this.auth.accessSignature(); this.busy.set(true); this.error.set(''); this.notice.set('');
     try { const apply = await work(); if (!this.current(generation, access)) return; apply(); await this.refresh(); }
-    catch (error) { if (this.current(generation, access)) { this.error.set(maintenanceError(error)); if (error instanceof ApiError && [403, 404].includes(error.status)) { this.visit.set(null); this.contract.set(null); this.checkEdits = {}; this.template = []; } } }
+    catch (error) { if (this.current(generation, access)) { this.error.set(maintenanceError(error)); if (error instanceof ApiError && ['revision_conflict', 'maintenance_workday_preview'].includes(error.problem.code || '')) this.clearPreview(); if (error instanceof ApiError && [403, 404].includes(error.status)) { this.visit.set(null); this.contract.set(null); this.checkEdits = {}; this.template = []; this.clearPreview(); } } }
     finally { if (this.current(generation, access)) this.busy.set(false); }
   }
   private validatePage(value: Page<unknown>): void { if (!value || !Array.isArray(value.items) || !Number.isInteger(value.total) || value.total < 0) throw new Error('Die Wartungsliste konnte nicht eindeutig gelesen werden. Bitte aktualisieren.'); }
@@ -157,20 +198,22 @@ export class MaintenanceComponent implements OnDestroy {
     // absent new fields receive legacy defaults; null or malformed data stays invalid.
     const normalized = { ...value, checklistTemplate: value.checklistTemplate === undefined ? [] : value.checklistTemplate,
       automaticPlanning: value.automaticPlanning === undefined ? false : value.automaticPlanning,
-      planningLeadDays: value.planningLeadDays === undefined ? 14 : value.planningLeadDays };
+      planningLeadDays: value.planningLeadDays === undefined ? 14 : value.planningLeadDays, workdays: validatedWorkdayPolicy(value.workdays) };
     if (normalized.id !== expectedId || !Number.isSafeInteger(normalized.revision) || normalized.revision < 1 || typeof normalized.active !== 'boolean'
       || typeof normalized.automaticPlanning !== 'boolean' || !Number.isInteger(normalized.planningLeadDays) || normalized.planningLeadDays < 0 || normalized.planningLeadDays > 365
       || !Array.isArray(normalized.checklistTemplate) || normalized.checklistTemplate.length > 50
       || normalized.checklistTemplate.some(x => !x || typeof x.title !== 'string' || typeof x.instructions !== 'string')) throw new Error('Der Wartungsvertrag passt nicht zur angeforderten Auswahl.');
     this.contract.set(normalized); this.active = normalized.active; this.automatic = normalized.automaticPlanning; this.leadDays = normalized.planningLeadDays;
     this.template = normalized.checklistTemplate.map(x => ({ ...x }));
+    this.useWorkdays = !!normalized.workdays; this.workdays = normalized.workdays?.weekdays.slice() ?? ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+    this.excludedDates = normalized.workdays?.excludedDates.join('\n') ?? ''; this.clearPreview();
   }
   private setVisit(value: Visit, expectedId?: string): void {
     if (!value || (expectedId && value.id !== expectedId) || !value.id || !value.projectId || !value.contractId || !value.terms || typeof value.terms.scope !== 'string'
       || !Number.isSafeInteger(value.revision) || value.revision < 1 || !['Planned', 'Completed'].includes(value.status) || !/^[a-f0-9]{64}$/.test(value.scopeDigest)
       || !Array.isArray(value.checklist) || value.checklist.length < 1 || value.checklist.length > 50 || new Set(value.checklist.map(x => x.id)).size !== value.checklist.length
       || value.checklist.some(x => !x.id || typeof x.title !== 'string' || typeof x.instructions !== 'string' || typeof x.note !== 'string' || !['Pending', 'Done', 'NotApplicable'].includes(x.state))) throw new Error('Der Wartungstermin enthält unvollständige oder unpassende Prüfdaten. Bitte neu öffnen.');
-    this.visit.set(value); this.checkEdits = Object.fromEntries(value.checklist.map(x => [x.id, { state: x.state, note: x.note }])); this.completionNotes = '';
+    this.visit.set({ ...value, executionPlan: validatedExecutionPlan(value.executionPlan, value.dueDate) }); this.checkEdits = Object.fromEntries(value.checklist.map(x => [x.id, { state: x.state, note: x.note }])); this.completionNotes = '';
   }
 }
 
@@ -183,6 +226,10 @@ function maintenanceError(error: unknown): string {
       maintenance_visit_required: 'Zu dieser Fälligkeit gehört eine Checkliste. Öffnen und schließen Sie den zugehörigen Wartungstermin ab.',
       maintenance_project_mismatch: 'Vertrag, Gebäude und Wartungsprojekt stimmen nicht mehr überein. Prüfen Sie die Zuordnung.',
       maintenance_evidence: 'Die gespeicherten Wartungsnachweise sind widersprüchlich. Eine Änderung wurde nicht bestätigt.',
+      maintenance_workday_policy: 'Prüfen Sie die ausgewählten Arbeitstage und Sperrtage.',
+      maintenance_workday_window: 'Innerhalb von 366 Tagen und bis zum Vertragsende liegt kein erlaubter Ausführungstag. Prüfen Sie die Arbeitstage und Sperrtage.',
+      maintenance_workday_preview: 'Die Ausführungsvorschau fehlt oder wurde geändert. Laden und bestätigen Sie die aktuelle Vorschau.',
+      maintenance_workday_evidence: 'Der gespeicherte Ausführungstag stimmt nicht mit den ursprünglichen Arbeitstagen überein.',
       stale_occurrence: 'Der Vertrag ist pausiert oder der Folgetermin hat sich geändert. Öffnen Sie den Vertrag erneut.',
       contract_expired: 'Diese Fälligkeit liegt nach dem Vertragsende.'
     };

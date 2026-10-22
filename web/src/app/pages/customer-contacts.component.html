@@ -13,10 +13,33 @@
         @if(contact.isPrimary){<span class="badge">Hauptkontakt</span>}@if(contact.archived){<span class="badge">Archiviert</span>}
         @if(contact.function){<p>{{contact.function}}</p>}@if(contact.email){<p>E-Mail: {{contact.email}}</p>}@if(contact.phone){<p>Telefon: {{contact.phone}}</p>}
         @if(contact.notes){<p class="notes">{{contact.notes}}</p>}<p class="small muted">Stand: {{date(contact.updatedAt)}}</p>
+        <button type="button" class="text-button" [disabled]="busy()" (click)="openHistory(contact.id)" [attr.aria-label]="'Änderungsverlauf von '+contact.name">Änderungsverlauf</button>
         @if(writable()){<div class="actions">@if(contact.archived){<button type="button" class="text-button" [disabled]="busy()" (click)="act('restore',contact.id)" [attr.aria-label]="contact.name+' wiederherstellen'">Wiederherstellen</button>}
           @else{<button type="button" class="text-button" [disabled]="busy()" (click)="edit(contact)" [attr.aria-label]="contact.name+' bearbeiten'">Bearbeiten</button><button type="button" class="text-button" [disabled]="busy()" (click)="act('archive',contact.id)" [attr.aria-label]="contact.name+' archivieren'">Archivieren</button>}</div>}
       </article>
     }@empty{<p class="muted">{{book.contacts.length?'Keine Kontakte für diesen Filter.':'Noch keine zusätzlichen Ansprechpartner.'}}</p>}</div>
+    @if(historyContact()){
+      <section class="panel contact-history" aria-labelledby="contact-history-title">
+        <div class="contacts-heading"><h4 id="contact-history-title">Änderungsverlauf</h4><button type="button" class="text-button" (click)="closeHistory()">Verlauf schließen</button></div>
+        <p class="small muted">Gespeicherte Kontaktänderungen mit damaligen Werten, Person und Zeitpunkt. Frühere Änderungen vor Einführung des Verlaufs werden nicht nachträglich ergänzt.</p>
+        @if(historyLoading()){<p role="status">Änderungsverlauf wird geladen …</p>}
+        @if(historyError()){<div class="alert error" role="alert">{{historyError()}} <button type="button" class="text-button" (click)="openHistory(historyContact()!)">Verlauf neu laden</button></div>}
+        @if(history();as history){
+          <p><strong>{{history.current.name}}</strong> · {{history.total}} gespeicherte Änderungen</p>
+          @for(entry of history.items;track entry.id){
+            <article class="contact-card"><h5>{{contactChangeLabel(entry.changeKind)}}</h5>
+              <p class="small muted">{{date(entry.recordedAt)}} · {{entry.recordedByName}} · Kundenstand {{entry.customerRevision}}</p>
+              <div class="table-wrap"><table><thead><tr><th>Feld</th><th>Vorher</th><th>Nachher</th></tr></thead><tbody>
+                @for(field of contactFieldChanges(entry);track field.label){<tr><th scope="row">{{field.label}}</th><td style="white-space:pre-wrap;overflow-wrap:anywhere">{{field.before}}</td><td style="white-space:pre-wrap;overflow-wrap:anywhere">{{field.after}}</td></tr>}
+                @empty{<tr><td colspan="3">Die Werte wurden unverändert erneut gespeichert.</td></tr>}
+              </tbody></table></div>
+              @if(entry.before===null){<p class="small muted">Ursprüngliche Anlage dieses Ansprechpartners.</p>}
+            </article>
+          }@empty{<p class="muted">Für diesen Kontakt ist noch keine Änderungshistorie gespeichert. Seine vorhandenen Daten bleiben unverändert.</p>}
+          @if(history.total>history.pageSize){<nav class="pagination" aria-label="Seiten des Kontaktverlaufs"><button type="button" class="button secondary" [disabled]="history.page===1" (click)="openHistory(history.contactId,history.page-1)">Vorherige Änderungen</button><span>Seite {{history.page}}</span><button type="button" class="button secondary" [disabled]="history.page*history.pageSize>=history.total" (click)="openHistory(history.contactId,history.page+1)">Weitere Änderungen</button></nav>}
+        }
+      </section>
+    }
     @if(editing()!==null&&writable()){
       <form class="contact-editor" #contactForm="ngForm" (ngSubmit)="save()"><h4>{{editing()?'Ansprechpartner bearbeiten':'Neuer Ansprechpartner'}}</h4>
         <fieldset [disabled]="busy()"><div class="form-grid">

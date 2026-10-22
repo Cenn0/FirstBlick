@@ -8,8 +8,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FirstBlick.Api;
 
-public sealed record MaintenanceConfigurationRequest(bool Active, bool AutomaticPlanning, int PlanningLeadDays, List<MaintenanceCheckTemplate> ChecklistTemplate);
-public sealed record MaintenancePlanRequest(DateOnly ExpectedDueDate);
+public sealed record MaintenanceConfigurationRequest(bool Active, bool AutomaticPlanning, int PlanningLeadDays, List<MaintenanceCheckTemplate> ChecklistTemplate,
+    MaintenanceWorkdayPolicy? Workdays = null, bool UpdateWorkdays = false);
+public sealed record MaintenancePlanRequest(DateOnly ExpectedDueDate, string? ReviewedPreviewDigest = null);
 public sealed record MaintenanceCheckRequest(Guid CheckId, MaintenanceCheckState State, string Note);
 public sealed record MaintenanceVisitCompletionRequest(string Notes);
 
@@ -24,14 +25,30 @@ public static class MaintenanceEndpoints
                 MaintenanceWorkflow.ValidateTemplate(body.ChecklistTemplate, true);
                 contract.Active = body.Active; contract.AutomaticPlanning = body.AutomaticPlanning;
                 contract.PlanningLeadDays = body.PlanningLeadDays; contract.ChecklistTemplate = body.ChecklistTemplate.ToList();
+                Guard.Require(body.UpdateWorkdays || body.Workdays is null, "maintenance_workdays_command_required", "Workday changes require explicit confirmation.");
+                if (body.UpdateWorkdays) contract.Workdays = MaintenanceWorkdays.Copy(body.Workdays);
                 await GraphRules.Validate(contract, c.Store, c.Db, c.Scope, ct);
                 await c.Store.Save(contract, "maintenance.configure", false, ct); return contract;
             })).Produces<MaintenanceContract>();
+        api.MapGet("/maintenance-contracts/{id:guid}/planning-preview", async (Guid id, long revision,
+            MaintenancePlanner planner, [AsParameters] BusinessCommandServices c, CancellationToken ct) =>
+            {
+                await c.Commands.Authorize("maintenance-contracts", false, ct);
+                var contract = await c.Current<MaintenanceContract>(id, ct, false);
+                Guard.Require(revision > 0 && contract.Revision == revision, "revision_conflict", "The contract changed. Open its current revision before previewing.");
+                c.Http.Response.Headers.CacheControl = "private, no-store";
+                c.Http.Response.Headers.ETag = $"\"{contract.Revision}\"";
+                return Results.Ok(await planner.Preview(contract, ct));
+            }).Produces<MaintenancePlanningPreview>();
         api.MapPost("/maintenance-contracts/{id:guid}/schedule", (Guid id, MaintenancePlanRequest body,
             MaintenancePlanner planner, [AsParameters] BusinessCommandServices c) =>
             c.Commands.Execute(c.Http, "maintenance-contracts", "maintenance.schedule", body, async ct =>
             {
                 var contract = await c.Current<MaintenanceContract>(id, ct);
+                var preview = await planner.Preview(contract, ct);
+                if (contract.Workdays is not null || preview.Workdays is not null || body.ReviewedPreviewDigest is not null)
+                    Guard.Require(body.ReviewedPreviewDigest == preview.Digest,
+                        "maintenance_workday_preview", "Review the current execution-day preview before planning this occurrence.");
                 return await planner.EnsurePlanned(contract, body.ExpectedDueDate, ct);
             }, ct => c.Commands.Authorize("projects", true, ct))).Produces<MaintenanceVisit>();
 
@@ -51,7 +68,7 @@ public static class MaintenanceEndpoints
             var total = await query.CountAsync(ct);
             var rows = await query.OrderByDescending(x => x.UpdatedAt).ThenBy(x => x.Id).Skip((currentPage - 1) * pageSize).Take(pageSize).Select(x => x.Data).ToListAsync(ct);
             var items = rows.Select(AppJson.Read<MaintenanceVisit>).Select(v => new { v.Id, v.Revision, v.ContractId, v.ProjectId,
-                v.DueDate, title = v.Terms!.Title, v.Status, completedChecks = v.Checklist.Count(x => x.State != MaintenanceCheckState.Pending),
+                v.DueDate, scheduledDate = v.ExecutionPlan?.ScheduledDate ?? v.DueDate, title = v.Terms!.Title, v.Status, completedChecks = v.Checklist.Count(x => x.State != MaintenanceCheckState.Pending),
                 totalChecks = v.Checklist.Count, v.CompletedAt, v.NextDueDate });
             return Results.Ok(new { items, total, page = currentPage, pageSize });
         });

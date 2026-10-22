@@ -25,6 +25,8 @@ public sealed class MaintenanceVisit : TenantEntity
     public long ContractRevision { get; set; }
     public Guid ProjectId { get; set; }
     public DateOnly DueDate { get; set; }
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public MaintenanceExecutionPlan? ExecutionPlan { get; set; }
     public MaintenanceTerms? Terms { get; set; }
     public string ScopeDigest { get; set; } = "";
     public List<MaintenanceCheck> Checklist { get; set; } = [];
@@ -34,11 +36,17 @@ public sealed class MaintenanceVisit : TenantEntity
     public DateTimeOffset? CompletedAt { get; set; }
     public DateOnly? NextDueDate { get; set; }
 
-    public string CalculateScopeDigest() => ContentDigest.Of(new
-    {
-        ContractId, ContractRevision, ProjectId, DueDate, Terms,
-        checklist = Checklist.Select(x => new { x.Id, x.Title, x.Instructions }).ToArray()
-    });
+    public string CalculateScopeDigest() => ExecutionPlan is null
+        ? ContentDigest.Of(new
+        {
+            ContractId, ContractRevision, ProjectId, DueDate, Terms,
+            checklist = Checklist.Select(x => new { x.Id, x.Title, x.Instructions }).ToArray()
+        })
+        : ContentDigest.Of(new
+        {
+            ContractId, ContractRevision, ProjectId, DueDate, Terms, ExecutionPlan,
+            checklist = Checklist.Select(x => new { x.Id, x.Title, x.Instructions }).ToArray()
+        });
 
     public override void Validate()
     {
@@ -48,6 +56,7 @@ public sealed class MaintenanceVisit : TenantEntity
         Guard.Text(Terms.Title, "Title"); Guard.Text(Terms.Scope, "Scope", 20_000);
         Guard.Require(Terms.StartDate != default && Terms.IntervalMonths is >= 1 and <= 120 && DueDate >= Terms.StartDate,
             "maintenance_evidence", "The recurrence snapshot is invalid.");
+        MaintenanceWorkdays.Validate(ExecutionPlan, DueDate);
         Guard.Items(Checklist, nameof(Checklist), 50, 1);
         Guard.Require(Checklist.Select(x => x.Id).Distinct().Count() == Checklist.Count, "duplicate_check", "Checklist identifiers must be unique.");
         foreach (var item in Checklist)
@@ -93,12 +102,14 @@ public static class MaintenanceWorkflow
         Guard.Require(contract.Active && !contract.Archived && contract.NextDueDate == expectedDueDate, "stale_occurrence", "The current maintenance occurrence has changed or is inactive.");
         Guard.Require(!contract.EndDate.HasValue || expectedDueDate <= contract.EndDate, "contract_expired", "The maintenance contract has ended.");
         ValidateTemplate(contract.ChecklistTemplate, true);
+        var execution = MaintenanceWorkdays.Plan(contract);
+        var scheduledDate = execution?.ScheduledDate ?? expectedDueDate;
         var project = new Project { TenantId = contract.TenantId, CustomerId = contract.CustomerId, BuildingId = contract.BuildingId,
             Name = contract.Title.Length <= 220 ? $"{contract.Title} · {expectedDueDate:dd.MM.yyyy}" : $"{contract.Title[..220]} · {expectedDueDate:dd.MM.yyyy}",
             Number = projectNumber, Type = ProjectType.Maintenance, Status = ProjectStatus.Planning,
-            Description = contract.Scope, PlannedStart = expectedDueDate, PlannedEnd = expectedDueDate };
+            Description = contract.Scope, PlannedStart = scheduledDate, PlannedEnd = scheduledDate };
         var visit = new MaintenanceVisit { TenantId = contract.TenantId, ContractId = contract.Id, ContractRevision = contract.Revision,
-            ProjectId = project.Id, DueDate = expectedDueDate,
+            ProjectId = project.Id, DueDate = expectedDueDate, ExecutionPlan = execution,
             Terms = new(contract.CustomerId, contract.BuildingId, contract.Title, contract.Scope, contract.StartDate, contract.IntervalMonths),
             Checklist = contract.ChecklistTemplate.Select(x => new MaintenanceCheck { Title = x.Title, Instructions = x.Instructions }).ToList() };
         visit.ScopeDigest = visit.CalculateScopeDigest(); project.Validate(); visit.Validate(); return (project, visit);

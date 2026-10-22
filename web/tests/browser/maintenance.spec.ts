@@ -1,13 +1,17 @@
 import { expect, Page, test } from '@playwright/test';
 import { createHash } from 'node:crypto';
 
-async function fixture(page: Page, options: { role?: string; existing?: boolean; stale?: boolean; malformed?: boolean; delayContract?: boolean; legacy?: boolean; invalidContract?: Record<string, unknown>; delayCalendar?: boolean; corruptCalendar?: boolean; staleCalendar?: boolean; disabledModule?: boolean } = {}) {
+async function fixture(page: Page, options: { role?: string; existing?: boolean; stale?: boolean; malformed?: boolean; delayContract?: boolean; legacy?: boolean; invalidContract?: Record<string, unknown>; delayCalendar?: boolean; corruptCalendar?: boolean; staleCalendar?: boolean; disabledModule?: boolean; workdays?: boolean; delayPreview?: boolean; previewMismatch?: boolean } = {}) {
   const calls: { path: string; body: any; headers: Record<string, string> }[] = [];
   const calendarRequests: string[] = []; let releaseCalendar: (() => void) | undefined;
   const calendarGate = new Promise<void>(resolve => { releaseCalendar = resolve; });
+  const previewRequests: string[] = []; let releasePreview: (() => void) | undefined;
+  const previewGate = new Promise<void>(resolve => { releasePreview = resolve; });
+  const initialWorkdays = options.workdays ? { weekdays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'], excludedDates: ['2027-02-01'] } : null;
   let contract = { id: 'contract-a', revision: 2, title: 'Monatliche Dachkontrolle', scope: 'Abläufe und Anschlüsse kontrollieren', nextDueDate: '2027-01-31', intervalMonths: 1, active: true, automaticPlanning: false, planningLeadDays: 14,
-    checklistTemplate: [{ title: 'Abläufe prüfen', instructions: 'Laub entfernen' }, { title: 'Anschlüsse prüfen', instructions: 'Sichtkontrolle' }] };
+    workdays: initialWorkdays, checklistTemplate: [{ title: 'Abläufe prüfen', instructions: 'Laub entfernen' }, { title: 'Anschlüsse prüfen', instructions: 'Sichtkontrolle' }] };
   let visit = { id: 'visit-a', revision: 1, contractId: 'contract-a', contractRevision: 2, projectId: 'project-a', dueDate: '2027-01-31', terms: { title: contract.title, scope: contract.scope }, scopeDigest: 'a'.repeat(64), status: 'Planned', completionNotes: '', completedAt: null as string | null, nextDueDate: null as string | null,
+    executionPlan: initialWorkdays ? { dueDate: '2027-01-31', scheduledDate: '2027-02-02', contractEndDate: null, workdays: initialWorkdays } : null,
     checklist: contract.checklistTemplate.map((x, i) => ({ ...x, id: `check-${i}`, state: 'Pending', note: '', recordedBy: null as string | null, recordedAt: null as string | null })) };
   let exists = !!options.existing; let released = !options.delayContract; let unblock: (() => void) | undefined;
   let legacy = !!options.legacy;
@@ -26,7 +30,18 @@ async function fixture(page: Page, options: { role?: string; existing?: boolean;
     if (path === 'maintenance-contracts') return route.fulfill({ json: { items: other ? [] : [storedContract()], total: other ? 0 : 1, page: 1, pageSize: 25 } });
     if (path === 'maintenance-contracts/contract-a') { if (!released) await gate; return route.fulfill({ json: storedContract() }); }
     if (path === 'maintenance-contracts/contract-a/configure') { legacy = false; contract = { ...contract, ...request.postDataJSON(), revision: contract.revision + 1 }; return route.fulfill({ json: contract }); }
-    if (path === 'maintenance-contracts/contract-a/schedule') { exists = true; return route.fulfill({ json: visit }); }
+    if (path === 'maintenance-contracts/contract-a/planning-preview') {
+      previewRequests.push(request.url()); if (options.delayPreview) await previewGate;
+      const workdays = exists ? visit.executionPlan?.workdays ?? null : contract.workdays;
+      const scheduledDate = exists ? visit.executionPlan?.scheduledDate ?? visit.dueDate : workdays ? workdays.excludedDates.includes('2027-02-01') ? '2027-02-02' : '2027-02-01' : contract.nextDueDate;
+      return route.fulfill({ json: { tenantId: options.previewMismatch ? 'tenant-b' : 'tenant-a', contractId: contract.id, contractRevision: contract.revision,
+        dueDate: contract.nextDueDate, scheduledDate, contractEndDate: null, workdays, existingVisitId: exists ? visit.id : null, digest: 'd'.repeat(64) } });
+    }
+    if (path === 'maintenance-contracts/contract-a/schedule') {
+      if (!exists && contract.workdays) visit = { ...visit, executionPlan: { dueDate: contract.nextDueDate,
+        scheduledDate: contract.workdays.excludedDates.includes('2027-02-01') ? '2027-02-02' : '2027-02-01', contractEndDate: null, workdays: contract.workdays } };
+      exists = true; return route.fulfill({ json: visit });
+    }
     if (path === 'maintenance-visits') return route.fulfill({ json: { items: exists && !other ? [{ ...visit, title: contract.title, totalChecks: visit.checklist.length, completedChecks: visit.checklist.filter(x => x.state !== 'Pending').length }] : [], total: exists && !other ? 1 : 0, page: 1, pageSize: 25 } });
     if (path === 'maintenance-visits/visit-a') return route.fulfill({ json: options.malformed ? { ...visit, checklist: null } : visit });
     if (path === 'maintenance-visits/visit-a/calendar') {
@@ -49,7 +64,7 @@ async function fixture(page: Page, options: { role?: string; existing?: boolean;
     }
     return route.fulfill({ json: { items: [], total: 0, page: 1, pageSize: 25 } });
   });
-  return { calls, calendarRequests, releaseCalendar: () => releaseCalendar?.(), release: () => { released = true; unblock?.(); } };
+  return { calls, calendarRequests, previewRequests, releasePreview: () => releasePreview?.(), releaseCalendar: () => releaseCalendar?.(), release: () => { released = true; unblock?.(); } };
 }
 
 async function openContract(page: Page) { await page.goto('/maintenance'); await page.getByRole('button', { name: /Monatliche Dachkontrolle Nächster Termin/ }).click(); await expect(page.getByRole('heading', { name: 'Checkliste für neue Termine' })).toBeVisible(); }
@@ -225,4 +240,65 @@ test('switching business while the calendar digest is pending prevents downloadi
   await expect(page.getByRole('heading', { name: 'Wartung vom 31.01.2027' })).toHaveCount(0);
   await expect(page.getByRole('status').filter({ hasText: 'Kalenderdatei heruntergeladen' })).toHaveCount(0);
   expect(downloads).toBe(0);
+});
+
+test('explicit workdays require reviewing the shifted execution day before manual planning', async ({ page }) => {
+  const api = await fixture(page, { workdays: true }); await openContract(page);
+  const plan = page.getByRole('button', { name: 'Termin 31.01.2027 anlegen oder öffnen' });
+  await expect(page.getByLabel('Ausführung auf erlaubte Arbeitstage legen', { exact: true })).toBeChecked();
+  await expect(page.getByLabel('Betriebliche Sperrtage', { exact: true })).toHaveValue('2027-02-01');
+  await expect(plan).toBeDisabled();
+  await page.getByRole('button', { name: 'Ausführungsvorschau prüfen', exact: true }).click();
+  const preview = page.getByRole('region', { name: 'Ausführungsvorschau', exact: true });
+  await expect(preview).toContainText('31.01.2027'); await expect(preview).toContainText('02.02.2027');
+  await expect(plan).toBeDisabled(); expect(api.calls).toHaveLength(0);
+  await page.getByLabel('Ausführungstag geprüft', { exact: true }).check(); await plan.click();
+  await expect(page.getByText('Geplante Ausführung: 02.02.2027', { exact: true })).toBeVisible();
+  expect(api.calls).toHaveLength(1); expect(api.calls[0].body).toEqual({ expectedDueDate: '2027-01-31', reviewedPreviewDigest: 'd'.repeat(64) });
+  expect(api.calls[0].headers['if-match']).toBe('"2"');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
+
+test('workday opt-in is explicitly saved and malformed exclusions cannot be submitted', async ({ page }) => {
+  const api = await fixture(page); await openContract(page);
+  await page.getByLabel('Ausführung auf erlaubte Arbeitstage legen', { exact: true }).check();
+  await page.getByLabel('Betriebliche Sperrtage', { exact: true }).fill('2027-02-29');
+  await expect(page.getByRole('alert')).toContainText('ungültig');
+  await expect(page.getByRole('button', { name: 'Wartungsablauf speichern', exact: true })).toBeDisabled();
+  expect(api.calls).toHaveLength(0);
+  await page.getByLabel('Betriebliche Sperrtage', { exact: true }).fill('2027-02-01');
+  await page.getByRole('button', { name: 'Wartungsablauf speichern', exact: true }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Wartungsablauf gespeichert' })).toBeVisible();
+  expect(api.calls[0].body.updateWorkdays).toBe(true);
+  expect(api.calls[0].body.workdays).toEqual({ weekdays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'], excludedDates: ['2027-02-01'] });
+  await expect(page.getByRole('button', { name: 'Termin 31.01.2027 anlegen oder öffnen' })).toBeDisabled();
+});
+
+test('a mismatched planning preview cannot enable confirmation or planning', async ({ page }) => {
+  const api = await fixture(page, { workdays: true, previewMismatch: true }); await openContract(page);
+  await page.getByRole('button', { name: 'Ausführungsvorschau prüfen', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('Vertragsstand');
+  await expect(page.getByLabel('Ausführungstag geprüft', { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Termin 31.01.2027 anlegen oder öffnen' })).toBeDisabled(); expect(api.calls).toHaveLength(0);
+});
+
+test('changing business while a workday preview is pending cannot restore the previous action', async ({ page }) => {
+  const api = await fixture(page, { workdays: true, delayPreview: true }); await openContract(page);
+  await page.getByRole('button', { name: 'Ausführungsvorschau prüfen', exact: true }).click();
+  await expect.poll(() => api.previewRequests.length).toBe(1);
+  const response = page.waitForResponse(r => r.url().includes('/planning-preview'));
+  await page.getByLabel('Betrieb', { exact: true }).selectOption('tenant-b'); api.releasePreview(); await response;
+  await expect(page.getByRole('region', { name: 'Ausführungsvorschau', exact: true })).toHaveCount(0);
+  await expect(page.getByLabel('Ausführungstag geprüft', { exact: true })).toHaveCount(0); expect(api.calls).toHaveLength(0);
+});
+
+test('changing the workday configuration invalidates the displayed confirmation until resaved', async ({ page }) => {
+  await fixture(page, { workdays: true }); await openContract(page);
+  await page.getByRole('button', { name: 'Ausführungsvorschau prüfen', exact: true }).click();
+  await page.getByLabel('Ausführungstag geprüft', { exact: true }).check();
+  const plan = page.getByRole('button', { name: 'Termin 31.01.2027 anlegen oder öffnen' }); await expect(plan).toBeEnabled();
+  await page.getByLabel('Betriebliche Sperrtage', { exact: true }).fill('2027-02-03'); await expect(plan).toBeDisabled();
+  await page.getByRole('button', { name: 'Wartungsablauf speichern', exact: true }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Wartungsablauf gespeichert' })).toBeVisible();
+  await expect(page.getByLabel('Ausführungstag geprüft', { exact: true })).toHaveCount(0); await expect(plan).toBeDisabled();
 });

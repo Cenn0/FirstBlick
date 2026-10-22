@@ -11,22 +11,20 @@ namespace FirstBlick.Infrastructure;
 /// <summary>Called only while holding the tenant transaction lock. Project, frozen checklist, audit and outbox commit together.</summary>
 public sealed class MaintenancePlanner(FirstBlickDbContext db, TenantScope scope, EntityStore store, ILogger<MaintenancePlanner> logger)
 {
+    public async Task<MaintenancePlanningPreview> Preview(MaintenanceContract contract, CancellationToken ct = default)
+    {
+        Guard.Require(contract.TenantId == scope.TenantId, "not_found", "The contract belongs to another business.");
+        return MaintenanceWorkdays.Preview(contract, await Existing(contract, contract.NextDueDate, ct));
+    }
+
     public async Task<MaintenanceVisit> EnsurePlanned(MaintenanceContract contract, DateOnly expectedDueDate, CancellationToken ct = default)
     {
         Guard.Require(contract.TenantId == scope.TenantId, "not_found", "The contract belongs to another business.");
         contract.Validate();
         Guard.Require(contract.Active && !contract.Archived && contract.NextDueDate == expectedDueDate, "stale_occurrence", "The contract is inactive or its current occurrence has changed.");
         Guard.Require(!contract.EndDate.HasValue || expectedDueDate <= contract.EndDate, "contract_expired", "The maintenance contract has ended.");
-        var key = $"contract:{contract.Id:N}:due:{expectedDueDate:yyyy-MM-dd}";
-        var existing = await db.Entities.SingleOrDefaultAsync(x => x.Kind == "maintenance-visits" && x.UniqueKey == key, ct);
-        if (existing is not null)
-        {
-            var visit = AppJson.Read<MaintenanceVisit>(existing.Data); visit.Validate();
-            Guard.Require(!existing.Archived && !visit.Archived && existing.Id == visit.Id && existing.Revision == visit.Revision
-                && visit.TenantId == scope.TenantId && visit.ContractId == contract.Id && visit.DueDate == expectedDueDate,
-                "maintenance_evidence", "The existing occurrence metadata does not match its stored evidence.");
-            return visit;
-        }
+        var existing = await Existing(contract, expectedDueDate, ct);
+        if (existing is not null) return existing;
         var building = await store.Get<Building>(contract.BuildingId, ct); var customer = await store.Get<Customer>(contract.CustomerId, ct);
         Guard.Require(!building.Archived && !customer.Archived && building.CustomerId == contract.CustomerId,
             "maintenance_project_mismatch", "The contract requires an available matching customer and building.");
@@ -34,6 +32,18 @@ public sealed class MaintenancePlanner(FirstBlickDbContext db, TenantScope scope
         await store.Save(project, "maintenance.project_planned", true, ct);
         await store.Save(planned, "maintenance.visit_planned", true, ct);
         return planned;
+    }
+
+    private async Task<MaintenanceVisit?> Existing(MaintenanceContract contract, DateOnly dueDate, CancellationToken ct)
+    {
+        var key = $"contract:{contract.Id:N}:due:{dueDate:yyyy-MM-dd}";
+        var row = await db.Entities.AsNoTracking().SingleOrDefaultAsync(x => x.Kind == "maintenance-visits" && x.UniqueKey == key, ct);
+        if (row is null) return null;
+        var visit = AppJson.Read<MaintenanceVisit>(row.Data); visit.Validate();
+        Guard.Require(!row.Archived && !visit.Archived && row.Id == visit.Id && row.Revision == visit.Revision
+            && visit.TenantId == scope.TenantId && visit.ContractId == contract.Id && visit.DueDate == dueDate,
+            "maintenance_evidence", "The existing occurrence metadata does not match its stored evidence.");
+        return visit;
     }
 
     /// <summary>Opt-in scheduling creates only the current occurrence per contract. No invoice, calendar invitation or provider message is sent.</summary>

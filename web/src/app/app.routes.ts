@@ -16,6 +16,8 @@ export const routes: Routes = [
   ...['activate','recover','reset'].map(mode=>({path:mode,data:{mode},loadComponent:()=>import('./pages/account.component').then(m=>m.AccountComponent)})),
   { path: 'login', loadComponent: () => import('./pages/login.component').then(m => m.LoginComponent) },
   { path: 'maintenance', canActivate: [authenticated], loadComponent: () => import('./pages/maintenance.component').then(m => m.MaintenanceComponent) },
+  { path: 'business-activity', canActivate: [authenticated], loadComponent: () => import('./pages/business-activity.component').then(m => m.BusinessActivityComponent) },
+  { path: 'task-dependencies', canActivate: [authenticated], loadComponent: () => import('./pages/task-dependencies.component').then(m => m.TaskDependenciesComponent) },
   { path: 'overview', canActivate: [authenticated], loadComponent: () => import('./pages/dashboard.component').then(m => m.DashboardComponent) },
   { path: 'project-templates', canActivate: [authenticated], loadComponent: () => import('./pages/project-templates.component').then(m => m.ProjectTemplatesComponent) },
   { path: 'planning-week', canActivate: [authenticated], loadComponent: () => import('./pages/planning-week.component').then(m => m.PlanningWeekComponent) },

@@ -117,6 +117,7 @@ public static class BusinessRegistry
     public static IReadOnlyDictionary<string, Type> Entities { get; } = new Dictionary<string, Type>(StringComparer.Ordinal)
     {
         ["customers"] = typeof(Customer), ["buildings"] = typeof(Building), ["projects"] = typeof(Project),
+        ["customer-contact-changes"] = typeof(CustomerContactChange),
         ["customer-communications"] = typeof(CustomerCommunication), ["customer-communication-voids"] = typeof(CustomerCommunicationVoid),
         ["tasks"] = typeof(TaskItem), ["project-templates"] = typeof(ProjectTemplate), ["project-template-applications"] = typeof(ProjectTemplateApplication),
         ["catalog-items"] = typeof(CatalogItem), ["quotes"] = typeof(Quote),

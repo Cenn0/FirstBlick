@@ -32,6 +32,7 @@ import { errorMessage } from './core/transport';
               </div>
             }
             <div class="nav-group"><p class="nav-group-label">Werkzeuge</p>
+              @if(['ManagingDirector','Office','Accounting','SiteManager'].includes(auth.tenant()?.role||'')&&auth.can('projects.read')&&auth.can('tasks.read')){<a class="nav-item" routerLink="/business-activity" routerLinkActive="active" (click)="menuOpen.set(false)"><span class="nav-icon" aria-hidden="true">▥</span>Projekt- & Aufgabenstatistik</a><a class="nav-item" routerLink="/task-dependencies" routerLinkActive="active" (click)="menuOpen.set(false)"><span class="nav-icon" aria-hidden="true">↪</span>Aufgabenabhängigkeiten</a>}
               @if(auth.hasModule('field')&&auth.can('schedule-assignments.read')){<a class="nav-item" routerLink="/planning-week" routerLinkActive="active" (click)="menuOpen.set(false)"><span class="nav-icon" aria-hidden="true">▦</span>Wochenplan</a>}
               @if(auth.can('projects.read')){<a class="nav-item" routerLink="/discovery" routerLinkActive="active" (click)="menuOpen.set(false)"><span class="nav-icon" aria-hidden="true">⌕</span>Suche & Projektverlauf</a>}
               @if(auth.can('measurements.read')&&(auth.can('quotes.write')||auth.can('material-demands.write'))){<a class="nav-item" routerLink="/quantity-links" routerLinkActive="active" (click)="menuOpen.set(false)"><span class="nav-icon" aria-hidden="true">↔</span>Mengenübernahme</a>}
