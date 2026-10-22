@@ -1,0 +1,15 @@
+.page-heading,.line-heading{display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,215px),1fr));gap:1rem}
+.form-field{display:flex;flex-direction:column;gap:.35rem;min-width:0}
+.form-field input,.form-field select{max-width:100%}
+.roof-plane,.plane-result{border-top:1px solid var(--border,#ccc);margin-top:1.25rem;padding-top:1.25rem}
+.obstacle{padding:.75rem;border:1px solid var(--border,#ccc);border-radius:.5rem;margin:.75rem 0}
+.summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:1rem}
+.summary-grid>div{display:flex;flex-direction:column;gap:.35rem}
+.summary-grid strong{font-size:1.5rem}
+.table-wrap{max-width:100%;overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th,td{padding:.5rem;text-align:left;border-bottom:1px solid var(--border,#ccc)}
+fieldset{border:0;margin:0;padding:0;min-width:0}
+.actions{display:flex;flex-wrap:wrap;gap:.75rem;margin-top:1.25rem}
+code{overflow-wrap:anywhere}
