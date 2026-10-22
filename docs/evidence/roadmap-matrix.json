@@ -1,10 +1,10 @@
 {
   "schema": "firstblick.roadmap-evidence/1.0.0",
-  "recordedAtUtc": "2026-10-22T18:02:45Z",
+  "recordedAtUtc": "2026-10-22T21:35:00Z",
   "counts": {
     "K": 49,
-    "T": 46,
-    "O": 5
+    "T": 49,
+    "O": 2
   },
   "meaning": "K=declared technical core evidenced; T=partial; O=no accepted implementation. counts is an inventory of listed statuses after limited reassessments, retaining other historical classifications. None means original-roadmap acceptance, a completion percentage or production certification.",
   "historicalClassification": {
@@ -19,13 +19,25 @@
   "latestReassessment": {
     "recordedOn": "2026-10-22",
     "tasks": [
-      "DP-11-09"
+      "DP-11-06",
+      "DP-11-07",
+      "DP-11-08"
     ],
-    "scope": "New bounded geometric PV layout with strict source and grid budgets, independent of manufacturer mounting/structural/electrical approval.",
+    "scope": "Three supplied-case arithmetic tools with explicit sources, project evidence and responsive workflow; no structural, hydraulic or normative approval.",
     "reclassifiesTasks": true,
     "statusChangesFromPreviousInventory": [
       {
-        "task": "DP-11-09",
+        "task": "DP-11-06",
+        "from": "O",
+        "to": "T"
+      },
+      {
+        "task": "DP-11-07",
+        "from": "O",
+        "to": "T"
+      },
+      {
+        "task": "DP-11-08",
         "from": "O",
         "to": "T"
       }
@@ -33,8 +45,8 @@
     "originalRoadmapCheckboxesChanged": false,
     "allOriginalAcceptanceCriteriaReviewed": false,
     "otherTaskClassificationsRemainHistorical": true,
-    "classificationNote": "DP-11-09 now has a bounded geometrical implementation; 49 K / 46 T / 5 O reflects listed classifications only, not completion.",
-    "verificationNote": "Source and tests are committed; CI/standards/operations results apply only to the final merge commit."
+    "classificationNote": "49 K / 49 T / 2 O counts listed categories only; no completion percentage. The other 97 task categories remain unchanged.",
+    "verificationNote": "Tests, actual API/S3/PDF/restart checks and final commit-specific CI/Standards/Operations must be distinguished; test sources alone do not establish execution."
   },
   "sources": {
     "discovery-live": "docs/evidence/live-discovery-checkpoint7.json",
@@ -327,7 +339,13 @@
     "business-activity-api-tests": "tests/FirstBlick.Api.Tests/BusinessActivityApiTests.cs",
     "business-activity-client-tests": "web/tests/business-activity.test.ts",
     "business-activity-browser": "web/tests/browser/business-activity.spec.ts",
-    "roadmap-activity-smoke": "scripts/roadmap_activity_smoke.py"
+    "roadmap-activity-smoke": "scripts/roadmap_activity_smoke.py",
+    "roof-actions-docs": "docs/roof-actions.md",
+    "roof-actions-core-tests": "tests/FirstBlick.Core.Tests/Technical/RoofActionsTests.cs",
+    "roof-actions-api-tests": "tests/FirstBlick.Api.Tests/RoofActionsApiTests.cs",
+    "roof-actions-client-tests": "web/tests/roof-actions.test.ts",
+    "roof-actions-browser": "web/tests/browser/roof-actions.spec.ts",
+    "roof-actions-smoke": "scripts/roof_actions_smoke.py"
   },
   "tasks": [
     {
@@ -899,23 +917,23 @@
     },
     {
       "id": "DP-11-06",
-      "status": "O",
-      "evidence": "[Methodengrenzen][methods] schließen Wind-/Befestigungsnachweise aus.",
-      "remaining": "Zonen-/Standortdaten, Regelwerk, Lastkombinationen, Befestiger-/Untergrunddaten und geprüfte Nachweise fehlen.",
+      "status": "T",
+      "evidence": "Quellengebundene lokale Winddruckfälle mit getrennten inneren/äußeren Bezugsdrücken, Nettodruck, Sog, lokaler Normalkraft und unveränderlicher Projektablage. [Methoden und Bedienung][roof-actions-docs], [Core][roof-actions-core-tests], [HTTP][roof-actions-api-tests], [Client][roof-actions-client-tests], [Browser][roof-actions-browser] und [Container][roof-actions-smoke].",
+      "remaining": "Standort-/Zonendaten, Bezugshöhen, Regelwerks-/NA-Auswahl, maßgebende Druckbeiwerte und Fälle, Lastkombinationen, Dynamik, Befestiger-/Untergrunddaten und unabhängig geprüfte konstruktive Nachweise bleiben offen.",
       "title": "Windlast und Befestigung"
     },
     {
       "id": "DP-11-07",
-      "status": "O",
-      "evidence": "[Dachdetails][roof-model] können einen Ablauf nur beschreiben; [Methodengrenzen][methods] unterscheiden dies von Dimensionierung.",
-      "remaining": "Haupt-/Notentwässerung mit Regendaten, Fließwegen, hydraulischen Grenzen und unabhängigen Referenzen fehlt.",
+      "status": "T",
+      "evidence": "Quellengebundene Bilanzen unabhängiger Einzugsflächen mit Haupt-/Starkregenzufluss, begrenzter Hauptanrechnung beziehungsweise Hauptausfall, getrennten Defiziten und unveränderlicher Projektablage. [Methoden und Bedienung][roof-actions-docs], [Core][roof-actions-core-tests], [HTTP][roof-actions-api-tests], [Client][roof-actions-client-tests], [Browser][roof-actions-browser] und [Container][roof-actions-smoke].",
+      "remaining": "Standort-/Normdatenwahl, wirksame Flächenermittlung, belegte Kapazitäten bei den maßgebenden Wasserständen, Fließwege, hydraulische Leitungsdimensionierung, Rückstau-/Überstauprüfung und unabhängige Fachabnahme bleiben offen. Kein Nulldefizit ist eine Entwässerungsfreigabe.",
       "title": "Haupt- und Notentwässerung"
     },
     {
       "id": "DP-11-08",
-      "status": "O",
-      "evidence": "[Geometriekern][roof-geometry] berechnet einfache geneigte Ebenen; [Methodengrenzen][methods] schließen Tragwerksaussagen aus.",
-      "remaining": "Schnee, Steildachkonstruktion, tragende Verbindungen und konstruktive Nachweise fehlen.",
+      "status": "T",
+      "evidence": "Quellengebundene einzelne Schneelastfälle mit vorgegebenen Beiwerten, horizontalen Zonen, Vertikallasten/-kräften und unveränderlicher Projektablage. [Methoden und Bedienung][roof-actions-docs], [Core][roof-actions-core-tests], [HTTP][roof-actions-api-tests], [Client][roof-actions-client-tests], [Browser][roof-actions-browser] und [Container][roof-actions-smoke].",
+      "remaining": "Standort-/Höhendaten, nationale Anwendung, Dachform-/Beiwertwahl, Verwehung und Abrutschen, außergewöhnliche und maßgebende Lastanordnungen, Kombinationen, tragende Bauteile/Verbindungen und unabhängige konstruktive Nachweise bleiben offen.",
       "title": "Steildach, Schnee und konstruktive Nachweise"
     },
     {
@@ -1167,6 +1185,26 @@
       "otherTaskClassificationsRemainHistorical": true,
       "classificationNote": "The three named tasks remain T. counts remains 49 K / 45 T / 6 O; the other 97 task classifications are carried forward from their earlier evidence dates. The previous eight-task reassessment and its four O-to-T corrections are retained under reassessmentHistory. This is not a review of all original acceptance criteria or a completion percentage.",
       "verificationNote": "Core and client tests, real HTTP/Identity/PostgreSQL API tests and controlled-response browser fixtures are distinct evidence. Canonical migration, actual container, backup/restore and restart checks must pass on the published commit. Source references alone do not claim a successful final combined CI/Standards/Operations run."
+    },
+    {
+      "recordedOn": "2026-10-22",
+      "tasks": [
+        "DP-11-09"
+      ],
+      "scope": "New bounded geometric PV layout with strict source and grid budgets, independent of manufacturer mounting/structural/electrical approval.",
+      "reclassifiesTasks": true,
+      "statusChangesFromPreviousInventory": [
+        {
+          "task": "DP-11-09",
+          "from": "O",
+          "to": "T"
+        }
+      ],
+      "originalRoadmapCheckboxesChanged": false,
+      "allOriginalAcceptanceCriteriaReviewed": false,
+      "otherTaskClassificationsRemainHistorical": true,
+      "classificationNote": "DP-11-09 now has a bounded geometrical implementation; 49 K / 46 T / 5 O reflects listed classifications only, not completion.",
+      "verificationNote": "Source and tests are committed; CI/standards/operations results apply only to the final merge commit."
     }
   ]
 }

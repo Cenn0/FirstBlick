@@ -1,0 +1,36 @@
+<header class="page-heading"><div><p class="eyebrow">DACHPLANUNG</p><h1>Lasten & Abflussmengen</h1><p>Vorgegebene Fälle berechnen und ihre Quellen mit dem Projekt verbinden.</p></div><a class="button secondary" routerLink="/technical">Weitere Fachwerkzeuge</a></header>
+@if (!allowed()) {
+  <section class="panel empty-state"><h2>Zugriff eingeschränkt</h2><p>Technisches Modul und Schreibberechtigung für Berechnungen erforderlich.</p></section>
+} @else {
+  <div class="form-field"><label for="roof-action">Rechenverfahren</label><select id="roof-action" [ngModel]="mode()" (ngModelChange)="choose($event)">@for (key of modes; track key) {<option [value]="key">{{definitions[key].title}}</option>}</select></div>
+  <div class="alert warning"><strong>Rechenhilfe ohne Fachfreigabe.</strong> {{definition().explanation}}</div>
+  @if (error()) {<div class="alert error" role="alert">{{error()}}</div>}
+  @if (notice()) {<div class="alert information" role="status">{{notice()}}</div>}
+  <section class="panel"><form #form="ngForm" (ngSubmit)="calculate()"><fieldset [disabled]="busy()"><legend>{{definition().title}}</legend>
+    <div class="form-field"><label for="action-source">{{definition().sourceLabel}}</label><input id="action-source" name="action-source" required maxlength="500" [(ngModel)]="draft.source" (ngModelChange)="edited()"></div>
+    <div class="form-grid">@for (field of definition().globals; track field.key) {<div class="form-field"><label [for]="field.key">{{field.label}}</label><input [id]="field.key" [name]="field.key" type="number" step="any" [min]="field.min" [max]="field.max" required [(ngModel)]="draft.globals[field.key]" (ngModelChange)="edited()"></div>}</div>
+    @if (mode() === 'drainage') {<div class="form-field"><label for="emergency-scenario">Ausdrückliches Notentwässerungsszenario</label><select id="emergency-scenario" name="emergency-scenario" required [(ngModel)]="draft.scenario" (ngModelChange)="edited()"><option value="">Bitte auswählen</option><option value="PrimaryUnavailable">Hauptentwässerung ausgefallen – gesamter Starkregenzufluss</option><option value="ResidualAfterPrimaryDesignFlow">Hauptentwässerung verfügbar – begrenzte Anrechnung des Hauptabflusses</option></select></div>}
+    @for (row of draft.rows; track $index; let i = $index) {
+      <section class="action-row"><h2>Bereich {{i+1}}</h2><div class="form-grid">
+        <div class="form-field"><label [for]="'action-name-'+i">Eindeutige Bezeichnung</label><input [id]="'action-name-'+i" [name]="'action-name-'+i" required maxlength="200" [(ngModel)]="row.name" (ngModelChange)="edited()"></div>
+        @for (field of definition().fields; track field.key) {<div class="form-field"><label [for]="field.key+'-'+i">{{field.label}}</label><input [id]="field.key+'-'+i" [name]="field.key+'-'+i" type="number" step="any" [min]="field.min" [max]="field.max" required [(ngModel)]="row.values[field.key]" (ngModelChange)="edited()"></div>}
+        @for (source of definition().sources; track source.key) {<div class="form-field full-width"><label [for]="source.key+'-'+i">{{source.label}}</label><input [id]="source.key+'-'+i" [name]="source.key+'-'+i" required maxlength="500" [(ngModel)]="row.sources[source.key]" (ngModelChange)="edited()"></div>}
+      </div><button type="button" class="button secondary" [disabled]="draft.rows.length<=1" (click)="removeRow(i)">Bereich {{i+1}} entfernen</button></section>
+    }
+    <div class="form-actions"><button type="button" class="button secondary" [disabled]="draft.rows.length>=32" (click)="addRow()">Weiteren Bereich ergänzen</button><button class="button primary" type="submit" [disabled]="form.invalid || busy()">Fall berechnen</button></div>
+  </fieldset></form></section>
+  @if (result(); as calculation) {
+    <section class="panel" role="region" aria-label="Geprüftes Rechenergebnis"><h2>Rechenergebnis – {{definition().title}}</h2>
+      @for (row of calculation.rows; track $index) {<section class="action-row"><h3>{{row['name']}}</h3><dl class="result-values">@for (col of definition().columns; track col.key) {<div><dt>{{col.label}}</dt><dd>{{+row[col.key] | number:'1.0-8'}}</dd></div>}</dl></section>}
+      @if (mode() === 'snow') {<p>Arithmetische Gesamtvertikalkraft: {{calculation.raw['totalVerticalForceKN']}} kN</p>}
+      <p><strong>Keine konstruktive oder hydraulische Freigabe.</strong></p><ul>@for (limit of calculation.provenance.limitations; track $index) {<li>{{limit}}</li>}</ul>
+      <p class="digest">Eingabe-SHA-256: {{calculation.provenance.inputSha256}}</p><button type="button" class="button secondary" [disabled]="busy()" (click)="exportJson()">JSON herunterladen</button>
+      <hr><h3>Im Projekt ablegen</h3><fieldset [disabled]="busy() || !!saved()">
+        <div class="form-field"><label for="action-project-search">Projekt suchen</label><input id="action-project-search" [(ngModel)]="projectSearch"><button type="button" class="button secondary" [disabled]="!auth.can('projects.read')" (click)="searchProjects()">Projekte suchen</button></div>
+        <div class="form-grid"><div class="form-field"><label for="action-project">Projekt aus der Suche</label><select id="action-project" [(ngModel)]="projectId"><option value="">Bitte auswählen</option>@for (project of projects(); track project.id) {<option [value]="project.id">{{project['name']}}</option>}</select></div><div class="form-field"><label for="action-title">Berichtsbezeichnung</label><input id="action-title" maxlength="240" [(ngModel)]="title"></div></div>
+        <button type="button" class="button primary" (click)="save()">Im Projekt speichern</button>
+      </fieldset>
+      @if (saved(); as record) {<p><a [routerLink]="['/technical-results']" [queryParams]="{selected:record['id']}">Gespeicherten Rechenstand öffnen</a></p>}
+    </section>
+  }
+}

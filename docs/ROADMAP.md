@@ -2,6 +2,16 @@
 
 > Übernommen aus der Projektanalyse „DachPlaner Rework Roadmap“, 19.10.2026 (34 Seiten). Der Originalbericht umfasst 100 Aufgaben in 15 Epics. Diese Fassung erhält alle Aufgabenkennungen und ursprünglichen Abnahmekriterien. Ein implementierter Teilablauf bedeutet nicht automatisch, dass das gesamte Epic abgeschlossen ist.
 
+## Fortsetzung – vorgegebene Wind-, Schnee- und Abflussfälle (22.10.2026)
+
+- **DP-11-06:** [Lokale Winddruckfälle](roof-actions.md) führen getrennte äußere/innere Bezugsdrücke und vorgegebene Beiwerte zu richtungsgebundenem Nettodruck, Sog und lokaler Normalkraft. Standort-/Zonenwahl, dynamische Antwort, Lastkombinationen, Befestiger und Standsicherheitsprüfung bleiben offen.
+- **DP-11-07:** [Entwässerungsbilanzen](roof-actions.md) rechnen 1 bis 32 unabhängige Einzugsflächen mit belegten Kapazitäten, getrenntem Berechnungs-/Starkregen und ausdrücklich gewähltem Restabfluss- oder Hauptausfallszenario. Hydraulische Dimensionierung, Wasserstände, Fließweg-/Rückstauprüfung und Auswahl des anzuwendenden Regelwerks bleiben offen.
+- **DP-11-08:** [Vorgegebene Schneelastfälle](roof-actions.md) rechnen explizite Form-/Expositions-/Temperaturbeiwerte und Bodenschneelast auf horizontalen Zonen eines gleichzeitigen Falls. Verwehung, Standort-/Dachformwahl, Kombinationen und tragende Konstruktion bleiben offen.
+
+Die gemeinsame Angular-Maske bietet Quellen, bestätigte Eingaben, geprüfte Zahlen, JSON-Export und bewusste Projektablage; bestehende technische Originalakten bieten PDF-Erstellung. Core-/Client-, echte HTTP-/PostgreSQL- und Browser-Vertragstests sowie der tatsächliche API-/S3-/PDF-/Neustartablauf sind verlinkt. Deren erfolgreiche Ausführung muss am final veröffentlichten Commit belegt werden.
+
+Die drei Aufgaben wechseln **O → T**. Aktuelle Kategorien: **49 K / 49 T / 2 O**, keine Fertigstellungsquote. DP-11-10 und DP-14-03 bleiben O. Die übrigen 97 Kategorien und alle ursprünglichen Abnahmekriterien bleiben erhalten. **Alle 100 Aufgaben sind weiterhin nicht vollständig umgesetzt oder abgenommen.** Reale Altquellen, Providerzugänge, Norm-/Herstellerdaten und unabhängige fachliche Prüfung sind nicht durch Softwaretests ersetzbar.
+
 ## Aktuelle Fortsetzung – Kontaktverlauf, Aufgabenfolge, Wartungsarbeitstage und Berichte (22.10.2026)
 
 Die folgenden **fünf Teilfunktionen betreffen sieben ursprüngliche Aufgaben**. FirstBlick bleibt das Entwicklungsziel; die Kategorien und ursprünglichen Abnahmekriterien werden mit dieser Fortschreibung nicht neu bewertet.

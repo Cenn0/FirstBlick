@@ -1,6 +1,10 @@
 # Technical calculation methods and evidence
 
-Reviewed on **2026-10-20**. This document describes the independently authored calculation kernels in `src/FirstBlick.Core/Technical`. It is also the evidence register for the initial DP-10 and DP-11 work.
+Baseline reviewed on **2026-10-20**; supplied wind/snow/drainage extension on **2026-10-22**. This document describes the independently authored calculation kernels in `src/FirstBlick.Core/Technical`. It is also the evidence register for the initial DP-10 and DP-11 work.
+
+## Supplied wind, snow and drainage cases
+
+[The versioned case workbench](roof-actions.md) adds local wind-pressure arithmetic, one supplied snow arrangement and independent primary/emergency-flow balances. Inputs require complete values and sources; API, immutable project records, Angular and actual PDF/restart checks share the same contracts. These bounded helpers do not implement complete wind/fastener, constructive snow or hydraulic system design. Earlier exclusions below continue to apply to complete normative/design assessments, not to the new arithmetic helpers.
 
 ## Implemented methods
 
