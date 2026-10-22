@@ -2,6 +2,7 @@
 @if (!allowed()) {
   <section class="panel empty-state"><h2>Zugriff eingeschränkt</h2><p>Für diese Werkzeuge benötigen Sie das technische Modul und die entsprechende Berechtigung.</p></section>
 } @else {
+  <p><a class="button secondary" routerLink="/technical/pv">PV-Modulbelegung (Geometrieentwurf)</a></p>
   <div class="alert information"><strong>Rechenhilfe mit klaren Grenzen.</strong> Diese Ergebnisse sind keine normativen Wärme-, Feuchte- oder Standsicherheitsnachweise. Kennwerte, Klima und Anwendungsgrenzen müssen fachlich geprüft werden.</div>
   <div class="section-tabs" role="tablist" aria-label="Rechenverfahren">@for (key of modes; track key) {<button type="button" role="tab" [id]="'calculation-tab-'+key" [attr.aria-controls]="'calculation-panel-'+key" [attr.aria-selected]="mode() === key" [attr.tabindex]="mode() === key ? 0 : -1" [class.active]="mode() === key" (keydown)="tabKey($event,key)" (click)="chooseMode(key)">{{methods[key].title}}</button>}</div>
   @if (error()) {<div class="alert error" role="alert">{{error()}}</div>}

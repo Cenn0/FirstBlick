@@ -2,6 +2,12 @@
 
 > Übernommen aus der Projektanalyse „DachPlaner Rework Roadmap“, 19.10.2026 (34 Seiten). Der Originalbericht umfasst 100 Aufgaben in 15 Epics. Diese Fassung erhält alle Aufgabenkennungen und ursprünglichen Abnahmekriterien. Ein implementierter Teilablauf bedeutet nicht automatisch, dass das gesamte Epic abgeschlossen ist.
 
+## Neue Fortsetzung – PV-Modulbelegung als begrenzte Geometriehilfe (22.10.2026)
+
+- **DP-11-09:** Der [PV-Rechenkern](pv-module-layout.md) erstellt für eine einzeln gemessene rechteckige Dachfläche ein begrenztes, reproduzierbares Modulraster. Berücksichtigt werden Hoch-/Querformat (auch Vergleich nach Stückzahl), Nutzer-Randabstände, Modulabstände, bis zu 64 ausgeschlossene Hindernisrechtecke und ihr Freihalteabstand. Ergebnis: Modulpositionen, Nennleistung in Wp, Ablehnungsgründe durch Hindernisse und versionsgebundene Berechnungsprovenienz.
+- **Bedienung und Projektakte:** Eine eigene responsive Maske unter `/technical/pv` ermöglicht Eingabe und JSON-Export. Die unveränderliche technische Projektablage kann den Rechenlauf über `method=roof.pv-layout` aufnehmen. Core-, Client- und tatsächliche HTTP/PostgreSQL-Fälle prüfen Rechte, ungültige Geometrien und Nachweisbindung. Erfolgreiche CI-/Operations-Läufe sind am konkret veröffentlichten Commit zu belegen.
+- **Unverändert offen:** Verschattung, Ertrag, Unterkonstruktion, Schnee/Wind, Elektrotechnik, Brandschutz, Herstellerverträglichkeit, Dachgenehmigungen und unabhängige Fachabnahme. Die P2-Anforderung ist **Teilumfang**, keine abgeschlossene PV-Planung.
+
 ## Aktuelle Fortsetzung – Projektvorlagen und Originalbelege (22.10.2026)
 
 **FirstBlick bleibt das ausschließliche Entwicklungsziel.**

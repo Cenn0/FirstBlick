@@ -1,10 +1,10 @@
 {
   "schema": "firstblick.roadmap-evidence/1.0.0",
-  "recordedAtUtc": "2026-10-22T04:04:19+00:00",
+  "recordedAtUtc": "2026-10-22T09:00:00Z",
   "counts": {
     "K": 49,
-    "T": 45,
-    "O": 6
+    "T": 46,
+    "O": 5
   },
   "meaning": "K=declared technical core evidenced; T=partial; O=no accepted implementation. counts is an inventory of listed statuses after limited reassessments, retaining other historical classifications. None means original-roadmap acceptance, a completion percentage or production certification.",
   "historicalClassification": {
@@ -19,20 +19,22 @@
   "latestReassessment": {
     "recordedOn": "2026-10-22",
     "tasks": [
-      "DP-04-01",
-      "DP-04-03",
-      "DP-04-04",
-      "DP-07-05",
-      "DP-09-03"
+      "DP-11-09"
     ],
-    "scope": "Reviewed project-template task adoption with retained provenance, plus versioned communication and vehicle-cost originals across correction, archive, migration and restart.",
-    "reclassifiesTasks": false,
-    "statusChangesFromPreviousInventory": [],
+    "scope": "New bounded geometric PV layout with strict source and grid budgets, independent of manufacturer mounting/structural/electrical approval.",
+    "reclassifiesTasks": true,
+    "statusChangesFromPreviousInventory": [
+      {
+        "task": "DP-11-09",
+        "from": "O",
+        "to": "T"
+      }
+    ],
     "originalRoadmapCheckboxesChanged": false,
     "allOriginalAcceptanceCriteriaReviewed": false,
     "otherTaskClassificationsRemainHistorical": true,
-    "classificationNote": "Five tasks receive concrete implementation evidence. Their previous classifications remain unchanged (DP-04-04 K, the other four T). counts remains 49 K / 45 T / 6 O and does not measure completion. The other 95 task rows retain their prior evidence.",
-    "verificationNote": "Core/client and HTTP/Identity/PostgreSQL tests, controlled-response browser fixtures and actual container/S3/backup/restore/migration/restart checks are distinct. Successful execution must be verified for the published commit."
+    "classificationNote": "DP-11-09 now has a bounded geometrical implementation; 49 K / 46 T / 5 O reflects listed classifications only, not completion.",
+    "verificationNote": "Source and tests are committed; CI/standards/operations results apply only to the final merge commit."
   },
   "sources": {
     "discovery-live": "docs/evidence/live-discovery-checkpoint7.json",
@@ -883,9 +885,9 @@
     },
     {
       "id": "DP-11-09",
-      "status": "O",
-      "evidence": "[Methodengrenzen][methods] führen Photovoltaik ausdrücklich als offenen Fachbereich.",
-      "remaining": "Modulbelegung/Verschattung, Befestigung/Last, Elektroplanung und Hersteller-/Standortdaten fehlen.",
+      "status": "T",
+      "evidence": "[PV-Geometrie](docs/pv-module-layout.md) verbindet Core-Rechenkern, HTTP-/PostgreSQL-API, responsive Eingabe und Quellen-/SHA-Provenienz zur auf rechteckige Dachfläche begrenzten Modulpositionierung. Core-/API-/Client-Testcode prüft geometrische Grenzfälle, Berechtigungen und Projektablage; CI-Ausführung ist am finalen Commit zu verifizieren.",
+      "remaining": "Keine normative oder praktische Montage-/Elektro-/Statik-/Brandschutzfreigabe; keine Verschattung, PV-Ertrag, optimierte mehrseitige Belegung, Dach-/Standortdaten oder unabhängig geprüften Herstellerdaten.",
       "title": "Photovoltaik als Dachplanungsmodul"
     },
     {
