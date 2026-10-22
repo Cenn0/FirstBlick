@@ -59,7 +59,8 @@ internal static partial class MigrationDrill
         {
             application.AppliedAt = bundle.ExportedAt.AddTicks(10); application.CreatedAt = application.UpdatedAt = application.AppliedAt;
             application.Digest = application.CalculateDigest();
-        }), issue => issue.Message == "A project template application cannot postdate the export.");
+        }), issue => issue.Location.StartsWith("project-template-applications/", StringComparison.Ordinal)
+            && issue.Message == "Entity envelope timestamps must fit PostgreSQL microseconds and cannot postdate the export; their historical JSON values are never truncated by the importer.");
         await Reject("missing-task", Change<ProjectTemplateApplication>(bundle, application =>
         { application.Tasks[0] = application.Tasks[0] with { TaskId = Guid.NewGuid() }; application.Digest = application.CalculateDigest(); }));
         await Reject("missing-origin", Change<TaskItem>(bundle, task => task.TemplateOrigin = null, task => task.TemplateOrigin is not null));

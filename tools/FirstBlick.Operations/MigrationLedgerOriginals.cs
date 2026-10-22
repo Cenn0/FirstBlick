@@ -76,7 +76,10 @@ internal static partial class MigrationDrill
                 "A ledger original must bind to its exact retained source digest.");
             await Reject("swapped-source", document => document.SourceId = alternative.Id,
                 "A ledger original must bind to its exact retained source digest.");
-            await reject(kind + "-original-cross-tenant", ChangeLedgerDocument(bundle, kind, document => document.TenantId = bundle.Tenants[1].Data.Id),
+            var foreignTenant = bundle.Tenants[1].Data.Id;
+            var foreignUploader = bundle.Memberships.First(x => x.TenantId == foreignTenant).UserId;
+            await reject(kind + "-original-cross-tenant", ChangeLedgerDocument(bundle, kind, document =>
+            { document.TenantId = foreignTenant; document.UploadedBy = foreignUploader; }),
                 issue => issue.Message.StartsWith("Missing tenant-qualified " + kind + " reference", StringComparison.Ordinal));
             await Reject("project-rebinding", document =>
             { document.ProjectId = entities.OfType<Project>().Single().Id; document.ProjectKind = "projects"; },
