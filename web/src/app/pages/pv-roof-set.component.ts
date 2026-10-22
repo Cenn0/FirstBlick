@@ -19,7 +19,8 @@ type SavedResult = { id: string; projectId: string; method: string; digest: stri
 
 @Component({
   imports: [FormsModule, RouterLink],
-  templateUrl: './pv-roof-set.component.html'
+  templateUrl: './pv-roof-set.component.html',
+  styleUrl: './pv-roof-set.component.css'
 })
 export class PvRoofSetComponent {
   readonly auth = inject(AuthService);
