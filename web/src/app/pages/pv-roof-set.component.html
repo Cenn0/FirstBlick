@@ -1,0 +1,159 @@
+<header class="page-heading">
+  <div><p class="eyebrow">DACH & BERECHNUNG · PV-DACHGRUPPE</p>
+    <h1>PV-Belegung mehrerer Dachflächen</h1>
+    <p>Bis zu acht einzeln aufgemessene rechteckige Dachflächen mit getrennten Raster- und Hindernisdaten.</p>
+  </div>
+  <a class="button secondary" routerLink="/technical/pv">Einzelne Dachfläche</a>
+</header>
+@if (!allowed()) {
+  <section class="panel empty-state"><h2>Zugriff eingeschränkt</h2>
+    <p>Das technische Modul und Schreibrechte für technische Ergebnisse sind erforderlich.</p></section>
+} @else {
+  <div class="alert warning"><strong>Kein Montage- oder Elektroplan.</strong>
+    Alle Maße beziehen sich auf die tatsächlich gemessene Dachfläche. Dachflächen dürfen nicht doppelt
+    erfasst werden. Geometrische Überschneidungen zwischen Flächen, gemeinsame Hindernisse, Statik,
+    Brandschutz, Verschattung, Ertrag und elektrische Auslegung werden nicht geprüft.</div>
+  @if (error()) { <div class="alert error" role="alert">{{error()}}</div> }
+  @if (notice()) { <div class="alert success" role="status">{{notice()}}</div> }
+  <section class="panel">
+    <form (ngSubmit)="calculate()">
+      <fieldset [disabled]="busy()">
+        <div class="form-field"><label for="pv-set-source">Quelle des gesamten Dachaufmaßes</label>
+          <input id="pv-set-source" name="roof-set-source" required maxlength="500"
+            [(ngModel)]="draft.roofSetSource" (ngModelChange)="edited()" placeholder="Projekt, Planstand und Aufmaßdatum"></div>
+        @for (plane of draft.planes; track plane.id; let pi = $index) {
+          <section class="roof-plane">
+            <div class="line-heading"><h2>Dachfläche {{pi + 1}}</h2>
+              <button type="button" class="button secondary" [disabled]="draft.planes.length <= 1" (click)="removePlane(plane.id)">Entfernen</button></div>
+            <div class="form-grid">
+              <div class="form-field"><label [for]="'set-name-'+plane.id">Eindeutige Dachflächenbezeichnung</label>
+                <input [id]="'set-name-'+plane.id" [name]="'set-name-'+plane.id"
+                  required maxlength="200" [(ngModel)]="plane.name" (ngModelChange)="edited()" placeholder="z. B. Südost"></div>
+              <div class="form-field"><label [for]="'set-width-'+plane.id">Breite auf Dachfläche (m)</label>
+                <input [id]="'set-width-'+plane.id" [name]="'set-width-'+plane.id"
+                  type="number" step="any" min=".1" max="100" required [(ngModel)]="plane.layout.roofPlaneWidthM" (ngModelChange)="edited()"></div>
+              <div class="form-field"><label [for]="'set-height-'+plane.id">Höhe auf Dachfläche (m)</label>
+                <input [id]="'set-height-'+plane.id" [name]="'set-height-'+plane.id"
+                  type="number" step="any" min=".1" max="100" required [(ngModel)]="plane.layout.roofPlaneHeightM" (ngModelChange)="edited()"></div>
+              <div class="form-field"><label [for]="'set-module-width-'+plane.id">Modulbreite (m)</label>
+                <input [id]="'set-module-width-'+plane.id" [name]="'set-module-width-'+plane.id"
+                  type="number" step="any" min=".1" max="5" required [(ngModel)]="plane.layout.moduleWidthM" (ngModelChange)="edited()"></div>
+              <div class="form-field"><label [for]="'set-module-height-'+plane.id">Modulhöhe (m)</label>
+                <input [id]="'set-module-height-'+plane.id" [name]="'set-module-height-'+plane.id"
+                  type="number" step="any" min=".1" max="5" required [(ngModel)]="plane.layout.moduleHeightM" (ngModelChange)="edited()"></div>
+              <div class="form-field"><label [for]="'set-power-'+plane.id">Nennleistung pro Modul (Wp)</label>
+                <input [id]="'set-power-'+plane.id" [name]="'set-power-'+plane.id"
+                  type="number" step="any" min="10" max="1500" required [(ngModel)]="plane.layout.moduleRatedPowerWp" (ngModelChange)="edited()"></div>
+              <div class="form-field"><label [for]="'set-orientation-'+plane.id">Ausrichtung</label>
+                <select [id]="'set-orientation-'+plane.id" [name]="'set-orientation-'+plane.id"
+                  [(ngModel)]="plane.layout.orientation" (ngModelChange)="edited()">
+                  <option value="MostModules">Mehr Module (Hoch/Quer vergleichen)</option>
+                  <option value="Portrait">Hochformat</option><option value="Landscape">Querformat</option>
+                </select></div>
+              <div class="form-field"><label [for]="'set-edge-'+plane.id">Allseitiger Dachrandabstand (m)</label>
+                <input [id]="'set-edge-'+plane.id" [name]="'set-edge-'+plane.id" type="number"
+                  step="any" min="0" max="5" required [(ngModel)]="plane.layout.edgeClearanceM" (ngModelChange)="edited()"></div>
+              <div class="form-field"><label [for]="'set-gap-x-'+plane.id">Horizontaler Modulabstand (m)</label>
+                <input [id]="'set-gap-x-'+plane.id" [name]="'set-gap-x-'+plane.id" type="number"
+                  step="any" min="0" max="1" required [(ngModel)]="plane.layout.moduleGapXM" (ngModelChange)="edited()"></div>
+              <div class="form-field"><label [for]="'set-gap-y-'+plane.id">Vertikaler Modulabstand (m)</label>
+                <input [id]="'set-gap-y-'+plane.id" [name]="'set-gap-y-'+plane.id" type="number"
+                  step="any" min="0" max="1" required [(ngModel)]="plane.layout.moduleGapYM" (ngModelChange)="edited()"></div>
+              <div class="form-field"><label [for]="'set-clearance-'+plane.id">Zusätzlicher Hindernisabstand (m)</label>
+                <input [id]="'set-clearance-'+plane.id" [name]="'set-clearance-'+plane.id" type="number"
+                  step="any" min="0" max="5" required [(ngModel)]="plane.layout.exclusionClearanceM" (ngModelChange)="edited()"></div>
+              <div class="form-field"><label [for]="'set-roof-source-'+plane.id">Quelle dieser Dachflächenmaße</label>
+                <input [id]="'set-roof-source-'+plane.id" [name]="'set-roof-source-'+plane.id"
+                  required maxlength="500" [(ngModel)]="plane.layout.roofMeasurementSource" (ngModelChange)="edited()"></div>
+              <div class="form-field"><label [for]="'set-module-source-'+plane.id">Modul-Datenblatt / Datenstand</label>
+                <input [id]="'set-module-source-'+plane.id" [name]="'set-module-source-'+plane.id"
+                  required maxlength="500" [(ngModel)]="plane.layout.moduleDataSource" (ngModelChange)="edited()"></div>
+            </div>
+            <div class="line-heading"><h3>Hindernisse</h3>
+              <button type="button" class="button secondary" [disabled]="plane.layout.exclusions.length >= 64"
+                (click)="addExclusion(plane.id)">Hindernis hinzufügen</button></div>
+            <p>Koordinaten in Metern ab der linken unteren Ecke der jeweiligen Dachfläche.</p>
+            @for (obstacle of plane.layout.exclusions; track $index; let oi = $index) {
+              <div class="obstacle">
+                <div class="line-heading"><strong>Hindernis {{oi + 1}}</strong>
+                  <button type="button" class="text-button danger-text" (click)="removeExclusion(plane.id, oi)">Entfernen</button></div>
+                <div class="form-grid">
+                  <div class="form-field"><label [for]="'set-obs-name-'+plane.id+'-'+oi">Bezeichnung</label>
+                    <input [id]="'set-obs-name-'+plane.id+'-'+oi" [name]="'set-obs-name-'+plane.id+'-'+oi" required maxlength="200"
+                      [(ngModel)]="obstacle.name" (ngModelChange)="edited()"></div>
+                  <div class="form-field"><label [for]="'set-obs-x-'+plane.id+'-'+oi">x (m)</label>
+                    <input [id]="'set-obs-x-'+plane.id+'-'+oi" [name]="'set-obs-x-'+plane.id+'-'+oi" type="number" step="any" min="0" required
+                      [(ngModel)]="obstacle.x" (ngModelChange)="edited()"></div>
+                  <div class="form-field"><label [for]="'set-obs-y-'+plane.id+'-'+oi">y (m)</label>
+                    <input [id]="'set-obs-y-'+plane.id+'-'+oi" [name]="'set-obs-y-'+plane.id+'-'+oi" type="number" step="any" min="0" required
+                      [(ngModel)]="obstacle.y" (ngModelChange)="edited()"></div>
+                  <div class="form-field"><label [for]="'set-obs-w-'+plane.id+'-'+oi">Breite (m)</label>
+                    <input [id]="'set-obs-w-'+plane.id+'-'+oi" [name]="'set-obs-w-'+plane.id+'-'+oi" type="number" step="any" min=".001" required
+                      [(ngModel)]="obstacle.widthM" (ngModelChange)="edited()"></div>
+                  <div class="form-field"><label [for]="'set-obs-h-'+plane.id+'-'+oi">Höhe (m)</label>
+                    <input [id]="'set-obs-h-'+plane.id+'-'+oi" [name]="'set-obs-h-'+plane.id+'-'+oi" type="number" step="any" min=".001" required
+                      [(ngModel)]="obstacle.heightM" (ngModelChange)="edited()"></div>
+                </div>
+              </div>
+            }
+          </section>
+        }
+        <div class="actions"><button type="button" class="button secondary" [disabled]="draft.planes.length >= 8"
+          (click)="addPlane()">Weitere Dachfläche</button>
+          <button type="submit" class="button primary" [disabled]="busy()">Gesamte PV-Belegung berechnen</button></div>
+      </fieldset>
+    </form>
+  </section>
+  @if (result(); as plan) {
+    <section class="panel" aria-label="Berechnung mehrerer Dachflächen">
+      <h2>Geometrische Gesamtübersicht</h2>
+      <div class="summary-grid">
+        <div><strong>{{plan.installedModules}}</strong><span>Module insgesamt</span></div>
+        <div><strong>{{plan.nominalDcPowerWp}} Wp</strong><span>DC-Nennleistung</span></div>
+        <div><strong>{{plan.installedModuleAreaM2}} m²</strong><span>Modulfläche</span></div>
+        <div><strong>{{plan.roofPlaneAreaM2}} m²</strong><span>Summe der Dachflächen</span></div>
+      </div>
+      <p>Rasterkandidaten: {{plan.gridCandidateCount}}; verworfen: {{plan.obstructionRejectedCount}}.
+        Diese Flächensumme berücksichtigt keine Überlappungen physischer Dachflächen.</p>
+      <p><strong>Keine technische Ausführungsfreigabe.</strong> SHA-256 der Eingaben:
+        <code>{{plan.provenance.inputSha256}}</code></p>
+      <div class="actions"><button class="button secondary" type="button"
+        (click)="exportJson()">Berechnung als JSON exportieren</button></div>
+      @for (part of plan.planes; track part.name) {
+        <section class="plane-result"><h3>{{part.name}}</h3>
+          <p>{{part.layout.installedModules}} Module · {{part.layout.nominalDcPowerWp}} Wp ·
+            {{part.layout.roofPlaneAreaM2}} m² ·
+            {{part.layout.selectedOrientation === 'Portrait' ? 'Hochformat' : 'Querformat'}}</p>
+          <p>Einzel-Provenienz: <code>{{part.layout.provenance.inputSha256}}</code></p>
+          @if (part.layout.placements.length > 40) {
+            <p>40 von {{part.layout.placements.length}} Positionen sichtbar. JSON enthält alle Positionen.</p>
+          }
+          <div class="table-wrap"><table><thead><tr><th>Reihe</th><th>Spalte</th><th>x (m)</th><th>y (m)</th></tr></thead>
+            <tbody>@for (position of part.layout.placements.slice(0, 40); track position.row+'-'+position.column) {
+              <tr><td>{{position.row}}</td><td>{{position.column}}</td><td>{{position.x}}</td><td>{{position.y}}</td></tr>
+            }</tbody></table></div>
+        </section>
+      }
+    </section>
+    @if (auth.can('projects.read')) {
+      <section class="panel"><h2>Technischen Entwurf in Projektakte speichern</h2>
+        <div class="form-grid">
+          <div class="form-field"><label for="set-project-search">Projektname suchen</label>
+            <input id="set-project-search" [(ngModel)]="projectSearch" name="set-project-search"></div>
+          <div class="form-field"><label for="set-project">Projekt auswählen</label>
+            <select id="set-project" [(ngModel)]="projectId" name="set-project">
+              <option value="">Projekt wählen</option>
+              @for (p of projects(); track p.id) { <option [value]="p.id">{{p['name']}}</option> }
+            </select></div>
+          <div class="form-field"><label for="set-title">Berichtsbezeichnung</label>
+            <input id="set-title" [(ngModel)]="title" name="set-title" maxlength="240"></div>
+        </div>
+        <div class="actions">
+          <button class="button secondary" type="button" [disabled]="busy() || !!saved()" (click)="searchProjects()">Projekte suchen</button>
+          <button class="button primary" type="button" [disabled]="busy() || !!saved()" (click)="save()">Im Projekt speichern</button>
+        </div>
+        @if (saved(); as record) { <p>Gespeichert: <code>{{record.id}}</code> · Nachweis: <code>{{record.digest}}</code></p> }
+      </section>
+    }
+  }
+}
