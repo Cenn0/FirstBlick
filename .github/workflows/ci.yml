@@ -71,7 +71,11 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
-      - run: npx playwright install --with-deps chromium
+      - name: Install Chromium and bounded system dependencies
+        timeout-minutes: 3
+        run: |
+          printf '%s\n' 'Acquire::Retries "2";' 'Acquire::http::Timeout "30";' 'Acquire::https::Timeout "30";' | sudo tee /etc/apt/apt.conf.d/99-firstblick-ci > /dev/null
+          npx playwright install --with-deps chromium
       - run: npm run test:browser
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         if: failure()
