@@ -83,6 +83,11 @@ internal static class GraphRules
         entity.Validate();
         switch (entity)
         {
+            case Equipment equipment:
+                Guard.Require(equipment.Kind == EquipmentKind.Vehicle || !await db.Links.AnyAsync(x => x.TargetKind == "equipment"
+                    && x.TargetId == equipment.Id && (x.SourceKind == "vehicle-trips" || x.SourceKind == "vehicle-costs" || x.SourceKind == "vehicle-ledger-reversals"), ct),
+                    "vehicle_kind_in_use", "Equipment with retained vehicle records must remain a vehicle.");
+                break;
             case RoofRevision roof:
                 _ = await store.Get<Building>(roof.BuildingId, ct);
                 if (roof.ProjectId is { } roofProject)
@@ -112,6 +117,15 @@ internal static class GraphRules
             case Building building:
                 Guard.Require((await store.All<Project>(ct)).All(p => p.BuildingId != building.Id || p.CustomerId == building.CustomerId), "customer_mismatch", "Existing projects prevent changing this building to another customer."); break;
             case Project project:
+                var communicationCustomerMismatch = await db.Database.SqlQueryRaw<bool>("""
+                    SELECT EXISTS (SELECT 1 FROM "Entities" e
+                      JOIN "Links" l ON l."TenantId"=e."TenantId" AND l."SourceKind"=e."Kind" AND l."SourceId"=e."Id"
+                      WHERE e."TenantId"=@tenant AND e."Kind"='customer-communications'
+                        AND l."TargetKind"='projects' AND l."TargetId"=@project
+                        AND e."Data"->>'customerId'<>@customer) AS "Value"
+                    """, new Npgsql.NpgsqlParameter("tenant", scope.TenantId), new Npgsql.NpgsqlParameter("project", project.Id),
+                    new Npgsql.NpgsqlParameter("customer", project.CustomerId.ToString("D"))).SingleAsync(ct);
+                Guard.Require(!communicationCustomerMismatch, "communication_project", "Recorded customer conversations preserve this project's customer association.");
                 var maintenanceProjectLinks = db.Links.Where(x => x.SourceKind == "maintenance-visits" && x.TargetKind == "projects" && x.TargetId == project.Id);
                 var maintenanceProjectRows = await db.Entities.Where(x => x.Kind == "maintenance-visits" && maintenanceProjectLinks.Any(l => l.SourceId == x.Id)).Select(x => x.Data).ToListAsync(ct);
                 foreach (var row in maintenanceProjectRows)

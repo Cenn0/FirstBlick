@@ -117,6 +117,7 @@ public static class BusinessRegistry
     public static IReadOnlyDictionary<string, Type> Entities { get; } = new Dictionary<string, Type>(StringComparer.Ordinal)
     {
         ["customers"] = typeof(Customer), ["buildings"] = typeof(Building), ["projects"] = typeof(Project),
+        ["customer-communications"] = typeof(CustomerCommunication), ["customer-communication-voids"] = typeof(CustomerCommunicationVoid),
         ["tasks"] = typeof(TaskItem), ["catalog-items"] = typeof(CatalogItem), ["quotes"] = typeof(Quote),
         ["orders"] = typeof(Order), ["change-orders"] = typeof(ChangeOrder), ["invoices"] = typeof(Invoice), ["cost-forecasts"] = typeof(CostForecast),
         ["bank-transactions"] = typeof(BankTransaction), ["payment-allocations"] = typeof(PaymentAllocation),
@@ -129,6 +130,7 @@ public static class BusinessRegistry
         ["notification-preferences"] = typeof(NotificationPreference), ["training-records"] = typeof(TrainingRecord),
         ["form-definitions"] = typeof(FormDefinition), ["form-submissions"] = typeof(FormSubmission),
         ["equipment"] = typeof(Equipment), ["equipment-inspections"] = typeof(EquipmentInspection), ["supplier-invoices"] = typeof(SupplierInvoice),
+        ["vehicle-trips"] = typeof(VehicleTrip), ["vehicle-costs"] = typeof(VehicleCost), ["vehicle-ledger-reversals"] = typeof(VehicleLedgerReversal),
         ["supplier-payment-allocations"] = typeof(SupplierPaymentAllocation), ["supplier-cost-allocations"] = typeof(SupplierCostAllocation),
         ["roof-revisions"] = typeof(RoofRevision), ["measurements"] = typeof(Measurement), ["technical-results"] = typeof(TechnicalRecord),
         ["portal-shares"] = typeof(PortalShare), ["portal-feedback"] = typeof(PortalFeedback), ["material-demands"] = typeof(MaterialDemand),
