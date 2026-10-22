@@ -1,12 +1,12 @@
 {
   "schema": "firstblick.roadmap-evidence/1.0.0",
-  "recordedAtUtc": "2026-10-21T15:06:33+00:00",
+  "recordedAtUtc": "2026-10-22T03:30:26+00:00",
   "counts": {
     "K": 49,
     "T": 45,
     "O": 6
   },
-  "meaning": "K=declared technical core evidenced; T=partial; O=no accepted implementation. counts is an inventory of listed statuses after a limited eight-task reassessment; remaining classifications are historical. None means original-roadmap acceptance, a completion percentage or production certification.",
+  "meaning": "K=declared technical core evidenced; T=partial; O=no accepted implementation. counts is an inventory of listed statuses after limited reassessments, retaining other historical classifications. None means original-roadmap acceptance, a completion percentage or production certification.",
   "historicalClassification": {
     "recordedAtUtc": "2026-10-20T09:41:20.226589+00:00",
     "counts": {
@@ -17,53 +17,20 @@
     "note": "Historical 2026-10-20 inventory, retained without presenting it as the current listed-row count or a completion measurement."
   },
   "latestReassessment": {
-    "recordedOn": "2026-10-21",
+    "recordedOn": "2026-10-22",
     "tasks": [
       "DP-04-01",
       "DP-07-05",
-      "DP-08-03",
-      "DP-09-02",
-      "DP-11-03",
-      "DP-11-04",
-      "DP-11-05",
-      "DP-12-02"
+      "DP-09-03"
     ],
-    "scope": "Structured customer contacts, archived equipment inspection originals and explicit maintenance ICS export; correction of stale e-invoice, inhomogeneous thermal, moisture, tapered-board and GAEB entries from existing implementations.",
-    "reclassifiesTasks": true,
-    "statusChangesFromHistoricalJson": [
-      {
-        "id": "DP-08-03",
-        "from": "O",
-        "to": "T"
-      },
-      {
-        "id": "DP-11-04",
-        "from": "O",
-        "to": "T"
-      },
-      {
-        "id": "DP-11-05",
-        "from": "O",
-        "to": "T"
-      },
-      {
-        "id": "DP-12-02",
-        "from": "O",
-        "to": "T"
-      }
-    ],
+    "scope": "Manual customer/project communication originals and separate corrections; operational vehicle trips, costs, full active chronology and monthly summaries. Core, API, Angular, canonical migration and actual container/restart checks.",
+    "reclassifiesTasks": false,
+    "statusChangesFromPreviousInventory": [],
     "originalRoadmapCheckboxesChanged": false,
     "allOriginalAcceptanceCriteriaReviewed": false,
     "otherTaskClassificationsRemainHistorical": true,
-    "classificationNote": "counts describes the currently listed rows after reassessing only the eight named tasks. The other 92 task classifications remain historical. This is not completion, a review of all 100 original acceptance criteria or full product acceptance. DP-11-05 was already T in Markdown and is now consistent in both formats.",
-    "historicalTextSynchronizationOnly": [
-      "DP-00-02",
-      "DP-02-06",
-      "DP-05-06",
-      "DP-08-02"
-    ],
-    "synchronizationNote": "Four other JSON row texts and seven missing source aliases are aligned with already existing historical Markdown text. Their classification and evidence date are not reassessed.",
-    "verificationNote": "New API tests use real HTTP/Identity/PostgreSQL; equipment original API tests use a versioned object-store test double. Responsive browser tests use controlled HTTP responses. Container/restart and canonical migration sources include real infrastructure checks when executed. No successful execution of the upcoming final combined CI, Standards, Operations, container or migration run is claimed here."
+    "classificationNote": "The three named tasks remain T. counts remains 49 K / 45 T / 6 O; the other 97 task classifications are carried forward from their earlier evidence dates. The previous eight-task reassessment and its four O-to-T corrections are retained under reassessmentHistory. This is not a review of all original acceptance criteria or a completion percentage.",
+    "verificationNote": "Core and client tests, real HTTP/Identity/PostgreSQL API tests and controlled-response browser fixtures are distinct evidence. Canonical migration, actual container, backup/restore and restart checks must pass on the published commit. Source references alone do not claim a successful final combined CI/Standards/Operations run."
   },
   "sources": {
     "discovery-live": "docs/evidence/live-discovery-checkpoint7.json",
@@ -284,7 +251,26 @@
     "gaeb-worksheet-docs": "docs/gaeb-price-worksheet.md",
     "gaeb-worksheet-tests": "web/tests/gaeb-price-worksheet.test.ts",
     "gaeb-worksheet-browser": "web/tests/browser/gaeb-price-worksheet.spec.ts",
-    "advanced-technical-ui": "web/src/app/pages/advanced-technical.component.ts"
+    "advanced-technical-ui": "web/src/app/pages/advanced-technical.component.ts",
+    "customer-journal-docs": "docs/customer-communications.md",
+    "customer-journal-core": "src/FirstBlick.Core/Business/CustomerCommunications.cs",
+    "customer-journal-api": "src/FirstBlick.Api/CustomerCommunicationEndpoints.cs",
+    "customer-journal-ui": "web/src/app/pages/customer-journal.component.ts",
+    "customer-journal-tests": "tests/FirstBlick.Core.Tests/Business/CustomerCommunicationTests.cs",
+    "customer-journal-api-tests": "tests/FirstBlick.Api.Tests/CustomerCommunicationApiTests.cs",
+    "customer-journal-client": "web/src/app/core/customer-journal.models.ts",
+    "customer-journal-client-tests": "web/tests/customer-journal.test.ts",
+    "customer-journal-browser": "web/tests/browser/customer-journal.spec.ts",
+    "vehicle-ledger-docs": "docs/vehicle-ledger.md",
+    "vehicle-ledger-core": "src/FirstBlick.Core/Business/VehicleLedger.cs",
+    "vehicle-ledger-api": "src/FirstBlick.Api/VehicleLedgerEndpoints.cs",
+    "vehicle-ledger-ui": "web/src/app/pages/vehicle-ledger.component.ts",
+    "vehicle-ledger-tests": "tests/FirstBlick.Core.Tests/Business/VehicleLedgerTests.cs",
+    "vehicle-ledger-api-tests": "tests/FirstBlick.Api.Tests/VehicleLedgerApiTests.cs",
+    "vehicle-ledger-client": "web/src/app/core/vehicle-ledger.models.ts",
+    "vehicle-ledger-client-tests": "web/tests/vehicle-ledger.test.ts",
+    "vehicle-ledger-browser": "web/tests/browser/vehicle-ledger.spec.ts",
+    "customer-vehicle-ledgers-smoke": "scripts/customer_vehicle_ledgers_smoke.py"
   },
   "tasks": [
     {
@@ -486,8 +472,8 @@
     {
       "id": "DP-04-01",
       "status": "T",
-      "evidence": "[Strukturierte Ansprechpartner][customer-contacts-docs], [Core-Regeln][customer-contacts-core], [HTTP-Kommandos][customer-contacts-api] und [Angular-Ansicht][customer-contacts-ui] führen bis zu 100 Kontakte je Kunde mit stabiler Kennung, ausdrücklich gewähltem Hauptkontakt, Archivierung und Wiederherstellung; bestehende Kontaktfelder bleiben erhalten. [Corefälle][customer-contacts-tests] und [HTTP-/Identity-/PostgreSQL-Fälle][customer-contacts-api-tests] prüfen Kunden-/Mandantenbindung, Revision, Replay und den Schutz vor generischem Überschreiben. [Clientverträge][customer-contacts-client], [Clienttests][customer-contacts-client-tests] und [responsive Browser-Fixtures][customer-contacts-browser] prüfen Antwortbindung, Änderungen und Kontextwechsel. [Migrationsprüfung][migration-graph-source], [Migrationsdrill][migration-drill-source] und [Container-/Neustartcheck][contacts-calendar-originals-smoke] enthalten Fälle zum Erhalt aktiver, primärer und archivierter Kontaktidentitäten.",
-      "remaining": "Vollständige kundenbezogene Kommunikations- und Feldänderungshistorien, automatische Dublettenbereinigung, bewusste Kundenzusammenführung und externe Kontaktsynchronisierung fehlen. Die vorhandenen Audit-Einträge ersetzen keine vollständige Historie früherer Kontaktwerte. Das betriebliche CRM-Fachmodell und reale Abläufe sind nicht fachlich abgenommen.",
+      "evidence": "[Strukturierte Ansprechpartner][customer-contacts-docs], [Core-Regeln][customer-contacts-core], [HTTP-Kommandos][customer-contacts-api] und [Angular-Ansicht][customer-contacts-ui] führen bis zu 100 Kontakte je Kunde mit stabiler Kennung, ausdrücklich gewähltem Hauptkontakt, Archivierung und Wiederherstellung; bestehende Kontaktfelder bleiben erhalten. [Corefälle][customer-contacts-tests] und [HTTP-/Identity-/PostgreSQL-Fälle][customer-contacts-api-tests] prüfen Kunden-/Mandantenbindung, Revision, Replay und den Schutz vor generischem Überschreiben. [Clientverträge][customer-contacts-client], [Clienttests][customer-contacts-client-tests] und [responsive Browser-Fixtures][customer-contacts-browser] prüfen Antwortbindung, Änderungen und Kontextwechsel. [Migrationsprüfung][migration-graph-source], [Migrationsdrill][migration-drill-source] und [Container-/Neustartcheck][contacts-calendar-originals-smoke] enthalten Fälle zum Erhalt aktiver, primärer und archivierter Kontaktidentitäten. Die [Kommunikationsakte][customer-journal-docs], [Core][customer-journal-core], [API][customer-journal-api] und [Angular-Ansicht][customer-journal-ui] ergänzen manuelle Gesprächseinträge mit damaligen Kontakt-/Projektangaben und getrennten, originalgebundenen Stornierungen. [Coretests][customer-journal-tests], [HTTP-/PostgreSQL-Fälle][customer-journal-api-tests], [Clienttests][customer-journal-client-tests] und [Browser-Fixtures][customer-journal-browser] prüfen Originalerhalt, Zuordnung, Revision, Rechte, Zeitumstellung und Kontextwechsel. Der [Betriebs-/Neustartablauf][customer-vehicle-ledgers-smoke] und die Migrationsprüfung erhalten historische Quellen und Akteure.",
+      "remaining": "Automatische Mail-/Chatübernahme, Gesprächsanhänge, vollständige Feldänderungshistorien, automatische Dublettenbereinigung, bewusste Kundenzusammenführung und externe Kontaktsynchronisierung fehlen. Manuelle Gesprächseinträge sind keine Versand-/Zustellbelege; vorhandene Audit-Einträge ersetzen keine vollständige Historie früherer Kontaktwerte. Reale CRM-Abläufe sind nicht fachlich abgenommen.",
       "title": "CRM und Ansprechpartner ausbauen"
     },
     {
@@ -668,8 +654,8 @@
     {
       "id": "DP-07-05",
       "status": "T",
-      "evidence": "Der [Geräteprüfungsarbeitsplatz][equipment-docs], [Core][equipment-workflow] und [API][equipment-api] verbinden geplante Prüfung/Wartung/Reparatur, unveränderliche Ergebnis-/Absagebelege, manuelle Folgetermine und Dispositionssperren. [Corefälle][equipment-tests] und [HTTP-/PostgreSQL-Fälle][equipment-api-tests] prüfen diese Regeln. Ergänzend binden [Originalakten][equipment-originals-docs], [Upload-API][equipment-originals-api] und [Angular-Bedienung][equipment-originals-ui] PDF/PNG/JPEG bis 25 MiB an einen abgeschlossenen Vorgang, dessen Digest und eine konkrete Speicherversion; Upload und Download prüfen die Originalbytes. [API-Regressionen][equipment-originals-api-tests], [Clientverträge][equipment-originals-client], [Clienttests][equipment-originals-client-tests] und [Browser-Fixtures][equipment-originals-browser] prüfen Quellenbindung, Hash, Wiederaufnahme, Rechte, Replay und Kontextwechsel. [Migrationsprüfung][migration-graph-source]/[Drill][migration-drill-source] enthalten verfügbare und archivierte Akten; [Container-/Neustartcheck][contacts-calendar-originals-smoke] enthält einen echten PNG-/S3-Rundlauf mit erhaltenen Bytes, Quellen und Versionen.",
-      "remaining": "Fahrtenbuch, Kilometer-/Fahrzeugkosten, automatisch ermittelte gesetzliche Fristen und unabhängige Kalender je Prüfart fehlen. Originalbytes und Abschlussbindung bestätigen keine inhaltliche Richtigkeit, digitale Unterschrift oder gesetzliche Prüfberechtigung. Vollständige Dateiinhalts-/Malware-Prüfung und automatische Bereinigung unbestätigter Speicherreste sind nicht enthalten; reale Betriebsfälle bleiben abzunehmen.",
+      "evidence": "Der [Geräteprüfungsarbeitsplatz][equipment-docs], [Core][equipment-workflow] und [API][equipment-api] verbinden geplante Prüfung/Wartung/Reparatur, unveränderliche Ergebnis-/Absagebelege, manuelle Folgetermine und Dispositionssperren. [Corefälle][equipment-tests] und [HTTP-/PostgreSQL-Fälle][equipment-api-tests] prüfen diese Regeln. Ergänzend binden [Originalakten][equipment-originals-docs], [Upload-API][equipment-originals-api] und [Angular-Bedienung][equipment-originals-ui] PDF/PNG/JPEG bis 25 MiB an einen abgeschlossenen Vorgang, dessen Digest und eine konkrete Speicherversion; Upload und Download prüfen die Originalbytes. [API-Regressionen][equipment-originals-api-tests], [Clientverträge][equipment-originals-client], [Clienttests][equipment-originals-client-tests] und [Browser-Fixtures][equipment-originals-browser] prüfen Quellenbindung, Hash, Wiederaufnahme, Rechte, Replay und Kontextwechsel. [Migrationsprüfung][migration-graph-source]/[Drill][migration-drill-source] enthalten verfügbare und archivierte Akten; [Container-/Neustartcheck][contacts-calendar-originals-smoke] enthält einen echten PNG-/S3-Rundlauf mit erhaltenen Bytes, Quellen und Versionen. Der [Fahrten-/Kostenarbeitsplatz][vehicle-ledger-docs] ergänzt [Originale und Stornos][vehicle-ledger-core], [API][vehicle-ledger-api] und [Angular-Bedienung][vehicle-ledger-ui] mit vollständiger aktiver Kilometer-/Fahrerchronologie, historischer Quellenbindung, EUR-Kosten und Monatsauswertung über alle Einträge. [Coretests][vehicle-ledger-tests], [HTTP-/PostgreSQL-Fälle][vehicle-ledger-api-tests], [Clienttests][vehicle-ledger-client-tests] und [Browser-Fixtures][vehicle-ledger-browser] prüfen Konflikte, exakte Dezimalwerte, Zeitumstellung, Rechte und Kontextwechsel. Der [Container-/Neustartcheck][customer-vehicle-ledgers-smoke] erhält Originale, Stornos und wirksame Summen; Migration und Restore prüfen auch archivierte Stammdaten.",
+      "remaining": "Steuerliche Fahrtenbuchabnahme, Telematikübernahme, Originalrechnungsanhänge an Kosten, automatische Kosten-/Buchhaltungsintegration, automatisch ermittelte gesetzliche Fristen und unabhängige Kalender je Prüfart fehlen. Die Monatskennzahl bildet nur dokumentierte Kosten und Strecken ab. Prüfungsoriginale bestätigen keine inhaltliche Richtigkeit, digitale Unterschrift oder gesetzliche Prüfberechtigung. Vollständige Dateiinhalts-/Malware-Prüfung und automatische Bereinigung unbestätigter Speicherreste sind nicht enthalten; reale Betriebsfälle bleiben abzunehmen.",
       "title": "Geräte und Fahrzeuge verwalten"
     },
     {
@@ -752,8 +738,8 @@
     {
       "id": "DP-09-03",
       "status": "T",
-      "evidence": "[DeliveryAttempt][commercial], [Outbox][worker] und [PortalFeedback][portal-model] binden Versand/Rückfragen an Vorgang und freigegebenen Stand.",
-      "remaining": "Keine vollständige ein-/ausgehende Mail-/Chat-Konversationsakte oder produktive Providerhistorie.",
+      "evidence": "Die [kunden-/projektbezogene Kommunikationsakte][customer-journal-docs] und [API][customer-journal-api] binden manuelle Telefon-, E-Mail-, Besprechungs- und Notizeinträge an vorhandene Kunden, optional Kontakte und zugehörige Projekte. Unveränderliche Originale halten damalige Bezeichnungen, Inhalt, Person und Zeitpunkt fest; getrennte Stornos erhalten Originalkennung und Digest. [HTTP-/PostgreSQL-Fälle][customer-journal-api-tests], [Clientverträge][customer-journal-client] und [responsive Browserfälle][customer-journal-browser] prüfen Quellbindung, aktuelle Rechte, Revision und verspätete Antworten. [Migrationsdrill][migration-drill-source] und [Container-/Neustartcheck][customer-vehicle-ledgers-smoke] sichern historischen Originalerhalt. Bestehende [DeliveryAttempt][commercial], [Outbox][worker] und [PortalFeedback][portal-model] bleiben gesonderte Versand-/Rückfrageabläufe.",
+      "remaining": "Automatische ein-/ausgehende Mail-/Chatübernahme, Gesprächsanhänge, Postfachsynchronisierung und produktive Providerhistorie fehlen. Ein manuell dokumentierter E-Mail-Kontakt bestätigt weder Versand noch Zustellung. Die vollständige betriebliche Kommunikationskette bleibt fachlich abzunehmen.",
       "title": "Kommunikation an Vorgänge binden"
     },
     {
@@ -1019,6 +1005,57 @@
       "originalRoadmapCheckboxesChanged": false,
       "classificationNote": "At this historical scope update no K/T/O reclassification or original-roadmap checkbox change was made. The then-current 49 K / 41 T / 10 O JSON inventory is retained under historicalClassification; latestReassessment separately identifies the later limited corrections reflected by counts.",
       "verificationNote": "Core, real HTTP/Identity/PostgreSQL, client and responsive browser fixture tests are separate from the real container/restart and canonical migration checks. Successful execution must be verified on the published commit."
+    }
+  ],
+  "reassessmentHistory": [
+    {
+      "recordedOn": "2026-10-21",
+      "tasks": [
+        "DP-04-01",
+        "DP-07-05",
+        "DP-08-03",
+        "DP-09-02",
+        "DP-11-03",
+        "DP-11-04",
+        "DP-11-05",
+        "DP-12-02"
+      ],
+      "scope": "Structured customer contacts, archived equipment inspection originals and explicit maintenance ICS export; correction of stale e-invoice, inhomogeneous thermal, moisture, tapered-board and GAEB entries from existing implementations.",
+      "reclassifiesTasks": true,
+      "statusChangesFromHistoricalJson": [
+        {
+          "id": "DP-08-03",
+          "from": "O",
+          "to": "T"
+        },
+        {
+          "id": "DP-11-04",
+          "from": "O",
+          "to": "T"
+        },
+        {
+          "id": "DP-11-05",
+          "from": "O",
+          "to": "T"
+        },
+        {
+          "id": "DP-12-02",
+          "from": "O",
+          "to": "T"
+        }
+      ],
+      "originalRoadmapCheckboxesChanged": false,
+      "allOriginalAcceptanceCriteriaReviewed": false,
+      "otherTaskClassificationsRemainHistorical": true,
+      "classificationNote": "counts describes the currently listed rows after reassessing only the eight named tasks. The other 92 task classifications remain historical. This is not completion, a review of all 100 original acceptance criteria or full product acceptance. DP-11-05 was already T in Markdown and is now consistent in both formats.",
+      "historicalTextSynchronizationOnly": [
+        "DP-00-02",
+        "DP-02-06",
+        "DP-05-06",
+        "DP-08-02"
+      ],
+      "synchronizationNote": "Four other JSON row texts and seven missing source aliases are aligned with already existing historical Markdown text. Their classification and evidence date are not reassessed.",
+      "verificationNote": "New API tests use real HTTP/Identity/PostgreSQL; equipment original API tests use a versioned object-store test double. Responsive browser tests use controlled HTTP responses. Container/restart and canonical migration sources include real infrastructure checks when executed. No successful execution of the upcoming final combined CI, Standards, Operations, container or migration run is claimed here."
     }
   ]
 }

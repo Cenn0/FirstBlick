@@ -45,6 +45,18 @@ internal sealed class MigrationGraph
                     && contact.UpdatedAt <= bundle.ExportedAt),
                     "Customer contact history must fit its retained customer envelope and export date.");
                 break;
+            case CustomerCommunication communication:
+                ValidateCustomerCommunication(communication); break;
+            case CustomerCommunicationVoid communicationVoid:
+                var originalCommunication = Get<CustomerCommunication>(tenant, communicationVoid.CommunicationId);
+                var voidCustomer = Get<Customer>(tenant, communicationVoid.CustomerId);
+                Require.That(originalCommunication.CustomerId == communicationVoid.CustomerId
+                    && originalCommunication.Digest == communicationVoid.SourceDigest,
+                    "A communication void must retain the original customer's exact journal entry and digest.");
+                Require.That(communicationVoid.VoidedAt >= originalCommunication.RecordedAt
+                    && communicationVoid.VoidedAt <= voidCustomer.UpdatedAt && communicationVoid.VoidedAt <= bundle.ExportedAt,
+                    "A communication void must fit its original recording, customer envelope and export date.");
+                break;
             case Project project:
                 Require.That(Get<Building>(tenant, project.BuildingId).CustomerId == project.CustomerId, "Project and building customer differ."); break;
             case Quote quote:
@@ -92,6 +104,26 @@ internal sealed class MigrationGraph
                 ValidateStockMovement(movement); break;
             case Equipment equipment:
                 ValidateEquipmentHistory(equipment); break;
+            case VehicleTrip trip:
+                ValidateVehicleLedgerEntry(trip);
+                Require.That(Get<Employee>(tenant, trip.DriverEmployeeId).CreatedAt <= trip.RecordedAt,
+                    "A vehicle trip's retained driver must exist before recording.");
+                break;
+            case VehicleCost vehicleCost:
+                ValidateVehicleLedgerEntry(vehicleCost);
+                var costZone = TimeZoneInfo.FindSystemTimeZoneById(bundle.Tenants.Single(x => x.Data.Id == tenant).Data.TimeZone);
+                var costRecordedDate = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(vehicleCost.RecordedAt, costZone).DateTime);
+                Require.That(vehicleCost.SpentOn <= costRecordedDate,
+                    "A vehicle cost cannot occur after its recording's business date.");
+                break;
+            case VehicleLedgerReversal reversal:
+                var reversedSource = RequireReference(tenant, reversal.SourceKind, reversal.SourceId);
+                Require.That(reversedSource is VehicleLedgerEntry, "A vehicle reversal must retain a supported ledger source.");
+                VehicleLedgerWorkflow.ValidateReversal(reversal, (VehicleLedgerEntry)reversedSource);
+                Require.That(reversal.RecordedAt <= Get<Equipment>(tenant, reversal.VehicleId).UpdatedAt
+                    && reversal.RecordedAt <= bundle.ExportedAt,
+                    "A vehicle reversal must fit its vehicle envelope and export date.");
+                break;
             case EquipmentInspection inspection:
                 _ = Get<Equipment>(tenant, inspection.EquipmentId);
                 if (inspection.Completion is { } completed)
@@ -174,6 +206,39 @@ internal sealed class MigrationGraph
                 var grant = Get<PortalShare>(tenant, feedback.ShareId);
                 Require.That(grant.ProjectId == feedback.ProjectId && grant.SourceDigest == feedback.SourceDigest, "Portal feedback must retain the granted version/project."); break;
         }
+    }
+
+    private void ValidateCustomerCommunication(CustomerCommunication communication)
+    {
+        var customer = Get<Customer>(communication.TenantId, communication.CustomerId);
+        Require.That(customer.CreatedAt <= communication.RecordedAt && communication.RecordedAt <= customer.UpdatedAt
+            && communication.RecordedAt <= bundle.ExportedAt && communication.OccurredAt <= communication.RecordedAt,
+            "A communication must fit its customer envelope, recording and export date.");
+        if (communication.Contact is { } snapshot)
+        {
+            var contact = customer.Contacts?.SingleOrDefault(x => x.Id == snapshot.Id);
+            Require.That(contact is not null && contact.CreatedAt <= communication.RecordedAt,
+                "A communication contact must retain its original customer-owned identity before recording.");
+        }
+        if (communication.Project is { } projectSnapshot)
+        {
+            var project = Get<Project>(communication.TenantId, projectSnapshot.Id);
+            Require.That(project.CustomerId == communication.CustomerId && project.CreatedAt <= communication.RecordedAt,
+                "A communication project must belong to its customer and exist before recording.");
+        }
+        // Customer, contact and project labels may have changed or been archived
+        // since recording. The sealed snapshots retain those historical values.
+    }
+
+    private void ValidateVehicleLedgerEntry(VehicleLedgerEntry entry)
+    {
+        var vehicle = Get<Equipment>(entry.TenantId, entry.VehicleId);
+        Require.That(vehicle.Kind == EquipmentKind.Vehicle && vehicle.CreatedAt <= entry.RecordedAt
+            && entry.RecordedAt <= vehicle.UpdatedAt && entry.RecordedAt <= bundle.ExportedAt,
+            "A vehicle ledger entry must retain its vehicle identity and fit the vehicle envelope and export date.");
+        if (entry.ProjectId is { } projectId)
+            Require.That(Get<Project>(entry.TenantId, projectId).CreatedAt <= entry.RecordedAt,
+                "A vehicle ledger entry's retained project must exist before recording.");
     }
 
     private void ValidateStockMovement(StockMovement movement)
@@ -306,7 +371,7 @@ internal sealed class MigrationGraph
     }
     private void ValidateActors(Guid tenant, JsonElement value)
     {
-        string[] names = ["userId", "allocatedBy", "reversedBy", "approvedBy", "submittedBy", "reviewedBy", "calculatedBy", "grantedBy", "recipientUserId", "authorUserId", "actorId", "plannedBy", "recordedBy", "cancelledBy", "createdBy", "updatedBy", "archivedBy"];
+        string[] names = ["userId", "allocatedBy", "reversedBy", "approvedBy", "submittedBy", "reviewedBy", "calculatedBy", "grantedBy", "recipientUserId", "authorUserId", "actorId", "plannedBy", "recordedBy", "cancelledBy", "createdBy", "updatedBy", "archivedBy", "voidedBy"];
         if (value.ValueKind == JsonValueKind.Object)
             foreach (var property in value.EnumerateObject())
             {
@@ -346,6 +411,7 @@ internal sealed class MigrationGraph
 
     public void ValidateLedger(Guid tenant)
     {
+        VehicleLedgerWorkflow.ValidateActiveTrips(All<VehicleTrip>(tenant), All<VehicleLedgerReversal>(tenant));
         var invoices = All<Invoice>(tenant).Where(x => x.Status == InvoiceStatus.Issued).ToList(); var payments = All<PaymentAllocation>(tenant);
         var supplierInvoices = All<SupplierInvoice>(tenant).Where(x => x.Status == SupplierInvoiceStatus.Approved).ToList(); var supplierPayments = All<SupplierPaymentAllocation>(tenant);
         foreach (var bank in All<BankTransaction>(tenant)) Require.That(PaymentWorkflow.UsedBankAmount(bank, payments, supplierPayments) <= Math.Abs(bank.Amount), "Combined customer/supplier/return allocations exceed immutable bank capacity.");
