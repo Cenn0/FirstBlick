@@ -15,6 +15,12 @@ public static class TechnicalEndpoints
     public sealed record CalculationRequest(Guid ProjectId, Guid? RoofRevisionId, string Title, string Method, JsonElement Input);
     public static void Map(RouteGroupBuilder api)
     {
+        api.MapPost("/technical/roof/drainage", async (RoofDrainageInput input, CommandExecutor commands, CancellationToken ct) =>
+        { await commands.Authorize("technical-results", true, ct); return Results.Ok(RoofDrainage.Calculate(input)); }).WithTags("technical");
+        api.MapPost("/technical/roof/wind", async (RoofWindInput input, CommandExecutor commands, CancellationToken ct) =>
+        { await commands.Authorize("technical-results", true, ct); return Results.Ok(RoofWind.Calculate(input)); }).WithTags("technical");
+        api.MapPost("/technical/roof/snow", async (RoofSnowInput input, CommandExecutor commands, CancellationToken ct) =>
+        { await commands.Authorize("technical-results", true, ct); return Results.Ok(RoofSnow.Calculate(input)); }).WithTags("technical");
         api.MapPost("/technical/thermal", async (ThermalInput input, CommandExecutor commands, CancellationToken ct) =>
         { await commands.Authorize("technical-results", true, ct); return Results.Ok(ThermalCalculator.Calculate(input)); }).WithTags("technical");
         api.MapPost("/technical/moisture/screening", async (MoistureScreeningInput input, CommandExecutor commands, CancellationToken ct) =>
