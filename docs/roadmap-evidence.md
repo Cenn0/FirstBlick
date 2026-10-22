@@ -18,6 +18,11 @@ Letzte begrenzte Fortschreibung: **22.10.2026** zusätzlich für **DP-11-09**; d
 
 Gegenüber der historischen JSON-Inventur werden **DP-08-03, DP-11-04, DP-11-05 und DP-12-02 von O auf T** berichtigt, weil jeweils begrenzte Fachfunktionen implementiert sind. DP-11-05 war in der Markdown-Fassung bereits als T geführt; diese Abweichung ist jetzt aufgelöst. Die vier anderen neu bewerteten Zeilen bleiben T. DP-11-09 wechselt wegen einer neuen geometrischen Teilfunktion ebenfalls von O zu T. Die aktuelle Zählung **49 K / 46 T / 5 O** beschreibt nur die jetzt gelisteten Statuswerte und ist **kein Fertigstellungsprozentsatz, keine erneute Bewertung aller 100 Aufgaben und keine vollständige Abnahme**. Kein Eintrag behauptet eine normative Zertifizierung, einen Produktionswechsel oder eine externe Anbieterabnahme. Die JSON-Fassung bewahrt die ursprüngliche Zählung und ihren Zeitstempel unter `historicalClassification`; `counts` entspricht den aktuellen Tabellenzeilen.
 
+## PV-Dachgruppen – weiterer begrenzter Teilumfang DP-11-09 (22.10.2026)
+
+- [Mehrere unabhängig gemessene Dachflächen](pv-roof-set.md): gemeinsamer Rechenlauf mit überprüfbaren Einzel-/Gesamtsummen, separaten Hindernissen, Rechte-/Projektablage und Clientprüfungen. Das frühere Einzelraster bleibt unverändert; fachliche Begrenzungen werden nicht aufgehoben.
+- **Status T unverändert**, **49 K / 46 T / 5 O**. Die Matrix wird nur für diese Zeile fortgeschrieben, nicht für die anderen 99 Aufgaben. Neu geschriebene Tests zählen erst nach erfolgreicher Ausführung auf dem jeweiligen Commit.
+
 ## PV-Geometrie – begrenzter Teilumfang DP-11-09 (22.10.2026)
 
 - [Geometrieentwurf und Grenzen](pv-module-layout.md): deterministische Modulpositionen auf einer rechteckigen gemessenen Dachfläche, Nennleistung statt Ertragsprognose, lokale UI-Eingabe und Export, technischer Projekt-Originalstand über die vorhandene Ergebnisakte.

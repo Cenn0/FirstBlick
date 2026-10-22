@@ -29,6 +29,8 @@ public static class TechnicalEndpoints
         { await commands.Authorize("technical-results", true, ct); return Results.Ok(RoofGeometry.Rectangle(input)); }).WithTags("technical");
         api.MapPost("/technical/roof/pv-layout", async (PvLayoutInput input, CommandExecutor commands, CancellationToken ct) =>
         { await commands.Authorize("technical-results", true, ct); return Results.Ok(PvModuleLayout.Calculate(input)); }).WithTags("technical");
+        api.MapPost("/technical/roof/pv-multi-layout", async (PvRoofSetInput input, CommandExecutor commands, CancellationToken ct) =>
+        { await commands.Authorize("technical-results", true, ct); return Results.Ok(PvRoofSetLayout.Calculate(input)); }).WithTags("technical");
         api.MapPost("/technical/roof/tapered-board-layout", async (TaperedBoardLayoutInput input, CommandExecutor commands, CancellationToken ct) =>
         { await commands.Authorize("technical-results", true, ct); return Results.Ok(TaperedBoardLayout.Calculate(input)); }).WithTags("technical");
         api.MapPost("/technical/roof/tapered-assembly", async (TaperedRoofAssemblyInput input, CommandExecutor commands, CancellationToken ct) =>
