@@ -145,7 +145,7 @@ test('missing capability hides advanced form', async ({ page }) => {
 test('authorization failure clears an existing preview and project links', async ({ page }) => {
   await fixture(page, 'boards'); await page.goto('/technical'); const s = await fill(page, 'boards'); await calculate(s);
   await page.route('**/api/v1/technical/runs', route => route.fulfill({ status: 403, json: { title: 'forbidden', detail: 'Synthetic revoked access' } }));
-  await save(s); await expect(s.getByRole('alert')).toContainText('revoked access');
+  await save(s); await expect(s.getByRole('alert')).toContainText('Berechtigung');
   await expect(s.locator('.result-panel')).toHaveCount(0); await expect(s.locator('#adv-project')).toHaveCount(0);
 });
 test('changing an entered source discards preview and saved links', async ({ page }) => {
