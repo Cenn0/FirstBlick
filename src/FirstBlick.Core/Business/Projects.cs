@@ -63,6 +63,8 @@ public sealed class Project : TenantEntity
 public enum TaskStatus { Open, InProgress, Done, Cancelled }
 public sealed class TaskItem : TenantEntity
 {
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public ProjectTemplateTaskOrigin? TemplateOrigin { get; set; }
     public Guid ProjectId { get; set; }
     public Guid? AssignedEmployeeId { get; set; }
     public string Title { get; set; } = "";
@@ -74,11 +76,19 @@ public sealed class TaskItem : TenantEntity
         ValidateCommon(); Guard.Id(ProjectId, nameof(ProjectId)); Guard.OptionalId(AssignedEmployeeId, nameof(AssignedEmployeeId));
         Guard.Text(Title, nameof(Title)); Guard.Text(Description, nameof(Description), 20_000, false);
         Guard.Require(Enum.IsDefined(Status), "invalid_status", "Task status is invalid.");
+        if (TemplateOrigin is { } origin)
+        {
+            Guard.Id(origin.ApplicationId, "Template application"); Guard.Id(origin.TemplateId, "Template");
+            Guard.Require(origin.TemplateRevision > 0 && origin.Position is >= 1 and <= 50
+                && origin.ApplicationDigest is { Length: 64 } && origin.ApplicationDigest.All(x => x is >= '0' and <= '9' or >= 'a' and <= 'f'),
+                "project_template_origin", "Task provenance requires a template revision, position and original application digest.");
+        }
     }
     public override IEnumerable<EntityReference> References()
     {
         yield return BusinessRegistry.Reference<Project>(ProjectId);
         if (AssignedEmployeeId is { } id) yield return BusinessRegistry.Reference<Employee>(id);
+        if (TemplateOrigin is { } origin) yield return BusinessRegistry.Reference<ProjectTemplateApplication>(origin.ApplicationId);
     }
 }
 

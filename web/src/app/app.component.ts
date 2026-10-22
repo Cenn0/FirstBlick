@@ -26,6 +26,7 @@ import { errorMessage } from './core/transport';
                 @for (module of group.items; track module.kind) {
                   <a class="nav-item" [routerLink]="'/' + module.kind" routerLinkActive="active" (click)="menuOpen.set(false)"><span class="nav-icon" aria-hidden="true">{{module.icon}}</span>{{module.title}}</a>
                 }
+                @if(group.name==='Betrieb'&&['ManagingDirector','Office','Accounting','SiteManager'].includes(auth.tenant()?.role||'')&&auth.can('project-templates.read')){<a class="nav-item" routerLink="/project-templates" routerLinkActive="active" (click)="menuOpen.set(false)"><span class="nav-icon" aria-hidden="true">☷</span>Projektvorlagen</a>}
                 @if(group.name==='Material & Geräte'&&['ManagingDirector','Office','Accounting','SiteManager'].includes(auth.tenant()?.role||'')&&auth.can('equipment-inspections.read')){<a class="nav-item" routerLink="/equipment-inspections" routerLinkActive="active" (click)="menuOpen.set(false)"><span class="nav-icon" aria-hidden="true">✓</span>Geräteprüfungen</a>}
                 @if(group.name==='Material & Geräte'&&['ManagingDirector','Office','Accounting','SiteManager'].includes(auth.tenant()?.role||'')&&auth.can('vehicle-trips.read')&&auth.can('vehicle-costs.read')){<a class="nav-item" routerLink="/vehicle-ledger" routerLinkActive="active" (click)="menuOpen.set(false)"><span class="nav-icon" aria-hidden="true">↗</span>Fahrten & Fahrzeugkosten</a>}
               </div>
@@ -78,7 +79,7 @@ export class AppComponent {
   readonly checkingAccess=signal(false);readonly accessError=signal('');
   readonly partner = computed(()=>this.auth.tenant()?.role==='Partner');
   readonly home = computed(()=>this.partner()?'/portal':'/overview');
-  readonly groups = computed(() => ['Betrieb','Kaufmännisch','Baustelle','Material & Geräte','Team'].map(name => ({ name, items: modules.filter(m => m.group === name && this.auth.hasModule(m.module) && this.auth.can(m.capability)) })).filter(group=>group.items.length));
+  readonly groups = computed(() => ['Betrieb','Kaufmännisch','Baustelle','Material & Geräte','Team'].map(name => ({ name, items: modules.filter(m => m.group === name && this.auth.hasModule(m.module) && this.auth.can(m.capability)) })).filter(group=>group.items.length||group.name==='Betrieb'&&['ManagingDirector','Office','Accounting','SiteManager'].includes(this.auth.tenant()?.role||'')&&this.auth.can('project-templates.read')));
   readonly initials = computed(() => (this.auth.session()?.user.displayName || this.auth.session()?.user.email || '').split(/[\s@]+/).slice(0,2).map(x => x.charAt(0)).join('').toUpperCase());
 
   constructor() {

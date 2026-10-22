@@ -15,7 +15,7 @@ using Npgsql;
 
 namespace FirstBlick.Operations;
 
-internal static class MigrationDrill
+internal static partial class MigrationDrill
 {
     public static async Task<object> Run(Settings original, string output)
     {
@@ -33,6 +33,8 @@ internal static class MigrationDrill
         Require.That(checkedSource.Report.State == "Compatible", "Synthetic source failed compatibility checks; inspect source-check.json.");
         VerifyWarehouseBranches(checkedSource.Entities.OfType<StockMovement>().ToArray());
         VerifyOperationalLedgers(checkedSource.Entities, bundle.Memberships);
+        VerifyLedgerOriginalDocuments(bundle.Documents.Select(x => x.Data), checkedSource.Entities);
+        VerifyProjectTemplateHistory(checkedSource.Entities);
         var sourceSupplierInvoices = bundle.Entities.Where(x => x.Kind == "supplier-invoices").ToList();
         Require.That(sourceSupplierInvoices.Count == 2 && sourceSupplierInvoices.Any(x => !x.Data.TryGetProperty("electronicSource", out _))
             && sourceSupplierInvoices.Any(x => x.Data.TryGetProperty("electronicSource", out var value) && value.ValueKind == JsonValueKind.Null),
@@ -105,6 +107,9 @@ internal static class MigrationDrill
             var retainedOperationalRows = await db.Entities.IgnoreQueryFilters().Where(x => x.TenantId == sourceTenant)
                 .Select(x => new { x.Kind, x.Data }).ToListAsync();
             VerifyOperationalLedgers(retainedOperationalRows.Select(x => AppJson.Read(x.Kind, x.Data)).ToArray(), bundle.Memberships);
+            VerifyLedgerOriginalDocuments(await db.Documents.IgnoreQueryFilters().Where(x => x.TenantId == sourceTenant).ToListAsync(),
+                retainedOperationalRows.Select(x => AppJson.Read(x.Kind, x.Data)));
+            VerifyProjectTemplateHistory(retainedOperationalRows.Select(x => AppJson.Read(x.Kind, x.Data)));
             Require.That(AppJson.Read<PortalShare>((await db.Entities.IgnoreQueryFilters().SingleAsync(x => x.Kind == "portal-shares")).Data).RevokedAt == imported.ImportedAt, "Legacy portal permission was not quarantined.");
             var importedStock = (await db.Entities.IgnoreQueryFilters().Where(x => x.Kind == "stock-movements" && x.TenantId == sourceTenant)
                 .Select(x => x.Data).ToListAsync()).Select(AppJson.Read<StockMovement>).ToArray();
@@ -203,6 +208,8 @@ internal static class MigrationDrill
             customerContactIdentitiesPrimaryArchiveAndActorsPreserved = true,
             customerCommunicationSnapshotsVoidsAndInactiveActorsPreserved = true,
             vehicleChronologyCostsReversalsAndHistoricalIdentitiesPreserved = true,
+            ledgerOriginalVersionsDigestsAndArchivedFilesPreserved = true,
+            projectTemplateSnapshotsTaskOriginsAndLaterEditsPreserved = true,
             namedFreshOperatorVerified = true, portalGrantsRevoked = true, persistentRecoveryHoldVerified = true, repeatHasNoDatabaseOrObjectWrites = true,
             laterRecoveryPreservesPendingSourceIdentity = true,
             actualNextNumberVerified = true, changedTargetDetected = true, exactCanonicalNumbersVerified = true, negativeCases = negatives,
@@ -305,6 +312,8 @@ internal static class MigrationDrill
             (customer, contact) => contact with { UpdatedAt = customer.UpdatedAt.AddTicks(10) }),
             issue => issue.Message == "Customer contact history must fit its retained customer envelope and export date.");
         await RejectOperationalLedgerSources(bundle, entities, Reject);
+        await RejectLedgerOriginalSources(bundle, entities, Reject);
+        await RejectProjectTemplateSources(bundle, entities, Reject);
         var collision = bundle.Counters.Select(x => x.Kind == "AN" && x.Value > 0 ? x with { Value = x.Value - 1, ExpectedNextNumber = $"AN-{x.Year}-{x.Value:D6}" } : x).ToList();
         await Reject("numbering-collision", Controls(bundle with { Counters = collision }));
         await Reject("explicit-unresolved-source", bundle with { Uncertainties = [new("legacy_delivery_unknown", "Synthetic old export lacks provider acknowledgement; the original uncertainty is retained.", bundle.Tenants[0].Data.Id, "quotes", entities.OfType<Quote>().Single().Id, bundle.EvidenceFiles[0].File)] });
@@ -623,6 +632,7 @@ internal static class MigrationDrill
         CustomerContactWorkflow.Archive(customer, archivedContact.Id, owner.Id, at.AddMinutes(14));
         customer.Revision = 5; customer.UpdatedAt = at.AddMinutes(14);
         SeedRetainedOperationalLedgers(tenant.Id, customer, project, formerRecorder.Id, owner.Id, at, entities);
+        SeedProjectTemplateHistory(project, formerRecorder.Id, at.AddMinutes(28), entities);
         foreach (var entity in entities) entity.Validate();
         Directory.CreateDirectory(Path.Combine(directory, "evidence")); Directory.CreateDirectory(Path.Combine(directory, "objects"));
         await File.WriteAllTextAsync(Path.Combine(directory, "evidence", "source-records.txt"), "Synthetic canonical source only. Historical party names, prices, accepted contract, provider acknowledgement and old source IDs were intentionally retained. No real provider was called.\n");
@@ -653,6 +663,7 @@ internal static class MigrationDrill
                 SourceDigest = inspection.Completion.Digest, RendererVersion = "equipment-inspection-original-v1" };
             documents.Add(new("legacy-equipment-original-" + documents.Count, data, proof, "synthetic-versioned-original-export", version));
         }
+        await AddLedgerOriginalDocuments(directory, entities, documents, formerRecorder.Id);
         var envelopes = entities.Select(entity =>
         {
             var contractual = entity is Quote { Status: not QuoteStatus.Draft } or Order or Invoice { Status: InvoiceStatus.Issued }

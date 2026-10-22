@@ -10,9 +10,10 @@ import { CommunicationChannel, CommunicationDirection, CommunicationItem, Commun
 import { RecordChoice } from '../core/ledger-contracts';
 import { ApiError, errorMessage } from '../core/transport';
 import { LedgerPickerComponent } from './ledger-picker.component';
+import { LedgerOriginalsComponent } from './ledger-originals.component';
 
 @Component({
-  selector: 'app-customer-journal', imports: [FormsModule, RouterLink, LedgerPickerComponent], templateUrl: './customer-journal.component.html',
+  selector: 'app-customer-journal', imports: [FormsModule, RouterLink, LedgerPickerComponent, LedgerOriginalsComponent], templateUrl: './customer-journal.component.html',
   styles: [':host{display:block;border-top:1px solid var(--line,#ddd);margin-top:1.5rem;padding-top:1.5rem}.journal-heading,.journal-actions,.journal-pager{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.7rem}.journal-list{display:grid;gap:.8rem;margin:1rem 0}.journal-entry,.journal-editor{border:1px solid var(--line,#ddd);border-radius:.6rem;padding:1rem;min-width:0}.journal-entry[data-voided=true]{background:#f5f6f3}.journal-entry h4{margin:0 0 .5rem}.journal-entry p{overflow-wrap:anywhere;margin-bottom:.6rem}.journal-text{white-space:pre-wrap}.journal-editor{margin:1rem 0}.journal-pager{font-size:.8rem}.journal-editor fieldset{min-width:0}.void-form{margin-top:.8rem;padding-top:.8rem;border-top:1px solid var(--line,#ddd)}.journal-actions{justify-content:flex-start;margin-top:.8rem}.journal-heading p{margin-bottom:.5rem}.journal-entry .badge{margin-right:.4rem}.journal-editor .form-grid{margin-bottom:.8rem}']
 })
 export class CustomerJournalComponent {

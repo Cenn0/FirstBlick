@@ -17,6 +17,7 @@ export const routes: Routes = [
   { path: 'login', loadComponent: () => import('./pages/login.component').then(m => m.LoginComponent) },
   { path: 'maintenance', canActivate: [authenticated], loadComponent: () => import('./pages/maintenance.component').then(m => m.MaintenanceComponent) },
   { path: 'overview', canActivate: [authenticated], loadComponent: () => import('./pages/dashboard.component').then(m => m.DashboardComponent) },
+  { path: 'project-templates', canActivate: [authenticated], loadComponent: () => import('./pages/project-templates.component').then(m => m.ProjectTemplatesComponent) },
   { path: 'planning-week', canActivate: [authenticated], loadComponent: () => import('./pages/planning-week.component').then(m => m.PlanningWeekComponent) },
   { path: 'portal', canActivate: [authenticated], loadComponent: () => import('./pages/portal.component').then(m => m.PortalComponent) },
   { path: 'documents', canActivate: [authenticated], loadComponent: () => import('./pages/documents.component').then(m => m.DocumentsComponent) },

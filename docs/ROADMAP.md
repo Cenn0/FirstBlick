@@ -2,7 +2,17 @@
 
 > Übernommen aus der Projektanalyse „DachPlaner Rework Roadmap“, 19.10.2026 (34 Seiten). Der Originalbericht umfasst 100 Aufgaben in 15 Epics. Diese Fassung erhält alle Aufgabenkennungen und ursprünglichen Abnahmekriterien. Ein implementierter Teilablauf bedeutet nicht automatisch, dass das gesamte Epic abgeschlossen ist.
 
-## Aktuelle Fortsetzung – Kommunikationsakte, Fahrten und Fahrzeugkosten (22.10.2026)
+## Aktuelle Fortsetzung – Projektvorlagen und Originalbelege (22.10.2026)
+
+**FirstBlick bleibt das ausschließliche Entwicklungsziel.**
+
+- **DP-04-03 / DP-04-04:** [Projektvorlagen](project-templates.md) mit geordneten Aufgaben und relativen Kalendertagen führen über eine konkrete, revisionsgebundene Vorschau zur bewussten atomaren Aufgabenanlage. Jede Anwendung erhält unveränderliche Vorlagen-/Projekt-Snapshots, Aufgabenkennungen, Herkunft und Digest. Spätere Aufgabenbearbeitung oder Vorlagenarchivierung erhalten diesen Nachweis. Mehrfachübernahmen derselben Vorlage je Projekt, veraltete Quellen und unzulässige Datumswerte werden abgewiesen. Aufgabenabhängigkeiten, Arbeitskalender, Personaleinteilung und automatische Erinnerungen bleiben offen.
+- **DP-04-01 / DP-09-03 / DP-07-05:** [Originaldateien an Kommunikation und Fahrzeugkosten](ledger-originals.md) ergänzen beide Arbeitsplätze um mehrere PDF-/Bildbelege mit paginierter Liste, Wiederaufnahme und verifiziertem Download. Dateien bleiben an den unveränderten Originaldigest und eine konkrete Speicherversion gebunden. Storno oder Archivierung erhalten vorhandene Originale; weitere Uploads prüfen den aktuellen Quellzustand und die aktuellen Rechte. Automatische Postfachübernahme, OCR, Rechnungsprofilprüfung und Kostenbuchungen sind damit nicht enthalten.
+- **Migration und Betrieb:** Die Migrationsprüfung verbindet jeden Anwendungsnachweis mit seinen tatsächlichen Aufgaben und prüft Dateien auf die korrekte Quelle, Version, Zeitfolge und Zugriffsgrenze. Der [Container-/S3-/Neustartcheck](../scripts/project_templates_originals_smoke.py) erzeugt die Abläufe über die tatsächliche API und vergleicht nach Neustart dieselben Aufgaben, Anwendungen, Belegversionen und Originalbytes. Die erfolgreiche Ausführung ist jeweils für den veröffentlichten Commit nachzuweisen.
+
+[Nachweismatrix](roadmap-evidence.md) und [JSON-Inventar](evidence/roadmap-matrix.json) aktualisieren dieselben fünf Aufgaben. Ihre Kategorien bleiben unverändert: **49 K / 45 T / 6 O** zählt die vorhandenen Einträge und ist keine Fertigstellungsquote. Die ursprünglichen 100 Aufgaben und Abnahmekriterien bleiben erhalten.
+
+## Vorherige Fortsetzung – Kommunikationsakte, Fahrten und Fahrzeugkosten (22.10.2026)
 
 **Entwicklungsziel ist ausschließlich FirstBlick. DachPlaner bleibt Referenz.**
 

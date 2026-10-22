@@ -83,6 +83,9 @@ internal static class GraphRules
         entity.Validate();
         switch (entity)
         {
+            case TaskItem { TemplateOrigin: not null } task:
+                ProjectTemplateWorkflow.EnsureTaskOrigin(task, await store.Get<ProjectTemplateApplication>(task.TemplateOrigin.ApplicationId, ct));
+                break;
             case Equipment equipment:
                 Guard.Require(equipment.Kind == EquipmentKind.Vehicle || !await db.Links.AnyAsync(x => x.TargetKind == "equipment"
                     && x.TargetId == equipment.Id && (x.SourceKind == "vehicle-trips" || x.SourceKind == "vehicle-costs" || x.SourceKind == "vehicle-ledger-reversals"), ct),

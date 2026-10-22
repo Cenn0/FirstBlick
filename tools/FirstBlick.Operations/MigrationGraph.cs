@@ -59,6 +59,10 @@ internal sealed class MigrationGraph
                 break;
             case Project project:
                 Require.That(Get<Building>(tenant, project.BuildingId).CustomerId == project.CustomerId, "Project and building customer differ."); break;
+            case ProjectTemplateApplication application:
+                ValidateProjectTemplateApplication(application); break;
+            case TaskItem task when task.TemplateOrigin is not null:
+                ValidateTemplateTask(task, Get<ProjectTemplateApplication>(tenant, task.TemplateOrigin.ApplicationId)); break;
             case Quote quote:
                 Require.That(Get<Project>(tenant, quote.ProjectId).CustomerId == quote.CustomerId, "Quote and project customer differ.");
                 foreach (var line in quote.Lines) ValidateQuantity(tenant, quote.ProjectId, line.QuantityEvidence); break;
@@ -206,6 +210,43 @@ internal sealed class MigrationGraph
                 var grant = Get<PortalShare>(tenant, feedback.ShareId);
                 Require.That(grant.ProjectId == feedback.ProjectId && grant.SourceDigest == feedback.SourceDigest, "Portal feedback must retain the granted version/project."); break;
         }
+    }
+
+    private void ValidateProjectTemplateApplication(ProjectTemplateApplication application)
+    {
+        application.Validate();
+        var project = Get<Project>(application.TenantId, application.ProjectId);
+        var template = Get<ProjectTemplate>(application.TenantId, application.TemplateId);
+        var preview = application.Preview!;
+        var historicalCustomer = Get<Customer>(application.TenantId, preview.Project.CustomerId);
+        var historicalBuilding = Get<Building>(application.TenantId, preview.Project.BuildingId);
+        Require.That(historicalCustomer.CreatedAt <= application.AppliedAt && historicalBuilding.CreatedAt <= application.AppliedAt,
+            "A project template application's historical customer and building must exist before adoption.");
+        Require.That(application.AppliedAt <= bundle.ExportedAt && application.UpdatedAt <= bundle.ExportedAt,
+            "A project template application cannot postdate the export.");
+        // EntityStore reloads CreatedAt from PostgreSQL when an entity is edited.
+        // Retained first-write JSON can carry 100 ns ticks, while that column uses
+        // microseconds. Preserve exact snapshot bytes; compare source identity at
+        // the storage precision instead of rejecting a legitimate later edit.
+        Require.That(project.CreatedAt.Ticks / 10 == preview.Project.CreatedAt.Ticks / 10 && project.Revision > preview.Project.Revision
+            && project.UpdatedAt >= application.AppliedAt && template.CreatedAt.Ticks / 10 == preview.Template.CreatedAt.Ticks / 10
+            && template.Revision >= preview.Template.Revision,
+            "A project template application must retain existing source identities and compatible revision history.");
+        if (template.Revision == preview.Template.Revision)
+            Require.That(ContentDigest.Of(template) == preview.TemplateDigest,
+                "An unchanged template revision must equal its retained application snapshot.");
+        foreach (var created in application.Tasks)
+            ValidateTemplateTask(Get<TaskItem>(application.TenantId, created.TaskId), application);
+    }
+
+    private static void ValidateTemplateTask(TaskItem task, ProjectTemplateApplication application)
+    {
+        ProjectTemplateWorkflow.EnsureTaskOrigin(task, application);
+        if (task.Revision != 1) return;
+        var original = application.Preview!.Tasks.Single(x => x.Position == task.TemplateOrigin!.Position);
+        Require.That(task.Title == original.Title && task.Description == original.Description && task.DueDate == original.DueDate
+            && task.Status == FirstBlick.Core.Business.TaskStatus.Open && task.AssignedEmployeeId is null && !task.Archived,
+            "An unedited template task must retain the original planned contents and open unassigned state.");
     }
 
     private void ValidateCustomerCommunication(CustomerCommunication communication)
@@ -371,7 +412,7 @@ internal sealed class MigrationGraph
     }
     private void ValidateActors(Guid tenant, JsonElement value)
     {
-        string[] names = ["userId", "allocatedBy", "reversedBy", "approvedBy", "submittedBy", "reviewedBy", "calculatedBy", "grantedBy", "recipientUserId", "authorUserId", "actorId", "plannedBy", "recordedBy", "cancelledBy", "createdBy", "updatedBy", "archivedBy", "voidedBy"];
+        string[] names = ["userId", "allocatedBy", "reversedBy", "approvedBy", "submittedBy", "reviewedBy", "calculatedBy", "grantedBy", "recipientUserId", "authorUserId", "actorId", "plannedBy", "recordedBy", "cancelledBy", "createdBy", "updatedBy", "archivedBy", "voidedBy", "appliedBy"];
         if (value.ValueKind == JsonValueKind.Object)
             foreach (var property in value.EnumerateObject())
             {
@@ -388,6 +429,26 @@ internal sealed class MigrationGraph
         if (document.ProjectId is { } project) _ = Get<Project>(document.TenantId, project);
         if (document.SourceId is not { } sourceId) return;
         var source = RequireReference(document.TenantId, document.SourceKind!, sourceId);
+        if (source is CustomerCommunication or VehicleCost)
+        {
+            var originalDigest = source is CustomerCommunication communication ? communication.Digest : ((VehicleCost)source).Digest;
+            var recordedAt = source is CustomerCommunication journal ? journal.RecordedAt : ((VehicleCost)source).RecordedAt;
+            var renderer = source is CustomerCommunication ? "customer-communication-original-v1" : "vehicle-cost-original-v1";
+            Require.That(document.SourceDigest == originalDigest,
+                "A ledger original must bind to its exact retained source digest.");
+            Require.That(document.ProjectId is null && document.ProjectKind is null
+                && document.RendererVersion == renderer && document.ContentType is "application/pdf" or "image/png" or "image/jpeg",
+                "A ledger original must retain its source-specific format and cannot acquire project-based access.");
+            Require.That(!string.IsNullOrWhiteSpace(document.VersionId) && document.VersionId != "null",
+                "A ledger original must retain its immutable source version.");
+            Require.That(document.Revision >= 2,
+                "A verified ledger original must retain its completed upload revision.");
+            Require.That(document.Name.Length <= 180 && !document.Name.Contains('\\'),
+                "A ledger original must retain a supported plain filename of at most 180 characters.");
+            Require.That(document.CreatedAt >= recordedAt && document.CreatedAt <= bundle.ExportedAt,
+                "A ledger original cannot predate its retained entry or postdate the export.");
+            return;
+        }
         if (source is EquipmentInspection inspection)
         {
             Require.That(inspection.Status == EquipmentInspectionStatus.Completed && inspection.Completion is not null,
