@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using FirstBlick.Core.Technical;
+using FirstBlick.Core.Business;
 
 namespace FirstBlick.TechnicalFixtures;
 
@@ -8,7 +9,7 @@ public static class Fixtures
 {
     public static JsonSerializerOptions JsonOptions => new(JsonSerializerDefaults.Web)
     {
-        WriteIndented = true, Converters = { new JsonStringEnumConverter() }
+        WriteIndented = true, Converters = { new JsonStringEnumConverter(allowIntegerValues: false), new FirstBlick.Infrastructure.Persistence.DecimalStringConverter() }
     };
     public static object Create()
     {
@@ -42,9 +43,9 @@ public static class Fixtures
             ["residual"] = new { mode = "balance", input = balance with { Months = climate.Select(m => m with { OutsideAirTemperatureC = -5 }).ToArray() },
                 result = Iso13788Balance.Calculate(balance with { Months = climate.Select(m => m with { OutsideAirTemperatureC = -5 }).ToArray() }) },
             ["drying"] = new { mode = "drying", input = drying, result = Iso13788Balance.Dry(drying) },
-            ["boards"] = new { mode = "boards", input = boards, result = TaperedBoardLayout.Calculate(boards) },
+            ["boards"] = new { mode = "boards", input = boards, result = TaperedBoardLayout.Calculate(boards), persistedResult = TechnicalRecords.Evaluate("roof.tapered-board-layout", JsonSerializer.SerializeToElement(boards, JsonOptions)) },
             ["unknown"] = new { mode = "boards", input = unknown, result = TaperedBoardLayout.Calculate(unknown) },
-            ["assembly"] = new { mode = "assembly", input = assembly, result = TaperedRoofAssembly.Calculate(assembly) }
+            ["assembly"] = new { mode = "assembly", input = assembly, result = TaperedRoofAssembly.Calculate(assembly), persistedResult = TechnicalRecords.Evaluate("roof.tapered-assembly", JsonSerializer.SerializeToElement(assembly, JsonOptions)) }
         };
     }
 }

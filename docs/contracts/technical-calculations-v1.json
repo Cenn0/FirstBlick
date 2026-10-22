@@ -1,0 +1,194 @@
+{
+  "schema": "firstblick.technical-openapi-minimum/1.0.0",
+  "scope": "18 calculation previews only; not a full API compatibility guarantee",
+  "operations": [
+    {
+      "path": "/api/v1/technical/roof/drainage",
+      "requestSchema": "RoofDrainageInput",
+      "responseSchema": "RoofDrainageResult",
+      "responseProperties": [
+        "input",
+        "catchments",
+        "provenance"
+      ]
+    },
+    {
+      "path": "/api/v1/technical/roof/wind",
+      "requestSchema": "RoofWindInput",
+      "responseSchema": "RoofWindResult",
+      "responseProperties": [
+        "input",
+        "zones",
+        "provenance"
+      ]
+    },
+    {
+      "path": "/api/v1/technical/roof/snow",
+      "requestSchema": "RoofSnowInput",
+      "responseSchema": "RoofSnowResult",
+      "responseProperties": [
+        "input",
+        "zones",
+        "provenance"
+      ]
+    },
+    {
+      "path": "/api/v1/technical/thermal",
+      "requestSchema": "ThermalInput",
+      "responseSchema": "ThermalResult",
+      "responseProperties": [
+        "input",
+        "uValueWm2K",
+        "provenance"
+      ]
+    },
+    {
+      "path": "/api/v1/technical/moisture/screening",
+      "requestSchema": "MoistureScreeningInput",
+      "responseSchema": "MoistureScreeningResult",
+      "responseProperties": [
+        "input",
+        "interfaces",
+        "provenance"
+      ]
+    },
+    {
+      "path": "/api/v1/technical/moisture/monthly-screening",
+      "requestSchema": "MonthlyMoistureScreeningInput",
+      "responseSchema": "MonthlyMoistureScreeningResult",
+      "responseProperties": [
+        "input",
+        "months",
+        "provenance"
+      ]
+    },
+    {
+      "path": "/api/v1/technical/thermal/parallel",
+      "requestSchema": "ParallelThermalInput",
+      "responseSchema": "ParallelThermalResult",
+      "responseProperties": [
+        "input",
+        "paths",
+        "provenance"
+      ]
+    },
+    {
+      "path": "/api/v1/technical/thermal/inhomogeneous",
+      "requestSchema": "InhomogeneousThermalInput",
+      "responseSchema": "InhomogeneousThermalResult",
+      "responseProperties": [
+        "input",
+        "sections",
+        "provenance"
+      ]
+    },
+    {
+      "path": "/api/v1/technical/roof/rectangle",
+      "requestSchema": "RectangularRoofInput",
+      "responseSchema": "RectangularRoofResult",
+      "responseProperties": [
+        "input",
+        "surfaceAreaM2",
+        "provenance"
+      ]
+    },
+    {
+      "path": "/api/v1/technical/roof/pv-layout",
+      "requestSchema": "PvLayoutInput",
+      "responseSchema": "PvLayoutResult",
+      "responseProperties": [
+        "input",
+        "placements",
+        "provenance"
+      ]
+    },
+    {
+      "path": "/api/v1/technical/roof/pv-multi-layout",
+      "requestSchema": "PvRoofSetInput",
+      "responseSchema": "PvRoofSetResult",
+      "responseProperties": [
+        "input",
+        "planes",
+        "provenance"
+      ]
+    },
+    {
+      "path": "/api/v1/technical/roof/tapered-board-layout",
+      "requestSchema": "TaperedBoardLayoutInput",
+      "responseSchema": "TaperedBoardLayoutResult",
+      "responseProperties": [
+        "input",
+        "placements",
+        "orders",
+        "provenance"
+      ]
+    },
+    {
+      "path": "/api/v1/technical/roof/tapered-assembly",
+      "requestSchema": "TaperedRoofAssemblyInput",
+      "responseSchema": "TaperedRoofAssemblyResult",
+      "responseProperties": [
+        "input",
+        "fields",
+        "placements",
+        "orders",
+        "provenance"
+      ]
+    },
+    {
+      "path": "/api/v1/technical/moisture/iso13788/balance",
+      "requestSchema": "Iso13788BalanceInput",
+      "responseSchema": "Iso13788BalanceResult",
+      "responseProperties": [
+        "input",
+        "grid",
+        "months",
+        "interfaceMaxima",
+        "standardProcedure",
+        "provenance"
+      ]
+    },
+    {
+      "path": "/api/v1/technical/moisture/iso13788/drying",
+      "requestSchema": "Iso13788DryingInput",
+      "responseSchema": "Iso13788DryingResult",
+      "responseProperties": [
+        "input",
+        "grid",
+        "months",
+        "interfaceMaxima",
+        "standardProcedure",
+        "provenance"
+      ]
+    },
+    {
+      "path": "/api/v1/technical/roof/tapered-insulation",
+      "requestSchema": "TaperedInsulationInput",
+      "responseSchema": "TaperedInsulationResult",
+      "responseProperties": [
+        "input",
+        "projectedAreaM2",
+        "provenance"
+      ]
+    },
+    {
+      "path": "/api/v1/technical/roof/polygon",
+      "requestSchema": "PolygonRoofInput",
+      "responseSchema": "PolygonRoofResult",
+      "responseProperties": [
+        "input",
+        "netAreaM2",
+        "provenance"
+      ]
+    },
+    {
+      "path": "/api/v1/technical/thermal-bridges",
+      "requestSchema": "ThermalBridgeInput",
+      "responseSchema": "ThermalBridgeResult",
+      "responseProperties": [
+        "input",
+        "provenance"
+      ]
+    }
+  ]
+}

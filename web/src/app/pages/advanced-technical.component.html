@@ -163,7 +163,7 @@
               <div><dt>Platten im Feld</dt><dd>{{value['installedBoards']}}</dd></div>
               <div><dt>Einbauvolumen</dt><dd>{{number(value['installedVolumeM3'])}} m³</dd></div>
               <div><dt>Zuschnittverschnitt</dt><dd>{{number(value['cutWasteVolumeM3'])}} m³</dd></div>
-              <div><dt>Preis aller Verpackungseinheiten</dt><dd>{{value['totalEstimatedPackCostEur'] == null ? 'Nicht vollständig bekannt' : number(value['totalEstimatedPackCostEur']) + ' €'}}</dd></div>
+              <div><dt>Preis aller Verpackungseinheiten</dt><dd>{{money(value['totalEstimatedPackCostEur'])}}</dd></div>
             </dl>
             <h4>Bestellvorschlag nach SKU</h4>
             <div class="table-scroll"><table><thead><tr><th>SKU</th><th>Verbaut</th><th>Gesamt zu bestellen</th><th>Packungen</th><th>Zuschnitte</th><th>Kosten</th></tr></thead>

@@ -1823,19 +1823,166 @@
             "thinEdgeM": 0.08,
             "thickEdgeM": 0.1,
             "unitsPerPack": 4,
-            "pricePerBoardEur": 10
+            "pricePerBoardEur": "10"
           },
           {
             "sku": "B",
             "thinEdgeM": 0.1,
             "thickEdgeM": 0.12,
             "unitsPerPack": 2,
-            "pricePerBoardEur": 20
+            "pricePerBoardEur": "20"
           }
         ]
       }
     },
     "result": {
+      "input": {
+        "roofLengthM": 1,
+        "roofWidthM": 1.5,
+        "lowEdgeThicknessM": 0.08,
+        "slopePercent": 2,
+        "flowAxis": "AlongWidth",
+        "lowEdgeAtCoordinateZero": false,
+        "measuredRoofSource": "Synthetic survey",
+        "drainageDesignReview": "Independent drainage review required",
+        "catalog": {
+          "manufacturer": "Synthetic manufacturer",
+          "productRange": "Synthetic wedges",
+          "catalogRevision": "Test v1",
+          "sourceReference": "Synthetic catalogue; no supplier approval",
+          "boardRunM": 1,
+          "boardCrossM": 0.5,
+          "boards": [
+            {
+              "sku": "A",
+              "thinEdgeM": 0.08,
+              "thickEdgeM": 0.1,
+              "unitsPerPack": 4,
+              "pricePerBoardEur": "10"
+            },
+            {
+              "sku": "B",
+              "thinEdgeM": 0.1,
+              "thickEdgeM": 0.12,
+              "unitsPerPack": 2,
+              "pricePerBoardEur": "20"
+            }
+          ]
+        }
+      },
+      "roofAreaM2": 1.5,
+      "thinEdgeM": 0.08,
+      "highEdgeM": 0.11,
+      "installedVolumeM3": 0.1425,
+      "requiredContinuousVolumeM3": 0.14250000000000002,
+      "cutWasteVolumeM3": 0.057499999999999996,
+      "installedBoards": 4,
+      "placements": [
+        {
+          "row": 1,
+          "column": 1,
+          "sku": "A",
+          "x": 0,
+          "y": 0.5,
+          "lengthM": 0.5,
+          "widthM": 1,
+          "rotationDegrees": 270,
+          "thinEdgeM": 0.08,
+          "thickEdgeM": 0.1,
+          "installedVolumeM3": 0.045,
+          "cutWasteVolumeM3": 0,
+          "requiresCut": false
+        },
+        {
+          "row": 2,
+          "column": 1,
+          "sku": "A",
+          "x": 0.5,
+          "y": 0.5,
+          "lengthM": 0.5,
+          "widthM": 1,
+          "rotationDegrees": 270,
+          "thinEdgeM": 0.08,
+          "thickEdgeM": 0.1,
+          "installedVolumeM3": 0.045,
+          "cutWasteVolumeM3": 0,
+          "requiresCut": false
+        },
+        {
+          "row": 1,
+          "column": 2,
+          "sku": "B",
+          "x": 0,
+          "y": 0,
+          "lengthM": 0.5,
+          "widthM": 0.5,
+          "rotationDegrees": 270,
+          "thinEdgeM": 0.1,
+          "thickEdgeM": 0.11,
+          "installedVolumeM3": 0.026250000000000002,
+          "cutWasteVolumeM3": 0.028749999999999998,
+          "requiresCut": true
+        },
+        {
+          "row": 2,
+          "column": 2,
+          "sku": "B",
+          "x": 0.5,
+          "y": 0,
+          "lengthM": 0.5,
+          "widthM": 0.5,
+          "rotationDegrees": 270,
+          "thinEdgeM": 0.1,
+          "thickEdgeM": 0.11,
+          "installedVolumeM3": 0.026250000000000002,
+          "cutWasteVolumeM3": 0.028749999999999998,
+          "requiresCut": true
+        }
+      ],
+      "orders": [
+        {
+          "sku": "A",
+          "usedBoards": 2,
+          "boardsRequiringCut": 0,
+          "unitsPerPack": 4,
+          "packsToOrder": 1,
+          "boardsOrdered": 4,
+          "additionalBoardsFromPacks": 2,
+          "installedVolumeM3": 0.09,
+          "unusedCutVolumeM3": 0,
+          "estimatedPackCostEur": "40"
+        },
+        {
+          "sku": "B",
+          "usedBoards": 2,
+          "boardsRequiringCut": 2,
+          "unitsPerPack": 2,
+          "packsToOrder": 1,
+          "boardsOrdered": 2,
+          "additionalBoardsFromPacks": 0,
+          "installedVolumeM3": 0.052500000000000005,
+          "unusedCutVolumeM3": 0.057499999999999996,
+          "estimatedPackCostEur": "40"
+        }
+      ],
+      "totalEstimatedPackCostEur": "80",
+      "catalogIndependentlyVerified": false,
+      "drainageOrStructureApproved": false,
+      "provenance": {
+        "methodId": "manufacturer-catalog-tapered-board-layout",
+        "methodVersion": "1.0.0",
+        "inputSha256": "7cfb95b5b82c874f61e9a3520beee870bb92bcf4809b968a12073c47a0f781c7",
+        "isNormative": false,
+        "limitations": [
+          "One-way affine slope towards a continuous low edge; every strip requires an explicitly supplied, dimensionally matching supplier SKU.",
+          "Supplier/manufacturer identity, catalogue revision and part data are user-supplied evidence, NOT independently verified product availability, approvals or certified characteristics.",
+          "Panel run and width are fixed per product range. Rectangular edge cuts are accounted as waste; offcuts are not reused. Pack rounding may add surplus whole boards.",
+          "No roof penetrations, drains inside the field, multiple slopes, sumps, saddles, staggered joints, mechanical fixings, adhesive, installation sequence, fire/wind-load or structural checking.",
+          "No independent drainage review, minimum-waterfall requirement, DIN/EN approval, material compatibility, actual lead times or final manufacturer sign-off."
+        ]
+      }
+    },
+    "persistedResult": {
       "input": {
         "roofLengthM": 1,
         "roofWidthM": 1.5,
@@ -2202,14 +2349,14 @@
                   "thinEdgeM": 0.08,
                   "thickEdgeM": 0.1,
                   "unitsPerPack": 4,
-                  "pricePerBoardEur": 10
+                  "pricePerBoardEur": "10"
                 },
                 {
                   "sku": "B",
                   "thinEdgeM": 0.1,
                   "thickEdgeM": 0.12,
                   "unitsPerPack": 2,
-                  "pricePerBoardEur": 20
+                  "pricePerBoardEur": "20"
                 }
               ]
             }
@@ -2241,14 +2388,14 @@
                   "thinEdgeM": 0.08,
                   "thickEdgeM": 0.1,
                   "unitsPerPack": 4,
-                  "pricePerBoardEur": 10
+                  "pricePerBoardEur": "10"
                 },
                 {
                   "sku": "B",
                   "thinEdgeM": 0.1,
                   "thickEdgeM": 0.12,
                   "unitsPerPack": 2,
-                  "pricePerBoardEur": 20
+                  "pricePerBoardEur": "20"
                 }
               ]
             }
@@ -2257,6 +2404,622 @@
       ]
     },
     "result": {
+      "input": {
+        "roofLengthM": 4,
+        "roofWidthM": 1,
+        "planRevision": "Synthetic plan v1",
+        "surveySource": "Synthetic field survey",
+        "drainageReview": "Drainage review required",
+        "fields": [
+          {
+            "fieldId": "East",
+            "originX": 2,
+            "originY": 0,
+            "layout": {
+              "roofLengthM": 2,
+              "roofWidthM": 1,
+              "lowEdgeThicknessM": 0.08,
+              "slopePercent": 2,
+              "flowAxis": "AlongLength",
+              "lowEdgeAtCoordinateZero": false,
+              "measuredRoofSource": "Synthetic field survey",
+              "drainageDesignReview": "Drainage review required",
+              "catalog": {
+                "manufacturer": "Synthetic manufacturer",
+                "productRange": "Synthetic wedges",
+                "catalogRevision": "Test v1",
+                "sourceReference": "Synthetic catalogue; no supplier approval",
+                "boardRunM": 1,
+                "boardCrossM": 0.5,
+                "boards": [
+                  {
+                    "sku": "A",
+                    "thinEdgeM": 0.08,
+                    "thickEdgeM": 0.1,
+                    "unitsPerPack": 4,
+                    "pricePerBoardEur": "10"
+                  },
+                  {
+                    "sku": "B",
+                    "thinEdgeM": 0.1,
+                    "thickEdgeM": 0.12,
+                    "unitsPerPack": 2,
+                    "pricePerBoardEur": "20"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "fieldId": "West",
+            "originX": 0,
+            "originY": 0,
+            "layout": {
+              "roofLengthM": 2,
+              "roofWidthM": 1,
+              "lowEdgeThicknessM": 0.08,
+              "slopePercent": 2,
+              "flowAxis": "AlongLength",
+              "lowEdgeAtCoordinateZero": true,
+              "measuredRoofSource": "Synthetic field survey",
+              "drainageDesignReview": "Drainage review required",
+              "catalog": {
+                "manufacturer": "Synthetic manufacturer",
+                "productRange": "Synthetic wedges",
+                "catalogRevision": "Test v1",
+                "sourceReference": "Synthetic catalogue; no supplier approval",
+                "boardRunM": 1,
+                "boardCrossM": 0.5,
+                "boards": [
+                  {
+                    "sku": "A",
+                    "thinEdgeM": 0.08,
+                    "thickEdgeM": 0.1,
+                    "unitsPerPack": 4,
+                    "pricePerBoardEur": "10"
+                  },
+                  {
+                    "sku": "B",
+                    "thinEdgeM": 0.1,
+                    "thickEdgeM": 0.12,
+                    "unitsPerPack": 2,
+                    "pricePerBoardEur": "20"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "roofAreaM2": 4,
+      "installedVolumeM3": 0.4,
+      "cutWasteVolumeM3": 0,
+      "installedBoards": 8,
+      "fields": [
+        {
+          "fieldId": "East",
+          "originX": 2,
+          "originY": 0,
+          "layout": {
+            "input": {
+              "roofLengthM": 2,
+              "roofWidthM": 1,
+              "lowEdgeThicknessM": 0.08,
+              "slopePercent": 2,
+              "flowAxis": "AlongLength",
+              "lowEdgeAtCoordinateZero": false,
+              "measuredRoofSource": "Synthetic field survey",
+              "drainageDesignReview": "Drainage review required",
+              "catalog": {
+                "manufacturer": "Synthetic manufacturer",
+                "productRange": "Synthetic wedges",
+                "catalogRevision": "Test v1",
+                "sourceReference": "Synthetic catalogue; no supplier approval",
+                "boardRunM": 1,
+                "boardCrossM": 0.5,
+                "boards": [
+                  {
+                    "sku": "A",
+                    "thinEdgeM": 0.08,
+                    "thickEdgeM": 0.1,
+                    "unitsPerPack": 4,
+                    "pricePerBoardEur": "10"
+                  },
+                  {
+                    "sku": "B",
+                    "thinEdgeM": 0.1,
+                    "thickEdgeM": 0.12,
+                    "unitsPerPack": 2,
+                    "pricePerBoardEur": "20"
+                  }
+                ]
+              }
+            },
+            "roofAreaM2": 2,
+            "thinEdgeM": 0.08,
+            "highEdgeM": 0.12,
+            "installedVolumeM3": 0.2,
+            "requiredContinuousVolumeM3": 0.2,
+            "cutWasteVolumeM3": 0,
+            "installedBoards": 4,
+            "placements": [
+              {
+                "row": 1,
+                "column": 1,
+                "sku": "A",
+                "x": 1,
+                "y": 0,
+                "lengthM": 1,
+                "widthM": 0.5,
+                "rotationDegrees": 180,
+                "thinEdgeM": 0.08,
+                "thickEdgeM": 0.1,
+                "installedVolumeM3": 0.045,
+                "cutWasteVolumeM3": 0,
+                "requiresCut": false
+              },
+              {
+                "row": 2,
+                "column": 1,
+                "sku": "A",
+                "x": 1,
+                "y": 0.5,
+                "lengthM": 1,
+                "widthM": 0.5,
+                "rotationDegrees": 180,
+                "thinEdgeM": 0.08,
+                "thickEdgeM": 0.1,
+                "installedVolumeM3": 0.045,
+                "cutWasteVolumeM3": 0,
+                "requiresCut": false
+              },
+              {
+                "row": 1,
+                "column": 2,
+                "sku": "B",
+                "x": 0,
+                "y": 0,
+                "lengthM": 1,
+                "widthM": 0.5,
+                "rotationDegrees": 180,
+                "thinEdgeM": 0.1,
+                "thickEdgeM": 0.12000000000000001,
+                "installedVolumeM3": 0.05500000000000001,
+                "cutWasteVolumeM3": 0,
+                "requiresCut": false
+              },
+              {
+                "row": 2,
+                "column": 2,
+                "sku": "B",
+                "x": 0,
+                "y": 0.5,
+                "lengthM": 1,
+                "widthM": 0.5,
+                "rotationDegrees": 180,
+                "thinEdgeM": 0.1,
+                "thickEdgeM": 0.12000000000000001,
+                "installedVolumeM3": 0.05500000000000001,
+                "cutWasteVolumeM3": 0,
+                "requiresCut": false
+              }
+            ],
+            "orders": [
+              {
+                "sku": "A",
+                "usedBoards": 2,
+                "boardsRequiringCut": 0,
+                "unitsPerPack": 4,
+                "packsToOrder": 1,
+                "boardsOrdered": 4,
+                "additionalBoardsFromPacks": 2,
+                "installedVolumeM3": 0.09,
+                "unusedCutVolumeM3": 0,
+                "estimatedPackCostEur": "40"
+              },
+              {
+                "sku": "B",
+                "usedBoards": 2,
+                "boardsRequiringCut": 0,
+                "unitsPerPack": 2,
+                "packsToOrder": 1,
+                "boardsOrdered": 2,
+                "additionalBoardsFromPacks": 0,
+                "installedVolumeM3": 0.11000000000000001,
+                "unusedCutVolumeM3": 0,
+                "estimatedPackCostEur": "40"
+              }
+            ],
+            "totalEstimatedPackCostEur": "80",
+            "catalogIndependentlyVerified": false,
+            "drainageOrStructureApproved": false,
+            "provenance": {
+              "methodId": "manufacturer-catalog-tapered-board-layout",
+              "methodVersion": "1.0.0",
+              "inputSha256": "ac8eb6f1cea6a402654d0d4656682984c421bf5626f97b5eac477ec8b41e08e8",
+              "isNormative": false,
+              "limitations": [
+                "One-way affine slope towards a continuous low edge; every strip requires an explicitly supplied, dimensionally matching supplier SKU.",
+                "Supplier/manufacturer identity, catalogue revision and part data are user-supplied evidence, NOT independently verified product availability, approvals or certified characteristics.",
+                "Panel run and width are fixed per product range. Rectangular edge cuts are accounted as waste; offcuts are not reused. Pack rounding may add surplus whole boards.",
+                "No roof penetrations, drains inside the field, multiple slopes, sumps, saddles, staggered joints, mechanical fixings, adhesive, installation sequence, fire/wind-load or structural checking.",
+                "No independent drainage review, minimum-waterfall requirement, DIN/EN approval, material compatibility, actual lead times or final manufacturer sign-off."
+              ]
+            }
+          }
+        },
+        {
+          "fieldId": "West",
+          "originX": 0,
+          "originY": 0,
+          "layout": {
+            "input": {
+              "roofLengthM": 2,
+              "roofWidthM": 1,
+              "lowEdgeThicknessM": 0.08,
+              "slopePercent": 2,
+              "flowAxis": "AlongLength",
+              "lowEdgeAtCoordinateZero": true,
+              "measuredRoofSource": "Synthetic field survey",
+              "drainageDesignReview": "Drainage review required",
+              "catalog": {
+                "manufacturer": "Synthetic manufacturer",
+                "productRange": "Synthetic wedges",
+                "catalogRevision": "Test v1",
+                "sourceReference": "Synthetic catalogue; no supplier approval",
+                "boardRunM": 1,
+                "boardCrossM": 0.5,
+                "boards": [
+                  {
+                    "sku": "A",
+                    "thinEdgeM": 0.08,
+                    "thickEdgeM": 0.1,
+                    "unitsPerPack": 4,
+                    "pricePerBoardEur": "10"
+                  },
+                  {
+                    "sku": "B",
+                    "thinEdgeM": 0.1,
+                    "thickEdgeM": 0.12,
+                    "unitsPerPack": 2,
+                    "pricePerBoardEur": "20"
+                  }
+                ]
+              }
+            },
+            "roofAreaM2": 2,
+            "thinEdgeM": 0.08,
+            "highEdgeM": 0.12,
+            "installedVolumeM3": 0.2,
+            "requiredContinuousVolumeM3": 0.2,
+            "cutWasteVolumeM3": 0,
+            "installedBoards": 4,
+            "placements": [
+              {
+                "row": 1,
+                "column": 1,
+                "sku": "A",
+                "x": 0,
+                "y": 0,
+                "lengthM": 1,
+                "widthM": 0.5,
+                "rotationDegrees": 0,
+                "thinEdgeM": 0.08,
+                "thickEdgeM": 0.1,
+                "installedVolumeM3": 0.045,
+                "cutWasteVolumeM3": 0,
+                "requiresCut": false
+              },
+              {
+                "row": 2,
+                "column": 1,
+                "sku": "A",
+                "x": 0,
+                "y": 0.5,
+                "lengthM": 1,
+                "widthM": 0.5,
+                "rotationDegrees": 0,
+                "thinEdgeM": 0.08,
+                "thickEdgeM": 0.1,
+                "installedVolumeM3": 0.045,
+                "cutWasteVolumeM3": 0,
+                "requiresCut": false
+              },
+              {
+                "row": 1,
+                "column": 2,
+                "sku": "B",
+                "x": 1,
+                "y": 0,
+                "lengthM": 1,
+                "widthM": 0.5,
+                "rotationDegrees": 0,
+                "thinEdgeM": 0.1,
+                "thickEdgeM": 0.12000000000000001,
+                "installedVolumeM3": 0.05500000000000001,
+                "cutWasteVolumeM3": 0,
+                "requiresCut": false
+              },
+              {
+                "row": 2,
+                "column": 2,
+                "sku": "B",
+                "x": 1,
+                "y": 0.5,
+                "lengthM": 1,
+                "widthM": 0.5,
+                "rotationDegrees": 0,
+                "thinEdgeM": 0.1,
+                "thickEdgeM": 0.12000000000000001,
+                "installedVolumeM3": 0.05500000000000001,
+                "cutWasteVolumeM3": 0,
+                "requiresCut": false
+              }
+            ],
+            "orders": [
+              {
+                "sku": "A",
+                "usedBoards": 2,
+                "boardsRequiringCut": 0,
+                "unitsPerPack": 4,
+                "packsToOrder": 1,
+                "boardsOrdered": 4,
+                "additionalBoardsFromPacks": 2,
+                "installedVolumeM3": 0.09,
+                "unusedCutVolumeM3": 0,
+                "estimatedPackCostEur": "40"
+              },
+              {
+                "sku": "B",
+                "usedBoards": 2,
+                "boardsRequiringCut": 0,
+                "unitsPerPack": 2,
+                "packsToOrder": 1,
+                "boardsOrdered": 2,
+                "additionalBoardsFromPacks": 0,
+                "installedVolumeM3": 0.11000000000000001,
+                "unusedCutVolumeM3": 0,
+                "estimatedPackCostEur": "40"
+              }
+            ],
+            "totalEstimatedPackCostEur": "80",
+            "catalogIndependentlyVerified": false,
+            "drainageOrStructureApproved": false,
+            "provenance": {
+              "methodId": "manufacturer-catalog-tapered-board-layout",
+              "methodVersion": "1.0.0",
+              "inputSha256": "656613a13afe6d191d0f1875bc68a2b41e9649282174b53faf3cac68886f4eb1",
+              "isNormative": false,
+              "limitations": [
+                "One-way affine slope towards a continuous low edge; every strip requires an explicitly supplied, dimensionally matching supplier SKU.",
+                "Supplier/manufacturer identity, catalogue revision and part data are user-supplied evidence, NOT independently verified product availability, approvals or certified characteristics.",
+                "Panel run and width are fixed per product range. Rectangular edge cuts are accounted as waste; offcuts are not reused. Pack rounding may add surplus whole boards.",
+                "No roof penetrations, drains inside the field, multiple slopes, sumps, saddles, staggered joints, mechanical fixings, adhesive, installation sequence, fire/wind-load or structural checking.",
+                "No independent drainage review, minimum-waterfall requirement, DIN/EN approval, material compatibility, actual lead times or final manufacturer sign-off."
+              ]
+            }
+          }
+        }
+      ],
+      "placements": [
+        {
+          "fieldId": "East",
+          "globalX": 3,
+          "globalY": 0,
+          "panel": {
+            "row": 1,
+            "column": 1,
+            "sku": "A",
+            "x": 1,
+            "y": 0,
+            "lengthM": 1,
+            "widthM": 0.5,
+            "rotationDegrees": 180,
+            "thinEdgeM": 0.08,
+            "thickEdgeM": 0.1,
+            "installedVolumeM3": 0.045,
+            "cutWasteVolumeM3": 0,
+            "requiresCut": false
+          }
+        },
+        {
+          "fieldId": "East",
+          "globalX": 3,
+          "globalY": 0.5,
+          "panel": {
+            "row": 2,
+            "column": 1,
+            "sku": "A",
+            "x": 1,
+            "y": 0.5,
+            "lengthM": 1,
+            "widthM": 0.5,
+            "rotationDegrees": 180,
+            "thinEdgeM": 0.08,
+            "thickEdgeM": 0.1,
+            "installedVolumeM3": 0.045,
+            "cutWasteVolumeM3": 0,
+            "requiresCut": false
+          }
+        },
+        {
+          "fieldId": "East",
+          "globalX": 2,
+          "globalY": 0,
+          "panel": {
+            "row": 1,
+            "column": 2,
+            "sku": "B",
+            "x": 0,
+            "y": 0,
+            "lengthM": 1,
+            "widthM": 0.5,
+            "rotationDegrees": 180,
+            "thinEdgeM": 0.1,
+            "thickEdgeM": 0.12000000000000001,
+            "installedVolumeM3": 0.05500000000000001,
+            "cutWasteVolumeM3": 0,
+            "requiresCut": false
+          }
+        },
+        {
+          "fieldId": "East",
+          "globalX": 2,
+          "globalY": 0.5,
+          "panel": {
+            "row": 2,
+            "column": 2,
+            "sku": "B",
+            "x": 0,
+            "y": 0.5,
+            "lengthM": 1,
+            "widthM": 0.5,
+            "rotationDegrees": 180,
+            "thinEdgeM": 0.1,
+            "thickEdgeM": 0.12000000000000001,
+            "installedVolumeM3": 0.05500000000000001,
+            "cutWasteVolumeM3": 0,
+            "requiresCut": false
+          }
+        },
+        {
+          "fieldId": "West",
+          "globalX": 0,
+          "globalY": 0,
+          "panel": {
+            "row": 1,
+            "column": 1,
+            "sku": "A",
+            "x": 0,
+            "y": 0,
+            "lengthM": 1,
+            "widthM": 0.5,
+            "rotationDegrees": 0,
+            "thinEdgeM": 0.08,
+            "thickEdgeM": 0.1,
+            "installedVolumeM3": 0.045,
+            "cutWasteVolumeM3": 0,
+            "requiresCut": false
+          }
+        },
+        {
+          "fieldId": "West",
+          "globalX": 0,
+          "globalY": 0.5,
+          "panel": {
+            "row": 2,
+            "column": 1,
+            "sku": "A",
+            "x": 0,
+            "y": 0.5,
+            "lengthM": 1,
+            "widthM": 0.5,
+            "rotationDegrees": 0,
+            "thinEdgeM": 0.08,
+            "thickEdgeM": 0.1,
+            "installedVolumeM3": 0.045,
+            "cutWasteVolumeM3": 0,
+            "requiresCut": false
+          }
+        },
+        {
+          "fieldId": "West",
+          "globalX": 1,
+          "globalY": 0,
+          "panel": {
+            "row": 1,
+            "column": 2,
+            "sku": "B",
+            "x": 1,
+            "y": 0,
+            "lengthM": 1,
+            "widthM": 0.5,
+            "rotationDegrees": 0,
+            "thinEdgeM": 0.1,
+            "thickEdgeM": 0.12000000000000001,
+            "installedVolumeM3": 0.05500000000000001,
+            "cutWasteVolumeM3": 0,
+            "requiresCut": false
+          }
+        },
+        {
+          "fieldId": "West",
+          "globalX": 1,
+          "globalY": 0.5,
+          "panel": {
+            "row": 2,
+            "column": 2,
+            "sku": "B",
+            "x": 1,
+            "y": 0.5,
+            "lengthM": 1,
+            "widthM": 0.5,
+            "rotationDegrees": 0,
+            "thinEdgeM": 0.1,
+            "thickEdgeM": 0.12000000000000001,
+            "installedVolumeM3": 0.05500000000000001,
+            "cutWasteVolumeM3": 0,
+            "requiresCut": false
+          }
+        }
+      ],
+      "orders": [
+        {
+          "manufacturer": "Synthetic manufacturer",
+          "productRange": "Synthetic wedges",
+          "catalogRevision": "Test v1",
+          "sourceReference": "Synthetic catalogue; no supplier approval",
+          "quantity": {
+            "sku": "A",
+            "usedBoards": 4,
+            "boardsRequiringCut": 0,
+            "unitsPerPack": 4,
+            "packsToOrder": 1,
+            "boardsOrdered": 4,
+            "additionalBoardsFromPacks": 0,
+            "installedVolumeM3": 0.18,
+            "unusedCutVolumeM3": 0,
+            "estimatedPackCostEur": "40"
+          }
+        },
+        {
+          "manufacturer": "Synthetic manufacturer",
+          "productRange": "Synthetic wedges",
+          "catalogRevision": "Test v1",
+          "sourceReference": "Synthetic catalogue; no supplier approval",
+          "quantity": {
+            "sku": "B",
+            "usedBoards": 4,
+            "boardsRequiringCut": 0,
+            "unitsPerPack": 2,
+            "packsToOrder": 2,
+            "boardsOrdered": 4,
+            "additionalBoardsFromPacks": 0,
+            "installedVolumeM3": 0.22000000000000003,
+            "unusedCutVolumeM3": 0,
+            "estimatedPackCostEur": "80"
+          }
+        }
+      ],
+      "totalEstimatedPackCostEur": "120",
+      "catalogIndependentlyVerified": false,
+      "drainageOrStructureApproved": false,
+      "provenance": {
+        "methodId": "manufacturer-catalog-multifield-tapered-board-layout",
+        "methodVersion": "1.0.0",
+        "inputSha256": "59533707e523efd40894b5b33965731efff1edefff5dc9552980fc37fa28a960",
+        "isNormative": false,
+        "limitations": [
+          "Partition of a surveyed rectangle into adjacent one-way wedge fields, with collision, full-area and boundary-thickness checks.",
+          "Each field is calculated only against explicitly supplied supplier/revision/SKU data, without substituting unavailable stock.",
+          "Identical catalogue and SKU lines share pack-order rounding across fields; different revisions and sources are never merged.",
+          "No point drains, valley/saddle cutting, taper transformations, offcut reuse, penetrations or installation-sequence optimization.",
+          "Matching interface thickness does not verify waterproofing, falls, drainage capacity, wind uplift, statics or any manufacturer approval.",
+          "The result is a non-normative, unapproved estimate and must not be used as a binding fabrication or purchasing order."
+        ]
+      }
+    },
+    "persistedResult": {
       "input": {
         "roofLengthM": 4,
         "roofWidthM": 1,

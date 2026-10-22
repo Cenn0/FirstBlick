@@ -136,6 +136,9 @@ export class AdvancedTechnicalComponent {
     const grid = this.result()?.['grid'];
     return Array.isArray(grid) && typeof node === 'number' && typeof grid[node]?.name === 'string' ? grid[node].name : 'Unbekannte Grenzfläche';
   }
+  money(value: unknown): string {
+    return value === null ? 'Nicht vollständig bekannt' : this.number(typeof value === 'string' ? Number(value) : value, 2) + ' €';
+  }
   number(value: unknown, digits = 5): string {
     return typeof value === 'number' && Number.isFinite(value)
       ? new Intl.NumberFormat('de-DE', { maximumFractionDigits: digits }).format(value) : '–';

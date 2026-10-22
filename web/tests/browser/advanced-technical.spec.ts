@@ -31,7 +31,7 @@ async function fixture(page: Page, mode: AdvancedMode = 'balance', options: Opti
     if (path === 'technical/runs') {
       const body = route.request().postDataJSON(); calls.push({ path, body });
       const record = { ...body, input: f.result.input, id: reportId, revision: 1, tenantId: 'tenant',
-        result: f.result, methodVersion: '1.0.0', digest: 'b'.repeat(64), isNormative: false };
+        result: 'persistedResult' in f ? f.persistedResult : f.result, methodVersion: '1.0.0', digest: 'b'.repeat(64), isNormative: false };
       return route.fulfill({ json: options.saved ? options.saved(record) : record });
     }
     if (path === `technical-results/${reportId}/pdf`) return route.fulfill({ json: {

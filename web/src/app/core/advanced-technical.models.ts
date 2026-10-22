@@ -31,6 +31,22 @@ function finite(value: unknown, min = 0, max = Number.MAX_VALUE): number {
 function integer(value: unknown, min: number, max: number): number {
   const n = finite(value, min, max); require(Number.isSafeInteger(n)); return n;
 }
+/** Explicit decimal wire amounts only; the UI accepts cents, never exponent or grouped money. */
+function euro(value: unknown): number {
+  require(typeof value === 'number' || typeof value === 'string' && /^(?:0|[1-9]\d*)(?:\.\d{1,2})?$/.test(value));
+  const amount = finite(typeof value === 'string' ? Number(value) : value, 0, 5e12);
+  const cents = Math.round(amount * 100);
+  require(Number.isSafeInteger(cents) && Math.abs(amount - cents / 100) <= 1e-10);
+  return cents / 100;
+}
+/** The preview serializer writes decimals as strings; embedded historic result JSON uses numbers. */
+function comparableResult(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(comparableResult);
+  if (value !== null && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([key, item]) =>
+    [key, ['pricePerBoardEur', 'estimatedPackCostEur', 'totalEstimatedPackCostEur'].includes(key)
+      ? item === null ? null : euro(item) : comparableResult(item)]));
+  return value;
+}
 function close(actual: unknown, expected: number, tolerance = 1e-8): void {
   require(Math.abs(finite(actual, -Number.MAX_VALUE) - expected) <= tolerance * Math.max(1, Math.abs(expected)),
     'Die Mengen- oder Wasserbilanz der Rechenantwort ist widersprüchlich.');
@@ -179,7 +195,7 @@ function boardLayout(value: Row, mode: 'boards' | 'assembly'): void {
       require(p['requiresCut'] === (along < run - 1e-9 || across < cross - 1e-9));
       const identity = key(catalog, sku['sku']), group = groups.get(identity) ?? {
         count: 0, cuts: 0, volume: 0, waste: 0, pack: integer(sku['unitsPerPack'], 1, 200),
-        price: sku['pricePerBoardEur'] === null ? null : finite(Number(sku['pricePerBoardEur'])) };
+        price: sku['pricePerBoardEur'] === null ? null : euro(sku['pricePerBoardEur']) };
       group.count++; group.cuts += p['requiresCut'] ? 1 : 0;
       group.volume += Number(p['installedVolumeM3']); group.waste += Number(p['cutWasteVolumeM3']); groups.set(identity, group);
     }
@@ -201,7 +217,7 @@ function boardLayout(value: Row, mode: 'boards' | 'assembly'): void {
       for (const order of list(layout['orders'], 1, 2500)) {
         const sku = list(catalog['boards'], 1, 500).find(b => b['sku'] === order['sku']); require(sku);
         const identity = key(catalog, order['sku']), pack = Number(order['unitsPerPack']);
-        const price = sku['pricePerBoardEur'] === null ? null : Number(sku['pricePerBoardEur']);
+        const price = sku['pricePerBoardEur'] === null ? null : euro(sku['pricePerBoardEur']);
         const group = groups.get(identity) ?? { count: 0, cuts: 0, volume: 0, waste: 0, pack, price };
         require(group.pack === pack && group.price === price);
         group.count += Number(order['usedBoards']); group.cuts += Number(order['boardsRequiringCut']);
@@ -223,16 +239,16 @@ function boardLayout(value: Row, mode: 'boards' | 'assembly'): void {
     const group = groups.get(identity); require(group && group.count === count && group.pack === pack && group.cuts === cut);
     close(order['installedVolumeM3'], group.volume); close(order['unusedCutVolumeM3'], group.waste);
     if (group.price === null) require(order['estimatedPackCostEur'] === null);
-    else close(order['estimatedPackCostEur'], Math.round(group.price * 100) * packs * pack / 100, 1e-10);
+    else close(euro(order['estimatedPackCostEur']), Math.round(group.price * 100) * packs * pack / 100, 1e-10);
     require(order['packsToOrder'] === packs && order['boardsOrdered'] === packs * pack && order['additionalBoardsFromPacks'] === packs * pack - count);
     used += count; cuts += cut; orderVolume += finite(order['installedVolumeM3']); orderWaste += finite(order['unusedCutVolumeM3']);
-    if (order['estimatedPackCostEur'] === null) known = false; else cost += finite(order['estimatedPackCostEur']);
+    if (order['estimatedPackCostEur'] === null) known = false; else cost += euro(order['estimatedPackCostEur']);
   }
   require(identities.size === groups.size);
   close(used, placements.length); close(cuts, placements.filter(p => row(mode === 'assembly' ? p['panel'] : p)['requiresCut']).length);
   close(orderVolume, volume); close(orderWaste, waste);
   require(known ? value['totalEstimatedPackCostEur'] !== null : value['totalEstimatedPackCostEur'] === null);
-  if (known) close(value['totalEstimatedPackCostEur'], cost, 1e-10);
+  if (known) close(euro(value['totalEstimatedPackCostEur']), cost, 1e-10);
 }
 /** Integrity checks are client safeguards, not an independent engineering or standards approval. */
 export function validateAdvancedResult(raw: unknown, mode: AdvancedMode, expectedInput: Row): AdvancedResult {
@@ -252,6 +268,6 @@ export function validateAdvancedSaved(raw: unknown, mode: AdvancedMode, preview:
     value['id'] !== '00000000-0000-0000-0000-000000000000', 'Der gespeicherte Bericht gehört nicht zum ausgewählten Betrieb, Verfahren oder Projekt.');
   integer(value['revision'], 1, Number.MAX_SAFE_INTEGER); sameInput(value['input'], preview.input, mode);
   const result = validateAdvancedResult(value['result'], mode, preview.input);
-  require(canonicalJson(result) === canonicalJson(preview), 'Der gespeicherte Rechenbericht unterscheidet sich von der freigegebenen Vorschau.');
+  require(canonicalJson(comparableResult(result)) === canonicalJson(comparableResult(preview)), 'Der gespeicherte Rechenbericht unterscheidet sich von der freigegebenen Vorschau.');
   return value as AdvancedSaved;
 }

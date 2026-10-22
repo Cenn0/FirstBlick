@@ -11,4 +11,5 @@
     <Compile Include="../../tools/FirstBlick.TechnicalFixtures/Fixtures.cs" Link="Technical/AdvancedFixtures.cs" />
     <None Include="../../web/tests/fixtures/advanced-technical.json" Link="advanced-technical.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
+  <ItemGroup><Compile Include="../../src/FirstBlick.Infrastructure/Persistence/DecimalStringConverter.cs" Link="DecimalStringConverter.cs" /></ItemGroup>
 </Project>

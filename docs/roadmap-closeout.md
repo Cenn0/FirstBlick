@@ -77,6 +77,8 @@ Für **DP-11-04/05** wurden die [Clientverträge, Grenzflächenanzeige und eigen
 
 Eine weitere Fortschreibung muss zu jeder betroffenen ID konkrete Implementierung und ausgeführte Prüfungen nennen. Eine leere Restspalte, ein grüner Build oder eine zusätzliche Textseite begründen keinen vollständigen Abschluss.
 
+Zusätzlich erhalten **DP-02-02/DP-12-04** einen [HTTP-geprüften Mindestvertrag für 18 Rechenvorschauen](api-calculation-contracts.md). Er beseitigt nicht die restlichen API-/Webhooklücken. Der echte Vergleich von Vorschau und Projektakten ergänzt DP-11-04/05 um den Decimal-Wire-Vertrag.
+
 ## Anhänge des aktuellen Auftrags
 
 `daemmdemo.exe`, `handwerkdemo.exe`, `dachdemo.exe` und `bauphysik-demo.exe` wurden für diesen Auftrag bereitgestellt. `flachdach-demo.exe`, `drain-demo.exe`, `dd-demo.exe` und `steildach-demo.exe` konnten nicht zugestellt werden. Diese Fortschreibung enthält keine neue Byte-/Methodenanalyse dieser Dateien und behauptet keinen vollständigen Originalbestand. Proprietäre Programme und Herstellerdaten werden nicht ins Repository kopiert.

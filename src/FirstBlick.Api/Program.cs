@@ -51,6 +51,8 @@ builder.Services.AddAntiforgery(o =>
 });
 builder.Services.AddAuthorization();
 builder.Services.AddProblemDetails();
+// Keep malformed Minimal API requests on the same bounded problem-details path in every environment.
+builder.Services.Configure<Microsoft.AspNetCore.Routing.RouteHandlerOptions>(o => o.ThrowOnBadRequest = true);
 builder.Services.AddOpenApi("v1");
 builder.Services.ConfigureHttpJsonOptions(o =>
 {

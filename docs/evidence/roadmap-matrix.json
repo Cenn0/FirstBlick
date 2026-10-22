@@ -19,10 +19,12 @@
   "latestReassessment": {
     "recordedOn": "2026-10-23",
     "tasks": [
+      "DP-02-02",
+      "DP-12-04",
       "DP-11-04",
       "DP-11-05"
     ],
-    "scope": "Advanced client input/result and immutable project-preview binding, water and board consistency checks, interface maxima and independent client/browser regression paths; fixed original 46-task closeout register.",
+    "scope": "Advanced client input/result and immutable project-preview binding, water and board consistency checks, interface maxima and independent client/browser regression paths; fixed original 46-task closeout register. Explicit result/problem schemas and versioned HTTP OpenAPI minimum for 18 calculation previews; generic non-development binding errors; actual preview/project-JSON parity, preserving decimal-string and embedded numeric money semantics.",
     "reclassifiesTasks": false,
     "statusChangesFromPreviousInventory": [],
     "originalRoadmapCheckboxesChanged": false,
@@ -334,7 +336,11 @@
     "advanced-client-tests": "web/tests/advanced-technical.test.ts",
     "advanced-browser-tests": "web/tests/browser/advanced-technical.spec.ts",
     "advanced-fixture-contract": "tests/FirstBlick.Core.Tests/Technical/AdvancedClientContractTests.cs",
-    "closeout-46": "docs/roadmap-closeout.md"
+    "closeout-46": "docs/roadmap-closeout.md",
+    "technical-contract-docs": "docs/api-calculation-contracts.md",
+    "technical-openapi-minimum": "docs/contracts/technical-calculations-v1.json",
+    "technical-openapi-tests": "tests/FirstBlick.Api.Tests/TechnicalOpenApiTests.cs",
+    "advanced-wire-tests": "tests/FirstBlick.Api.Tests/AdvancedTechnicalWireApiTests.cs"
   },
   "tasks": [
     {
@@ -438,7 +444,7 @@
     {
       "id": "DP-02-02",
       "status": "T",
-      "evidence": "[Core-Fachmodule][foundation] sind von HTTP/Persistenz getrennt; [API-Start][api-program] bietet authentifiziertes OpenAPI v1; [Adaptervertrag][integrations] dokumentiert Binär-/CSV-Semantik.",
+      "evidence": "[Core-Fachmodule][foundation] sind von HTTP/Persistenz getrennt; [API-Start][api-program] bietet authentifiziertes OpenAPI v1; [Adaptervertrag][integrations] dokumentiert Binär-/CSV-Semantik. [18 Rechenvorschauen][technical-contract-docs] ergänzen konkrete Ergebnis-/Problem-Schemas, stabile Operationsnamen und einen [versionierten Mindestvertrag][technical-openapi-minimum], der gegen das tatsächlich authentifiziert ausgelieferte [OpenAPI-Dokument geprüft wird][technical-openapi-tests]. Fehlerhafte JSON-/Medientypbindung verwendet den generischen Problem-Pfad auch außerhalb Development.",
       "remaining": "Vollständige maschinenlesbare Erfolgs-/Fehlerschemas und rückwärtskompatible OpenAPI-Vertragsprüfungen sind nicht für alle Endpunkte nachgewiesen.",
       "title": "C#-Fachmodule und OpenAPI-Vertrag einführen"
     },
@@ -893,14 +899,14 @@
     {
       "id": "DP-11-04",
       "status": "T",
-      "evidence": "Der [ISO-13788-Teilumfang][advanced-exchange-docs] und [Rechenkern][iso13788-core] berechnen monatliche Kondensation, Verdunstung, Wasserüberträge, Jahresrestmengen und den Austrocknungsvergleich über bis zu 120 Monate. Zwölf ausdrücklich erfasste Klimapunkte, Kennwertquellen und Anwendungsbestätigung sind erforderlich. [Corefälle][iso13788-tests] und [Fach-API-Fälle][advanced-technical-api-tests] prüfen begrenzte Eingaben und Ergebnisse; die [erweiterte Angular-Maske][advanced-technical-ui] erfasst Klima-, Material- und Verfahrensangaben; [Technical API][technical-api] speichert reproduzierbare Rechenläufe mit normalisierten Eingaben und Digest am Projekt. Der [erweiterte Clientvertrag][advanced-client-contract] prüft normalisierte Eingaben, quellengebundene Ergebniswerte und die vollständige unveränderliche Vorschau bei Projektablage. [Clientfälle][advanced-client-tests], [Desktop-/Tablet-/Mobil-Fixtures][advanced-browser-tests] und der [Core-Fixturevertrag][advanced-fixture-contract] ergänzen eigenständige Regressionen; [Umfang und Prüfgrenzen][advanced-client-docs] unterscheiden Konsistenzprüfung und Fachabnahme.",
+      "evidence": "Der [ISO-13788-Teilumfang][advanced-exchange-docs] und [Rechenkern][iso13788-core] berechnen monatliche Kondensation, Verdunstung, Wasserüberträge, Jahresrestmengen und den Austrocknungsvergleich über bis zu 120 Monate. Zwölf ausdrücklich erfasste Klimapunkte, Kennwertquellen und Anwendungsbestätigung sind erforderlich. [Corefälle][iso13788-tests] und [Fach-API-Fälle][advanced-technical-api-tests] prüfen begrenzte Eingaben und Ergebnisse; die [erweiterte Angular-Maske][advanced-technical-ui] erfasst Klima-, Material- und Verfahrensangaben; [Technical API][technical-api] speichert reproduzierbare Rechenläufe mit normalisierten Eingaben und Digest am Projekt. Der [erweiterte Clientvertrag][advanced-client-contract] prüft normalisierte Eingaben, quellengebundene Ergebniswerte und die vollständige unveränderliche Vorschau bei Projektablage. [Clientfälle][advanced-client-tests], [Desktop-/Tablet-/Mobil-Fixtures][advanced-browser-tests] und der [Core-Fixturevertrag][advanced-fixture-contract] ergänzen eigenständige Regressionen; [Umfang und Prüfgrenzen][advanced-client-docs] unterscheiden Konsistenzprüfung und Fachabnahme. Der [echte HTTP-/Projektaktenvergleich][advanced-wire-tests] prüft sechs synthetische Fixtures einschließlich der unterschiedlichen Dezimalstring-/eingebetteten JSON-Gelddarstellung; die benannten Geldfelder werden im Client centgenau verglichen.",
       "remaining": "Kein vollständig abgenommener Feuchteschutznachweis nach DIN 4108-3, keine instationäre hygrothermische Simulation und keine automatische Freigabe realer Bauteile. Nationale Bauartbedingungen, Schadensgrenzen, reale Klima-/Materialdaten und unabhängige Referenzabnahme bleiben offen. Die dokumentierte Abweichung zum informativen ISO-Beispiel C.4/C.5 ist ungeklärt und darf nicht als bestandene Referenz gelten.",
       "title": "Feuchteschutz und Verfahrensgrenzen"
     },
     {
       "id": "DP-11-05",
       "status": "T",
-      "evidence": "[Gefälleplatten- und Mehrfeldplanung][advanced-exchange-docs], [Plattenlayout][tapered-board-core] und [Mehrfeldkern][tapered-assembly-core] verarbeiten ausdrücklich eingegebene Hersteller-/Produkt-/Katalogrevisionen und SKUs für rechteckige, einachsige Gefällefelder. Sie berechnen Positionen, örtliche Dicken, Zuschnitte, Verschnitt und zusammengeführte Stück-/Packmengen; Lücken, Überlappungen und Dickenunstetigkeit an gemeinsamen Feldgrenzen werden abgewiesen. [Plattenfälle][tapered-board-tests], [Mehrfeldfälle][tapered-assembly-tests] und [HTTP-/PostgreSQL-Fälle][advanced-technical-api-tests] umfassen synthetische Geometrien und die nichtnormative Projektablage; die [erweiterte Angular-Maske][advanced-technical-ui] bietet die ausdrückliche Katalog- und Feldeingabe. Der [erweiterte Clientvertrag][advanced-client-contract] prüft normalisierte Eingaben, quellengebundene Ergebniswerte und die vollständige unveränderliche Vorschau bei Projektablage. [Clientfälle][advanced-client-tests], [Desktop-/Tablet-/Mobil-Fixtures][advanced-browser-tests] und der [Core-Fixturevertrag][advanced-fixture-contract] ergänzen eigenständige Regressionen; [Umfang und Prüfgrenzen][advanced-client-docs] unterscheiden Konsistenzprüfung und Fachabnahme.",
+      "evidence": "[Gefälleplatten- und Mehrfeldplanung][advanced-exchange-docs], [Plattenlayout][tapered-board-core] und [Mehrfeldkern][tapered-assembly-core] verarbeiten ausdrücklich eingegebene Hersteller-/Produkt-/Katalogrevisionen und SKUs für rechteckige, einachsige Gefällefelder. Sie berechnen Positionen, örtliche Dicken, Zuschnitte, Verschnitt und zusammengeführte Stück-/Packmengen; Lücken, Überlappungen und Dickenunstetigkeit an gemeinsamen Feldgrenzen werden abgewiesen. [Plattenfälle][tapered-board-tests], [Mehrfeldfälle][tapered-assembly-tests] und [HTTP-/PostgreSQL-Fälle][advanced-technical-api-tests] umfassen synthetische Geometrien und die nichtnormative Projektablage; die [erweiterte Angular-Maske][advanced-technical-ui] bietet die ausdrückliche Katalog- und Feldeingabe. Der [erweiterte Clientvertrag][advanced-client-contract] prüft normalisierte Eingaben, quellengebundene Ergebniswerte und die vollständige unveränderliche Vorschau bei Projektablage. [Clientfälle][advanced-client-tests], [Desktop-/Tablet-/Mobil-Fixtures][advanced-browser-tests] und der [Core-Fixturevertrag][advanced-fixture-contract] ergänzen eigenständige Regressionen; [Umfang und Prüfgrenzen][advanced-client-docs] unterscheiden Konsistenzprüfung und Fachabnahme. Der [echte HTTP-/Projektaktenvergleich][advanced-wire-tests] prüft sechs synthetische Fixtures einschließlich der unterschiedlichen Dezimalstring-/eingebetteten JSON-Gelddarstellung; die benannten Geldfelder werden im Client centgenau verglichen.",
       "remaining": "Unabhängig geprüfte, rechtssicher nutzbare Herstellerkataloge und Hersteller-/Fachplanerfreigaben fehlen. Innenliegende Abläufe, Kehlen, Öffnungen/Durchdringungen, nichtrechteckige Entwässerungsgeometrie, Zuschnittoptimierung und Wiederverwendung von Verschnitt sind nicht enthalten. Stetige Fugendicken sind kein Entwässerungsnachweis; die Ausgabe ist kein ausführungs- oder bestellverbindlicher Verlegeplan.",
       "title": "Gefälledämmung und Verlegeplanung"
     },
@@ -963,7 +969,7 @@
     {
       "id": "DP-12-04",
       "status": "T",
-      "evidence": "[API v1][api-program] und [Adapterdokumentation][integrations] dokumentieren Auth, Formate und `firstblick.integration-event/1.0.0` in Importreceipts.",
+      "evidence": "[API v1][api-program] und [Adapterdokumentation][integrations] dokumentieren Auth, Formate und `firstblick.integration-event/1.0.0` in Importreceipts. [18 Rechenvorschauen][technical-contract-docs] ergänzen konkrete Ergebnis-/Problem-Schemas, stabile Operationsnamen und einen [versionierten Mindestvertrag][technical-openapi-minimum], der gegen das tatsächlich authentifiziert ausgelieferte [OpenAPI-Dokument geprüft wird][technical-openapi-tests]. Fehlerhafte JSON-/Medientypbindung verwendet den generischen Problem-Pfad auch außerhalb Development.",
       "remaining": "Keine externe Ereignissubskription/Webhookauslieferung oder vollautomatisierte OpenAPI-Kompatibilitätsprüfung.",
       "title": "Dokumentierte API und Ereignisse bereitstellen"
     },

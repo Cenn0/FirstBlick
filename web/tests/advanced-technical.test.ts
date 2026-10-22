@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import fixtures from './fixtures/advanced-technical.json';
-import { AdvancedMode, AdvancedResult, normalizeAdvancedInput, validateAdvancedResult, validateAdvancedSaved } from '../src/app/core/advanced-technical.models';
+import { AdvancedMode, AdvancedResult, advancedMethods, normalizeAdvancedInput, validateAdvancedResult, validateAdvancedSaved } from '../src/app/core/advanced-technical.models';
 
 type Fixture = { mode: string; input: Record<string, unknown>; result: unknown };
 const cases = Object.entries(fixtures) as [string, Fixture][];
@@ -91,6 +91,18 @@ describe('current core outputs at the advanced technical client boundary', () =>
 });
 
 describe('immutable saved preview binding', () => {
+  it.each(['boards', 'assembly'] as const)('accepts actual decimal-string preview and embedded numeric result for %s', mode => {
+    const f = structuredClone(fixtures[mode]);
+    const record = { ...saved(), title: 'Reviewed', method: advancedMethods[mode].method,
+      input: f.persistedResult.input, result: f.persistedResult };
+    expect(typeof f.result.totalEstimatedPackCostEur).toBe('string');
+    expect(typeof f.persistedResult.totalEstimatedPackCostEur).toBe('number');
+    expect(() => validateAdvancedSaved(record, mode, f.result as AdvancedResult, 'tenant', 'project', 'Reviewed')).not.toThrow();
+  });
+  it.each(['1e2', '1,00', '20.001', '-1', '', 'Infinity'])('rejects an ambiguous wire amount %s', amount => {
+    const f = clone('boards'); f.result.orders[0].estimatedPackCostEur = amount;
+    expect(() => validateAdvancedResult(f.result, f.mode, f.input)).toThrow();
+  });
   const preview = () => clone().result as AdvancedResult;
   it('accepts a matching saved result', () => { expect(validateAdvancedSaved(saved(), 'balance', preview(), 'tenant', 'project', 'Reviewed')).toEqual(saved()); });
   it.each(['title', 'tenantId', 'projectId', 'method', 'methodVersion', 'digest', 'id', 'revision', 'isNormative'])('rejects changed saved %s', key => {

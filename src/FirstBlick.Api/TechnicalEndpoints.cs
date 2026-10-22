@@ -16,41 +16,41 @@ public static class TechnicalEndpoints
     public static void Map(RouteGroupBuilder api)
     {
         api.MapPost("/technical/roof/drainage", async (RoofDrainageInput input, CommandExecutor commands, CancellationToken ct) =>
-        { await commands.Authorize("technical-results", true, ct); return Results.Ok(RoofDrainage.Calculate(input)); }).WithTags("technical");
+        { await commands.Authorize("technical-results", true, ct); return Results.Ok(RoofDrainage.Calculate(input)); }).CalculationContract<RoofDrainageResult>();
         api.MapPost("/technical/roof/wind", async (RoofWindInput input, CommandExecutor commands, CancellationToken ct) =>
-        { await commands.Authorize("technical-results", true, ct); return Results.Ok(RoofWind.Calculate(input)); }).WithTags("technical");
+        { await commands.Authorize("technical-results", true, ct); return Results.Ok(RoofWind.Calculate(input)); }).CalculationContract<RoofWindResult>();
         api.MapPost("/technical/roof/snow", async (RoofSnowInput input, CommandExecutor commands, CancellationToken ct) =>
-        { await commands.Authorize("technical-results", true, ct); return Results.Ok(RoofSnow.Calculate(input)); }).WithTags("technical");
+        { await commands.Authorize("technical-results", true, ct); return Results.Ok(RoofSnow.Calculate(input)); }).CalculationContract<RoofSnowResult>();
         api.MapPost("/technical/thermal", async (ThermalInput input, CommandExecutor commands, CancellationToken ct) =>
-        { await commands.Authorize("technical-results", true, ct); return Results.Ok(ThermalCalculator.Calculate(input)); }).WithTags("technical");
+        { await commands.Authorize("technical-results", true, ct); return Results.Ok(ThermalCalculator.Calculate(input)); }).CalculationContract<ThermalResult>();
         api.MapPost("/technical/moisture/screening", async (MoistureScreeningInput input, CommandExecutor commands, CancellationToken ct) =>
-        { await commands.Authorize("technical-results", true, ct); return Results.Ok(MoistureScreening.Calculate(input)); }).WithTags("technical");
+        { await commands.Authorize("technical-results", true, ct); return Results.Ok(MoistureScreening.Calculate(input)); }).CalculationContract<MoistureScreeningResult>();
         api.MapPost("/technical/moisture/monthly-screening", async (MonthlyMoistureScreeningInput input, CommandExecutor commands, CancellationToken ct) =>
-        { await commands.Authorize("technical-results", true, ct); return Results.Ok(MonthlyMoistureScreening.Calculate(input)); }).WithTags("technical");
+        { await commands.Authorize("technical-results", true, ct); return Results.Ok(MonthlyMoistureScreening.Calculate(input)); }).CalculationContract<MonthlyMoistureScreeningResult>();
         api.MapPost("/technical/thermal/parallel", async (ParallelThermalInput input, CommandExecutor commands, CancellationToken ct) =>
-        { await commands.Authorize("technical-results", true, ct); return Results.Ok(ThermalCalculator.CalculateParallelPaths(input)); }).WithTags("technical");
+        { await commands.Authorize("technical-results", true, ct); return Results.Ok(ThermalCalculator.CalculateParallelPaths(input)); }).CalculationContract<ParallelThermalResult>();
         api.MapPost("/technical/thermal/inhomogeneous", async (InhomogeneousThermalInput input, CommandExecutor commands, CancellationToken ct) =>
-        { await commands.Authorize("technical-results", true, ct); return Results.Ok(InhomogeneousThermalCalculator.Calculate(input)); }).WithTags("technical");
+        { await commands.Authorize("technical-results", true, ct); return Results.Ok(InhomogeneousThermalCalculator.Calculate(input)); }).CalculationContract<InhomogeneousThermalResult>();
         api.MapPost("/technical/roof/rectangle", async (RectangularRoofInput input, CommandExecutor commands, CancellationToken ct) =>
-        { await commands.Authorize("technical-results", true, ct); return Results.Ok(RoofGeometry.Rectangle(input)); }).WithTags("technical");
+        { await commands.Authorize("technical-results", true, ct); return Results.Ok(RoofGeometry.Rectangle(input)); }).CalculationContract<RectangularRoofResult>();
         api.MapPost("/technical/roof/pv-layout", async (PvLayoutInput input, CommandExecutor commands, CancellationToken ct) =>
-        { await commands.Authorize("technical-results", true, ct); return Results.Ok(PvModuleLayout.Calculate(input)); }).WithTags("technical");
+        { await commands.Authorize("technical-results", true, ct); return Results.Ok(PvModuleLayout.Calculate(input)); }).CalculationContract<PvLayoutResult>();
         api.MapPost("/technical/roof/pv-multi-layout", async (PvRoofSetInput input, CommandExecutor commands, CancellationToken ct) =>
-        { await commands.Authorize("technical-results", true, ct); return Results.Ok(PvRoofSetLayout.Calculate(input)); }).WithTags("technical");
+        { await commands.Authorize("technical-results", true, ct); return Results.Ok(PvRoofSetLayout.Calculate(input)); }).CalculationContract<PvRoofSetResult>();
         api.MapPost("/technical/roof/tapered-board-layout", async (TaperedBoardLayoutInput input, CommandExecutor commands, CancellationToken ct) =>
-        { await commands.Authorize("technical-results", true, ct); return Results.Ok(TaperedBoardLayout.Calculate(input)); }).WithTags("technical");
+        { await commands.Authorize("technical-results", true, ct); return Results.Ok(TaperedBoardLayout.Calculate(input)); }).CalculationContract<TaperedBoardLayoutResult>();
         api.MapPost("/technical/roof/tapered-assembly", async (TaperedRoofAssemblyInput input, CommandExecutor commands, CancellationToken ct) =>
-        { await commands.Authorize("technical-results", true, ct); return Results.Ok(TaperedRoofAssembly.Calculate(input)); }).WithTags("technical");
+        { await commands.Authorize("technical-results", true, ct); return Results.Ok(TaperedRoofAssembly.Calculate(input)); }).CalculationContract<TaperedRoofAssemblyResult>();
         api.MapPost("/technical/moisture/iso13788/balance", async (Iso13788BalanceInput input, CommandExecutor commands, CancellationToken ct) =>
-        { await commands.Authorize("technical-results", true, ct); return Results.Ok(Iso13788Balance.Calculate(input)); }).WithTags("technical");
+        { await commands.Authorize("technical-results", true, ct); return Results.Ok(Iso13788Balance.Calculate(input)); }).CalculationContract<Iso13788BalanceResult>();
         api.MapPost("/technical/moisture/iso13788/drying", async (Iso13788DryingInput input, CommandExecutor commands, CancellationToken ct) =>
-        { await commands.Authorize("technical-results", true, ct); return Results.Ok(Iso13788Balance.Dry(input)); }).WithTags("technical");
+        { await commands.Authorize("technical-results", true, ct); return Results.Ok(Iso13788Balance.Dry(input)); }).CalculationContract<Iso13788DryingResult>();
         api.MapPost("/technical/roof/tapered-insulation", async (TaperedInsulationInput input, CommandExecutor commands, CancellationToken ct) =>
-        { await commands.Authorize("technical-results", true, ct); return Results.Ok(TaperedInsulationCalculator.Calculate(input)); }).WithTags("technical");
+        { await commands.Authorize("technical-results", true, ct); return Results.Ok(TaperedInsulationCalculator.Calculate(input)); }).CalculationContract<TaperedInsulationResult>();
         api.MapPost("/technical/roof/polygon", async (PolygonRoofInput input, CommandExecutor commands, CancellationToken ct) =>
-        { await commands.Authorize("technical-results", true, ct); return Results.Ok(RoofGeometry.Calculate(input)); }).WithTags("technical");
+        { await commands.Authorize("technical-results", true, ct); return Results.Ok(RoofGeometry.Calculate(input)); }).CalculationContract<PolygonRoofResult>();
         api.MapPost("/technical/thermal-bridges", async (ThermalBridgeInput input, CommandExecutor commands, CancellationToken ct) =>
-        { await commands.Authorize("technical-results", true, ct); return Results.Ok(ThermalBridgeCalculator.Aggregate(input)); }).WithTags("technical");
+        { await commands.Authorize("technical-results", true, ct); return Results.Ok(ThermalBridgeCalculator.Aggregate(input)); }).CalculationContract<ThermalBridgeResult>();
 
         api.MapPost("/roof-revisions/{id:guid}/publish", (Guid id, HttpContext http, EntityStore store, FirstBlickDbContext db, TenantScope scope, CommandExecutor commands) =>
             commands.Execute(http, "roof-revisions", "roof.publish", new { id }, async ct =>
@@ -112,6 +112,27 @@ public static class TechnicalEndpoints
                 lines.AddRange(Flatten(result.Result));
                 return await DocumentEndpoints.SaveGenerated(db, scope, objects, BusinessPdf.Technical(result.Title, result.Digest, lines), $"Berechnung-{result.Id:N}.pdf", result.ProjectId, "technical-results", id, result.Digest, ct);
             })).WithTags("technical");
+    }
+
+    // Metadata describes the existing wire behavior; it does not replace runtime validation.
+    private static RouteHandlerBuilder CalculationContract<T>(this RouteHandlerBuilder endpoint) => endpoint
+        .WithTags("technical")
+        .WithName("Calculate" + typeof(T).Name)
+        .WithDescription("Non-normative numerical preview with explicit input sources and method limits. Requires personal authentication, X-Tenant-Id and current technical-results.write permission. No project record or provider action is created by this endpoint.")
+        .Produces<T>(StatusCodes.Status200OK, "application/json")
+        .Produces(StatusCodes.Status401Unauthorized)
+        .Produces<CalculationProblem>(StatusCodes.Status400BadRequest, "application/problem+json")
+        .Produces<CalculationProblem>(StatusCodes.Status403Forbidden, "application/problem+json")
+        .Produces<CalculationProblem>(StatusCodes.Status413PayloadTooLarge, "application/problem+json")
+        .Produces<CalculationProblem>(StatusCodes.Status415UnsupportedMediaType, "application/problem+json")
+        .Produces<CalculationProblem>(StatusCodes.Status423Locked, "application/problem+json")
+        .Produces<CalculationProblem>(StatusCodes.Status500InternalServerError, "application/problem+json");
+
+    /// <summary>The RFC problem fields and the actual ErrorMiddleware extension members.</summary>
+    public sealed class CalculationProblem : Microsoft.AspNetCore.Mvc.ProblemDetails
+    {
+        public required string Code { get; init; }
+        public required string TraceId { get; init; }
     }
 
     private static IEnumerable<string> Flatten(JsonElement value, string path = "")
