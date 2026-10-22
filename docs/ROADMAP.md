@@ -2,6 +2,11 @@
 
 > Übernommen aus der Projektanalyse „DachPlaner Rework Roadmap“, 19.10.2026 (34 Seiten). Der Originalbericht umfasst 100 Aufgaben in 15 Epics. Diese Fassung erhält alle Aufgabenkennungen und ursprünglichen Abnahmekriterien. Ein implementierter Teilablauf bedeutet nicht automatisch, dass das gesamte Epic abgeschlossen ist.
 
+## Fortsetzung – Mehrflächige PV-Dachgruppe (22.10.2026)
+
+- **DP-11-09, zusätzlicher Teilumfang:** [PV-Dachgruppen](pv-roof-set.md) berechnen bis zu acht eindeutig bezeichnete, getrennt aufgemessene rechteckige Dachflächen. Hindernisse und Raster bleiben je Dachfläche eigenständig; Summen, Einzelpositionen, Quellen und Gruppen-/Einzelprovenienz sind überprüfbar. Ein HTTP-Endpunkt, die unveränderliche technische Projektablage sowie Angular-Bedienung und Core-/API-/Client-Regressionen wurden ergänzt.
+- **Grenzen:** Physische Überschneidungen mehrerer Dachflächen werden nicht erkannt; Gesamtflächen sind arithmetische Summen, kein geodätischer Nachweis. Herstellerfreigabe, Ertrag, Verschattung, PV-Elektrik, Statik, Brandschutz und Montageplanung bleiben offen. **DP-11-09 bleibt T (Teilumfang).** Erstellte Tests sind ohne erfolgreiche Ausführung auf dem endgültigen Commit kein Testnachweis.
+
 ## Neue Fortsetzung – PV-Modulbelegung als begrenzte Geometriehilfe (22.10.2026)
 
 - **DP-11-09:** Der [PV-Rechenkern](pv-module-layout.md) erstellt für eine einzeln gemessene rechteckige Dachfläche ein begrenztes, reproduzierbares Modulraster. Berücksichtigt werden Hoch-/Querformat (auch Vergleich nach Stückzahl), Nutzer-Randabstände, Modulabstände, bis zu 64 ausgeschlossene Hindernisrechtecke und ihr Freihalteabstand. Ergebnis: Modulpositionen, Nennleistung in Wp, Ablehnungsgründe durch Hindernisse und versionsgebundene Berechnungsprovenienz.
