@@ -76,6 +76,18 @@ describe('current core outputs at the advanced technical client boundary', () =>
     const r = clone('boards'); r.result.placements[0].rotationDegrees = 0;
     expect(() => validateAdvancedResult(r.result, r.mode, r.input)).toThrow();
   });
+  it('requires exact cents even for large pack totals', () => {
+    const f = clone('boards');
+    for (const input of [f.input, f.result.input]) for (const sku of input.catalog.boards) {
+      sku.unitsPerPack = 200; sku.pricePerBoardEur = '10000000';
+    }
+    for (const order of f.result.orders) Object.assign(order, { unitsPerPack: 200, packsToOrder: 1,
+      boardsOrdered: 200, additionalBoardsFromPacks: 200 - order.usedBoards, estimatedPackCostEur: '2000000000' });
+    f.result.totalEstimatedPackCostEur = '4000000000.00';
+    expect(() => validateAdvancedResult(f.result, f.mode, f.input)).not.toThrow();
+    f.result.totalEstimatedPackCostEur = '4000000000.01';
+    expect(() => validateAdvancedResult(f.result, f.mode, f.input)).toThrow();
+  });
   it('rejects an unknown price becoming a zero', () => {
     const f = clone('unknown'); f.result.orders[0].estimatedPackCostEur = 0;
     expect(() => validateAdvancedResult(f.result, f.mode, f.input)).toThrow();

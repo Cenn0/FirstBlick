@@ -228,7 +228,7 @@ function boardLayout(value: Row, mode: 'boards' | 'assembly'): void {
       fieldId: f['fieldId'], globalX: Number(f['originX']) + Number(p['x']), globalY: Number(f['originY']) + Number(p['y']), panel: p })));
     require(canonicalJson(placements) === canonicalJson(expectedPlacements));
   }
-  let used = 0, cuts = 0, orderVolume = 0, orderWaste = 0, cost = 0, known = true;
+  let used = 0, cuts = 0, orderVolume = 0, orderWaste = 0, costCents = 0, known = true;
   const identities = new Set<string>();
   for (const line of orders) {
     const order = mode === 'assembly' ? row(line['quantity']) : line;
@@ -239,16 +239,16 @@ function boardLayout(value: Row, mode: 'boards' | 'assembly'): void {
     const group = groups.get(identity); require(group && group.count === count && group.pack === pack && group.cuts === cut);
     close(order['installedVolumeM3'], group.volume); close(order['unusedCutVolumeM3'], group.waste);
     if (group.price === null) require(order['estimatedPackCostEur'] === null);
-    else close(euro(order['estimatedPackCostEur']), Math.round(group.price * 100) * packs * pack / 100, 1e-10);
+    else require(Math.round(euro(order['estimatedPackCostEur']) * 100) === Math.round(group.price * 100) * packs * pack);
     require(order['packsToOrder'] === packs && order['boardsOrdered'] === packs * pack && order['additionalBoardsFromPacks'] === packs * pack - count);
     used += count; cuts += cut; orderVolume += finite(order['installedVolumeM3']); orderWaste += finite(order['unusedCutVolumeM3']);
-    if (order['estimatedPackCostEur'] === null) known = false; else cost += euro(order['estimatedPackCostEur']);
+    if (order['estimatedPackCostEur'] === null) known = false; else costCents += Math.round(euro(order['estimatedPackCostEur']) * 100);
   }
   require(identities.size === groups.size);
   close(used, placements.length); close(cuts, placements.filter(p => row(mode === 'assembly' ? p['panel'] : p)['requiresCut']).length);
   close(orderVolume, volume); close(orderWaste, waste);
   require(known ? value['totalEstimatedPackCostEur'] !== null : value['totalEstimatedPackCostEur'] === null);
-  if (known) close(euro(value['totalEstimatedPackCostEur']), cost, 1e-10);
+  if (known) require(Number.isSafeInteger(costCents) && Math.round(euro(value['totalEstimatedPackCostEur']) * 100) === costCents);
 }
 /** Integrity checks are client safeguards, not an independent engineering or standards approval. */
 export function validateAdvancedResult(raw: unknown, mode: AdvancedMode, expectedInput: Row): AdvancedResult {
