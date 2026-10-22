@@ -184,9 +184,16 @@
               }
             </dl>
             <h4>Monatliche Kondensation und Verdunstung</h4>
-            <div class="table-scroll"><table><thead><tr><th>Monat</th><th>Kondensat (kg/m²)</th><th>Verdunstung (kg/m²)</th><th>Rest (kg/m²)</th><th>Massenbilanzfehler</th></tr></thead><tbody>
-              @for (m of responseEntries(value,'months'); track $index) {<tr><td>{{monthLabel(m['month'])}}</td><td>{{number(m['condensedKgM2'],8)}}</td><td>{{number(m['evaporatedKgM2'],8)}}</td><td>{{number(m['endStoredMassKgM2'],8)}}</td><td>{{number(m['massConservationErrorKgM2'],10)}}</td></tr>}
+            <div class="table-scroll"><table><thead><tr><th>Rechenschritt / Monat</th><th>Kondensat (kg/m²)</th><th>Verdunstung (kg/m²)</th><th>Rest (kg/m²)</th><th>Massenbilanzfehler</th></tr></thead><tbody>
+              @for (m of responseEntries(value,'months'); track $index) {<tr><td>{{m['sequence']}} / {{monthLabel(m['month'])}}</td><td>{{number(m['condensedKgM2'],8)}}</td><td>{{number(m['evaporatedKgM2'],8)}}</td><td>{{number(m['endStoredMassKgM2'],8)}}</td><td>{{number(m['massConservationErrorKgM2'],10)}}</td></tr>}
             </tbody></table></div>
+            <h4>Grenzflächen: Höchstmengen und Restwasser</h4>
+            <p>Die höchste gespeicherte Wassermenge gilt je Grenzfläche über den gesamten Rechenlauf. Schadensgrenzen und Materialverträglichkeit müssen fachlich geprüft werden.</p>
+            @if (responseEntries(value,'interfaceMaxima').length) {
+              <div class="table-scroll"><table><thead><tr><th>Grenzfläche</th><th>Höchstmenge (kg/m²)</th><th>Monat der ersten Höchstmenge</th><th>Restmenge (kg/m²)</th></tr></thead><tbody>
+                @for (peak of responseEntries(value,'interfaceMaxima'); track $index) {<tr><td>{{interfaceName(peak['nodeIndex'])}}</td><td>{{number(peak['maximumMassKgM2'],8)}}</td><td>{{monthLabel(peak['month'])}}</td><td>{{number(peak['endMassKgM2'],8)}}</td></tr>}
+              </tbody></table></div>
+            } @else {<p>In diesem Rechenlauf wurde kein Grenzflächenwasser gespeichert.</p>}
             <div class="alert warning">Normative Rechenmethode ≠ nationale Bauteilzulassung. Grenzflächenhöchstwerte, Schadensrisiko und nationale Verfahrensgrenzen gesondert prüfen.</div>
           }
           <details><summary>Fachliche Grenzen und dokumentierte Eingaben</summary>@for (limit of value.provenance.limitations; track $index) {<p>{{limit}}</p>}<pre>{{value.input | json}}</pre></details>

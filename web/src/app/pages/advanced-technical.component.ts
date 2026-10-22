@@ -6,8 +6,8 @@ import { ApiService, Entity } from '../core/api.service';
 import { AuthService } from '../core/auth.service';
 import { ApiError, errorMessage } from '../core/transport';
 import { downloadBlob, sha256Blob } from '../core/integrations.models';
+import { AdvancedMode as Workflow, AdvancedResult as Result, AdvancedSaved as Saved, advancedMethods as methods, validateAdvancedResult, validateAdvancedSaved } from '../core/advanced-technical.models';
 
-type Workflow = 'balance' | 'drying' | 'boards' | 'assembly';
 type HeatFlow = 'Upward' | 'Horizontal' | 'Downward';
 type Exterior = 'OutsideAir' | 'WellVentilatedCavity';
 type ClimateTreatment = 'WallAir' | 'RoofMinusTwoKelvin' | 'SuppliedEquivalentRoofTemperature';
@@ -20,8 +20,6 @@ interface Board { sku: string; thinEdgeM: number | null; thickEdgeM: number | nu
 interface RoofFieldDraft { fieldId: string; originX: number | null; originY: number | null;
   roofLengthM: number | null; roofWidthM: number | null; lowEdgeThicknessM: number | null;
   slopePercent: number | null; flowAxis: FlowAxis; lowEdgeAtCoordinateZero: boolean }
-type Result = Record<string, unknown> & { input: Record<string, unknown>; provenance: { methodId: string; methodVersion: string; inputSha256: string; isNormative: false; limitations: string[] } };
-type Saved = { id: string; revision: number; tenantId: string; projectId: string; method: string; methodVersion: string; input: unknown; result: Result; digest: string; isNormative: false };
 const hex = (value: unknown): value is string => typeof value === 'string' && /^[a-f0-9]{64}$/.test(value);
 const object = (value: unknown): Record<string, unknown> => {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) throw new Error('Die Serverantwort enthält kein vollständiges Datenobjekt.');
@@ -51,16 +49,6 @@ const emptyMonths = (): Month[] => Array.from({ length: 12 }, (_, index) => ({
   month: index + 1, insideTemperatureC: null, outsideAirTemperatureC: null,
   insideRelativeHumidityPercent: null, outsideRelativeHumidityPercent: null, equivalentOutsideTemperatureC: null
 }));
-const methods: Record<Workflow, { name: string; method: string; endpoint: string; provenance: string }> = {
-  balance: { name: 'Tauwasser- und Jahresbilanz (ISO 13788)', method: 'moisture.iso13788.balance',
-    endpoint: 'technical/moisture/iso13788/balance', provenance: 'iso13788-monthly-diffusion-balance' },
-  drying: { name: 'Austrocknung (ISO 13788, Abschnitt 7)', method: 'moisture.iso13788.drying',
-    endpoint: 'technical/moisture/iso13788/drying', provenance: 'iso13788-excess-water-drying' },
-  boards: { name: 'Gefälleplatten aus Herstellerkatalog', method: 'roof.tapered-board-layout',
-    endpoint: 'technical/roof/tapered-board-layout', provenance: 'manufacturer-catalog-tapered-board-layout' },
-  assembly: { name: 'Mehrfeld-Verlegeplanung', method: 'roof.tapered-assembly',
-    endpoint: 'technical/roof/tapered-assembly', provenance: 'manufacturer-catalog-multifield-tapered-board-layout' }
-};
 const labels = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
 
 @Component({
@@ -133,7 +121,7 @@ export class AdvancedTechnicalComponent {
   edited(): void {
     this.revision++; this.busy.set(false); this.error.set(''); this.notice.set(''); this.result.set(null); this.saved.set(null);
   }
-  attachmentEdited(): void { this.revision++; this.saved.set(null); this.notice.set(''); }
+  attachmentEdited(): void { this.revision++; this.busy.set(false); this.saved.set(null); this.notice.set(''); this.error.set(''); }
   addLayer(): void { if (this.layers.length < 60) { this.layers.push(emptyLayer()); this.edited(); } }
   removeLayer(index: number): void { if (this.layers.length > 1) { this.layers.splice(index, 1); this.edited(); } }
   addBoard(): void { if (this.boards.length < 500) { this.boards.push(emptyBoard()); this.edited(); } }
@@ -144,6 +132,10 @@ export class AdvancedTechnicalComponent {
   boardPanel(row: Record<string, unknown>): Record<string, unknown> { return this.mode() === 'assembly' ? object(row['panel']) : row; }
   needsEquivalent(): boolean { return this.climateTreatment === 'SuppliedEquivalentRoofTemperature' && this.exteriorBoundary === 'OutsideAir'; }
   monthLabel(value: unknown): string { return typeof value === 'number' && Number.isInteger(value) && value >= 1 && value <= 12 ? labels[value - 1] : 'Ungültiger Monat'; }
+  interfaceName(node: unknown): string {
+    const grid = this.result()?.['grid'];
+    return Array.isArray(grid) && typeof node === 'number' && typeof grid[node]?.name === 'string' ? grid[node].name : 'Unbekannte Grenzfläche';
+  }
   number(value: unknown, digits = 5): string {
     return typeof value === 'number' && Number.isFinite(value)
       ? new Intl.NumberFormat('de-DE', { maximumFractionDigits: digits }).format(value) : '–';
@@ -211,6 +203,12 @@ export class AdvancedTechnicalComponent {
       throw new Error('Das ISO-Verfahren ist erst zulässig, wenn alle sechs Anwendungsannahmen fachlich bestätigt sind.');
     if (this.layers.length < 1 || this.layers.length > 60 || this.months.length !== 12)
       throw new Error('Die ISO-Berechnung benötigt 1–60 Schichten und genau 12 Klimamonate.');
+    if (new Set(this.months.map(m => integer(m.month, 'Kalendermonat', 1, 12))).size !== 12)
+      throw new Error('Jeden Kalendermonat genau einmal erfassen.');
+    if (this.layers.some(l => l.kind === 'UnventilatedAirLayer' && Math.abs(Number(l.sdM) - .01) >= 1e-12))
+      throw new Error('Unbelüftete Luftschicht: sd = 0,01 m erforderlich; den Wärmewiderstand gesondert belegen.');
+    if (this.mode() === 'drying' && this.layers[this.wettedLayerIndex ?? -1]?.kind !== 'HomogeneousLayer')
+      throw new Error('Für den Austrocknungsversuch eine homogene Schicht auswählen.');
     const assembly = {
       climateCalendarYear: integer(this.climateCalendarYear, 'Klimakalenderjahr', 1900, 3000),
       trialMonth: integer(this.trialMonth, 'Versuchsmonat', 1, 12),
@@ -243,34 +241,6 @@ export class AdvancedTechnicalComponent {
       initialAssessmentReview: label(this.initialAssessmentReview, 'Austrocknungsprüfung', 2000)
     };
   }
-  private validatedResponse(raw: unknown, method: Workflow): Result {
-    const item = object(raw);
-    const provenance = object(item['provenance']);
-    if (provenance['methodId'] !== methods[method].provenance ||
-        provenance['methodVersion'] !== '1.0.0' || provenance['isNormative'] !== false ||
-        !hex(provenance['inputSha256']) || !Array.isArray(provenance['limitations']) ||
-        !(provenance['limitations'] as unknown[]).every(x => typeof x === 'string') ||
-        (provenance['limitations'] as unknown[]).length < 1) throw new Error('Der Server hat keine passende, überprüfbar begrenzte Rechenantwort geliefert.');
-    object(item['input']);
-    if (method === 'boards' || method === 'assembly') {
-      if (!Array.isArray(item['placements']) || !Array.isArray(item['orders']) ||
-          item['catalogIndependentlyVerified'] !== false || item['drainageOrStructureApproved'] !== false ||
-          typeof item['installedVolumeM3'] !== 'number' || !Number.isFinite(item['installedVolumeM3']))
-        throw new Error('Der Plattennachweis enthält keine gültige Mengen- und Zulassungstrennung.');
-      if (method === 'assembly' && (!Array.isArray(item['fields']) ||
-          !(item['orders'] as unknown[]).every(x => typeof x === 'object' && x !== null && !Array.isArray(x) &&
-            typeof (x as Record<string, unknown>)['quantity'] === 'object')))
-        throw new Error('Die Feld-/Packmengen-Abstimmung des Gesamtplans ist nicht vorhanden.');
-    } else {
-      const standard = object(item['standardProcedure']);
-      if (standard['constructionComplianceAssessed'] !== false ||
-          standard['din4108Part3Assessment'] !== false ||
-          standard['implementsSpecifiedProcedure'] !== true ||
-          !Array.isArray(item['months'])) throw new Error('Der ISO-Verfahrensnachweis ist unvollständig.');
-      if (method === 'balance' && item['months'].length !== 12) throw new Error('Die Jahresbilanz enthält nicht zwölf Monate.');
-    }
-    return item as Result;
-  }
   private failed(cause: unknown, revision: number, access: string): void {
     if (!this.current(revision, access)) return;
     if (cause instanceof ApiError && [401, 403, 423].includes(cause.status)) {
@@ -285,14 +255,15 @@ export class AdvancedTechnicalComponent {
     try {
       const input = this.buildInput();
       const answer = await this.api.command<unknown>(methods[mode].endpoint, input);
-      if (this.current(revision, access)) this.result.set(this.validatedResponse(answer, mode));
+      if (this.current(revision, access)) this.result.set(validateAdvancedResult(answer, mode, input));
     } catch (error) { this.failed(error, revision, access); }
     finally { if (this.current(revision, access)) this.busy.set(false); }
   }
   async searchProjects(page = 1): Promise<void> {
     if (!this.allowed() || this.busy() || !this.auth.can('projects.read')) return;
     const revision = ++this.revision, access = this.auth.accessSignature();
-    this.busy.set(true); this.error.set(''); this.projects.set([]); this.projectId = '';
+    this.busy.set(true); this.error.set(''); this.notice.set(''); this.saved.set(null);
+    this.projects.set([]); this.totalProjects.set(0); this.projectId = '';
     try {
       const data = await this.api.list('projects', this.projectSearch, page);
       if (!this.current(revision, access)) return;
@@ -312,15 +283,7 @@ export class AdvancedTechnicalComponent {
       const raw = object(await this.api.command<unknown>('technical/runs',
         { projectId: project, roofRevisionId: null, title, method: methods[mode].method, input: result.input }));
       if (!this.current(revision, access)) return;
-      if (raw['tenantId'] !== tenant || raw['projectId'] !== project || raw['method'] !== methods[mode].method ||
-          raw['methodVersion'] !== '1.0.0' || raw['isNormative'] !== false ||
-          typeof raw['id'] !== 'string' || !/^[a-f0-9-]{36}$/i.test(raw['id']) ||
-          !Number.isInteger(raw['revision']) || Number(raw['revision']) < 1 || !hex(raw['digest']))
-        throw new Error('Der gespeicherte Bericht gehört nicht zum ausgewählten Betrieb, Verfahren oder Projekt.');
-      const restored = this.validatedResponse(raw['result'], mode);
-      if (restored.provenance.inputSha256 !== result.provenance.inputSha256)
-        throw new Error('Der gespeicherte Rechenbericht unterscheidet sich von der freigegebenen Vorschau.');
-      this.saved.set(raw as unknown as Saved);
+      this.saved.set(validateAdvancedSaved(raw, mode, result, tenant, project));
       this.notice.set('Berechnung mit Quelle, Fachgrenzen und Digest im Projekt gespeichert.');
     } catch (error) { this.failed(error, revision, access); }
     finally { if (this.current(revision, access)) this.busy.set(false); }

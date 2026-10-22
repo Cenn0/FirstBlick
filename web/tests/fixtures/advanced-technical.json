@@ -1,0 +1,2876 @@
+{
+  "balance": {
+    "mode": "balance",
+    "input": {
+      "climateCalendarYear": 2024,
+      "trialMonth": 10,
+      "heatFlow": "Upward",
+      "exteriorBoundary": "OutsideAir",
+      "climateTreatment": "WallAir",
+      "subdivideThermalLayers": false,
+      "layers": [
+        {
+          "name": "Inner",
+          "resistanceM2KW": 0.1,
+          "sdM": 0.1,
+          "kind": "HomogeneousLayer",
+          "designValueSource": "Synthetic inner layer"
+        },
+        {
+          "name": "Insulation",
+          "resistanceM2KW": 3,
+          "sdM": 1,
+          "kind": "HomogeneousLayer",
+          "designValueSource": "Synthetic insulation"
+        },
+        {
+          "name": "Outer",
+          "resistanceM2KW": 0.1,
+          "sdM": 10,
+          "kind": "HomogeneousLayer",
+          "designValueSource": "Synthetic outer layer"
+        }
+      ],
+      "months": [
+        {
+          "month": 1,
+          "insideTemperatureC": 20,
+          "outsideAirTemperatureC": -5,
+          "insideRelativeHumidityPercent": 60,
+          "outsideRelativeHumidityPercent": 70,
+          "equivalentOutsideTemperatureC": null
+        },
+        {
+          "month": 2,
+          "insideTemperatureC": 20,
+          "outsideAirTemperatureC": -5,
+          "insideRelativeHumidityPercent": 60,
+          "outsideRelativeHumidityPercent": 70,
+          "equivalentOutsideTemperatureC": null
+        },
+        {
+          "month": 3,
+          "insideTemperatureC": 20,
+          "outsideAirTemperatureC": -5,
+          "insideRelativeHumidityPercent": 60,
+          "outsideRelativeHumidityPercent": 70,
+          "equivalentOutsideTemperatureC": null
+        },
+        {
+          "month": 4,
+          "insideTemperatureC": 20,
+          "outsideAirTemperatureC": -5,
+          "insideRelativeHumidityPercent": 60,
+          "outsideRelativeHumidityPercent": 70,
+          "equivalentOutsideTemperatureC": null
+        },
+        {
+          "month": 5,
+          "insideTemperatureC": 20,
+          "outsideAirTemperatureC": 20,
+          "insideRelativeHumidityPercent": 60,
+          "outsideRelativeHumidityPercent": 70,
+          "equivalentOutsideTemperatureC": null
+        },
+        {
+          "month": 6,
+          "insideTemperatureC": 20,
+          "outsideAirTemperatureC": 20,
+          "insideRelativeHumidityPercent": 60,
+          "outsideRelativeHumidityPercent": 70,
+          "equivalentOutsideTemperatureC": null
+        },
+        {
+          "month": 7,
+          "insideTemperatureC": 20,
+          "outsideAirTemperatureC": 20,
+          "insideRelativeHumidityPercent": 60,
+          "outsideRelativeHumidityPercent": 70,
+          "equivalentOutsideTemperatureC": null
+        },
+        {
+          "month": 8,
+          "insideTemperatureC": 20,
+          "outsideAirTemperatureC": 20,
+          "insideRelativeHumidityPercent": 60,
+          "outsideRelativeHumidityPercent": 70,
+          "equivalentOutsideTemperatureC": null
+        },
+        {
+          "month": 9,
+          "insideTemperatureC": 20,
+          "outsideAirTemperatureC": 20,
+          "insideRelativeHumidityPercent": 60,
+          "outsideRelativeHumidityPercent": 70,
+          "equivalentOutsideTemperatureC": null
+        },
+        {
+          "month": 10,
+          "insideTemperatureC": 20,
+          "outsideAirTemperatureC": -5,
+          "insideRelativeHumidityPercent": 60,
+          "outsideRelativeHumidityPercent": 70,
+          "equivalentOutsideTemperatureC": null
+        },
+        {
+          "month": 11,
+          "insideTemperatureC": 20,
+          "outsideAirTemperatureC": -5,
+          "insideRelativeHumidityPercent": 60,
+          "outsideRelativeHumidityPercent": 70,
+          "equivalentOutsideTemperatureC": null
+        },
+        {
+          "month": 12,
+          "insideTemperatureC": 20,
+          "outsideAirTemperatureC": -5,
+          "insideRelativeHumidityPercent": 60,
+          "outsideRelativeHumidityPercent": 70,
+          "equivalentOutsideTemperatureC": null
+        }
+      ],
+      "applicability": {
+        "parallelHomogeneousLayers": true,
+        "noAirflowThroughAssembly": true,
+        "noRainAbsorption": true,
+        "negligibleCapillaryAndHygroscopicEffects": true,
+        "constantDesignProperties": true,
+        "climateSelectionReviewed": true,
+        "constructionReview": "Synthetic diffusion-only fixture; no real building approval",
+        "climateSource": "Synthetic calendar; no site climate data"
+      }
+    },
+    "result": {
+      "input": {
+        "climateCalendarYear": 2024,
+        "trialMonth": 10,
+        "heatFlow": "Upward",
+        "exteriorBoundary": "OutsideAir",
+        "climateTreatment": "WallAir",
+        "subdivideThermalLayers": false,
+        "layers": [
+          {
+            "name": "Inner",
+            "resistanceM2KW": 0.1,
+            "sdM": 0.1,
+            "kind": "HomogeneousLayer",
+            "designValueSource": "Synthetic inner layer"
+          },
+          {
+            "name": "Insulation",
+            "resistanceM2KW": 3,
+            "sdM": 1,
+            "kind": "HomogeneousLayer",
+            "designValueSource": "Synthetic insulation"
+          },
+          {
+            "name": "Outer",
+            "resistanceM2KW": 0.1,
+            "sdM": 10,
+            "kind": "HomogeneousLayer",
+            "designValueSource": "Synthetic outer layer"
+          }
+        ],
+        "months": [
+          {
+            "month": 1,
+            "insideTemperatureC": 20,
+            "outsideAirTemperatureC": -5,
+            "insideRelativeHumidityPercent": 60,
+            "outsideRelativeHumidityPercent": 70,
+            "equivalentOutsideTemperatureC": null
+          },
+          {
+            "month": 2,
+            "insideTemperatureC": 20,
+            "outsideAirTemperatureC": -5,
+            "insideRelativeHumidityPercent": 60,
+            "outsideRelativeHumidityPercent": 70,
+            "equivalentOutsideTemperatureC": null
+          },
+          {
+            "month": 3,
+            "insideTemperatureC": 20,
+            "outsideAirTemperatureC": -5,
+            "insideRelativeHumidityPercent": 60,
+            "outsideRelativeHumidityPercent": 70,
+            "equivalentOutsideTemperatureC": null
+          },
+          {
+            "month": 4,
+            "insideTemperatureC": 20,
+            "outsideAirTemperatureC": -5,
+            "insideRelativeHumidityPercent": 60,
+            "outsideRelativeHumidityPercent": 70,
+            "equivalentOutsideTemperatureC": null
+          },
+          {
+            "month": 5,
+            "insideTemperatureC": 20,
+            "outsideAirTemperatureC": 20,
+            "insideRelativeHumidityPercent": 60,
+            "outsideRelativeHumidityPercent": 70,
+            "equivalentOutsideTemperatureC": null
+          },
+          {
+            "month": 6,
+            "insideTemperatureC": 20,
+            "outsideAirTemperatureC": 20,
+            "insideRelativeHumidityPercent": 60,
+            "outsideRelativeHumidityPercent": 70,
+            "equivalentOutsideTemperatureC": null
+          },
+          {
+            "month": 7,
+            "insideTemperatureC": 20,
+            "outsideAirTemperatureC": 20,
+            "insideRelativeHumidityPercent": 60,
+            "outsideRelativeHumidityPercent": 70,
+            "equivalentOutsideTemperatureC": null
+          },
+          {
+            "month": 8,
+            "insideTemperatureC": 20,
+            "outsideAirTemperatureC": 20,
+            "insideRelativeHumidityPercent": 60,
+            "outsideRelativeHumidityPercent": 70,
+            "equivalentOutsideTemperatureC": null
+          },
+          {
+            "month": 9,
+            "insideTemperatureC": 20,
+            "outsideAirTemperatureC": 20,
+            "insideRelativeHumidityPercent": 60,
+            "outsideRelativeHumidityPercent": 70,
+            "equivalentOutsideTemperatureC": null
+          },
+          {
+            "month": 10,
+            "insideTemperatureC": 20,
+            "outsideAirTemperatureC": -5,
+            "insideRelativeHumidityPercent": 60,
+            "outsideRelativeHumidityPercent": 70,
+            "equivalentOutsideTemperatureC": null
+          },
+          {
+            "month": 11,
+            "insideTemperatureC": 20,
+            "outsideAirTemperatureC": -5,
+            "insideRelativeHumidityPercent": 60,
+            "outsideRelativeHumidityPercent": 70,
+            "equivalentOutsideTemperatureC": null
+          },
+          {
+            "month": 12,
+            "insideTemperatureC": 20,
+            "outsideAirTemperatureC": -5,
+            "insideRelativeHumidityPercent": 60,
+            "outsideRelativeHumidityPercent": 70,
+            "equivalentOutsideTemperatureC": null
+          }
+        ],
+        "applicability": {
+          "parallelHomogeneousLayers": true,
+          "noAirflowThroughAssembly": true,
+          "noRainAbsorption": true,
+          "negligibleCapillaryAndHygroscopicEffects": true,
+          "constantDesignProperties": true,
+          "climateSelectionReviewed": true,
+          "constructionReview": "Synthetic diffusion-only fixture; no real building approval",
+          "climateSource": "Synthetic calendar; no site climate data"
+        }
+      },
+      "grid": [
+        {
+          "index": 0,
+          "layerIndex": -1,
+          "layerFraction": 0,
+          "name": "Inside surface",
+          "cumulativeResistanceM2KW": 0,
+          "cumulativeSdM": 0
+        },
+        {
+          "index": 1,
+          "layerIndex": 0,
+          "layerFraction": 1,
+          "name": "After Inner",
+          "cumulativeResistanceM2KW": 0.1,
+          "cumulativeSdM": 0.1
+        },
+        {
+          "index": 2,
+          "layerIndex": 1,
+          "layerFraction": 1,
+          "name": "After Insulation",
+          "cumulativeResistanceM2KW": 3.1,
+          "cumulativeSdM": 1.1
+        },
+        {
+          "index": 3,
+          "layerIndex": 2,
+          "layerFraction": 1,
+          "name": "After Outer",
+          "cumulativeResistanceM2KW": 3.2,
+          "cumulativeSdM": 11.1
+        }
+      ],
+      "startingMonth": 10,
+      "classification": "ResidualCondensate",
+      "months": [
+        {
+          "sequence": 1,
+          "month": 10,
+          "days": 31,
+          "insideSurfaceResistanceM2KW": 0.1,
+          "outsideSurfaceResistanceM2KW": 0.04,
+          "outsideThermalTemperatureC": -5,
+          "insideVapourPressurePa": 1402.1706862814053,
+          "outsideVapourPressurePa": 280.8266869461588,
+          "insideSurfaceRelativeHumidityPercent": 62.853807142931956,
+          "outsideSurfaceRelativeHumidityPercent": 68.23109766170771,
+          "condensedKgM2": 0.4607541767216038,
+          "evaporatedKgM2": 0,
+          "endStoredMassKgM2": 0.4607541767216038,
+          "massConservationErrorKgM2": 0,
+          "subperiods": 1,
+          "wetInterfaces": [
+            {
+              "nodeIndex": 2,
+              "temperatureC": -3.952095808383234,
+              "saturationPressurePa": 438.66590918274454,
+              "endVapourPressurePa": 438.66590918274454,
+              "startMassKgM2": 0,
+              "condensedKgM2": 0.4607541767216038,
+              "evaporatedKgM2": 0,
+              "endMassKgM2": 0.4607541767216038,
+              "maximumMassKgM2": 0.4607541767216038
+            }
+          ]
+        },
+        {
+          "sequence": 2,
+          "month": 11,
+          "days": 30,
+          "insideSurfaceResistanceM2KW": 0.1,
+          "outsideSurfaceResistanceM2KW": 0.04,
+          "outsideThermalTemperatureC": -5,
+          "insideVapourPressurePa": 1402.1706862814053,
+          "outsideVapourPressurePa": 280.8266869461588,
+          "insideSurfaceRelativeHumidityPercent": 62.853807142931956,
+          "outsideSurfaceRelativeHumidityPercent": 68.23109766170771,
+          "condensedKgM2": 0.4458911387628424,
+          "evaporatedKgM2": 0,
+          "endStoredMassKgM2": 0.9066453154844463,
+          "massConservationErrorKgM2": 5.551115123125783E-17,
+          "subperiods": 1,
+          "wetInterfaces": [
+            {
+              "nodeIndex": 2,
+              "temperatureC": -3.952095808383234,
+              "saturationPressurePa": 438.66590918274454,
+              "endVapourPressurePa": 438.66590918274454,
+              "startMassKgM2": 0.4607541767216038,
+              "condensedKgM2": 0.4458911387628424,
+              "evaporatedKgM2": 0,
+              "endMassKgM2": 0.9066453154844463,
+              "maximumMassKgM2": 0.9066453154844463
+            }
+          ]
+        },
+        {
+          "sequence": 3,
+          "month": 12,
+          "days": 31,
+          "insideSurfaceResistanceM2KW": 0.1,
+          "outsideSurfaceResistanceM2KW": 0.04,
+          "outsideThermalTemperatureC": -5,
+          "insideVapourPressurePa": 1402.1706862814053,
+          "outsideVapourPressurePa": 280.8266869461588,
+          "insideSurfaceRelativeHumidityPercent": 62.853807142931956,
+          "outsideSurfaceRelativeHumidityPercent": 68.23109766170771,
+          "condensedKgM2": 0.4607541767216038,
+          "evaporatedKgM2": 0,
+          "endStoredMassKgM2": 1.36739949220605,
+          "massConservationErrorKgM2": -1.1102230246251565E-16,
+          "subperiods": 1,
+          "wetInterfaces": [
+            {
+              "nodeIndex": 2,
+              "temperatureC": -3.952095808383234,
+              "saturationPressurePa": 438.66590918274454,
+              "endVapourPressurePa": 438.66590918274454,
+              "startMassKgM2": 0.9066453154844463,
+              "condensedKgM2": 0.4607541767216038,
+              "evaporatedKgM2": 0,
+              "endMassKgM2": 1.36739949220605,
+              "maximumMassKgM2": 1.36739949220605
+            }
+          ]
+        },
+        {
+          "sequence": 4,
+          "month": 1,
+          "days": 31,
+          "insideSurfaceResistanceM2KW": 0.1,
+          "outsideSurfaceResistanceM2KW": 0.04,
+          "outsideThermalTemperatureC": -5,
+          "insideVapourPressurePa": 1402.1706862814053,
+          "outsideVapourPressurePa": 280.8266869461588,
+          "insideSurfaceRelativeHumidityPercent": 62.853807142931956,
+          "outsideSurfaceRelativeHumidityPercent": 68.23109766170771,
+          "condensedKgM2": 0.4607541767216038,
+          "evaporatedKgM2": 0,
+          "endStoredMassKgM2": 1.8281536689276536,
+          "massConservationErrorKgM2": -1.1102230246251565E-16,
+          "subperiods": 1,
+          "wetInterfaces": [
+            {
+              "nodeIndex": 2,
+              "temperatureC": -3.952095808383234,
+              "saturationPressurePa": 438.66590918274454,
+              "endVapourPressurePa": 438.66590918274454,
+              "startMassKgM2": 1.36739949220605,
+              "condensedKgM2": 0.4607541767216038,
+              "evaporatedKgM2": 0,
+              "endMassKgM2": 1.8281536689276536,
+              "maximumMassKgM2": 1.8281536689276536
+            }
+          ]
+        },
+        {
+          "sequence": 5,
+          "month": 2,
+          "days": 29,
+          "insideSurfaceResistanceM2KW": 0.1,
+          "outsideSurfaceResistanceM2KW": 0.04,
+          "outsideThermalTemperatureC": -5,
+          "insideVapourPressurePa": 1402.1706862814053,
+          "outsideVapourPressurePa": 280.8266869461588,
+          "insideSurfaceRelativeHumidityPercent": 62.853807142931956,
+          "outsideSurfaceRelativeHumidityPercent": 68.23109766170771,
+          "condensedKgM2": 0.431028100804081,
+          "evaporatedKgM2": 0,
+          "endStoredMassKgM2": 2.2591817697317347,
+          "massConservationErrorKgM2": 5.551115123125783E-17,
+          "subperiods": 1,
+          "wetInterfaces": [
+            {
+              "nodeIndex": 2,
+              "temperatureC": -3.952095808383234,
+              "saturationPressurePa": 438.66590918274454,
+              "endVapourPressurePa": 438.66590918274454,
+              "startMassKgM2": 1.8281536689276536,
+              "condensedKgM2": 0.431028100804081,
+              "evaporatedKgM2": 0,
+              "endMassKgM2": 2.2591817697317347,
+              "maximumMassKgM2": 2.2591817697317347
+            }
+          ]
+        },
+        {
+          "sequence": 6,
+          "month": 3,
+          "days": 31,
+          "insideSurfaceResistanceM2KW": 0.1,
+          "outsideSurfaceResistanceM2KW": 0.04,
+          "outsideThermalTemperatureC": -5,
+          "insideVapourPressurePa": 1402.1706862814053,
+          "outsideVapourPressurePa": 280.8266869461588,
+          "insideSurfaceRelativeHumidityPercent": 62.853807142931956,
+          "outsideSurfaceRelativeHumidityPercent": 68.23109766170771,
+          "condensedKgM2": 0.4607541767216038,
+          "evaporatedKgM2": 0,
+          "endStoredMassKgM2": 2.7199359464533384,
+          "massConservationErrorKgM2": -1.1102230246251565E-16,
+          "subperiods": 1,
+          "wetInterfaces": [
+            {
+              "nodeIndex": 2,
+              "temperatureC": -3.952095808383234,
+              "saturationPressurePa": 438.66590918274454,
+              "endVapourPressurePa": 438.66590918274454,
+              "startMassKgM2": 2.2591817697317347,
+              "condensedKgM2": 0.4607541767216038,
+              "evaporatedKgM2": 0,
+              "endMassKgM2": 2.7199359464533384,
+              "maximumMassKgM2": 2.7199359464533384
+            }
+          ]
+        },
+        {
+          "sequence": 7,
+          "month": 4,
+          "days": 30,
+          "insideSurfaceResistanceM2KW": 0.1,
+          "outsideSurfaceResistanceM2KW": 0.04,
+          "outsideThermalTemperatureC": -5,
+          "insideVapourPressurePa": 1402.1706862814053,
+          "outsideVapourPressurePa": 280.8266869461588,
+          "insideSurfaceRelativeHumidityPercent": 62.853807142931956,
+          "outsideSurfaceRelativeHumidityPercent": 68.23109766170771,
+          "condensedKgM2": 0.4458911387628424,
+          "evaporatedKgM2": 0,
+          "endStoredMassKgM2": 3.165827085216181,
+          "massConservationErrorKgM2": 1.6653345369377348E-16,
+          "subperiods": 1,
+          "wetInterfaces": [
+            {
+              "nodeIndex": 2,
+              "temperatureC": -3.952095808383234,
+              "saturationPressurePa": 438.66590918274454,
+              "endVapourPressurePa": 438.66590918274454,
+              "startMassKgM2": 2.7199359464533384,
+              "condensedKgM2": 0.4458911387628424,
+              "evaporatedKgM2": 0,
+              "endMassKgM2": 3.165827085216181,
+              "maximumMassKgM2": 3.165827085216181
+            }
+          ]
+        },
+        {
+          "sequence": 8,
+          "month": 5,
+          "days": 31,
+          "insideSurfaceResistanceM2KW": 0.1,
+          "outsideSurfaceResistanceM2KW": 0.04,
+          "outsideThermalTemperatureC": 20,
+          "insideVapourPressurePa": 1402.1706862814053,
+          "outsideVapourPressurePa": 1635.8658006616395,
+          "insideSurfaceRelativeHumidityPercent": 60,
+          "outsideSurfaceRelativeHumidityPercent": 70,
+          "condensedKgM2": 0,
+          "evaporatedKgM2": 0.4927768264657386,
+          "endStoredMassKgM2": 2.6730502587504423,
+          "massConservationErrorKgM2": 0,
+          "subperiods": 1,
+          "wetInterfaces": [
+            {
+              "nodeIndex": 2,
+              "temperatureC": 20,
+              "saturationPressurePa": 2336.951143802342,
+              "endVapourPressurePa": 2336.951143802342,
+              "startMassKgM2": 3.165827085216181,
+              "condensedKgM2": 0,
+              "evaporatedKgM2": 0.4927768264657386,
+              "endMassKgM2": 2.6730502587504423,
+              "maximumMassKgM2": 3.165827085216181
+            }
+          ]
+        },
+        {
+          "sequence": 9,
+          "month": 6,
+          "days": 30,
+          "insideSurfaceResistanceM2KW": 0.1,
+          "outsideSurfaceResistanceM2KW": 0.04,
+          "outsideThermalTemperatureC": 20,
+          "insideVapourPressurePa": 1402.1706862814053,
+          "outsideVapourPressurePa": 1635.8658006616395,
+          "insideSurfaceRelativeHumidityPercent": 60,
+          "outsideSurfaceRelativeHumidityPercent": 70,
+          "condensedKgM2": 0,
+          "evaporatedKgM2": 0.4768807998055535,
+          "endStoredMassKgM2": 2.196169458944889,
+          "massConservationErrorKgM2": 1.6653345369377348E-16,
+          "subperiods": 1,
+          "wetInterfaces": [
+            {
+              "nodeIndex": 2,
+              "temperatureC": 20,
+              "saturationPressurePa": 2336.951143802342,
+              "endVapourPressurePa": 2336.951143802342,
+              "startMassKgM2": 2.6730502587504423,
+              "condensedKgM2": 0,
+              "evaporatedKgM2": 0.4768807998055535,
+              "endMassKgM2": 2.196169458944889,
+              "maximumMassKgM2": 2.6730502587504423
+            }
+          ]
+        },
+        {
+          "sequence": 10,
+          "month": 7,
+          "days": 31,
+          "insideSurfaceResistanceM2KW": 0.1,
+          "outsideSurfaceResistanceM2KW": 0.04,
+          "outsideThermalTemperatureC": 20,
+          "insideVapourPressurePa": 1402.1706862814053,
+          "outsideVapourPressurePa": 1635.8658006616395,
+          "insideSurfaceRelativeHumidityPercent": 60,
+          "outsideSurfaceRelativeHumidityPercent": 70,
+          "condensedKgM2": 0,
+          "evaporatedKgM2": 0.4927768264657386,
+          "endStoredMassKgM2": 1.7033926324791504,
+          "massConservationErrorKgM2": 0,
+          "subperiods": 1,
+          "wetInterfaces": [
+            {
+              "nodeIndex": 2,
+              "temperatureC": 20,
+              "saturationPressurePa": 2336.951143802342,
+              "endVapourPressurePa": 2336.951143802342,
+              "startMassKgM2": 2.196169458944889,
+              "condensedKgM2": 0,
+              "evaporatedKgM2": 0.4927768264657386,
+              "endMassKgM2": 1.7033926324791504,
+              "maximumMassKgM2": 2.196169458944889
+            }
+          ]
+        },
+        {
+          "sequence": 11,
+          "month": 8,
+          "days": 31,
+          "insideSurfaceResistanceM2KW": 0.1,
+          "outsideSurfaceResistanceM2KW": 0.04,
+          "outsideThermalTemperatureC": 20,
+          "insideVapourPressurePa": 1402.1706862814053,
+          "outsideVapourPressurePa": 1635.8658006616395,
+          "insideSurfaceRelativeHumidityPercent": 60,
+          "outsideSurfaceRelativeHumidityPercent": 70,
+          "condensedKgM2": 0,
+          "evaporatedKgM2": 0.4927768264657386,
+          "endStoredMassKgM2": 1.2106158060134118,
+          "massConservationErrorKgM2": 0,
+          "subperiods": 1,
+          "wetInterfaces": [
+            {
+              "nodeIndex": 2,
+              "temperatureC": 20,
+              "saturationPressurePa": 2336.951143802342,
+              "endVapourPressurePa": 2336.951143802342,
+              "startMassKgM2": 1.7033926324791504,
+              "condensedKgM2": 0,
+              "evaporatedKgM2": 0.4927768264657386,
+              "endMassKgM2": 1.2106158060134118,
+              "maximumMassKgM2": 1.7033926324791504
+            }
+          ]
+        },
+        {
+          "sequence": 12,
+          "month": 9,
+          "days": 30,
+          "insideSurfaceResistanceM2KW": 0.1,
+          "outsideSurfaceResistanceM2KW": 0.04,
+          "outsideThermalTemperatureC": 20,
+          "insideVapourPressurePa": 1402.1706862814053,
+          "outsideVapourPressurePa": 1635.8658006616395,
+          "insideSurfaceRelativeHumidityPercent": 60,
+          "outsideSurfaceRelativeHumidityPercent": 70,
+          "condensedKgM2": 0,
+          "evaporatedKgM2": 0.4768807998055535,
+          "endStoredMassKgM2": 0.7337350062078583,
+          "massConservationErrorKgM2": -5.551115123125783E-17,
+          "subperiods": 1,
+          "wetInterfaces": [
+            {
+              "nodeIndex": 2,
+              "temperatureC": 20,
+              "saturationPressurePa": 2336.951143802342,
+              "endVapourPressurePa": 2336.951143802342,
+              "startMassKgM2": 1.2106158060134118,
+              "condensedKgM2": 0,
+              "evaporatedKgM2": 0.4768807998055535,
+              "endMassKgM2": 0.7337350062078583,
+              "maximumMassKgM2": 1.2106158060134118
+            }
+          ]
+        }
+      ],
+      "interfaceMaxima": [
+        {
+          "nodeIndex": 2,
+          "maximumMassKgM2": 3.165827085216181,
+          "month": 4,
+          "endMassKgM2": 0.7337350062078583
+        }
+      ],
+      "totalCondensedKgM2": 3.165827085216181,
+      "totalEvaporatedKgM2": 2.432092079008323,
+      "residualCondensateKgM2": 0.7337350062078583,
+      "standardProcedure": {
+        "standard": "ISO 13788:2012",
+        "clauses": "6.2\u20136.5; 4.1\u20134.4; Annex E",
+        "procedureVersion": "1.0.0",
+        "implementsSpecifiedProcedure": true,
+        "constructionComplianceAssessed": false,
+        "din4108Part3Assessment": false,
+        "requiredFurtherChecks": [
+          "Design-value and local-climate suitability",
+          "National construction-specific rules and method applicability",
+          "Maximum-water damage and runoff risk",
+          "Independent project-level specialist review"
+        ]
+      },
+      "provenance": {
+        "methodId": "iso13788-monthly-diffusion-balance",
+        "methodVersion": "1.0.0",
+        "inputSha256": "fb93356eb1244a17fae31b43899c546e23a7d755280c36ae107aadcf52bb9856",
+        "isNormative": false,
+        "limitations": [
+          "ISO 13788:2012 monthly interstitial diffusion procedure with stored water, multiple condensation interfaces and exact within-month drying events.",
+          "The legacy isNormative flag remains false because this record does not certify an entire building or establish DIN 4108-3 conformity; StandardProcedure identifies the implemented ISO calculation.",
+          "No capillary liquid transfer, airflow, rain absorption, moisture-dependent properties or hygroscopic storage. Explicit suitability and design-climate review are mandatory.",
+          "Annual re-evaporation is not by itself a material-damage or runoff approval; interface maxima require construction-specific assessment.",
+          "WetInterfaces lists interfaces with nonzero stored water or mass transfer; all calculation interfaces remain identified in Grid."
+        ]
+      }
+    }
+  },
+  "residual": {
+    "mode": "balance",
+    "input": {
+      "climateCalendarYear": 2024,
+      "trialMonth": 10,
+      "heatFlow": "Upward",
+      "exteriorBoundary": "OutsideAir",
+      "climateTreatment": "WallAir",
+      "subdivideThermalLayers": false,
+      "layers": [
+        {
+          "name": "Inner",
+          "resistanceM2KW": 0.1,
+          "sdM": 0.1,
+          "kind": "HomogeneousLayer",
+          "designValueSource": "Synthetic inner layer"
+        },
+        {
+          "name": "Insulation",
+          "resistanceM2KW": 3,
+          "sdM": 1,
+          "kind": "HomogeneousLayer",
+          "designValueSource": "Synthetic insulation"
+        },
+        {
+          "name": "Outer",
+          "resistanceM2KW": 0.1,
+          "sdM": 10,
+          "kind": "HomogeneousLayer",
+          "designValueSource": "Synthetic outer layer"
+        }
+      ],
+      "months": [
+        {
+          "month": 1,
+          "insideTemperatureC": 20,
+          "outsideAirTemperatureC": -5,
+          "insideRelativeHumidityPercent": 60,
+          "outsideRelativeHumidityPercent": 70,
+          "equivalentOutsideTemperatureC": null
+        },
+        {
+          "month": 2,
+          "insideTemperatureC": 20,
+          "outsideAirTemperatureC": -5,
+          "insideRelativeHumidityPercent": 60,
+          "outsideRelativeHumidityPercent": 70,
+          "equivalentOutsideTemperatureC": null
+        },
+        {
+          "month": 3,
+          "insideTemperatureC": 20,
+          "outsideAirTemperatureC": -5,
+          "insideRelativeHumidityPercent": 60,
+          "outsideRelativeHumidityPercent": 70,
+          "equivalentOutsideTemperatureC": null
+        },
+        {
+          "month": 4,
+          "insideTemperatureC": 20,
+          "outsideAirTemperatureC": -5,
+          "insideRelativeHumidityPercent": 60,
+          "outsideRelativeHumidityPercent": 70,
+          "equivalentOutsideTemperatureC": null
+        },
+        {
+          "month": 5,
+          "insideTemperatureC": 20,
+          "outsideAirTemperatureC": -5,
+          "insideRelativeHumidityPercent": 60,
+          "outsideRelativeHumidityPercent": 70,
+          "equivalentOutsideTemperatureC": null
+        },
+        {
+          "month": 6,
+          "insideTemperatureC": 20,
+          "outsideAirTemperatureC": -5,
+          "insideRelativeHumidityPercent": 60,
+          "outsideRelativeHumidityPercent": 70,
+          "equivalentOutsideTemperatureC": null
+        },
+        {
+          "month": 7,
+          "insideTemperatureC": 20,
+          "outsideAirTemperatureC": -5,
+          "insideRelativeHumidityPercent": 60,
+          "outsideRelativeHumidityPercent": 70,
+          "equivalentOutsideTemperatureC": null
+        },
+        {
+          "month": 8,
+          "insideTemperatureC": 20,
+          "outsideAirTemperatureC": -5,
+          "insideRelativeHumidityPercent": 60,
+          "outsideRelativeHumidityPercent": 70,
+          "equivalentOutsideTemperatureC": null
+        },
+        {
+          "month": 9,
+          "insideTemperatureC": 20,
+          "outsideAirTemperatureC": -5,
+          "insideRelativeHumidityPercent": 60,
+          "outsideRelativeHumidityPercent": 70,
+          "equivalentOutsideTemperatureC": null
+        },
+        {
+          "month": 10,
+          "insideTemperatureC": 20,
+          "outsideAirTemperatureC": -5,
+          "insideRelativeHumidityPercent": 60,
+          "outsideRelativeHumidityPercent": 70,
+          "equivalentOutsideTemperatureC": null
+        },
+        {
+          "month": 11,
+          "insideTemperatureC": 20,
+          "outsideAirTemperatureC": -5,
+          "insideRelativeHumidityPercent": 60,
+          "outsideRelativeHumidityPercent": 70,
+          "equivalentOutsideTemperatureC": null
+        },
+        {
+          "month": 12,
+          "insideTemperatureC": 20,
+          "outsideAirTemperatureC": -5,
+          "insideRelativeHumidityPercent": 60,
+          "outsideRelativeHumidityPercent": 70,
+          "equivalentOutsideTemperatureC": null
+        }
+      ],
+      "applicability": {
+        "parallelHomogeneousLayers": true,
+        "noAirflowThroughAssembly": true,
+        "noRainAbsorption": true,
+        "negligibleCapillaryAndHygroscopicEffects": true,
+        "constantDesignProperties": true,
+        "climateSelectionReviewed": true,
+        "constructionReview": "Synthetic diffusion-only fixture; no real building approval",
+        "climateSource": "Synthetic calendar; no site climate data"
+      }
+    },
+    "result": {
+      "input": {
+        "climateCalendarYear": 2024,
+        "trialMonth": 10,
+        "heatFlow": "Upward",
+        "exteriorBoundary": "OutsideAir",
+        "climateTreatment": "WallAir",
+        "subdivideThermalLayers": false,
+        "layers": [
+          {
+            "name": "Inner",
+            "resistanceM2KW": 0.1,
+            "sdM": 0.1,
+            "kind": "HomogeneousLayer",
+            "designValueSource": "Synthetic inner layer"
+          },
+          {
+            "name": "Insulation",
+            "resistanceM2KW": 3,
+            "sdM": 1,
+            "kind": "HomogeneousLayer",
+            "designValueSource": "Synthetic insulation"
+          },
+          {
+            "name": "Outer",
+            "resistanceM2KW": 0.1,
+            "sdM": 10,
+            "kind": "HomogeneousLayer",
+            "designValueSource": "Synthetic outer layer"
+          }
+        ],
+        "months": [
+          {
+            "month": 1,
+            "insideTemperatureC": 20,
+            "outsideAirTemperatureC": -5,
+            "insideRelativeHumidityPercent": 60,
+            "outsideRelativeHumidityPercent": 70,
+            "equivalentOutsideTemperatureC": null
+          },
+          {
+            "month": 2,
+            "insideTemperatureC": 20,
+            "outsideAirTemperatureC": -5,
+            "insideRelativeHumidityPercent": 60,
+            "outsideRelativeHumidityPercent": 70,
+            "equivalentOutsideTemperatureC": null
+          },
+          {
+            "month": 3,
+            "insideTemperatureC": 20,
+            "outsideAirTemperatureC": -5,
+            "insideRelativeHumidityPercent": 60,
+            "outsideRelativeHumidityPercent": 70,
+            "equivalentOutsideTemperatureC": null
+          },
+          {
+            "month": 4,
+            "insideTemperatureC": 20,
+            "outsideAirTemperatureC": -5,
+            "insideRelativeHumidityPercent": 60,
+            "outsideRelativeHumidityPercent": 70,
+            "equivalentOutsideTemperatureC": null
+          },
+          {
+            "month": 5,
+            "insideTemperatureC": 20,
+            "outsideAirTemperatureC": -5,
+            "insideRelativeHumidityPercent": 60,
+            "outsideRelativeHumidityPercent": 70,
+            "equivalentOutsideTemperatureC": null
+          },
+          {
+            "month": 6,
+            "insideTemperatureC": 20,
+            "outsideAirTemperatureC": -5,
+            "insideRelativeHumidityPercent": 60,
+            "outsideRelativeHumidityPercent": 70,
+            "equivalentOutsideTemperatureC": null
+          },
+          {
+            "month": 7,
+            "insideTemperatureC": 20,
+            "outsideAirTemperatureC": -5,
+            "insideRelativeHumidityPercent": 60,
+            "outsideRelativeHumidityPercent": 70,
+            "equivalentOutsideTemperatureC": null
+          },
+          {
+            "month": 8,
+            "insideTemperatureC": 20,
+            "outsideAirTemperatureC": -5,
+            "insideRelativeHumidityPercent": 60,
+            "outsideRelativeHumidityPercent": 70,
+            "equivalentOutsideTemperatureC": null
+          },
+          {
+            "month": 9,
+            "insideTemperatureC": 20,
+            "outsideAirTemperatureC": -5,
+            "insideRelativeHumidityPercent": 60,
+            "outsideRelativeHumidityPercent": 70,
+            "equivalentOutsideTemperatureC": null
+          },
+          {
+            "month": 10,
+            "insideTemperatureC": 20,
+            "outsideAirTemperatureC": -5,
+            "insideRelativeHumidityPercent": 60,
+            "outsideRelativeHumidityPercent": 70,
+            "equivalentOutsideTemperatureC": null
+          },
+          {
+            "month": 11,
+            "insideTemperatureC": 20,
+            "outsideAirTemperatureC": -5,
+            "insideRelativeHumidityPercent": 60,
+            "outsideRelativeHumidityPercent": 70,
+            "equivalentOutsideTemperatureC": null
+          },
+          {
+            "month": 12,
+            "insideTemperatureC": 20,
+            "outsideAirTemperatureC": -5,
+            "insideRelativeHumidityPercent": 60,
+            "outsideRelativeHumidityPercent": 70,
+            "equivalentOutsideTemperatureC": null
+          }
+        ],
+        "applicability": {
+          "parallelHomogeneousLayers": true,
+          "noAirflowThroughAssembly": true,
+          "noRainAbsorption": true,
+          "negligibleCapillaryAndHygroscopicEffects": true,
+          "constantDesignProperties": true,
+          "climateSelectionReviewed": true,
+          "constructionReview": "Synthetic diffusion-only fixture; no real building approval",
+          "climateSource": "Synthetic calendar; no site climate data"
+        }
+      },
+      "grid": [
+        {
+          "index": 0,
+          "layerIndex": -1,
+          "layerFraction": 0,
+          "name": "Inside surface",
+          "cumulativeResistanceM2KW": 0,
+          "cumulativeSdM": 0
+        },
+        {
+          "index": 1,
+          "layerIndex": 0,
+          "layerFraction": 1,
+          "name": "After Inner",
+          "cumulativeResistanceM2KW": 0.1,
+          "cumulativeSdM": 0.1
+        },
+        {
+          "index": 2,
+          "layerIndex": 1,
+          "layerFraction": 1,
+          "name": "After Insulation",
+          "cumulativeResistanceM2KW": 3.1,
+          "cumulativeSdM": 1.1
+        },
+        {
+          "index": 3,
+          "layerIndex": 2,
+          "layerFraction": 1,
+          "name": "After Outer",
+          "cumulativeResistanceM2KW": 3.2,
+          "cumulativeSdM": 11.1
+        }
+      ],
+      "startingMonth": 10,
+      "classification": "ResidualCondensate",
+      "months": [
+        {
+          "sequence": 1,
+          "month": 10,
+          "days": 31,
+          "insideSurfaceResistanceM2KW": 0.1,
+          "outsideSurfaceResistanceM2KW": 0.04,
+          "outsideThermalTemperatureC": -5,
+          "insideVapourPressurePa": 1402.1706862814053,
+          "outsideVapourPressurePa": 280.8266869461588,
+          "insideSurfaceRelativeHumidityPercent": 62.853807142931956,
+          "outsideSurfaceRelativeHumidityPercent": 68.23109766170771,
+          "condensedKgM2": 0.4607541767216038,
+          "evaporatedKgM2": 0,
+          "endStoredMassKgM2": 0.4607541767216038,
+          "massConservationErrorKgM2": 0,
+          "subperiods": 1,
+          "wetInterfaces": [
+            {
+              "nodeIndex": 2,
+              "temperatureC": -3.952095808383234,
+              "saturationPressurePa": 438.66590918274454,
+              "endVapourPressurePa": 438.66590918274454,
+              "startMassKgM2": 0,
+              "condensedKgM2": 0.4607541767216038,
+              "evaporatedKgM2": 0,
+              "endMassKgM2": 0.4607541767216038,
+              "maximumMassKgM2": 0.4607541767216038
+            }
+          ]
+        },
+        {
+          "sequence": 2,
+          "month": 11,
+          "days": 30,
+          "insideSurfaceResistanceM2KW": 0.1,
+          "outsideSurfaceResistanceM2KW": 0.04,
+          "outsideThermalTemperatureC": -5,
+          "insideVapourPressurePa": 1402.1706862814053,
+          "outsideVapourPressurePa": 280.8266869461588,
+          "insideSurfaceRelativeHumidityPercent": 62.853807142931956,
+          "outsideSurfaceRelativeHumidityPercent": 68.23109766170771,
+          "condensedKgM2": 0.4458911387628424,
+          "evaporatedKgM2": 0,
+          "endStoredMassKgM2": 0.9066453154844463,
+          "massConservationErrorKgM2": 5.551115123125783E-17,
+          "subperiods": 1,
+          "wetInterfaces": [
+            {
+              "nodeIndex": 2,
+              "temperatureC": -3.952095808383234,
+              "saturationPressurePa": 438.66590918274454,
+              "endVapourPressurePa": 438.66590918274454,
+              "startMassKgM2": 0.4607541767216038,
+              "condensedKgM2": 0.4458911387628424,
+              "evaporatedKgM2": 0,
+              "endMassKgM2": 0.9066453154844463,
+              "maximumMassKgM2": 0.9066453154844463
+            }
+          ]
+        },
+        {
+          "sequence": 3,
+          "month": 12,
+          "days": 31,
+          "insideSurfaceResistanceM2KW": 0.1,
+          "outsideSurfaceResistanceM2KW": 0.04,
+          "outsideThermalTemperatureC": -5,
+          "insideVapourPressurePa": 1402.1706862814053,
+          "outsideVapourPressurePa": 280.8266869461588,
+          "insideSurfaceRelativeHumidityPercent": 62.853807142931956,
+          "outsideSurfaceRelativeHumidityPercent": 68.23109766170771,
+          "condensedKgM2": 0.4607541767216038,
+          "evaporatedKgM2": 0,
+          "endStoredMassKgM2": 1.36739949220605,
+          "massConservationErrorKgM2": -1.1102230246251565E-16,
+          "subperiods": 1,
+          "wetInterfaces": [
+            {
+              "nodeIndex": 2,
+              "temperatureC": -3.952095808383234,
+              "saturationPressurePa": 438.66590918274454,
+              "endVapourPressurePa": 438.66590918274454,
+              "startMassKgM2": 0.9066453154844463,
+              "condensedKgM2": 0.4607541767216038,
+              "evaporatedKgM2": 0,
+              "endMassKgM2": 1.36739949220605,
+              "maximumMassKgM2": 1.36739949220605
+            }
+          ]
+        },
+        {
+          "sequence": 4,
+          "month": 1,
+          "days": 31,
+          "insideSurfaceResistanceM2KW": 0.1,
+          "outsideSurfaceResistanceM2KW": 0.04,
+          "outsideThermalTemperatureC": -5,
+          "insideVapourPressurePa": 1402.1706862814053,
+          "outsideVapourPressurePa": 280.8266869461588,
+          "insideSurfaceRelativeHumidityPercent": 62.853807142931956,
+          "outsideSurfaceRelativeHumidityPercent": 68.23109766170771,
+          "condensedKgM2": 0.4607541767216038,
+          "evaporatedKgM2": 0,
+          "endStoredMassKgM2": 1.8281536689276536,
+          "massConservationErrorKgM2": -1.1102230246251565E-16,
+          "subperiods": 1,
+          "wetInterfaces": [
+            {
+              "nodeIndex": 2,
+              "temperatureC": -3.952095808383234,
+              "saturationPressurePa": 438.66590918274454,
+              "endVapourPressurePa": 438.66590918274454,
+              "startMassKgM2": 1.36739949220605,
+              "condensedKgM2": 0.4607541767216038,
+              "evaporatedKgM2": 0,
+              "endMassKgM2": 1.8281536689276536,
+              "maximumMassKgM2": 1.8281536689276536
+            }
+          ]
+        },
+        {
+          "sequence": 5,
+          "month": 2,
+          "days": 29,
+          "insideSurfaceResistanceM2KW": 0.1,
+          "outsideSurfaceResistanceM2KW": 0.04,
+          "outsideThermalTemperatureC": -5,
+          "insideVapourPressurePa": 1402.1706862814053,
+          "outsideVapourPressurePa": 280.8266869461588,
+          "insideSurfaceRelativeHumidityPercent": 62.853807142931956,
+          "outsideSurfaceRelativeHumidityPercent": 68.23109766170771,
+          "condensedKgM2": 0.431028100804081,
+          "evaporatedKgM2": 0,
+          "endStoredMassKgM2": 2.2591817697317347,
+          "massConservationErrorKgM2": 5.551115123125783E-17,
+          "subperiods": 1,
+          "wetInterfaces": [
+            {
+              "nodeIndex": 2,
+              "temperatureC": -3.952095808383234,
+              "saturationPressurePa": 438.66590918274454,
+              "endVapourPressurePa": 438.66590918274454,
+              "startMassKgM2": 1.8281536689276536,
+              "condensedKgM2": 0.431028100804081,
+              "evaporatedKgM2": 0,
+              "endMassKgM2": 2.2591817697317347,
+              "maximumMassKgM2": 2.2591817697317347
+            }
+          ]
+        },
+        {
+          "sequence": 6,
+          "month": 3,
+          "days": 31,
+          "insideSurfaceResistanceM2KW": 0.1,
+          "outsideSurfaceResistanceM2KW": 0.04,
+          "outsideThermalTemperatureC": -5,
+          "insideVapourPressurePa": 1402.1706862814053,
+          "outsideVapourPressurePa": 280.8266869461588,
+          "insideSurfaceRelativeHumidityPercent": 62.853807142931956,
+          "outsideSurfaceRelativeHumidityPercent": 68.23109766170771,
+          "condensedKgM2": 0.4607541767216038,
+          "evaporatedKgM2": 0,
+          "endStoredMassKgM2": 2.7199359464533384,
+          "massConservationErrorKgM2": -1.1102230246251565E-16,
+          "subperiods": 1,
+          "wetInterfaces": [
+            {
+              "nodeIndex": 2,
+              "temperatureC": -3.952095808383234,
+              "saturationPressurePa": 438.66590918274454,
+              "endVapourPressurePa": 438.66590918274454,
+              "startMassKgM2": 2.2591817697317347,
+              "condensedKgM2": 0.4607541767216038,
+              "evaporatedKgM2": 0,
+              "endMassKgM2": 2.7199359464533384,
+              "maximumMassKgM2": 2.7199359464533384
+            }
+          ]
+        },
+        {
+          "sequence": 7,
+          "month": 4,
+          "days": 30,
+          "insideSurfaceResistanceM2KW": 0.1,
+          "outsideSurfaceResistanceM2KW": 0.04,
+          "outsideThermalTemperatureC": -5,
+          "insideVapourPressurePa": 1402.1706862814053,
+          "outsideVapourPressurePa": 280.8266869461588,
+          "insideSurfaceRelativeHumidityPercent": 62.853807142931956,
+          "outsideSurfaceRelativeHumidityPercent": 68.23109766170771,
+          "condensedKgM2": 0.4458911387628424,
+          "evaporatedKgM2": 0,
+          "endStoredMassKgM2": 3.165827085216181,
+          "massConservationErrorKgM2": 1.6653345369377348E-16,
+          "subperiods": 1,
+          "wetInterfaces": [
+            {
+              "nodeIndex": 2,
+              "temperatureC": -3.952095808383234,
+              "saturationPressurePa": 438.66590918274454,
+              "endVapourPressurePa": 438.66590918274454,
+              "startMassKgM2": 2.7199359464533384,
+              "condensedKgM2": 0.4458911387628424,
+              "evaporatedKgM2": 0,
+              "endMassKgM2": 3.165827085216181,
+              "maximumMassKgM2": 3.165827085216181
+            }
+          ]
+        },
+        {
+          "sequence": 8,
+          "month": 5,
+          "days": 31,
+          "insideSurfaceResistanceM2KW": 0.1,
+          "outsideSurfaceResistanceM2KW": 0.04,
+          "outsideThermalTemperatureC": -5,
+          "insideVapourPressurePa": 1402.1706862814053,
+          "outsideVapourPressurePa": 280.8266869461588,
+          "insideSurfaceRelativeHumidityPercent": 62.853807142931956,
+          "outsideSurfaceRelativeHumidityPercent": 68.23109766170771,
+          "condensedKgM2": 0.4607541767216038,
+          "evaporatedKgM2": 0,
+          "endStoredMassKgM2": 3.6265812619377846,
+          "massConservationErrorKgM2": -1.1102230246251565E-16,
+          "subperiods": 1,
+          "wetInterfaces": [
+            {
+              "nodeIndex": 2,
+              "temperatureC": -3.952095808383234,
+              "saturationPressurePa": 438.66590918274454,
+              "endVapourPressurePa": 438.66590918274454,
+              "startMassKgM2": 3.165827085216181,
+              "condensedKgM2": 0.4607541767216038,
+              "evaporatedKgM2": 0,
+              "endMassKgM2": 3.6265812619377846,
+              "maximumMassKgM2": 3.6265812619377846
+            }
+          ]
+        },
+        {
+          "sequence": 9,
+          "month": 6,
+          "days": 30,
+          "insideSurfaceResistanceM2KW": 0.1,
+          "outsideSurfaceResistanceM2KW": 0.04,
+          "outsideThermalTemperatureC": -5,
+          "insideVapourPressurePa": 1402.1706862814053,
+          "outsideVapourPressurePa": 280.8266869461588,
+          "insideSurfaceRelativeHumidityPercent": 62.853807142931956,
+          "outsideSurfaceRelativeHumidityPercent": 68.23109766170771,
+          "condensedKgM2": 0.4458911387628424,
+          "evaporatedKgM2": 0,
+          "endStoredMassKgM2": 4.072472400700627,
+          "massConservationErrorKgM2": -2.7755575615628914E-16,
+          "subperiods": 1,
+          "wetInterfaces": [
+            {
+              "nodeIndex": 2,
+              "temperatureC": -3.952095808383234,
+              "saturationPressurePa": 438.66590918274454,
+              "endVapourPressurePa": 438.66590918274454,
+              "startMassKgM2": 3.6265812619377846,
+              "condensedKgM2": 0.4458911387628424,
+              "evaporatedKgM2": 0,
+              "endMassKgM2": 4.072472400700627,
+              "maximumMassKgM2": 4.072472400700627
+            }
+          ]
+        },
+        {
+          "sequence": 10,
+          "month": 7,
+          "days": 31,
+          "insideSurfaceResistanceM2KW": 0.1,
+          "outsideSurfaceResistanceM2KW": 0.04,
+          "outsideThermalTemperatureC": -5,
+          "insideVapourPressurePa": 1402.1706862814053,
+          "outsideVapourPressurePa": 280.8266869461588,
+          "insideSurfaceRelativeHumidityPercent": 62.853807142931956,
+          "outsideSurfaceRelativeHumidityPercent": 68.23109766170771,
+          "condensedKgM2": 0.4607541767216038,
+          "evaporatedKgM2": 0,
+          "endStoredMassKgM2": 4.533226577422231,
+          "massConservationErrorKgM2": 3.3306690738754696E-16,
+          "subperiods": 1,
+          "wetInterfaces": [
+            {
+              "nodeIndex": 2,
+              "temperatureC": -3.952095808383234,
+              "saturationPressurePa": 438.66590918274454,
+              "endVapourPressurePa": 438.66590918274454,
+              "startMassKgM2": 4.072472400700627,
+              "condensedKgM2": 0.4607541767216038,
+              "evaporatedKgM2": 0,
+              "endMassKgM2": 4.533226577422231,
+              "maximumMassKgM2": 4.533226577422231
+            }
+          ]
+        },
+        {
+          "sequence": 11,
+          "month": 8,
+          "days": 31,
+          "insideSurfaceResistanceM2KW": 0.1,
+          "outsideSurfaceResistanceM2KW": 0.04,
+          "outsideThermalTemperatureC": -5,
+          "insideVapourPressurePa": 1402.1706862814053,
+          "outsideVapourPressurePa": 280.8266869461588,
+          "insideSurfaceRelativeHumidityPercent": 62.853807142931956,
+          "outsideSurfaceRelativeHumidityPercent": 68.23109766170771,
+          "condensedKgM2": 0.4607541767216038,
+          "evaporatedKgM2": 0,
+          "endStoredMassKgM2": 4.993980754143835,
+          "massConservationErrorKgM2": 3.3306690738754696E-16,
+          "subperiods": 1,
+          "wetInterfaces": [
+            {
+              "nodeIndex": 2,
+              "temperatureC": -3.952095808383234,
+              "saturationPressurePa": 438.66590918274454,
+              "endVapourPressurePa": 438.66590918274454,
+              "startMassKgM2": 4.533226577422231,
+              "condensedKgM2": 0.4607541767216038,
+              "evaporatedKgM2": 0,
+              "endMassKgM2": 4.993980754143835,
+              "maximumMassKgM2": 4.993980754143835
+            }
+          ]
+        },
+        {
+          "sequence": 12,
+          "month": 9,
+          "days": 30,
+          "insideSurfaceResistanceM2KW": 0.1,
+          "outsideSurfaceResistanceM2KW": 0.04,
+          "outsideThermalTemperatureC": -5,
+          "insideVapourPressurePa": 1402.1706862814053,
+          "outsideVapourPressurePa": 280.8266869461588,
+          "insideSurfaceRelativeHumidityPercent": 62.853807142931956,
+          "outsideSurfaceRelativeHumidityPercent": 68.23109766170771,
+          "condensedKgM2": 0.4458911387628424,
+          "evaporatedKgM2": 0,
+          "endStoredMassKgM2": 5.439871892906678,
+          "massConservationErrorKgM2": 1.6653345369377348E-16,
+          "subperiods": 1,
+          "wetInterfaces": [
+            {
+              "nodeIndex": 2,
+              "temperatureC": -3.952095808383234,
+              "saturationPressurePa": 438.66590918274454,
+              "endVapourPressurePa": 438.66590918274454,
+              "startMassKgM2": 4.993980754143835,
+              "condensedKgM2": 0.4458911387628424,
+              "evaporatedKgM2": 0,
+              "endMassKgM2": 5.439871892906678,
+              "maximumMassKgM2": 5.439871892906678
+            }
+          ]
+        }
+      ],
+      "interfaceMaxima": [
+        {
+          "nodeIndex": 2,
+          "maximumMassKgM2": 5.439871892906678,
+          "month": 9,
+          "endMassKgM2": 5.439871892906678
+        }
+      ],
+      "totalCondensedKgM2": 5.439871892906678,
+      "totalEvaporatedKgM2": 0,
+      "residualCondensateKgM2": 5.439871892906678,
+      "standardProcedure": {
+        "standard": "ISO 13788:2012",
+        "clauses": "6.2\u20136.5; 4.1\u20134.4; Annex E",
+        "procedureVersion": "1.0.0",
+        "implementsSpecifiedProcedure": true,
+        "constructionComplianceAssessed": false,
+        "din4108Part3Assessment": false,
+        "requiredFurtherChecks": [
+          "Design-value and local-climate suitability",
+          "National construction-specific rules and method applicability",
+          "Maximum-water damage and runoff risk",
+          "Independent project-level specialist review"
+        ]
+      },
+      "provenance": {
+        "methodId": "iso13788-monthly-diffusion-balance",
+        "methodVersion": "1.0.0",
+        "inputSha256": "4401fe5b8e08b94baa9152df0178cc0d08c524cae7176f5792f0c28636627182",
+        "isNormative": false,
+        "limitations": [
+          "ISO 13788:2012 monthly interstitial diffusion procedure with stored water, multiple condensation interfaces and exact within-month drying events.",
+          "The legacy isNormative flag remains false because this record does not certify an entire building or establish DIN 4108-3 conformity; StandardProcedure identifies the implemented ISO calculation.",
+          "No capillary liquid transfer, airflow, rain absorption, moisture-dependent properties or hygroscopic storage. Explicit suitability and design-climate review are mandatory.",
+          "Annual re-evaporation is not by itself a material-damage or runoff approval; interface maxima require construction-specific assessment.",
+          "WetInterfaces lists interfaces with nonzero stored water or mass transfer; all calculation interfaces remain identified in Grid."
+        ]
+      }
+    }
+  },
+  "drying": {
+    "mode": "drying",
+    "input": {
+      "assembly": {
+        "climateCalendarYear": 2024,
+        "trialMonth": 10,
+        "heatFlow": "Upward",
+        "exteriorBoundary": "OutsideAir",
+        "climateTreatment": "WallAir",
+        "subdivideThermalLayers": false,
+        "layers": [
+          {
+            "name": "Single homogeneous layer",
+            "resistanceM2KW": 1,
+            "sdM": 1,
+            "kind": "HomogeneousLayer",
+            "designValueSource": "Synthetic dry layer"
+          }
+        ],
+        "months": [
+          {
+            "month": 1,
+            "insideTemperatureC": 20,
+            "outsideAirTemperatureC": 20,
+            "insideRelativeHumidityPercent": 40,
+            "outsideRelativeHumidityPercent": 40,
+            "equivalentOutsideTemperatureC": null
+          },
+          {
+            "month": 2,
+            "insideTemperatureC": 20,
+            "outsideAirTemperatureC": 20,
+            "insideRelativeHumidityPercent": 40,
+            "outsideRelativeHumidityPercent": 40,
+            "equivalentOutsideTemperatureC": null
+          },
+          {
+            "month": 3,
+            "insideTemperatureC": 20,
+            "outsideAirTemperatureC": 20,
+            "insideRelativeHumidityPercent": 40,
+            "outsideRelativeHumidityPercent": 40,
+            "equivalentOutsideTemperatureC": null
+          },
+          {
+            "month": 4,
+            "insideTemperatureC": 20,
+            "outsideAirTemperatureC": 20,
+            "insideRelativeHumidityPercent": 40,
+            "outsideRelativeHumidityPercent": 40,
+            "equivalentOutsideTemperatureC": null
+          },
+          {
+            "month": 5,
+            "insideTemperatureC": 20,
+            "outsideAirTemperatureC": 20,
+            "insideRelativeHumidityPercent": 40,
+            "outsideRelativeHumidityPercent": 40,
+            "equivalentOutsideTemperatureC": null
+          },
+          {
+            "month": 6,
+            "insideTemperatureC": 20,
+            "outsideAirTemperatureC": 20,
+            "insideRelativeHumidityPercent": 40,
+            "outsideRelativeHumidityPercent": 40,
+            "equivalentOutsideTemperatureC": null
+          },
+          {
+            "month": 7,
+            "insideTemperatureC": 20,
+            "outsideAirTemperatureC": 20,
+            "insideRelativeHumidityPercent": 40,
+            "outsideRelativeHumidityPercent": 40,
+            "equivalentOutsideTemperatureC": null
+          },
+          {
+            "month": 8,
+            "insideTemperatureC": 20,
+            "outsideAirTemperatureC": 20,
+            "insideRelativeHumidityPercent": 40,
+            "outsideRelativeHumidityPercent": 40,
+            "equivalentOutsideTemperatureC": null
+          },
+          {
+            "month": 9,
+            "insideTemperatureC": 20,
+            "outsideAirTemperatureC": 20,
+            "insideRelativeHumidityPercent": 40,
+            "outsideRelativeHumidityPercent": 40,
+            "equivalentOutsideTemperatureC": null
+          },
+          {
+            "month": 10,
+            "insideTemperatureC": 20,
+            "outsideAirTemperatureC": 20,
+            "insideRelativeHumidityPercent": 40,
+            "outsideRelativeHumidityPercent": 40,
+            "equivalentOutsideTemperatureC": null
+          },
+          {
+            "month": 11,
+            "insideTemperatureC": 20,
+            "outsideAirTemperatureC": 20,
+            "insideRelativeHumidityPercent": 40,
+            "outsideRelativeHumidityPercent": 40,
+            "equivalentOutsideTemperatureC": null
+          },
+          {
+            "month": 12,
+            "insideTemperatureC": 20,
+            "outsideAirTemperatureC": 20,
+            "insideRelativeHumidityPercent": 40,
+            "outsideRelativeHumidityPercent": 40,
+            "equivalentOutsideTemperatureC": null
+          }
+        ],
+        "applicability": {
+          "parallelHomogeneousLayers": true,
+          "noAirflowThroughAssembly": true,
+          "noRainAbsorption": true,
+          "negligibleCapillaryAndHygroscopicEffects": true,
+          "constantDesignProperties": true,
+          "climateSelectionReviewed": true,
+          "constructionReview": "Synthetic diffusion-only fixture; no real building approval",
+          "climateSource": "Synthetic calendar; no site climate data"
+        }
+      },
+      "wettedLayerIndex": 0,
+      "startingMonth": 2,
+      "initialAssessmentReview": "Synthetic 1 kg comparison; no measured construction moisture"
+    },
+    "result": {
+      "input": {
+        "assembly": {
+          "climateCalendarYear": 2024,
+          "trialMonth": 10,
+          "heatFlow": "Upward",
+          "exteriorBoundary": "OutsideAir",
+          "climateTreatment": "WallAir",
+          "subdivideThermalLayers": false,
+          "layers": [
+            {
+              "name": "Single homogeneous layer",
+              "resistanceM2KW": 1,
+              "sdM": 1,
+              "kind": "HomogeneousLayer",
+              "designValueSource": "Synthetic dry layer"
+            }
+          ],
+          "months": [
+            {
+              "month": 1,
+              "insideTemperatureC": 20,
+              "outsideAirTemperatureC": 20,
+              "insideRelativeHumidityPercent": 40,
+              "outsideRelativeHumidityPercent": 40,
+              "equivalentOutsideTemperatureC": null
+            },
+            {
+              "month": 2,
+              "insideTemperatureC": 20,
+              "outsideAirTemperatureC": 20,
+              "insideRelativeHumidityPercent": 40,
+              "outsideRelativeHumidityPercent": 40,
+              "equivalentOutsideTemperatureC": null
+            },
+            {
+              "month": 3,
+              "insideTemperatureC": 20,
+              "outsideAirTemperatureC": 20,
+              "insideRelativeHumidityPercent": 40,
+              "outsideRelativeHumidityPercent": 40,
+              "equivalentOutsideTemperatureC": null
+            },
+            {
+              "month": 4,
+              "insideTemperatureC": 20,
+              "outsideAirTemperatureC": 20,
+              "insideRelativeHumidityPercent": 40,
+              "outsideRelativeHumidityPercent": 40,
+              "equivalentOutsideTemperatureC": null
+            },
+            {
+              "month": 5,
+              "insideTemperatureC": 20,
+              "outsideAirTemperatureC": 20,
+              "insideRelativeHumidityPercent": 40,
+              "outsideRelativeHumidityPercent": 40,
+              "equivalentOutsideTemperatureC": null
+            },
+            {
+              "month": 6,
+              "insideTemperatureC": 20,
+              "outsideAirTemperatureC": 20,
+              "insideRelativeHumidityPercent": 40,
+              "outsideRelativeHumidityPercent": 40,
+              "equivalentOutsideTemperatureC": null
+            },
+            {
+              "month": 7,
+              "insideTemperatureC": 20,
+              "outsideAirTemperatureC": 20,
+              "insideRelativeHumidityPercent": 40,
+              "outsideRelativeHumidityPercent": 40,
+              "equivalentOutsideTemperatureC": null
+            },
+            {
+              "month": 8,
+              "insideTemperatureC": 20,
+              "outsideAirTemperatureC": 20,
+              "insideRelativeHumidityPercent": 40,
+              "outsideRelativeHumidityPercent": 40,
+              "equivalentOutsideTemperatureC": null
+            },
+            {
+              "month": 9,
+              "insideTemperatureC": 20,
+              "outsideAirTemperatureC": 20,
+              "insideRelativeHumidityPercent": 40,
+              "outsideRelativeHumidityPercent": 40,
+              "equivalentOutsideTemperatureC": null
+            },
+            {
+              "month": 10,
+              "insideTemperatureC": 20,
+              "outsideAirTemperatureC": 20,
+              "insideRelativeHumidityPercent": 40,
+              "outsideRelativeHumidityPercent": 40,
+              "equivalentOutsideTemperatureC": null
+            },
+            {
+              "month": 11,
+              "insideTemperatureC": 20,
+              "outsideAirTemperatureC": 20,
+              "insideRelativeHumidityPercent": 40,
+              "outsideRelativeHumidityPercent": 40,
+              "equivalentOutsideTemperatureC": null
+            },
+            {
+              "month": 12,
+              "insideTemperatureC": 20,
+              "outsideAirTemperatureC": 20,
+              "insideRelativeHumidityPercent": 40,
+              "outsideRelativeHumidityPercent": 40,
+              "equivalentOutsideTemperatureC": null
+            }
+          ],
+          "applicability": {
+            "parallelHomogeneousLayers": true,
+            "noAirflowThroughAssembly": true,
+            "noRainAbsorption": true,
+            "negligibleCapillaryAndHygroscopicEffects": true,
+            "constantDesignProperties": true,
+            "climateSelectionReviewed": true,
+            "constructionReview": "Synthetic diffusion-only fixture; no real building approval",
+            "climateSource": "Synthetic calendar; no site climate data"
+          }
+        },
+        "wettedLayerIndex": 0,
+        "startingMonth": 2,
+        "initialAssessmentReview": "Synthetic 1 kg comparison; no measured construction moisture"
+      },
+      "grid": [
+        {
+          "index": 0,
+          "layerIndex": -1,
+          "layerFraction": 0,
+          "name": "Inside surface",
+          "cumulativeResistanceM2KW": 0,
+          "cumulativeSdM": 0
+        },
+        {
+          "index": 1,
+          "layerIndex": 0,
+          "layerFraction": 0.5,
+          "name": "Within Single homogeneous layer: 1/2",
+          "cumulativeResistanceM2KW": 0.5,
+          "cumulativeSdM": 0.5
+        },
+        {
+          "index": 2,
+          "layerIndex": 0,
+          "layerFraction": 1,
+          "name": "After Single homogeneous layer",
+          "cumulativeResistanceM2KW": 1,
+          "cumulativeSdM": 1
+        }
+      ],
+      "initiallyWettedNode": 1,
+      "initialExcessMassKgM2": 1,
+      "dryingTimeMonths": 1,
+      "classification": "DriedWithoutRedistribution",
+      "months": [
+        {
+          "sequence": 1,
+          "month": 2,
+          "days": 29,
+          "insideSurfaceResistanceM2KW": 0.1,
+          "outsideSurfaceResistanceM2KW": 0.04,
+          "outsideThermalTemperatureC": 20,
+          "insideVapourPressurePa": 934.7804575209368,
+          "outsideVapourPressurePa": 934.7804575209368,
+          "insideSurfaceRelativeHumidityPercent": 40,
+          "outsideSurfaceRelativeHumidityPercent": 40,
+          "condensedKgM2": 0,
+          "evaporatedKgM2": 1,
+          "endStoredMassKgM2": 0,
+          "massConservationErrorKgM2": 0,
+          "subperiods": 2,
+          "wetInterfaces": [
+            {
+              "nodeIndex": 1,
+              "temperatureC": 20,
+              "saturationPressurePa": 2336.951143802342,
+              "endVapourPressurePa": 934.7804575209368,
+              "startMassKgM2": 1,
+              "condensedKgM2": 0,
+              "evaporatedKgM2": 1,
+              "endMassKgM2": 0,
+              "maximumMassKgM2": 1
+            }
+          ]
+        }
+      ],
+      "interfaceMaxima": [
+        {
+          "nodeIndex": 1,
+          "maximumMassKgM2": 1,
+          "month": 2,
+          "endMassKgM2": 0
+        }
+      ],
+      "residualMassKgM2": 0,
+      "standardProcedure": {
+        "standard": "ISO 13788:2012",
+        "clauses": "7.1\u20137.4 using the 6.4 monthly procedure; 4.1\u20134.4; Annex E",
+        "procedureVersion": "1.0.0",
+        "implementsSpecifiedProcedure": true,
+        "constructionComplianceAssessed": false,
+        "din4108Part3Assessment": false,
+        "requiredFurtherChecks": [
+          "Design-value and local-climate suitability",
+          "National construction-specific rules and method applicability",
+          "Maximum-water damage and runoff risk",
+          "Independent project-level specialist review"
+        ]
+      },
+      "provenance": {
+        "methodId": "iso13788-excess-water-drying",
+        "methodVersion": "1.0.0",
+        "inputSha256": "5de208fdfcf4d68ac97aeefe857b867e9a3c2f99b585ff59942e87c4eab3ca41",
+        "isNormative": false,
+        "limitations": [
+          "ISO 13788:2012 clause-7 comparison starts with exactly 1 kg/m\u00B2 excess water at the selected layer midpoint and repeats the explicitly supplied climate year for at most 120 months.",
+          "All interfaces are tracked; moving the water into another layer is not counted as drying the construction.",
+          "Drying time is the first completed monthly step with no remaining interface water; material degradation and runoff risks require separate review.",
+          "This is a standardized diffusion drying comparison, not a prediction of actual construction drying, a DIN 4108-3 verdict, or approval of supplied design data."
+        ]
+      }
+    }
+  },
+  "boards": {
+    "mode": "boards",
+    "input": {
+      "roofLengthM": 1,
+      "roofWidthM": 1.5,
+      "lowEdgeThicknessM": 0.08,
+      "slopePercent": 2,
+      "flowAxis": "AlongWidth",
+      "lowEdgeAtCoordinateZero": false,
+      "measuredRoofSource": "Synthetic survey",
+      "drainageDesignReview": "Independent drainage review required",
+      "catalog": {
+        "manufacturer": "Synthetic manufacturer",
+        "productRange": "Synthetic wedges",
+        "catalogRevision": "Test v1",
+        "sourceReference": "Synthetic catalogue; no supplier approval",
+        "boardRunM": 1,
+        "boardCrossM": 0.5,
+        "boards": [
+          {
+            "sku": "A",
+            "thinEdgeM": 0.08,
+            "thickEdgeM": 0.1,
+            "unitsPerPack": 4,
+            "pricePerBoardEur": 10
+          },
+          {
+            "sku": "B",
+            "thinEdgeM": 0.1,
+            "thickEdgeM": 0.12,
+            "unitsPerPack": 2,
+            "pricePerBoardEur": 20
+          }
+        ]
+      }
+    },
+    "result": {
+      "input": {
+        "roofLengthM": 1,
+        "roofWidthM": 1.5,
+        "lowEdgeThicknessM": 0.08,
+        "slopePercent": 2,
+        "flowAxis": "AlongWidth",
+        "lowEdgeAtCoordinateZero": false,
+        "measuredRoofSource": "Synthetic survey",
+        "drainageDesignReview": "Independent drainage review required",
+        "catalog": {
+          "manufacturer": "Synthetic manufacturer",
+          "productRange": "Synthetic wedges",
+          "catalogRevision": "Test v1",
+          "sourceReference": "Synthetic catalogue; no supplier approval",
+          "boardRunM": 1,
+          "boardCrossM": 0.5,
+          "boards": [
+            {
+              "sku": "A",
+              "thinEdgeM": 0.08,
+              "thickEdgeM": 0.1,
+              "unitsPerPack": 4,
+              "pricePerBoardEur": 10
+            },
+            {
+              "sku": "B",
+              "thinEdgeM": 0.1,
+              "thickEdgeM": 0.12,
+              "unitsPerPack": 2,
+              "pricePerBoardEur": 20
+            }
+          ]
+        }
+      },
+      "roofAreaM2": 1.5,
+      "thinEdgeM": 0.08,
+      "highEdgeM": 0.11,
+      "installedVolumeM3": 0.1425,
+      "requiredContinuousVolumeM3": 0.14250000000000002,
+      "cutWasteVolumeM3": 0.057499999999999996,
+      "installedBoards": 4,
+      "placements": [
+        {
+          "row": 1,
+          "column": 1,
+          "sku": "A",
+          "x": 0,
+          "y": 0.5,
+          "lengthM": 0.5,
+          "widthM": 1,
+          "rotationDegrees": 270,
+          "thinEdgeM": 0.08,
+          "thickEdgeM": 0.1,
+          "installedVolumeM3": 0.045,
+          "cutWasteVolumeM3": 0,
+          "requiresCut": false
+        },
+        {
+          "row": 2,
+          "column": 1,
+          "sku": "A",
+          "x": 0.5,
+          "y": 0.5,
+          "lengthM": 0.5,
+          "widthM": 1,
+          "rotationDegrees": 270,
+          "thinEdgeM": 0.08,
+          "thickEdgeM": 0.1,
+          "installedVolumeM3": 0.045,
+          "cutWasteVolumeM3": 0,
+          "requiresCut": false
+        },
+        {
+          "row": 1,
+          "column": 2,
+          "sku": "B",
+          "x": 0,
+          "y": 0,
+          "lengthM": 0.5,
+          "widthM": 0.5,
+          "rotationDegrees": 270,
+          "thinEdgeM": 0.1,
+          "thickEdgeM": 0.11,
+          "installedVolumeM3": 0.026250000000000002,
+          "cutWasteVolumeM3": 0.028749999999999998,
+          "requiresCut": true
+        },
+        {
+          "row": 2,
+          "column": 2,
+          "sku": "B",
+          "x": 0.5,
+          "y": 0,
+          "lengthM": 0.5,
+          "widthM": 0.5,
+          "rotationDegrees": 270,
+          "thinEdgeM": 0.1,
+          "thickEdgeM": 0.11,
+          "installedVolumeM3": 0.026250000000000002,
+          "cutWasteVolumeM3": 0.028749999999999998,
+          "requiresCut": true
+        }
+      ],
+      "orders": [
+        {
+          "sku": "A",
+          "usedBoards": 2,
+          "boardsRequiringCut": 0,
+          "unitsPerPack": 4,
+          "packsToOrder": 1,
+          "boardsOrdered": 4,
+          "additionalBoardsFromPacks": 2,
+          "installedVolumeM3": 0.09,
+          "unusedCutVolumeM3": 0,
+          "estimatedPackCostEur": 40
+        },
+        {
+          "sku": "B",
+          "usedBoards": 2,
+          "boardsRequiringCut": 2,
+          "unitsPerPack": 2,
+          "packsToOrder": 1,
+          "boardsOrdered": 2,
+          "additionalBoardsFromPacks": 0,
+          "installedVolumeM3": 0.052500000000000005,
+          "unusedCutVolumeM3": 0.057499999999999996,
+          "estimatedPackCostEur": 40
+        }
+      ],
+      "totalEstimatedPackCostEur": 80,
+      "catalogIndependentlyVerified": false,
+      "drainageOrStructureApproved": false,
+      "provenance": {
+        "methodId": "manufacturer-catalog-tapered-board-layout",
+        "methodVersion": "1.0.0",
+        "inputSha256": "7cfb95b5b82c874f61e9a3520beee870bb92bcf4809b968a12073c47a0f781c7",
+        "isNormative": false,
+        "limitations": [
+          "One-way affine slope towards a continuous low edge; every strip requires an explicitly supplied, dimensionally matching supplier SKU.",
+          "Supplier/manufacturer identity, catalogue revision and part data are user-supplied evidence, NOT independently verified product availability, approvals or certified characteristics.",
+          "Panel run and width are fixed per product range. Rectangular edge cuts are accounted as waste; offcuts are not reused. Pack rounding may add surplus whole boards.",
+          "No roof penetrations, drains inside the field, multiple slopes, sumps, saddles, staggered joints, mechanical fixings, adhesive, installation sequence, fire/wind-load or structural checking.",
+          "No independent drainage review, minimum-waterfall requirement, DIN/EN approval, material compatibility, actual lead times or final manufacturer sign-off."
+        ]
+      }
+    }
+  },
+  "unknown": {
+    "mode": "boards",
+    "input": {
+      "roofLengthM": 1,
+      "roofWidthM": 1.5,
+      "lowEdgeThicknessM": 0.08,
+      "slopePercent": 2,
+      "flowAxis": "AlongWidth",
+      "lowEdgeAtCoordinateZero": false,
+      "measuredRoofSource": "Synthetic survey",
+      "drainageDesignReview": "Independent drainage review required",
+      "catalog": {
+        "manufacturer": "Synthetic manufacturer",
+        "productRange": "Synthetic wedges",
+        "catalogRevision": "Test v1",
+        "sourceReference": "Synthetic catalogue; no supplier approval",
+        "boardRunM": 1,
+        "boardCrossM": 0.5,
+        "boards": [
+          {
+            "sku": "A",
+            "thinEdgeM": 0.08,
+            "thickEdgeM": 0.1,
+            "unitsPerPack": 4,
+            "pricePerBoardEur": null
+          },
+          {
+            "sku": "B",
+            "thinEdgeM": 0.1,
+            "thickEdgeM": 0.12,
+            "unitsPerPack": 2,
+            "pricePerBoardEur": null
+          }
+        ]
+      }
+    },
+    "result": {
+      "input": {
+        "roofLengthM": 1,
+        "roofWidthM": 1.5,
+        "lowEdgeThicknessM": 0.08,
+        "slopePercent": 2,
+        "flowAxis": "AlongWidth",
+        "lowEdgeAtCoordinateZero": false,
+        "measuredRoofSource": "Synthetic survey",
+        "drainageDesignReview": "Independent drainage review required",
+        "catalog": {
+          "manufacturer": "Synthetic manufacturer",
+          "productRange": "Synthetic wedges",
+          "catalogRevision": "Test v1",
+          "sourceReference": "Synthetic catalogue; no supplier approval",
+          "boardRunM": 1,
+          "boardCrossM": 0.5,
+          "boards": [
+            {
+              "sku": "A",
+              "thinEdgeM": 0.08,
+              "thickEdgeM": 0.1,
+              "unitsPerPack": 4,
+              "pricePerBoardEur": null
+            },
+            {
+              "sku": "B",
+              "thinEdgeM": 0.1,
+              "thickEdgeM": 0.12,
+              "unitsPerPack": 2,
+              "pricePerBoardEur": null
+            }
+          ]
+        }
+      },
+      "roofAreaM2": 1.5,
+      "thinEdgeM": 0.08,
+      "highEdgeM": 0.11,
+      "installedVolumeM3": 0.1425,
+      "requiredContinuousVolumeM3": 0.14250000000000002,
+      "cutWasteVolumeM3": 0.057499999999999996,
+      "installedBoards": 4,
+      "placements": [
+        {
+          "row": 1,
+          "column": 1,
+          "sku": "A",
+          "x": 0,
+          "y": 0.5,
+          "lengthM": 0.5,
+          "widthM": 1,
+          "rotationDegrees": 270,
+          "thinEdgeM": 0.08,
+          "thickEdgeM": 0.1,
+          "installedVolumeM3": 0.045,
+          "cutWasteVolumeM3": 0,
+          "requiresCut": false
+        },
+        {
+          "row": 2,
+          "column": 1,
+          "sku": "A",
+          "x": 0.5,
+          "y": 0.5,
+          "lengthM": 0.5,
+          "widthM": 1,
+          "rotationDegrees": 270,
+          "thinEdgeM": 0.08,
+          "thickEdgeM": 0.1,
+          "installedVolumeM3": 0.045,
+          "cutWasteVolumeM3": 0,
+          "requiresCut": false
+        },
+        {
+          "row": 1,
+          "column": 2,
+          "sku": "B",
+          "x": 0,
+          "y": 0,
+          "lengthM": 0.5,
+          "widthM": 0.5,
+          "rotationDegrees": 270,
+          "thinEdgeM": 0.1,
+          "thickEdgeM": 0.11,
+          "installedVolumeM3": 0.026250000000000002,
+          "cutWasteVolumeM3": 0.028749999999999998,
+          "requiresCut": true
+        },
+        {
+          "row": 2,
+          "column": 2,
+          "sku": "B",
+          "x": 0.5,
+          "y": 0,
+          "lengthM": 0.5,
+          "widthM": 0.5,
+          "rotationDegrees": 270,
+          "thinEdgeM": 0.1,
+          "thickEdgeM": 0.11,
+          "installedVolumeM3": 0.026250000000000002,
+          "cutWasteVolumeM3": 0.028749999999999998,
+          "requiresCut": true
+        }
+      ],
+      "orders": [
+        {
+          "sku": "A",
+          "usedBoards": 2,
+          "boardsRequiringCut": 0,
+          "unitsPerPack": 4,
+          "packsToOrder": 1,
+          "boardsOrdered": 4,
+          "additionalBoardsFromPacks": 2,
+          "installedVolumeM3": 0.09,
+          "unusedCutVolumeM3": 0,
+          "estimatedPackCostEur": null
+        },
+        {
+          "sku": "B",
+          "usedBoards": 2,
+          "boardsRequiringCut": 2,
+          "unitsPerPack": 2,
+          "packsToOrder": 1,
+          "boardsOrdered": 2,
+          "additionalBoardsFromPacks": 0,
+          "installedVolumeM3": 0.052500000000000005,
+          "unusedCutVolumeM3": 0.057499999999999996,
+          "estimatedPackCostEur": null
+        }
+      ],
+      "totalEstimatedPackCostEur": null,
+      "catalogIndependentlyVerified": false,
+      "drainageOrStructureApproved": false,
+      "provenance": {
+        "methodId": "manufacturer-catalog-tapered-board-layout",
+        "methodVersion": "1.0.0",
+        "inputSha256": "25cca693b53e344d26cc82363a9855a0632b40f92b240e18ee3fb423fb119255",
+        "isNormative": false,
+        "limitations": [
+          "One-way affine slope towards a continuous low edge; every strip requires an explicitly supplied, dimensionally matching supplier SKU.",
+          "Supplier/manufacturer identity, catalogue revision and part data are user-supplied evidence, NOT independently verified product availability, approvals or certified characteristics.",
+          "Panel run and width are fixed per product range. Rectangular edge cuts are accounted as waste; offcuts are not reused. Pack rounding may add surplus whole boards.",
+          "No roof penetrations, drains inside the field, multiple slopes, sumps, saddles, staggered joints, mechanical fixings, adhesive, installation sequence, fire/wind-load or structural checking.",
+          "No independent drainage review, minimum-waterfall requirement, DIN/EN approval, material compatibility, actual lead times or final manufacturer sign-off."
+        ]
+      }
+    }
+  },
+  "assembly": {
+    "mode": "assembly",
+    "input": {
+      "roofLengthM": 4,
+      "roofWidthM": 1,
+      "planRevision": "Synthetic plan v1",
+      "surveySource": "Synthetic field survey",
+      "drainageReview": "Drainage review required",
+      "fields": [
+        {
+          "fieldId": "West",
+          "originX": 0,
+          "originY": 0,
+          "layout": {
+            "roofLengthM": 2,
+            "roofWidthM": 1,
+            "lowEdgeThicknessM": 0.08,
+            "slopePercent": 2,
+            "flowAxis": "AlongLength",
+            "lowEdgeAtCoordinateZero": true,
+            "measuredRoofSource": "Synthetic field survey",
+            "drainageDesignReview": "Drainage review required",
+            "catalog": {
+              "manufacturer": "Synthetic manufacturer",
+              "productRange": "Synthetic wedges",
+              "catalogRevision": "Test v1",
+              "sourceReference": "Synthetic catalogue; no supplier approval",
+              "boardRunM": 1,
+              "boardCrossM": 0.5,
+              "boards": [
+                {
+                  "sku": "A",
+                  "thinEdgeM": 0.08,
+                  "thickEdgeM": 0.1,
+                  "unitsPerPack": 4,
+                  "pricePerBoardEur": 10
+                },
+                {
+                  "sku": "B",
+                  "thinEdgeM": 0.1,
+                  "thickEdgeM": 0.12,
+                  "unitsPerPack": 2,
+                  "pricePerBoardEur": 20
+                }
+              ]
+            }
+          }
+        },
+        {
+          "fieldId": "East",
+          "originX": 2,
+          "originY": 0,
+          "layout": {
+            "roofLengthM": 2,
+            "roofWidthM": 1,
+            "lowEdgeThicknessM": 0.08,
+            "slopePercent": 2,
+            "flowAxis": "AlongLength",
+            "lowEdgeAtCoordinateZero": false,
+            "measuredRoofSource": "Synthetic field survey",
+            "drainageDesignReview": "Drainage review required",
+            "catalog": {
+              "manufacturer": "Synthetic manufacturer",
+              "productRange": "Synthetic wedges",
+              "catalogRevision": "Test v1",
+              "sourceReference": "Synthetic catalogue; no supplier approval",
+              "boardRunM": 1,
+              "boardCrossM": 0.5,
+              "boards": [
+                {
+                  "sku": "A",
+                  "thinEdgeM": 0.08,
+                  "thickEdgeM": 0.1,
+                  "unitsPerPack": 4,
+                  "pricePerBoardEur": 10
+                },
+                {
+                  "sku": "B",
+                  "thinEdgeM": 0.1,
+                  "thickEdgeM": 0.12,
+                  "unitsPerPack": 2,
+                  "pricePerBoardEur": 20
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "result": {
+      "input": {
+        "roofLengthM": 4,
+        "roofWidthM": 1,
+        "planRevision": "Synthetic plan v1",
+        "surveySource": "Synthetic field survey",
+        "drainageReview": "Drainage review required",
+        "fields": [
+          {
+            "fieldId": "East",
+            "originX": 2,
+            "originY": 0,
+            "layout": {
+              "roofLengthM": 2,
+              "roofWidthM": 1,
+              "lowEdgeThicknessM": 0.08,
+              "slopePercent": 2,
+              "flowAxis": "AlongLength",
+              "lowEdgeAtCoordinateZero": false,
+              "measuredRoofSource": "Synthetic field survey",
+              "drainageDesignReview": "Drainage review required",
+              "catalog": {
+                "manufacturer": "Synthetic manufacturer",
+                "productRange": "Synthetic wedges",
+                "catalogRevision": "Test v1",
+                "sourceReference": "Synthetic catalogue; no supplier approval",
+                "boardRunM": 1,
+                "boardCrossM": 0.5,
+                "boards": [
+                  {
+                    "sku": "A",
+                    "thinEdgeM": 0.08,
+                    "thickEdgeM": 0.1,
+                    "unitsPerPack": 4,
+                    "pricePerBoardEur": 10
+                  },
+                  {
+                    "sku": "B",
+                    "thinEdgeM": 0.1,
+                    "thickEdgeM": 0.12,
+                    "unitsPerPack": 2,
+                    "pricePerBoardEur": 20
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "fieldId": "West",
+            "originX": 0,
+            "originY": 0,
+            "layout": {
+              "roofLengthM": 2,
+              "roofWidthM": 1,
+              "lowEdgeThicknessM": 0.08,
+              "slopePercent": 2,
+              "flowAxis": "AlongLength",
+              "lowEdgeAtCoordinateZero": true,
+              "measuredRoofSource": "Synthetic field survey",
+              "drainageDesignReview": "Drainage review required",
+              "catalog": {
+                "manufacturer": "Synthetic manufacturer",
+                "productRange": "Synthetic wedges",
+                "catalogRevision": "Test v1",
+                "sourceReference": "Synthetic catalogue; no supplier approval",
+                "boardRunM": 1,
+                "boardCrossM": 0.5,
+                "boards": [
+                  {
+                    "sku": "A",
+                    "thinEdgeM": 0.08,
+                    "thickEdgeM": 0.1,
+                    "unitsPerPack": 4,
+                    "pricePerBoardEur": 10
+                  },
+                  {
+                    "sku": "B",
+                    "thinEdgeM": 0.1,
+                    "thickEdgeM": 0.12,
+                    "unitsPerPack": 2,
+                    "pricePerBoardEur": 20
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "roofAreaM2": 4,
+      "installedVolumeM3": 0.4,
+      "cutWasteVolumeM3": 0,
+      "installedBoards": 8,
+      "fields": [
+        {
+          "fieldId": "East",
+          "originX": 2,
+          "originY": 0,
+          "layout": {
+            "input": {
+              "roofLengthM": 2,
+              "roofWidthM": 1,
+              "lowEdgeThicknessM": 0.08,
+              "slopePercent": 2,
+              "flowAxis": "AlongLength",
+              "lowEdgeAtCoordinateZero": false,
+              "measuredRoofSource": "Synthetic field survey",
+              "drainageDesignReview": "Drainage review required",
+              "catalog": {
+                "manufacturer": "Synthetic manufacturer",
+                "productRange": "Synthetic wedges",
+                "catalogRevision": "Test v1",
+                "sourceReference": "Synthetic catalogue; no supplier approval",
+                "boardRunM": 1,
+                "boardCrossM": 0.5,
+                "boards": [
+                  {
+                    "sku": "A",
+                    "thinEdgeM": 0.08,
+                    "thickEdgeM": 0.1,
+                    "unitsPerPack": 4,
+                    "pricePerBoardEur": 10
+                  },
+                  {
+                    "sku": "B",
+                    "thinEdgeM": 0.1,
+                    "thickEdgeM": 0.12,
+                    "unitsPerPack": 2,
+                    "pricePerBoardEur": 20
+                  }
+                ]
+              }
+            },
+            "roofAreaM2": 2,
+            "thinEdgeM": 0.08,
+            "highEdgeM": 0.12,
+            "installedVolumeM3": 0.2,
+            "requiredContinuousVolumeM3": 0.2,
+            "cutWasteVolumeM3": 0,
+            "installedBoards": 4,
+            "placements": [
+              {
+                "row": 1,
+                "column": 1,
+                "sku": "A",
+                "x": 1,
+                "y": 0,
+                "lengthM": 1,
+                "widthM": 0.5,
+                "rotationDegrees": 180,
+                "thinEdgeM": 0.08,
+                "thickEdgeM": 0.1,
+                "installedVolumeM3": 0.045,
+                "cutWasteVolumeM3": 0,
+                "requiresCut": false
+              },
+              {
+                "row": 2,
+                "column": 1,
+                "sku": "A",
+                "x": 1,
+                "y": 0.5,
+                "lengthM": 1,
+                "widthM": 0.5,
+                "rotationDegrees": 180,
+                "thinEdgeM": 0.08,
+                "thickEdgeM": 0.1,
+                "installedVolumeM3": 0.045,
+                "cutWasteVolumeM3": 0,
+                "requiresCut": false
+              },
+              {
+                "row": 1,
+                "column": 2,
+                "sku": "B",
+                "x": 0,
+                "y": 0,
+                "lengthM": 1,
+                "widthM": 0.5,
+                "rotationDegrees": 180,
+                "thinEdgeM": 0.1,
+                "thickEdgeM": 0.12000000000000001,
+                "installedVolumeM3": 0.05500000000000001,
+                "cutWasteVolumeM3": 0,
+                "requiresCut": false
+              },
+              {
+                "row": 2,
+                "column": 2,
+                "sku": "B",
+                "x": 0,
+                "y": 0.5,
+                "lengthM": 1,
+                "widthM": 0.5,
+                "rotationDegrees": 180,
+                "thinEdgeM": 0.1,
+                "thickEdgeM": 0.12000000000000001,
+                "installedVolumeM3": 0.05500000000000001,
+                "cutWasteVolumeM3": 0,
+                "requiresCut": false
+              }
+            ],
+            "orders": [
+              {
+                "sku": "A",
+                "usedBoards": 2,
+                "boardsRequiringCut": 0,
+                "unitsPerPack": 4,
+                "packsToOrder": 1,
+                "boardsOrdered": 4,
+                "additionalBoardsFromPacks": 2,
+                "installedVolumeM3": 0.09,
+                "unusedCutVolumeM3": 0,
+                "estimatedPackCostEur": 40
+              },
+              {
+                "sku": "B",
+                "usedBoards": 2,
+                "boardsRequiringCut": 0,
+                "unitsPerPack": 2,
+                "packsToOrder": 1,
+                "boardsOrdered": 2,
+                "additionalBoardsFromPacks": 0,
+                "installedVolumeM3": 0.11000000000000001,
+                "unusedCutVolumeM3": 0,
+                "estimatedPackCostEur": 40
+              }
+            ],
+            "totalEstimatedPackCostEur": 80,
+            "catalogIndependentlyVerified": false,
+            "drainageOrStructureApproved": false,
+            "provenance": {
+              "methodId": "manufacturer-catalog-tapered-board-layout",
+              "methodVersion": "1.0.0",
+              "inputSha256": "ac8eb6f1cea6a402654d0d4656682984c421bf5626f97b5eac477ec8b41e08e8",
+              "isNormative": false,
+              "limitations": [
+                "One-way affine slope towards a continuous low edge; every strip requires an explicitly supplied, dimensionally matching supplier SKU.",
+                "Supplier/manufacturer identity, catalogue revision and part data are user-supplied evidence, NOT independently verified product availability, approvals or certified characteristics.",
+                "Panel run and width are fixed per product range. Rectangular edge cuts are accounted as waste; offcuts are not reused. Pack rounding may add surplus whole boards.",
+                "No roof penetrations, drains inside the field, multiple slopes, sumps, saddles, staggered joints, mechanical fixings, adhesive, installation sequence, fire/wind-load or structural checking.",
+                "No independent drainage review, minimum-waterfall requirement, DIN/EN approval, material compatibility, actual lead times or final manufacturer sign-off."
+              ]
+            }
+          }
+        },
+        {
+          "fieldId": "West",
+          "originX": 0,
+          "originY": 0,
+          "layout": {
+            "input": {
+              "roofLengthM": 2,
+              "roofWidthM": 1,
+              "lowEdgeThicknessM": 0.08,
+              "slopePercent": 2,
+              "flowAxis": "AlongLength",
+              "lowEdgeAtCoordinateZero": true,
+              "measuredRoofSource": "Synthetic field survey",
+              "drainageDesignReview": "Drainage review required",
+              "catalog": {
+                "manufacturer": "Synthetic manufacturer",
+                "productRange": "Synthetic wedges",
+                "catalogRevision": "Test v1",
+                "sourceReference": "Synthetic catalogue; no supplier approval",
+                "boardRunM": 1,
+                "boardCrossM": 0.5,
+                "boards": [
+                  {
+                    "sku": "A",
+                    "thinEdgeM": 0.08,
+                    "thickEdgeM": 0.1,
+                    "unitsPerPack": 4,
+                    "pricePerBoardEur": 10
+                  },
+                  {
+                    "sku": "B",
+                    "thinEdgeM": 0.1,
+                    "thickEdgeM": 0.12,
+                    "unitsPerPack": 2,
+                    "pricePerBoardEur": 20
+                  }
+                ]
+              }
+            },
+            "roofAreaM2": 2,
+            "thinEdgeM": 0.08,
+            "highEdgeM": 0.12,
+            "installedVolumeM3": 0.2,
+            "requiredContinuousVolumeM3": 0.2,
+            "cutWasteVolumeM3": 0,
+            "installedBoards": 4,
+            "placements": [
+              {
+                "row": 1,
+                "column": 1,
+                "sku": "A",
+                "x": 0,
+                "y": 0,
+                "lengthM": 1,
+                "widthM": 0.5,
+                "rotationDegrees": 0,
+                "thinEdgeM": 0.08,
+                "thickEdgeM": 0.1,
+                "installedVolumeM3": 0.045,
+                "cutWasteVolumeM3": 0,
+                "requiresCut": false
+              },
+              {
+                "row": 2,
+                "column": 1,
+                "sku": "A",
+                "x": 0,
+                "y": 0.5,
+                "lengthM": 1,
+                "widthM": 0.5,
+                "rotationDegrees": 0,
+                "thinEdgeM": 0.08,
+                "thickEdgeM": 0.1,
+                "installedVolumeM3": 0.045,
+                "cutWasteVolumeM3": 0,
+                "requiresCut": false
+              },
+              {
+                "row": 1,
+                "column": 2,
+                "sku": "B",
+                "x": 1,
+                "y": 0,
+                "lengthM": 1,
+                "widthM": 0.5,
+                "rotationDegrees": 0,
+                "thinEdgeM": 0.1,
+                "thickEdgeM": 0.12000000000000001,
+                "installedVolumeM3": 0.05500000000000001,
+                "cutWasteVolumeM3": 0,
+                "requiresCut": false
+              },
+              {
+                "row": 2,
+                "column": 2,
+                "sku": "B",
+                "x": 1,
+                "y": 0.5,
+                "lengthM": 1,
+                "widthM": 0.5,
+                "rotationDegrees": 0,
+                "thinEdgeM": 0.1,
+                "thickEdgeM": 0.12000000000000001,
+                "installedVolumeM3": 0.05500000000000001,
+                "cutWasteVolumeM3": 0,
+                "requiresCut": false
+              }
+            ],
+            "orders": [
+              {
+                "sku": "A",
+                "usedBoards": 2,
+                "boardsRequiringCut": 0,
+                "unitsPerPack": 4,
+                "packsToOrder": 1,
+                "boardsOrdered": 4,
+                "additionalBoardsFromPacks": 2,
+                "installedVolumeM3": 0.09,
+                "unusedCutVolumeM3": 0,
+                "estimatedPackCostEur": 40
+              },
+              {
+                "sku": "B",
+                "usedBoards": 2,
+                "boardsRequiringCut": 0,
+                "unitsPerPack": 2,
+                "packsToOrder": 1,
+                "boardsOrdered": 2,
+                "additionalBoardsFromPacks": 0,
+                "installedVolumeM3": 0.11000000000000001,
+                "unusedCutVolumeM3": 0,
+                "estimatedPackCostEur": 40
+              }
+            ],
+            "totalEstimatedPackCostEur": 80,
+            "catalogIndependentlyVerified": false,
+            "drainageOrStructureApproved": false,
+            "provenance": {
+              "methodId": "manufacturer-catalog-tapered-board-layout",
+              "methodVersion": "1.0.0",
+              "inputSha256": "656613a13afe6d191d0f1875bc68a2b41e9649282174b53faf3cac68886f4eb1",
+              "isNormative": false,
+              "limitations": [
+                "One-way affine slope towards a continuous low edge; every strip requires an explicitly supplied, dimensionally matching supplier SKU.",
+                "Supplier/manufacturer identity, catalogue revision and part data are user-supplied evidence, NOT independently verified product availability, approvals or certified characteristics.",
+                "Panel run and width are fixed per product range. Rectangular edge cuts are accounted as waste; offcuts are not reused. Pack rounding may add surplus whole boards.",
+                "No roof penetrations, drains inside the field, multiple slopes, sumps, saddles, staggered joints, mechanical fixings, adhesive, installation sequence, fire/wind-load or structural checking.",
+                "No independent drainage review, minimum-waterfall requirement, DIN/EN approval, material compatibility, actual lead times or final manufacturer sign-off."
+              ]
+            }
+          }
+        }
+      ],
+      "placements": [
+        {
+          "fieldId": "East",
+          "globalX": 3,
+          "globalY": 0,
+          "panel": {
+            "row": 1,
+            "column": 1,
+            "sku": "A",
+            "x": 1,
+            "y": 0,
+            "lengthM": 1,
+            "widthM": 0.5,
+            "rotationDegrees": 180,
+            "thinEdgeM": 0.08,
+            "thickEdgeM": 0.1,
+            "installedVolumeM3": 0.045,
+            "cutWasteVolumeM3": 0,
+            "requiresCut": false
+          }
+        },
+        {
+          "fieldId": "East",
+          "globalX": 3,
+          "globalY": 0.5,
+          "panel": {
+            "row": 2,
+            "column": 1,
+            "sku": "A",
+            "x": 1,
+            "y": 0.5,
+            "lengthM": 1,
+            "widthM": 0.5,
+            "rotationDegrees": 180,
+            "thinEdgeM": 0.08,
+            "thickEdgeM": 0.1,
+            "installedVolumeM3": 0.045,
+            "cutWasteVolumeM3": 0,
+            "requiresCut": false
+          }
+        },
+        {
+          "fieldId": "East",
+          "globalX": 2,
+          "globalY": 0,
+          "panel": {
+            "row": 1,
+            "column": 2,
+            "sku": "B",
+            "x": 0,
+            "y": 0,
+            "lengthM": 1,
+            "widthM": 0.5,
+            "rotationDegrees": 180,
+            "thinEdgeM": 0.1,
+            "thickEdgeM": 0.12000000000000001,
+            "installedVolumeM3": 0.05500000000000001,
+            "cutWasteVolumeM3": 0,
+            "requiresCut": false
+          }
+        },
+        {
+          "fieldId": "East",
+          "globalX": 2,
+          "globalY": 0.5,
+          "panel": {
+            "row": 2,
+            "column": 2,
+            "sku": "B",
+            "x": 0,
+            "y": 0.5,
+            "lengthM": 1,
+            "widthM": 0.5,
+            "rotationDegrees": 180,
+            "thinEdgeM": 0.1,
+            "thickEdgeM": 0.12000000000000001,
+            "installedVolumeM3": 0.05500000000000001,
+            "cutWasteVolumeM3": 0,
+            "requiresCut": false
+          }
+        },
+        {
+          "fieldId": "West",
+          "globalX": 0,
+          "globalY": 0,
+          "panel": {
+            "row": 1,
+            "column": 1,
+            "sku": "A",
+            "x": 0,
+            "y": 0,
+            "lengthM": 1,
+            "widthM": 0.5,
+            "rotationDegrees": 0,
+            "thinEdgeM": 0.08,
+            "thickEdgeM": 0.1,
+            "installedVolumeM3": 0.045,
+            "cutWasteVolumeM3": 0,
+            "requiresCut": false
+          }
+        },
+        {
+          "fieldId": "West",
+          "globalX": 0,
+          "globalY": 0.5,
+          "panel": {
+            "row": 2,
+            "column": 1,
+            "sku": "A",
+            "x": 0,
+            "y": 0.5,
+            "lengthM": 1,
+            "widthM": 0.5,
+            "rotationDegrees": 0,
+            "thinEdgeM": 0.08,
+            "thickEdgeM": 0.1,
+            "installedVolumeM3": 0.045,
+            "cutWasteVolumeM3": 0,
+            "requiresCut": false
+          }
+        },
+        {
+          "fieldId": "West",
+          "globalX": 1,
+          "globalY": 0,
+          "panel": {
+            "row": 1,
+            "column": 2,
+            "sku": "B",
+            "x": 1,
+            "y": 0,
+            "lengthM": 1,
+            "widthM": 0.5,
+            "rotationDegrees": 0,
+            "thinEdgeM": 0.1,
+            "thickEdgeM": 0.12000000000000001,
+            "installedVolumeM3": 0.05500000000000001,
+            "cutWasteVolumeM3": 0,
+            "requiresCut": false
+          }
+        },
+        {
+          "fieldId": "West",
+          "globalX": 1,
+          "globalY": 0.5,
+          "panel": {
+            "row": 2,
+            "column": 2,
+            "sku": "B",
+            "x": 1,
+            "y": 0.5,
+            "lengthM": 1,
+            "widthM": 0.5,
+            "rotationDegrees": 0,
+            "thinEdgeM": 0.1,
+            "thickEdgeM": 0.12000000000000001,
+            "installedVolumeM3": 0.05500000000000001,
+            "cutWasteVolumeM3": 0,
+            "requiresCut": false
+          }
+        }
+      ],
+      "orders": [
+        {
+          "manufacturer": "Synthetic manufacturer",
+          "productRange": "Synthetic wedges",
+          "catalogRevision": "Test v1",
+          "sourceReference": "Synthetic catalogue; no supplier approval",
+          "quantity": {
+            "sku": "A",
+            "usedBoards": 4,
+            "boardsRequiringCut": 0,
+            "unitsPerPack": 4,
+            "packsToOrder": 1,
+            "boardsOrdered": 4,
+            "additionalBoardsFromPacks": 0,
+            "installedVolumeM3": 0.18,
+            "unusedCutVolumeM3": 0,
+            "estimatedPackCostEur": 40
+          }
+        },
+        {
+          "manufacturer": "Synthetic manufacturer",
+          "productRange": "Synthetic wedges",
+          "catalogRevision": "Test v1",
+          "sourceReference": "Synthetic catalogue; no supplier approval",
+          "quantity": {
+            "sku": "B",
+            "usedBoards": 4,
+            "boardsRequiringCut": 0,
+            "unitsPerPack": 2,
+            "packsToOrder": 2,
+            "boardsOrdered": 4,
+            "additionalBoardsFromPacks": 0,
+            "installedVolumeM3": 0.22000000000000003,
+            "unusedCutVolumeM3": 0,
+            "estimatedPackCostEur": 80
+          }
+        }
+      ],
+      "totalEstimatedPackCostEur": 120,
+      "catalogIndependentlyVerified": false,
+      "drainageOrStructureApproved": false,
+      "provenance": {
+        "methodId": "manufacturer-catalog-multifield-tapered-board-layout",
+        "methodVersion": "1.0.0",
+        "inputSha256": "59533707e523efd40894b5b33965731efff1edefff5dc9552980fc37fa28a960",
+        "isNormative": false,
+        "limitations": [
+          "Partition of a surveyed rectangle into adjacent one-way wedge fields, with collision, full-area and boundary-thickness checks.",
+          "Each field is calculated only against explicitly supplied supplier/revision/SKU data, without substituting unavailable stock.",
+          "Identical catalogue and SKU lines share pack-order rounding across fields; different revisions and sources are never merged.",
+          "No point drains, valley/saddle cutting, taper transformations, offcut reuse, penetrations or installation-sequence optimization.",
+          "Matching interface thickness does not verify waterproofing, falls, drainage capacity, wind uplift, statics or any manufacturer approval.",
+          "The result is a non-normative, unapproved estimate and must not be used as a binding fabrication or purchasing order."
+        ]
+      }
+    }
+  }
+}
