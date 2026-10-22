@@ -28,9 +28,11 @@ jobs:
           include-hidden-files: true
   manufacturer-reference:
     runs-on: ubuntu-24.04
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - name: Verify bounded download retries and original-byte checks
+        run: python3 -m unittest discover -s scripts -p 'test_manufacturer_reference_inventory.py' -v
       - name: Install local PDF text reader
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends poppler-utils
       - name: Verify manufacturer originals and extract dimension facts without republishing manuals
