@@ -12,8 +12,9 @@ Der Arbeitsplatz `/equipment-inspections` verbindet Geräte- und Fahrzeugstammda
 4. Ein negatives Ergebnis benötigt eine Beschreibung. Es sperrt die Ressource sofort für neue Zuordnungen. Bestehende Einsätze bleiben erhalten; die Oberfläche nennt die Zahl der betroffenen noch nicht beendeten Einsätze.
 5. Eine dokumentierte positive Einsatzbeurteilung benötigt einen ausdrücklich angegebenen nächsten Termin. Die zusätzliche Auswahl **wieder verfügbar** ist erforderlich, um eine zuvor nicht verfügbare Ressource wieder freizugeben. Ohne diese Auswahl bleibt eine manuelle Nichtverfügbarkeit erhalten.
 6. Einen nicht durchgeführten Termin mit Begründung absagen. Bereits abgeschlossene oder abgesagte Vorgänge bleiben unveränderlich erhalten. Ein neuer Termin erzeugt einen neuen Vorgang.
+7. Zum abgeschlossenen Ergebnis bei Bedarf [Originaldateien](equipment-originals.md) als PDF, PNG oder JPEG ergänzen. Diese werden mit dem Abschlussdigest und einer konkreten Speicherversion verbunden; Ergebnis und Gerätestand bleiben unverändert.
 
-`Passed` bedeutet in allen drei Vorgangsarten eine dokumentierte positive Einsatzbeurteilung. Eine Reparatur kann damit nach einer solchen Beurteilung die Sperre aufheben. Die Software bestimmt weder gesetzliche Prüffristen noch die Qualifikation der prüfenden Person. Die Belegreferenz ist Text, kein hochgeladenes oder inhaltlich geprüftes Originaldokument. Für dieselbe Ressource ist derzeit ein gemeinsamer Prüfkalender vorgesehen; parallele unterschiedliche Prüfarten haben noch keine unabhängigen Fristen.
+`Passed` bedeutet in allen drei Vorgangsarten eine dokumentierte positive Einsatzbeurteilung. Eine Reparatur kann damit nach einer solchen Beurteilung die Sperre aufheben. Die Software bestimmt weder gesetzliche Prüffristen noch die Qualifikation der prüfenden Person. Die Belegreferenz bleibt ein Textfeld; separat hochgeladene Originaldateien erhalten ihre eigene prüfungsgebundene Akte. Ihre unveränderten Bytes werden geprüft, ihre fachliche Richtigkeit wird nicht automatisch bestätigt. Für dieselbe Ressource ist derzeit ein gemeinsamer Prüfkalender vorgesehen; parallele unterschiedliche Prüfarten haben noch keine unabhängigen Fristen.
 
 ## Disposition und Stammdaten
 
@@ -54,4 +55,4 @@ Quell- und Testbelege:
 
 Die Existenz dieser Tests ist kein Ausführungsnachweis. Die CI- und Operations-Ergebnisse gelten für den jeweiligen veröffentlichten Commit.
 
-Offen innerhalb DP-07-05 bleiben insbesondere Fahrtenbuch, Kilometer- und Fahrzeugkosten, hochgeladene gerätegebundene Originalprüfberichte, automatisch ermittelte Prüffristen sowie unabhängige Prüfkalender je Prüfart. Der implementierte Ablauf ersetzt diese Funktionen nicht.
+Offen innerhalb DP-07-05 bleiben insbesondere Fahrtenbuch, Kilometer- und Fahrzeugkosten, automatisch ermittelte Prüffristen sowie unabhängige Prüfkalender je Prüfart. Die [Originalakten-Dokumentation](equipment-originals.md) beschreibt den ergänzten Upload, seine Berechtigungen und verbleibenden Grenzen.

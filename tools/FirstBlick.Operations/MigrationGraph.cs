@@ -39,6 +39,12 @@ internal sealed class MigrationGraph
         var tenant = entity.TenantId;
         switch (entity)
         {
+            case Customer customer:
+                Require.That(customer.Contacts is null || customer.Contacts.All(contact =>
+                    contact.CreatedAt >= customer.CreatedAt && contact.UpdatedAt <= customer.UpdatedAt
+                    && contact.UpdatedAt <= bundle.ExportedAt),
+                    "Customer contact history must fit its retained customer envelope and export date.");
+                break;
             case Project project:
                 Require.That(Get<Building>(tenant, project.BuildingId).CustomerId == project.CustomerId, "Project and building customer differ."); break;
             case Quote quote:
@@ -300,7 +306,7 @@ internal sealed class MigrationGraph
     }
     private void ValidateActors(Guid tenant, JsonElement value)
     {
-        string[] names = ["userId", "allocatedBy", "reversedBy", "approvedBy", "submittedBy", "reviewedBy", "calculatedBy", "grantedBy", "recipientUserId", "authorUserId", "actorId", "plannedBy", "recordedBy", "cancelledBy"];
+        string[] names = ["userId", "allocatedBy", "reversedBy", "approvedBy", "submittedBy", "reviewedBy", "calculatedBy", "grantedBy", "recipientUserId", "authorUserId", "actorId", "plannedBy", "recordedBy", "cancelledBy", "createdBy", "updatedBy", "archivedBy"];
         if (value.ValueKind == JsonValueKind.Object)
             foreach (var property in value.EnumerateObject())
             {
@@ -317,6 +323,22 @@ internal sealed class MigrationGraph
         if (document.ProjectId is { } project) _ = Get<Project>(document.TenantId, project);
         if (document.SourceId is not { } sourceId) return;
         var source = RequireReference(document.TenantId, document.SourceKind!, sourceId);
+        if (source is EquipmentInspection inspection)
+        {
+            Require.That(inspection.Status == EquipmentInspectionStatus.Completed && inspection.Completion is not null,
+                "An equipment inspection original must refer to a completed inspection.");
+            Require.That(document.SourceDigest == inspection.Completion!.Digest,
+                "An equipment inspection original must bind to the sealed completion digest.");
+            Require.That(document.ProjectId is null && document.ProjectKind is null
+                && document.RendererVersion == "equipment-inspection-original-v1"
+                && document.ContentType is "application/pdf" or "image/png" or "image/jpeg",
+                "An equipment inspection original must retain its supported document format and independent equipment source.");
+            Require.That(!string.IsNullOrWhiteSpace(document.VersionId) && document.VersionId != "null",
+                "An equipment inspection original must retain its immutable source version.");
+            Require.That(document.CreatedAt >= inspection.Completion.RecordedAt && document.CreatedAt <= bundle.ExportedAt,
+                "An equipment inspection original cannot predate its sealed completion or postdate the export.");
+            return;
+        }
         var digest = source switch { Quote quote => quote.IssuedDigest, Invoice invoice => invoice.IssuedDigest, TechnicalRecord technical => technical.Digest, RoofRevision roof => roof.Snapshot?.Digest,
             Measurement measurement => measurement.Snapshot?.Digest, SupplierInvoice supplier => supplier.ApprovedDigest, PurchaseOrder purchase => purchase.OrderedDigest, _ => null };
         Require.That(digest is { Length: 64 } && document.SourceDigest == digest, "A generated historical document must bind to its original supported frozen source.");

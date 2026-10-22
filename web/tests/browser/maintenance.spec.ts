@@ -1,7 +1,10 @@
 import { expect, Page, test } from '@playwright/test';
+import { createHash } from 'node:crypto';
 
-async function fixture(page: Page, options: { role?: string; existing?: boolean; stale?: boolean; malformed?: boolean; delayContract?: boolean; legacy?: boolean; invalidContract?: Record<string, unknown> } = {}) {
+async function fixture(page: Page, options: { role?: string; existing?: boolean; stale?: boolean; malformed?: boolean; delayContract?: boolean; legacy?: boolean; invalidContract?: Record<string, unknown>; delayCalendar?: boolean; corruptCalendar?: boolean; staleCalendar?: boolean; disabledModule?: boolean } = {}) {
   const calls: { path: string; body: any; headers: Record<string, string> }[] = [];
+  const calendarRequests: string[] = []; let releaseCalendar: (() => void) | undefined;
+  const calendarGate = new Promise<void>(resolve => { releaseCalendar = resolve; });
   let contract = { id: 'contract-a', revision: 2, title: 'Monatliche Dachkontrolle', scope: 'Abläufe und Anschlüsse kontrollieren', nextDueDate: '2027-01-31', intervalMonths: 1, active: true, automaticPlanning: false, planningLeadDays: 14,
     checklistTemplate: [{ title: 'Abläufe prüfen', instructions: 'Laub entfernen' }, { title: 'Anschlüsse prüfen', instructions: 'Sichtkontrolle' }] };
   let visit = { id: 'visit-a', revision: 1, contractId: 'contract-a', contractRevision: 2, projectId: 'project-a', dueDate: '2027-01-31', terms: { title: contract.title, scope: contract.scope }, scopeDigest: 'a'.repeat(64), status: 'Planned', completionNotes: '', completedAt: null as string | null, nextDueDate: null as string | null,
@@ -18,7 +21,7 @@ async function fixture(page: Page, options: { role?: string; existing?: boolean;
   await page.route('**/api/v1/**', async route => {
     const request = route.request(), path = new URL(request.url()).pathname.slice('/api/v1/'.length), other = request.headers()['x-tenant-id'] === 'tenant-b';
     if (path === 'auth/csrf') return route.fulfill({ json: { ready: true }, headers: { 'Set-Cookie': 'XSRF-TOKEN=csrf-test; Path=/; SameSite=Strict' } });
-    if (path === 'auth/me') return route.fulfill({ json: { user: { id: 'user-a', displayName: 'Testmitarbeiter', email: 'test@example.test' }, activeTenantId: 'tenant-a', tenants: ['a', 'b'].map(id => ({ id: `tenant-${id}`, name: `Testbetrieb ${id.toUpperCase()}`, role, modules: ['core', 'maintenance', 'field'], capabilities: ['*'] })) } });
+    if (path === 'auth/me') return route.fulfill({ json: { user: { id: 'user-a', displayName: 'Testmitarbeiter', email: 'test@example.test' }, activeTenantId: 'tenant-a', tenants: ['a', 'b'].map(id => ({ id: `tenant-${id}`, name: `Testbetrieb ${id.toUpperCase()}`, role, modules: options.disabledModule ? ['core', 'field'] : ['core', 'maintenance', 'field'], capabilities: ['*'] })) } });
     if (request.method() === 'POST') calls.push({ path, body: request.postDataJSON(), headers: request.headers() });
     if (path === 'maintenance-contracts') return route.fulfill({ json: { items: other ? [] : [storedContract()], total: other ? 0 : 1, page: 1, pageSize: 25 } });
     if (path === 'maintenance-contracts/contract-a') { if (!released) await gate; return route.fulfill({ json: storedContract() }); }
@@ -26,6 +29,16 @@ async function fixture(page: Page, options: { role?: string; existing?: boolean;
     if (path === 'maintenance-contracts/contract-a/schedule') { exists = true; return route.fulfill({ json: visit }); }
     if (path === 'maintenance-visits') return route.fulfill({ json: { items: exists && !other ? [{ ...visit, title: contract.title, totalChecks: visit.checklist.length, completedChecks: visit.checklist.filter(x => x.state !== 'Pending').length }] : [], total: exists && !other ? 1 : 0, page: 1, pageSize: 25 } });
     if (path === 'maintenance-visits/visit-a') return route.fulfill({ json: options.malformed ? { ...visit, checklist: null } : visit });
+    if (path === 'maintenance-visits/visit-a/calendar') {
+      calendarRequests.push(request.url());
+      if (options.delayCalendar) await calendarGate;
+      if (options.staleCalendar) return route.fulfill({ status: 409, json: { code: 'revision_conflict', detail: 'Termin geändert.' } });
+      const body = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//FirstBlick//Maintenance calendar 1.0//DE', 'CALSCALE:GREGORIAN', 'BEGIN:VEVENT',
+        'UID:maintenance-tenanta-visita@firstblick.invalid', 'DTSTAMP:20261021T090102Z', 'CREATED:20261020T080000Z', 'LAST-MODIFIED:20261021T090102Z',
+        `SEQUENCE:${visit.revision - 1}`, 'DTSTART;VALUE=DATE:20270131', 'DTEND;VALUE=DATE:20270201', `SUMMARY:Wartung ${visit.status === 'Completed' ? 'abgeschlossen' : 'fällig'}: ${contract.title}`,
+        'STATUS:CONFIRMED', 'TRANSP:TRANSPARENT', 'CLASS:PRIVATE', `X-FIRSTBLICK-MAINTENANCE-STATUS:${visit.status}`, 'END:VEVENT', 'END:VCALENDAR', ''].join('\r\n');
+      return route.fulfill({ body, contentType: 'text/calendar; charset=utf-8', headers: { ETag: `"${visit.revision}"`, 'X-Content-SHA256': options.corruptCalendar ? '0'.repeat(64) : createHash('sha256').update(body).digest('hex') } });
+    }
     if (path === 'maintenance-visits/visit-a/check') {
       if (options.stale) return route.fulfill({ status: 409, json: { code: 'revision_conflict', detail: 'Der Termin wurde geändert. Bitte neu öffnen.' } });
       const body = request.postDataJSON(); visit = { ...visit, revision: visit.revision + 1, checklist: visit.checklist.map(x => x.id === body.checkId ? { ...x, state: body.state, note: body.note, recordedBy: 'user-a', recordedAt: '2027-01-31T09:00:00Z' } : x) }; return route.fulfill({ json: visit });
@@ -36,7 +49,7 @@ async function fixture(page: Page, options: { role?: string; existing?: boolean;
     }
     return route.fulfill({ json: { items: [], total: 0, page: 1, pageSize: 25 } });
   });
-  return { calls, release: () => { released = true; unblock?.(); } };
+  return { calls, calendarRequests, releaseCalendar: () => releaseCalendar?.(), release: () => { released = true; unblock?.(); } };
 }
 
 async function openContract(page: Page) { await page.goto('/maintenance'); await page.getByRole('button', { name: /Monatliche Dachkontrolle Nächster Termin/ }).click(); await expect(page.getByRole('heading', { name: 'Checkliste für neue Termine' })).toBeVisible(); }
@@ -152,4 +165,64 @@ test('saving one result preserves other unsaved notes and the drafted completion
   await expect(page.getByRole('status').filter({hasText:'Prüfergebnis gespeichert'})).toBeVisible();
   await expect(page.getByLabel('Bemerkung zu Anschlüsse prüfen', { exact: true })).toHaveValue('Lokaler Entwurf für den zweiten Schritt');
   await expect(page.getByLabel('Abschlussbericht', { exact: true })).toHaveValue('Lokaler Abschlussentwurf');
+});
+
+test('calendar export downloads a verified all-day reminder without writing even when the module is disabled', async ({ page }) => {
+  const api = await fixture(page, { existing: true, disabledModule: true }); await openVisit(page);
+  const downloaded = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Kalenderdatei herunterladen', exact: true }).click();
+  const file = await downloaded; expect(file.suggestedFilename()).toBe('wartung-2027-01-31-visita.ics');
+  const stream = await file.createReadStream(); const chunks: Buffer[] = []; for await (const chunk of stream!) chunks.push(Buffer.from(chunk));
+  const content = Buffer.concat(chunks).toString('utf8');
+  expect(content).toContain('DTSTART;VALUE=DATE:20270131\r\nDTEND;VALUE=DATE:20270201');
+  expect(content).not.toContain('Laub entfernen'); expect(content).not.toContain('METHOD:');
+  expect(api.calendarRequests).toHaveLength(1); expect(new URL(api.calendarRequests[0]).searchParams.get('revision')).toBe('1');
+  expect(api.calls).toHaveLength(0);
+  await expect(page.getByRole('status').filter({ hasText: 'Kalenderdatei heruntergeladen' })).toBeVisible();
+});
+
+test('a corrupt calendar response is rejected before a file URL or download is created', async ({ page }) => {
+  await fixture(page, { existing: true, corruptCalendar: true }); await openVisit(page);
+  let downloads = 0; page.on('download', () => downloads++);
+  await page.getByRole('button', { name: 'Kalenderdatei herunterladen', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('Kalenderdatei stimmt nicht');
+  expect(downloads).toBe(0);
+});
+
+test('an outdated calendar revision asks for reopening and does not claim successful export', async ({ page }) => {
+  await fixture(page, { existing: true, staleCalendar: true }); await openVisit(page);
+  let downloads = 0; page.on('download', () => downloads++);
+  await page.getByRole('button', { name: 'Kalenderdatei herunterladen', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('zwischenzeitlich geändert'); expect(downloads).toBe(0);
+});
+
+test('a late calendar response after switching business cannot download the previous occurrence', async ({ page }) => {
+  const api = await fixture(page, { existing: true, delayCalendar: true }); await openVisit(page);
+  let downloads = 0; page.on('download', () => downloads++);
+  await page.getByRole('button', { name: 'Kalenderdatei herunterladen', exact: true }).click();
+  await expect.poll(() => api.calendarRequests.length).toBe(1);
+  const response = page.waitForResponse(r => r.url().includes('/maintenance-visits/visit-a/calendar'));
+  await page.getByLabel('Betrieb', { exact: true }).selectOption('tenant-b'); api.releaseCalendar(); await response;
+  await expect(page.getByRole('heading', { name: 'Wartung vom 31.01.2027' })).toHaveCount(0);
+  await expect(page.getByRole('status').filter({ hasText: 'Kalenderdatei heruntergeladen' })).toHaveCount(0);
+  expect(downloads).toBe(0);
+});
+
+test('switching business while the calendar digest is pending prevents downloading verified old bytes', async ({ page }) => {
+  await fixture(page, { existing: true }); await openVisit(page);
+  await page.evaluate(() => {
+    const original = crypto.subtle.digest.bind(crypto.subtle);
+    const gate = new Promise<void>(resolve => { (window as any).releaseCalendarHash = resolve; });
+    crypto.subtle.digest = async (algorithm, data) => {
+      const result = await original(algorithm, data); (window as any).calendarHashStarted = true; await gate; return result;
+    };
+  });
+  let downloads = 0; page.on('download', () => downloads++);
+  await page.getByRole('button', { name: 'Kalenderdatei herunterladen', exact: true }).click();
+  await expect.poll(() => page.evaluate(() => !!(window as any).calendarHashStarted)).toBe(true);
+  await page.getByLabel('Betrieb', { exact: true }).selectOption('tenant-b');
+  await page.evaluate(() => (window as any).releaseCalendarHash());
+  await expect(page.getByRole('heading', { name: 'Wartung vom 31.01.2027' })).toHaveCount(0);
+  await expect(page.getByRole('status').filter({ hasText: 'Kalenderdatei heruntergeladen' })).toHaveCount(0);
+  expect(downloads).toBe(0);
 });

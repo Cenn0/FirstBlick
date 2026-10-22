@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { ApiService, Entity, Page } from '../core/api.service';
 import { AuthService } from '../core/auth.service';
 import { ApiError, errorMessage } from '../core/transport';
+import { verifiedMaintenanceCalendar } from '../core/maintenance-calendar';
 
 interface CheckTemplate { title: string; instructions: string }
 interface Contract extends Entity { title: string; scope: string; nextDueDate: string; intervalMonths: number; active: boolean; automaticPlanning: boolean; planningLeadDays: number; checklistTemplate: CheckTemplate[] }
@@ -83,6 +84,31 @@ export class MaintenanceComponent implements OnDestroy {
       if (!this.current(generation, access) || version !== this.detailVersion) return; this.setVisit(value, id);
     } catch (error) { if (this.current(generation, access) && version === this.detailVersion) this.error.set(maintenanceError(error)); }
     finally { if (this.current(generation, access) && version === this.detailVersion) this.loading.set(false); }
+  }
+  async downloadCalendar(): Promise<void> {
+    const visit = this.visit(); if (!visit || !this.allowed() || this.busy() || this.loading()) return;
+    const generation = this.generation, access = this.auth.accessSignature(), version = this.detailVersion;
+    const current = () => this.current(generation, access) && version === this.detailVersion
+      && this.visit()?.id === visit.id && this.visit()?.revision === visit.revision;
+    const selected = { tenantId: this.auth.activeTenantId(), visitId: visit.id, revision: visit.revision, dueDate: visit.dueDate, status: visit.status };
+    this.busy.set(true); this.error.set(''); this.notice.set('');
+    try {
+      const response = await this.api.downloadResponse(`maintenance-visits/${encodeURIComponent(visit.id)}/calendar?revision=${visit.revision}`);
+      if (!current()) return;
+      const file = await verifiedMaintenanceCalendar(response, selected);
+      // Reading and hashing response bytes are asynchronous too: recheck the
+      // selected record and access after both, immediately before downloading.
+      if (!current()) return;
+      const url = URL.createObjectURL(file), link = document.createElement('a');
+      link.href = url; link.download = `wartung-${visit.dueDate}-${visit.id.replaceAll('-', '')}.ics`; link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      this.notice.set('Kalenderdatei heruntergeladen. Die Fälligkeit ist als ganztägiger Hinweis enthalten.');
+    } catch (error) {
+      if (current()) {
+        this.error.set(maintenanceError(error));
+        if (error instanceof ApiError && [401, 403, 404].includes(error.status)) { this.visit.set(null); this.checkEdits = {}; }
+      }
+    } finally { if (this.current(generation, access)) this.busy.set(false); }
   }
   async saveConfiguration(): Promise<void> {
     const c = this.contract(); if (!c || !this.canManage() || this.busy() || !this.templateValid()) return;

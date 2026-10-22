@@ -11,6 +11,7 @@ import uuid
 from production_assets import check_production_assets
 from trade_sources_smoke import check_trade_sources
 from equipment_inventory_smoke import check_equipment_and_inventory
+from contacts_calendar_originals_smoke import check_contacts_calendar_originals
 
 root = pathlib.Path(__file__).resolve().parent.parent
 config = {}
@@ -67,7 +68,8 @@ assert customer["name"] == "Container verification customer"
 assert call("GET", "/api/v1/customers/" + customer["id"], tenant=tenant)["name"] == customer["name"]
 originals = check_trade_sources(call, client, base, tenant, previous.get("originalSources"))
 equipment_inventory = check_equipment_and_inventory(call, tenant, customer, previous.get("equipmentAndInventory"))
+contacts_calendar_originals = check_contacts_calendar_originals(call, client, base, tenant, customer, equipment_inventory, previous.get("contactsCalendarOriginals"))
 call("POST", "/api/v1/auth/logout", {})
-report = {"status": "passed", "completedAt": datetime.datetime.now(datetime.timezone.utc).isoformat(), "customerId": customer["id"], "previousCustomerPreservedAcrossRestart": bool(previous), "productionAssets": assets, "originalSources": originals, "equipmentAndInventory": equipment_inventory, "checks": ["database readiness", "production HTML/CSP/screen stylesheet", "CSRF", "bootstrap login", "tenant membership", "authenticated create/read", "original XML persistence, versioned S3 and byte-exact download", "equipment inspection, failed dispatch block, documented reassessment and retained history", "two-hop warehouse chain, supplier return and preserved stock balances", "logout"]}
+report = {"status": "passed", "completedAt": datetime.datetime.now(datetime.timezone.utc).isoformat(), "customerId": customer["id"], "previousCustomerPreservedAcrossRestart": bool(previous), "productionAssets": assets, "originalSources": originals, "equipmentAndInventory": equipment_inventory, "contactsCalendarOriginals": contacts_calendar_originals, "checks": ["database readiness", "production HTML/CSP/screen stylesheet", "CSRF", "bootstrap login", "tenant membership", "authenticated create/read", "original XML persistence, versioned S3 and byte-exact download", "equipment inspection, failed dispatch block, documented reassessment and retained history", "two-hop warehouse chain, supplier return and preserved stock balances", "structured customer contacts, persisted maintenance calendar and original inspection PNG across restart", "logout"]}
 (folder / "container-smoke.json").write_text(json.dumps(report, indent=2) + "\n")
 print(json.dumps(report, indent=2))

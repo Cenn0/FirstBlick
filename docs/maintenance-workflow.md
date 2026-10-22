@@ -87,6 +87,7 @@ gespeichert wurden. Die Projektverknüpfung öffnet den konkreten Datensatz.
 | `POST /api/v1/maintenance-contracts/{id}/schedule` | Aktuelle Fälligkeit anlegen oder vorhandenen Termin zurückgeben; Vertragsrevision |
 | `GET /api/v1/maintenance-visits?contractId=…&page=…` | Sichtbare Termine, 25 pro Seite; optional nach Vertrag gefiltert |
 | `GET /api/v1/maintenance-visits/{id}` | Vollständigen eingefrorenen Umfang und Prüfergebnisse lesen |
+| `GET /api/v1/maintenance-visits/{id}/calendar?revision=…` | [Kalenderdatei](maintenance-calendar.md) der geöffneten Terminrevision herunterladen |
 | `POST /api/v1/maintenance-visits/{id}/check` | Einzelnes Prüfergebnis dokumentieren; Terminrevision |
 | `POST /api/v1/maintenance-visits/{id}/complete` | Abschlussbericht, Projektabschluss und Folgetermin; Terminrevision |
 
@@ -125,6 +126,7 @@ Widerruf vor Replay, gesperrten Legacy-Bypass, unveränderliche Abschlussbelege,
 echtes Bestands-JSON ohne neue Felder, dessen ausdrückliche Checklistenmigration,
 fehlerhafte Antworten und verlorene Aktualisierungen. Die Checklisten werden vom
 jeweiligen Betrieb definiert; ihre fachliche Eignung wurde nicht durch einen realen
-Wartungsbetrieb oder eine externe Prüfstelle bestätigt. Eine unbeaufsichtigte
-produktive Zustellung, externe Kalenderintegration oder reale Betriebsabnahme
-wird durch diese Implementierung nicht behauptet.
+Wartungsbetrieb oder eine externe Prüfstelle bestätigt. Der ergänzte
+[ICS-Export](maintenance-calendar.md) liefert eine ausdrücklich heruntergeladene
+Momentaufnahme eines gespeicherten Termins. Automatische Kalenderabonnements,
+Anbietersynchronisierung, Einladungszustellung und reale Betriebsabnahme bleiben offen.

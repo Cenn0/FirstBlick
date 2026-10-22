@@ -8,6 +8,9 @@ Active development takes place in FirstBlick. DachPlaner is retained solely as a
 
 ## Project documentation
 
+* [Customer contacts](docs/customer-contacts.md) — multiple retained people per customer, explicit primary contact, archive/restore and protected legacy fields.
+* [Equipment inspections](docs/equipment-inspections.md) and [original reports](docs/equipment-originals.md) — frozen inspection history, availability checks and verified versioned PDF/image originals.
+* [Maintenance workflow](docs/maintenance-workflow.md) and [calendar export](docs/maintenance-calendar.md) — saved occurrences, checklists and revision-bound all-day ICS downloads.
 * [Checkpoint 11](docs/checkpoint11.md) — evidenced zero-cent final settlements, strengthened cost-source integrity and verified commit-specific CI/Operations.
 * [Checkpoint 10](docs/checkpoint10.md) — bounded financial source reads and versioned, audited cost forecasts, with API and browser regression coverage.
 * [Checkpoint 9](docs/checkpoint9.md) — preceding finance/UI implementation, exact verification and remaining roadmap work.

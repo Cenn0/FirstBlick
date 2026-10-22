@@ -8,11 +8,17 @@ public sealed class Customer : TenantEntity
     public string Phone { get; set; } = "";
     public string Address { get; set; } = "";
     public string Notes { get; set; } = "";
+    // Absent on retained customer snapshots; contacts are managed only by their own commands.
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public List<CustomerContact>? Contacts { get; set; }
     public override void Validate()
     {
         ValidateCommon(); Guard.Text(Name, nameof(Name)); Guard.Text(ContactName, nameof(ContactName), required: false);
         Guard.Email(Email); Guard.Text(Phone, nameof(Phone), 80, false); Guard.Text(Address, nameof(Address), 2000, false);
         Guard.Text(Notes, nameof(Notes), 20_000, false);
+        CustomerContactWorkflow.Validate(Contacts);
+        Guard.Require(Contacts is null || Contacts.All(x => x.CreatedAt >= CreatedAt),
+            "invalid_time", "Customer contacts cannot predate their customer.");
     }
 }
 

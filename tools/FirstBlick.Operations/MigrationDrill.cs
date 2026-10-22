@@ -89,6 +89,47 @@ internal static class MigrationDrill
             var changed = inspection.Completion! with { RecordedBy = Guid.NewGuid() };
             inspection.Completion = changed with { Digest = EquipmentInspectionWorkflow.CompletionDigest(inspection, changed) };
         }, x => x.Status == EquipmentInspectionStatus.Completed));
+        await Reject("equipment-original-wrong-completion-digest", ChangeInspectionDocument(bundle, document => document.SourceDigest = new string('0', 64)),
+            issue => issue.Message == "An equipment inspection original must bind to the sealed completion digest.");
+        var otherCompletedInspection = checkedSource.Entities.OfType<EquipmentInspection>().Single(x => x.Completion?.Result == EquipmentInspectionResult.Passed);
+        await Reject("equipment-original-swapped-source", ChangeInspectionDocument(bundle, document => document.SourceId = otherCompletedInspection.Id),
+            issue => issue.Message == "An equipment inspection original must bind to the sealed completion digest.");
+        var scheduledInspection = checkedSource.Entities.OfType<EquipmentInspection>().Single(x => x.Status == EquipmentInspectionStatus.Scheduled);
+        await Reject("equipment-original-unperformed-source", ChangeInspectionDocument(bundle, document =>
+        { document.SourceId = scheduledInspection.Id; document.SourceDigest = scheduledInspection.ScopeDigest; }),
+            issue => issue.Message == "An equipment inspection original must refer to a completed inspection.");
+        var cancelledInspection = checkedSource.Entities.OfType<EquipmentInspection>().Single(x => x.Status == EquipmentInspectionStatus.Cancelled);
+        await Reject("equipment-original-cancelled-source", ChangeInspectionDocument(bundle, document =>
+        { document.SourceId = cancelledInspection.Id; document.SourceDigest = cancelledInspection.Cancellation!.Digest; }),
+            issue => issue.Message == "An equipment inspection original must refer to a completed inspection.");
+        await Reject("equipment-original-cross-tenant-source", ChangeInspectionDocument(bundle, document => document.TenantId = bundle.Tenants[1].Data.Id),
+            issue => issue.Message.StartsWith("Missing tenant-qualified equipment-inspections reference", StringComparison.Ordinal));
+        await Reject("equipment-original-project-rebinding", ChangeInspectionDocument(bundle, document =>
+        { document.ProjectId = checkedSource.Entities.OfType<Project>().Single().Id; document.ProjectKind = "projects"; }),
+            issue => issue.Message == "An equipment inspection original must retain its supported document format and independent equipment source.");
+        await Reject("equipment-original-changed-format-marker", ChangeInspectionDocument(bundle, document => document.RendererVersion = "unverified-original"),
+            issue => issue.Message == "An equipment inspection original must retain its supported document format and independent equipment source.");
+        await Reject("equipment-original-before-completion", ChangeInspectionDocument(bundle, document => document.CreatedAt = checkedSource.Entities.OfType<EquipmentInspection>()
+            .Single(x => x.Id == document.SourceId).Completion!.RecordedAt.AddTicks(-10)),
+            issue => issue.Message == "An equipment inspection original cannot predate its sealed completion or postdate the export.");
+        await Reject("equipment-original-after-export", ChangeInspectionDocument(bundle, document => document.CreatedAt = bundle.ExportedAt.AddTicks(10)),
+            issue => issue.Message == "An equipment inspection original cannot predate its sealed completion or postdate the export.");
+        await Reject("equipment-original-missing-version", ChangeInspectionDocument(bundle, document => document.VersionId = null),
+            issue => issue.Message == "An equipment inspection original must retain its immutable source version.");
+        await Reject("customer-contact-unknown-creator", Change<Customer>(bundle, customer =>
+            customer.Contacts![0] = customer.Contacts[0] with { CreatedBy = Guid.NewGuid() }),
+            issue => issue.Message == "A historical actor/user must retain a supplied tenant membership, including inactive members.");
+        await Reject("customer-contact-unknown-editor", Change<Customer>(bundle, customer =>
+            customer.Contacts![0] = customer.Contacts[0] with { UpdatedBy = Guid.NewGuid() }),
+            issue => issue.Message == "A historical actor/user must retain a supplied tenant membership, including inactive members.");
+        await Reject("customer-contact-unknown-archiver", Change<Customer>(bundle, customer =>
+        {
+            var index = customer.Contacts!.FindIndex(contact => contact.Archived); var actor = Guid.NewGuid();
+            customer.Contacts[index] = customer.Contacts[index] with { UpdatedBy = actor, ArchivedBy = actor };
+        }), issue => issue.Message == "A historical actor/user must retain a supplied tenant membership, including inactive members.");
+        await Reject("customer-contact-after-customer-envelope", Change<Customer>(bundle, customer =>
+            customer.Contacts![0] = customer.Contacts[0] with { UpdatedAt = customer.UpdatedAt.AddTicks(10) }),
+            issue => issue.Message == "Customer contact history must fit its retained customer envelope and export date.");
         var collision = bundle.Counters.Select(x => x.Kind == "AN" && x.Value > 0 ? x with { Value = x.Value - 1, ExpectedNextNumber = $"AN-{x.Year}-{x.Value:D6}" } : x).ToList();
         await Reject("numbering-collision", Controls(bundle with { Counters = collision }));
         await Reject("explicit-unresolved-source", bundle with { Uncertainties = [new("legacy_delivery_unknown", "Synthetic old export lacks provider acknowledgement; the original uncertainty is retained.", bundle.Tenants[0].Data.Id, "quotes", checkedSource.Entities.OfType<Quote>().Single().Id, bundle.EvidenceFiles[0].File)] });
@@ -144,10 +185,26 @@ internal static class MigrationDrill
             var customer = AppJson.Read<Customer>((await db.Entities.IgnoreQueryFilters().SingleAsync(x => x.Kind == "customers" && x.TenantId == sourceTenant)).Data);
             Require.That(quote.Presentation!.BuyerName != customer.Name && quote.Presentation.BuyerName == "Historical buyer name" && quote.Deliveries.Single().State == DeliveryState.Sent,
                 "Migration reconstructed historical contract parties or changed delivery history.");
+            var sourceCustomer = checkedSource.Entities.OfType<Customer>().Single(x => x.TenantId == sourceTenant);
+            Require.That(customer.Contacts is { Count: 3 } && customer.Contacts.SequenceEqual(sourceCustomer.Contacts!)
+                && customer.Contacts.Count(contact => contact.IsPrimary) == 1 && customer.Contacts.Count(contact => contact.Archived) == 1,
+                "Migration changed active, primary or archived customer contact identities and actor history.");
             Require.That(AppJson.Read<PortalShare>((await db.Entities.IgnoreQueryFilters().SingleAsync(x => x.Kind == "portal-shares")).Data).RevokedAt == imported.ImportedAt, "Legacy portal permission was not quarantined.");
             var importedStock = (await db.Entities.IgnoreQueryFilters().Where(x => x.Kind == "stock-movements" && x.TenantId == sourceTenant)
                 .Select(x => x.Data).ToListAsync()).Select(AppJson.Read<StockMovement>).ToArray();
             VerifyWarehouseBranches(importedStock);
+            var importedInspectionDocuments = await db.Documents.IgnoreQueryFilters()
+                .Where(x => x.TenantId == sourceTenant && x.SourceKind == "equipment-inspections").ToListAsync();
+            Require.That(importedInspectionDocuments.Count == 2 && importedInspectionDocuments.Any(x => x.State == "Ready")
+                && importedInspectionDocuments.Any(x => x.State == "Archived"), "Migration lost available or archived equipment inspection originals.");
+            foreach (var document in importedInspectionDocuments)
+            {
+                var inspection = AppJson.Read<EquipmentInspection>((await db.Entities.IgnoreQueryFilters()
+                    .SingleAsync(x => x.TenantId == sourceTenant && x.Kind == "equipment-inspections" && x.Id == document.SourceId)).Data);
+                Require.That(inspection.Completion?.Digest == document.SourceDigest && document.RendererVersion == "equipment-inspection-original-v1"
+                    && document.ProjectId is null && document.ProjectKind is null,
+                    "Imported inspection original lost its exact completion source or changed the sealed outcome.");
+            }
             foreach (var source in sourceSupplierInvoices)
             {
                 var id = source.Data.GetProperty("id").GetGuid();
@@ -226,6 +283,8 @@ internal static class MigrationDrill
             warehouseTransferChainsAndReturnsPreserved = true, warehouseBranchCapacityIndependentOfOtherStockVerified = true,
             stockLedgerVisibilityChronologyAndPurchaseStatusVerified = true,
             equipmentInspectionEvidenceAndAvailabilityPreserved = true,
+            equipmentOriginalsAndArchivedDocumentsPreserved = true,
+            customerContactIdentitiesPrimaryArchiveAndActorsPreserved = true,
             namedFreshOperatorVerified = true, portalGrantsRevoked = true, persistentRecoveryHoldVerified = true, repeatHasNoDatabaseOrObjectWrites = true,
             laterRecoveryPreservesPendingSourceIdentity = true,
             actualNextNumberVerified = true, changedTargetDetected = true, exactCanonicalNumbersVerified = true, negativeCases = negatives,
@@ -252,6 +311,13 @@ internal static class MigrationDrill
         var index = list.FindIndex(x => x.Kind == kind && (select is null || select(AppJson.Read<T>(x.Data.GetRawText()))));
         var entity = AppJson.Read<T>(list[index].Data.GetRawText()); mutation(entity); var data = MigrationJson.Element(entity);
         list[index] = list[index] with { Data = data, Sha256 = MigrationJson.Hash(data) }; return Controls(bundle with { Entities = list });
+    }
+    private static MigrationBundle ChangeInspectionDocument(MigrationBundle bundle, Action<DocumentObject> mutation)
+    {
+        var documents = bundle.Documents.ToList(); var index = documents.FindIndex(x => x.Data.SourceKind == "equipment-inspections");
+        var document = AppJson.Read<DocumentObject>(AppJson.Serialize(documents[index].Data)); mutation(document);
+        documents[index] = documents[index] with { Data = document, SourceVersionId = document.VersionId };
+        return Controls(bundle with { Documents = documents });
     }
     private static MigrationBundle Controls(MigrationBundle bundle) => bundle with { Controls = MigrationControls.Calculate(bundle, bundle.Entities.Select(x => AppJson.Read(x.Kind, x.Data.GetRawText()))) };
 
@@ -347,9 +413,14 @@ internal static class MigrationDrill
         EquipmentInspectionWorkflow.Complete(equipment, repair, date, EquipmentInspectionResult.Passed,
             "Synthetic inspector", "SYNTHETIC-REPAIR-PASSED", "Documented repair and deployment assessment", date.AddDays(180), true, date, owner.Id, at.AddMinutes(9));
         repair.Revision = 2; repair.UpdatedAt = at.AddMinutes(9);
+        var cancelled = EquipmentInspectionWorkflow.Plan(equipment, EquipmentInspectionKind.Maintenance, date.AddDays(90),
+            "Historical appointment cancelled", "Retained unused appointment", owner.Id, at.AddMinutes(9).AddSeconds(10));
+        entities.Add(cancelled);
+        EquipmentInspectionWorkflow.Cancel(equipment, cancelled, "Superseded by the explicitly scheduled inspection", owner.Id, at.AddMinutes(9).AddSeconds(20));
+        cancelled.Revision = 2; cancelled.UpdatedAt = at.AddMinutes(9).AddSeconds(20);
         entities.Add(EquipmentInspectionWorkflow.Plan(equipment, EquipmentInspectionKind.Inspection, date.AddDays(180),
             "Retained next equipment appointment", "Explicit operator-chosen date", owner.Id, at.AddMinutes(10)));
-        equipment.Revision = 6; equipment.UpdatedAt = at.AddMinutes(10);
+        equipment.Revision = 8; equipment.UpdatedAt = at.AddMinutes(10);
         var payable = Add(new SupplierInvoice { TenantId = tenant.Id, SupplierId = supplier.Id, Number = "SUP-17", Title = "Preserved supplier invoice", InvoiceDate = date, DueDate = date.AddDays(14), Net = 200m, Tax = 38m, Gross = 238m });
         PayablesWorkflow.Approve(payable, supplier, owner.Id, owner.Id, at, false);
         var outgoing = Add(new BankTransaction { TenantId = tenant.Id, AccountReference = "legacy-account", ExternalId = "bank-row-2", Amount = -238m, BookedOn = date }); PaymentWorkflow.SealImport(outgoing);
@@ -364,6 +435,11 @@ internal static class MigrationDrill
             SourceDigest = quote.IssuedDigest, ExpiresAt = at.AddDays(30), AllowAcceptance = true });
         Add(new Customer { TenantId = second.Id, Name = "Second tenant customer", Address = "Separate historical address" });
         customer.Name = "Current changed master name"; customer.Address = "Current changed master address"; // Frozen quote/invoice parties must remain historical.
+        _ = CustomerContactWorkflow.Add(customer, new("Synthetic billing contact", "Buchhaltung", "billing@example.invalid", "", "Retained original contact", true), owner.Id, at.AddMinutes(11));
+        _ = CustomerContactWorkflow.Add(customer, new("Synthetic site contact", "Objektbetreuung", "site@example.invalid", "", "Current primary contact", true), owner.Id, at.AddMinutes(12));
+        var archivedContact = CustomerContactWorkflow.Add(customer, new("Synthetic former contact", "Frühere Objektbetreuung", "former@example.invalid", "", "Retained archived contact", false), owner.Id, at.AddMinutes(13));
+        CustomerContactWorkflow.Archive(customer, archivedContact.Id, owner.Id, at.AddMinutes(14));
+        customer.Revision = 5; customer.UpdatedAt = at.AddMinutes(14);
         foreach (var entity in entities) entity.Validate();
         Directory.CreateDirectory(Path.Combine(directory, "evidence")); Directory.CreateDirectory(Path.Combine(directory, "objects"));
         await File.WriteAllTextAsync(Path.Combine(directory, "evidence", "source-records.txt"), "Synthetic canonical source only. Historical party names, prices, accepted contract, provider acknowledgement and old source IDs were intentionally retained. No real provider was called.\n");
@@ -378,6 +454,21 @@ internal static class MigrationDrill
                 ProjectId = selected == tenant ? project.Id : null, ProjectKind = selected == tenant ? "projects" : null, SourceId = selected == tenant ? quote.Id : null,
                 SourceKind = selected == tenant ? "quotes" : null, SourceDigest = selected == tenant ? quote.IssuedDigest : "", RendererVersion = "legacy-source-retained" };
             documents.Add(new("legacy-file-" + documents.Count, data, proof, "synthetic-r2-export", null));
+        }
+        foreach (var inspection in new[] { failedInspection, repair })
+        {
+            var id = Guid.NewGuid(); var file = $"objects/{id:N}.png";
+            // A valid synthetic one-pixel PNG stands in for independently retained
+            // original report bytes; no report is reconstructed from current state.
+            var body = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=");
+            await File.WriteAllBytesAsync(Path.Combine(directory, file), body); var proof = await BundleFiles.Proof(directory, file);
+            var version = $"synthetic-original-{id:N}";
+            var data = new DocumentObject { Id = id, TenantId = tenant.Id, UploadedBy = owner.Id, Name = "historical-inspection-original.png",
+                ContentType = "image/png", Size = body.Length, Sha256 = proof.Sha256, ObjectKey = $"legacy/original-inspections/{id:N}",
+                VersionId = version, State = inspection == failedInspection ? "Ready" : "Archived", Revision = inspection == failedInspection ? 2 : 3,
+                CreatedAt = inspection.Completion!.RecordedAt.AddSeconds(1), SourceId = inspection.Id, SourceKind = "equipment-inspections",
+                SourceDigest = inspection.Completion.Digest, RendererVersion = "equipment-inspection-original-v1" };
+            documents.Add(new("legacy-equipment-original-" + documents.Count, data, proof, "synthetic-versioned-original-export", version));
         }
         var envelopes = entities.Select(entity =>
         {

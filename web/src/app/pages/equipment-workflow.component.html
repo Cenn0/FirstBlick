@@ -73,12 +73,14 @@
           }@else{<p class="muted">Für dieses Gerät ist kein Prüfvorgang geplant.</p>}
         </section>
         <section class="panel history"><h2>Prüf- und Wartungshistorie</h2><p class="small muted">Gespeicherte Durchführungen und Absagen bleiben mit dem damaligen Gerätestand erhalten.</p>
+          @if(linkedDocumentInspection();as linked){<section class="planned-inspection"><h3>Verknüpfter Prüfbericht: {{linked.title}}</h3><p>Durchgeführt am {{date(linked.completion?.performedOn)}} · {{linked.equipmentSnapshot.inventoryNumber}}</p><app-equipment-documents [inspection]="linked" /></section>}
           @for(item of d.items;track item.id){
             <details class="history-record"><summary><span><strong>{{item.title}}</strong><span>{{inspectionKinds[item.kind]}} · geplant {{date(item.scheduledOn)}} · {{statuses[item.status]}}</span></span></summary>
               <p class="small muted">Gerät bei Planung: {{item.equipmentSnapshot.name}} · {{item.equipmentSnapshot.inventoryNumber}}@if(item.equipmentSnapshot.registration){ · {{item.equipmentSnapshot.registration}}}</p>
               @if(item.notes){<p class="preserve-lines">{{item.notes}}</p>}
               @if(item.completion;as completion){<dl class="equipment-facts"><div><dt>Durchführung</dt><dd>{{date(completion.performedOn)}} · {{completion.result==='Passed'?'Bestanden / erfolgreich':'Nicht bestanden / Mangel'}}</dd></div><div><dt>Prüfer / Stelle</dt><dd>{{completion.inspector}}</dd></div><div><dt>Prüfbericht / Beleg</dt><dd>{{completion.evidenceReference}}</dd></div>@if(completion.nextInspectionOn){<div><dt>Festgelegter Folgetermin</dt><dd>{{date(completion.nextInspectionOn)}}</dd></div>}</dl>@if(completion.notes){<p class="preserve-lines">{{completion.notes}}</p>}<p class="small muted">Dokumentiert am {{date(completion.recordedAt)}}.</p>}
               @if(item.cancellation;as cancellation){<p><strong>Absage:</strong> {{cancellation.reason}}</p><p class="small muted">Dokumentiert am {{date(cancellation.cancelledAt)}}.</p>}
+              @if(item.completion&&item.id!==linkedDocumentInspection()?.id){<app-equipment-documents [inspection]="item" />}
             </details>
           }@empty{<p class="muted">Noch keine Prüfvorgänge dokumentiert.</p>}
           <div class="pager"><button class="button small" type="button" (click)="historyPage(-1)" [disabled]="d.page<=1||detailLoading()||busy()">Vorherige Nachweise</button><span>Seite {{d.page}} · {{d.total}} Vorgänge</span><button class="button small" type="button" (click)="historyPage(1)" [disabled]="d.page*d.pageSize>=d.total||detailLoading()||busy()">Weitere Nachweise</button></div>

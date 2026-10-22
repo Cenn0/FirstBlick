@@ -61,7 +61,9 @@ public static class DocumentEndpoints
                 db.Documents.Add(doc); Audit(db, scope, doc, "document.stage"); return View(doc);
             })).WithTags("documents");
 
-        api.MapPut("/documents/{id:guid}/content", Upload).WithTags("documents");
+        api.MapPut("/documents/{id:guid}/content", (Guid id, HttpContext http, FirstBlickDbContext db, TenantScope scope,
+            EntityStore store, IObjectStore objects, CommandExecutor commands) =>
+            Upload(id, http, db, scope, store, objects, commands, null)).WithTags("documents");
 
         api.MapGet("/documents/{id:guid}/download", async (Guid id, HttpContext http, FirstBlickDbContext db, TenantScope scope, EntityStore store, IObjectStore objects, CommandExecutor commands, CancellationToken ct) =>
         {
@@ -101,10 +103,13 @@ public static class DocumentEndpoints
             })).WithTags("documents");
     }
 
-    private static async Task<IResult> Upload(Guid id, HttpContext http, FirstBlickDbContext db, TenantScope scope, EntityStore store, IObjectStore objects, CommandExecutor commands)
+    internal static async Task<IResult> Upload(Guid id, HttpContext http, FirstBlickDbContext db, TenantScope scope, EntityStore store,
+        IObjectStore objects, CommandExecutor commands, Guid? inspectionId)
     {
-        var ct = http.RequestAborted; await commands.Authorize("documents", true, ct);
+        var kind = inspectionId.HasValue ? "equipment-inspections" : "documents";
+        var ct = http.RequestAborted; await commands.Authorize(kind, true, ct);
         var initial = await Find(db, id, ct); await EnsureVisible(initial, scope, store, ct);
+        CheckUploadSource(initial, inspectionId);
         Guard.Require(initial.UploadedBy == scope.UserId || scope.Role is BusinessRole.ManagingDirector or BusinessRole.Office, "forbidden", "You cannot complete another person's upload.");
         var limit = http.Features.Get<IHttpMaxRequestBodySizeFeature>();
         if (limit is { IsReadOnly: false }) limit.MaxRequestBodySize = MaximumBytes;
@@ -123,7 +128,7 @@ public static class DocumentEndpoints
         var digest = Convert.ToHexStringLower(SHA256.HashData(bytes));
         Guard.Require(digest == initial.Sha256, "checksum_mismatch", "The upload checksum differs from the original file.");
         ValidateContent(initial.ContentType, bytes);
-        return await commands.Execute(http, "documents", "document.upload", new { id, size = length, sha256 = digest }, async token =>
+        return await commands.Execute(http, kind, "document.upload", new { id, size = length, sha256 = digest }, async token =>
         {
             // Reload under the same tenant lock used by all metadata mutations.
             await db.Entry(initial).ReloadAsync(token);
@@ -131,11 +136,30 @@ public static class DocumentEndpoints
             Guard.Require(initial.UploadedBy == scope.UserId || scope.Role is BusinessRole.ManagingDirector or BusinessRole.Office, "forbidden", "Upload authority changed while the content was being transferred.");
             Guard.Require(initial.State == "Staged", "invalid_transition", "This document already has a verified version; create a new document for changed bytes.");
             buffer.Position = 0; initial.VersionId = await objects.Put(initial.ObjectKey, buffer, initial.ContentType, token);
-            Guard.Require(!string.IsNullOrEmpty(initial.VersionId) && initial.VersionId != "null", "storage_versioning_required", "Enable bucket versioning; an immutable version identifier is required.");
+            Guard.Require(!string.IsNullOrWhiteSpace(initial.VersionId) && initial.VersionId != "null", "storage_versioning_required", "Enable bucket versioning; an immutable version identifier is required.");
             var metadata = await objects.Head(initial.ObjectKey, initial.VersionId, token);
             Guard.Require(metadata is not null && metadata.Size == initial.Size && metadata.VersionId == initial.VersionId, "document_integrity", "The stored file could not be verified.");
+            // A successful PUT/HEAD is insufficient evidence for an inspection original:
+            // verify the exact retained version, including same-length byte corruption.
+            if (inspectionId.HasValue) _ = await ReadVerified(objects, initial, token);
             initial.State = "Ready"; initial.Revision++; Audit(db, scope, initial, "document.ready"); return View(initial);
+        }, async token =>
+        {
+            await db.Entry(initial).ReloadAsync(token);
+            CheckUploadSource(initial, inspectionId);
+            await EnsureVisible(initial, scope, store, token);
+            Guard.Require(initial.UploadedBy == scope.UserId || scope.Role is BusinessRole.ManagingDirector or BusinessRole.Office,
+                "forbidden", "Upload authority changed while the content was being transferred.");
         });
+    }
+
+    private static void CheckUploadSource(DocumentObject document, Guid? inspectionId)
+    {
+        if (inspectionId is { } expected)
+            Guard.Require(document.SourceKind == "equipment-inspections" && document.SourceId == expected,
+                "inspection_document_mismatch", "The original belongs to a different inspection.");
+        else Guard.Require(document.SourceKind != "equipment-inspections", "inspection_document_route",
+            "Use the inspection's original-document upload route.");
     }
 
     public static async Task<object> SaveGenerated(FirstBlickDbContext db, TenantScope scope, IObjectStore objects, byte[] bytes, string name, Guid projectId, string sourceKind, Guid sourceId, string digest, CancellationToken ct)
@@ -191,10 +215,12 @@ public static class DocumentEndpoints
         {
             Guard.Require(AccessRules.CanRead(scope.Role, doc.SourceKind), "forbidden", "The source record is not available to your role.");
             await RecordPolicy.EnsureVisible(doc.SourceKind, doc.SourceId.Value, scope, store, ct);
+            if (doc.SourceKind == "equipment-inspections")
+                await EquipmentInspectionDocumentEndpoints.ValidateBinding(doc, store, ct);
         }
     }
 
-    private static void ValidateMetadata(DocumentRequest body)
+    internal static void ValidateMetadata(DocumentRequest body)
     {
         Guard.Text(body.Name, "Filename", 180); Guard.OptionalId(body.ProjectId, "ProjectId");
         Guard.Require(body.Name == Path.GetFileName(body.Name) && !body.Name.Any(c => char.IsControl(c) || c is '/' or '\\'), "invalid_filename", "Use a plain filename without path or control characters.");
@@ -222,6 +248,6 @@ public static class DocumentEndpoints
         Guard.Require(valid, "invalid_file_content", "The file signature or encoding does not match its declared content type.");
     }
 
-    private static void Audit(FirstBlickDbContext db, TenantScope scope, DocumentObject doc, string action) => db.Audit.Add(new AuditEntry
+    internal static void Audit(FirstBlickDbContext db, TenantScope scope, DocumentObject doc, string action) => db.Audit.Add(new AuditEntry
     { TenantId = scope.TenantId, ActorId = scope.UserId, Action = action, Kind = "documents", EntityId = doc.Id, Revision = doc.Revision, ContentDigest = ContentDigest.Of(View(doc)) });
 }
