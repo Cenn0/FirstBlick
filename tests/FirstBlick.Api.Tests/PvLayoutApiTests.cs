@@ -12,7 +12,7 @@ namespace FirstBlick.Api.Tests;
 public sealed class PvLayoutApiTests(PostgresApiFixture fixture) : IClassFixture<PostgresApiFixture>
 {
     private static PvLayoutInput Input() => new(3.5, 2.1, 1, 1.6, 420, 0, 0, 0, 0,
-        PvModuleOrientation.MostModules, [new("Vent", 0, 0, .2, .2)],
+        PvModuleOrientation.MostModules, [],
         "Synthetic measured plane", "Synthetic module datasheet");
 
     [PostgresApiFact]

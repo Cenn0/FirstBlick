@@ -34,6 +34,7 @@ export const routes: Routes = [
   {path:'roof-revisions',canActivate:[authenticated],loadComponent:()=>import('./pages/roof.component').then(m=>m.RoofComponent)},
   {path:'measurements',canActivate:[authenticated],loadComponent:()=>import('./pages/measurements.component').then(m=>m.MeasurementsComponent)},
   ...modules.filter(module=>!['documents','form-definitions','form-submissions','roof-revisions','measurements'].includes(module.kind)).map(module => ({ path: module.kind, canActivate: [authenticated], data: { kind: module.kind }, loadComponent: () => import('./pages/collection.component').then(m => m.CollectionComponent) })),
+  { path: 'technical/pv', canActivate: [authenticated], loadComponent: () => import('./pages/pv-layout.component').then(m => m.PvLayoutComponent) },
   { path: 'technical', canActivate: [authenticated], loadComponent: () => import('./pages/technical.component').then(m => m.TechnicalComponent) },
   { path: 'management', canActivate: [authenticated], loadComponent: () => import('./pages/management.component').then(m => m.ManagementComponent) },
   { path: 'operations', canActivate: [authenticated], loadComponent: () => import('./pages/operations.component').then(m => m.OperationsComponent) },

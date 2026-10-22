@@ -1,6 +1,6 @@
 # Nachweismatrix für alle 100 Roadmap-Aufgaben
 
-Letzte begrenzte Fortschreibung: **22.10.2026** für **DP-04-01, DP-04-03, DP-04-04, DP-07-05 und DP-09-03**. Diese Matrix übernimmt alle 100 Kennungen und Titel aus [ROADMAP.md](ROADMAP.md). Die fünf genannten Zeilen und die [maschinenlesbare Fassung](evidence/roadmap-matrix.json) benennen die neuen Teilfunktionen, Quell-/Testbelege und verbleibenden Grenzen. Die anderen **95 Zeilen behalten ihren vorherigen Nachweis- und Einstufungsstand**. Frühere Fortschreibungen bleiben historisch dokumentiert. Die ursprünglichen Roadmap-Checkboxen und Abnahmekriterien bleiben unverändert.
+Letzte begrenzte Fortschreibung: **22.10.2026** zusätzlich für **DP-11-09**; die vorherige Fortschreibung betraf DP-04-01, DP-04-03, DP-04-04, DP-07-05 und DP-09-03. Diese Matrix übernimmt alle 100 Kennungen und Titel aus [ROADMAP.md](ROADMAP.md). Die sechs aktualisierten Zeilen und die [maschinenlesbare Fassung](evidence/roadmap-matrix.json) benennen die neuen Teilfunktionen, Quell-/Testbelege und verbleibenden Grenzen. Die anderen **94 Zeilen behalten ihren vorherigen Nachweis- und Einstufungsstand**. Frühere Fortschreibungen bleiben historisch dokumentiert. Die ursprünglichen Roadmap-Checkboxen und Abnahmekriterien bleiben unverändert.
 
 ## Bedeutung der Statusangaben
 
@@ -14,9 +14,14 @@ Letzte begrenzte Fortschreibung: **22.10.2026** für **DP-04-01, DP-04-03, DP-04
 |---|---:|---:|---:|---|
 | Historische Klassifikation vom 20.10.2026 | 49 | 41 | 10 | Als historische Metadaten erhalten; keine aktuelle Gesamtbewertung. |
 | Inventar nach begrenzter Neubewertung vom 21.10.2026 | 49 | 45 | 6 | Acht benannte Zeilen aktualisiert; 92 historische Zeilen übernommen. |
-| Aktuell gelistete Zeilen nach Fortschreibung vom 22.10.2026 | 49 | 45 | 6 | Fünf Aufgaben um neue Teilfunktionen ergänzt; keine Statusänderung. |
+| Aktuell gelistete Zeilen nach Fortschreibung vom 22.10.2026 | 49 | 46 | 5 | Sechs Aufgaben mit begrenzten Teilfunktionen ergänzt; DP-11-09 O → T. |
 
-Gegenüber der historischen JSON-Inventur werden **DP-08-03, DP-11-04, DP-11-05 und DP-12-02 von O auf T** berichtigt, weil jeweils begrenzte Fachfunktionen implementiert sind. DP-11-05 war in der Markdown-Fassung bereits als T geführt; diese Abweichung ist jetzt aufgelöst. Die vier anderen neu bewerteten Zeilen bleiben T. Die aktuelle Zählung beschreibt nur die jetzt gelisteten Statuswerte und ist **kein Fertigstellungsprozentsatz, keine erneute Bewertung aller 100 Aufgaben und keine vollständige Abnahme**. Kein Eintrag behauptet eine normative Zertifizierung, einen Produktionswechsel oder eine externe Anbieterabnahme. Die JSON-Fassung bewahrt die ursprüngliche Zählung und ihren Zeitstempel unter `historicalClassification`; `counts` entspricht den aktuellen Tabellenzeilen.
+Gegenüber der historischen JSON-Inventur werden **DP-08-03, DP-11-04, DP-11-05 und DP-12-02 von O auf T** berichtigt, weil jeweils begrenzte Fachfunktionen implementiert sind. DP-11-05 war in der Markdown-Fassung bereits als T geführt; diese Abweichung ist jetzt aufgelöst. Die vier anderen neu bewerteten Zeilen bleiben T. DP-11-09 wechselt wegen einer neuen geometrischen Teilfunktion ebenfalls von O zu T. Die aktuelle Zählung **49 K / 46 T / 5 O** beschreibt nur die jetzt gelisteten Statuswerte und ist **kein Fertigstellungsprozentsatz, keine erneute Bewertung aller 100 Aufgaben und keine vollständige Abnahme**. Kein Eintrag behauptet eine normative Zertifizierung, einen Produktionswechsel oder eine externe Anbieterabnahme. Die JSON-Fassung bewahrt die ursprüngliche Zählung und ihren Zeitstempel unter `historicalClassification`; `counts` entspricht den aktuellen Tabellenzeilen.
+
+## PV-Geometrie – begrenzter Teilumfang DP-11-09 (22.10.2026)
+
+- [Geometrieentwurf und Grenzen](pv-module-layout.md): deterministische Modulpositionen auf einer rechteckigen gemessenen Dachfläche, Nennleistung statt Ertragsprognose, lokale UI-Eingabe und Export, technischer Projekt-Originalstand über die vorhandene Ergebnisakte.
+- Fehlende Norm-/Montage-/Elektro-/Lastnachweise bleiben ausdrücklich offen. CI-Ergebnisse zählen nur für den geprüften Commit.
 
 ## Aktuelle Fortsetzung – Projektvorlagen und Originalbelege (22.10.2026)
 
@@ -225,7 +230,7 @@ Diese Zahlen gehören zu unterschiedlichen Quellständen und teilweise überlapp
 | **DP-11-06** Windlast und Befestigung | **O** | [Methodengrenzen][methods] schließen Wind-/Befestigungsnachweise aus. | Zonen-/Standortdaten, Regelwerk, Lastkombinationen, Befestiger-/Untergrunddaten und geprüfte Nachweise fehlen. |
 | **DP-11-07** Haupt- und Notentwässerung | **O** | [Dachdetails][roof-model] können einen Ablauf nur beschreiben; [Methodengrenzen][methods] unterscheiden dies von Dimensionierung. | Haupt-/Notentwässerung mit Regendaten, Fließwegen, hydraulischen Grenzen und unabhängigen Referenzen fehlt. |
 | **DP-11-08** Steildach, Schnee und konstruktive Nachweise | **O** | [Geometriekern][roof-geometry] berechnet einfache geneigte Ebenen; [Methodengrenzen][methods] schließen Tragwerksaussagen aus. | Schnee, Steildachkonstruktion, tragende Verbindungen und konstruktive Nachweise fehlen. |
-| **DP-11-09** Photovoltaik als Dachplanungsmodul | **O** | [Methodengrenzen][methods] führen Photovoltaik ausdrücklich als offenen Fachbereich. | Modulbelegung/Verschattung, Befestigung/Last, Elektroplanung und Hersteller-/Standortdaten fehlen. |
+| **DP-11-09** Photovoltaik als Dachplanungsmodul | **T** | [PV-Geometrie](pv-module-layout.md) und [Rechenkern](../src/FirstBlick.Core/Technical/PvModuleLayout.cs) planen ein rechteckiges Dachflächen-Raster mit ausdrücklich eingegebenen Modulen, Rand- und Hindernisabständen, Hoch-/Querformatvergleich, positionsbezogener Ausgabeliste und SHA-256-Provenienz. [Corefälle](../tests/FirstBlick.Core.Tests/Technical/PvModuleLayoutTests.cs), [HTTP-/PostgreSQL-Fälle](../tests/FirstBlick.Api.Tests/PvLayoutApiTests.cs) und [Clientverträge](../web/tests/pv-layout.test.ts) prüfen Grenzen; bestandenes CI ist für den finalen Commit gesondert nachzuweisen. | Raster ist weder vollständig optimiert noch für mehrseitige/nichtrechteckige Dächer geeignet. Verschattung, Ertrag, Montage, Befestigung/Last, Brandschutz, Elektrotechnik, Hersteller-/Standortdaten und unabhängige Fachabnahme fehlen. |
 | **DP-11-10** Fachsoftwareintegration und Gesamtprüfung | **O** | [Statisches Installerinventar][methods] enthält weder ausgeführte Demoalgorithmen noch kopierte Herstellerdaten. | Fachsoftwareadapter, lizenzierte Datenaustauschverträge und unabhängiger vollständiger Flach-/Steildachvergleich fehlen. |
 
 ### DP-12 – Schnittstellen und Datenübernahme (P1/P2)

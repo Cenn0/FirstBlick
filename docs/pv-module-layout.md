@@ -2,7 +2,7 @@
 
 Stand: 22.10.2026 · FirstBlick · **nicht normativer Geometrieentwurf**.
 
-Mit `POST /api/v1/technical/roof/pv-layout` kann eine rechteckige, **auf der Dachfläche gemessene** Ebene
+Die Bedienoberfläche unter `/technical/pv` und `POST /api/v1/technical/roof/pv-layout` kann eine rechteckige, **auf der Dachfläche gemessene** Ebene
 mit nominalen PV-Modulen belegt werden. Die Eingabe umfasst:
 
 - Breite und Höhe auf der geneigten **Dachebene** (m, nicht Grundrissprojektion),
