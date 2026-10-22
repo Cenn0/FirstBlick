@@ -155,7 +155,7 @@ export class PvRoofSetComponent {
       const confirmed = validPvRoofSetResult(record['result'], input);
       if (confirmed.provenance.inputSha256 !== this.result()?.provenance.inputSha256)
         throw new Error('Der gespeicherte Entwurf weicht von der bestätigten Berechnung ab.');
-      this.saved.set(record as SavedResult);
+      this.saved.set(record as unknown as SavedResult);
       this.notice.set('Die geprüften Dachflächen und ihre Eingaben wurden als technischer Projektstand gespeichert.');
     } catch (error) {
       if (this.current(id, signature)) this.error.set(errorMessage(error));
