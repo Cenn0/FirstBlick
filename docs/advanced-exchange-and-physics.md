@@ -71,3 +71,7 @@ Abläufe, Kehlen, Durchdringungen, Oberflächenstrukturen oder Verschnittoptimie
 Auch die theoretisch stetige Fugendicke garantiert keine geeignete Dachentwässerung.
 Eingetragene Hersteller-/SKU-Kennwerte sind ohne unabhängig verifizierte Katalogquellen
 und Herstellerfreigabe keine ausführungs- oder bestellverbindliche Vorgabe.
+
+## Ergänzung vom 23.10.2026: erweiterte Clientverträge
+
+[Eigenständige Client-/Browserregressionen und Eingabe-/Ergebnisbindung](advanced-technical-client.md) ergänzen jetzt alle vier erweiterten Masken. Grenzflächenhöchstmengen und Restwasser sind sichtbar; Plattenpositionen, SKUs, Packungen und Preise werden vor der Ausgabe auf Konsistenz geprüft. Die fachlichen Einschränkungen oben bleiben unverändert. Die tatsächlich ausgeführten Prüfungen des finalen Commits sind in [PR #20](https://github.com/Cenn0/FirstBlick/pull/20) nachzuvollziehen.

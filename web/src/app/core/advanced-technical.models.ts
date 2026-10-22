@@ -71,7 +71,13 @@ function moisture(value: Row, mode: 'balance' | 'drying'): void {
   strings(standard['requiredFurtherChecks']);
   const input = row(value['input']), assembly = mode === 'drying' ? row(input['assembly']) : input;
   const grid = list(value['grid'], 2, 256);
-  grid.forEach((g, i) => { require(g['index'] === i); finite(g['cumulativeResistanceM2KW']); finite(g['cumulativeSdM']); });
+  grid.forEach((g, i) => {
+    require(g['index'] === i && typeof g['name'] === 'string' && g['name'].trim().length > 0);
+    finite(g['layerFraction'], 0, 1); integer(g['layerIndex'], -1, list(assembly['layers'], 1, 60).length - 1);
+    const r = finite(g['cumulativeResistanceM2KW']), sd = finite(g['cumulativeSdM']);
+    if (!i) require(r === 0 && sd === 0 && g['layerIndex'] === -1);
+    else require(r >= Number(grid[i - 1]['cumulativeResistanceM2KW']) && sd > Number(grid[i - 1]['cumulativeSdM']));
+  });
   const months = list(value['months'], mode === 'balance' ? 12 : 1, mode === 'balance' ? 12 : 120);
   const start = integer(mode === 'balance' ? value['startingMonth'] : input['startingMonth'], 1, 12);
   let water = mode === 'drying' ? 1 : 0, condensed = 0, evaporated = 0;
@@ -137,6 +143,7 @@ function boardLayout(value: Row, mode: 'boards' | 'assembly'): void {
   const groups = new Map<string, { count: number; cuts: number; volume: number; waste: number; pack: number; price: number | null }>();
   const key = (catalog: Row, sku: unknown): string => canonicalJson(mode === 'assembly'
     ? [catalog['manufacturer'], catalog['productRange'], catalog['catalogRevision'], catalog['sourceReference'], sku] : sku);
+  const cells = new Set<string>();
   let volume = 0, waste = 0, area = 0;
   for (const placement of placements) {
     const p = mode === 'assembly' ? row(placement['panel']) : placement;
@@ -153,6 +160,18 @@ function boardLayout(value: Row, mode: 'boards' | 'assembly'): void {
       require(sku, 'Die Platzierung enthält einen Artikel außerhalb des erfassten Katalogs.');
       close(thin, finite(sku['thinEdgeM']), 1e-7);
       const run = finite(catalog['boardRunM']), cross = finite(catalog['boardCrossM']);
+      const axisX = input['flowAxis'] === 'AlongLength', low = input['lowEdgeAtCoordinateZero'] === true;
+      const flow = Number(input[axisX ? 'roofLengthM' : 'roofWidthM']), span = Number(input[axisX ? 'roofWidthM' : 'roofLengthM']);
+      const columns = Math.ceil(flow / run - 1e-10), rows = Math.ceil(span / cross - 1e-10);
+      const column = integer(p['column'], 1, columns), index = integer(p['row'], 1, rows);
+      require(placements.length === rows * columns && !cells.has(`${index}/${column}`)); cells.add(`${index}/${column}`);
+      const alongStart = (column - 1) * run, crossStart = (index - 1) * cross;
+      const expectedRun = Math.min(run, flow - alongStart), expectedCross = Math.min(cross, span - crossStart);
+      close(l, axisX ? expectedRun : expectedCross); close(w, axisX ? expectedCross : expectedRun);
+      close(x, axisX ? (low ? alongStart : flow - alongStart - expectedRun) : crossStart);
+      close(y, axisX ? crossStart : (low ? alongStart : flow - alongStart - expectedRun));
+      close(thin, Number(input['lowEdgeThicknessM']) + alongStart * Number(input['slopePercent']) / 100);
+      require(p['rotationDegrees'] === (axisX ? (low ? 0 : 180) : (low ? 90 : 270)));
       const along = input['flowAxis'] === 'AlongLength' ? l : w, across = input['flowAxis'] === 'AlongLength' ? w : l;
       require(along <= run + 1e-9 && across <= cross + 1e-9);
       close(thick, thin + along * Number(input['slopePercent']) / 100);
@@ -225,9 +244,9 @@ export function validateAdvancedResult(raw: unknown, mode: AdvancedMode, expecte
   return value as AdvancedResult;
 }
 export function validateAdvancedSaved(raw: unknown, mode: AdvancedMode, preview: AdvancedResult,
-  tenantId: string | null, projectId: string): AdvancedSaved {
+  tenantId: string | null, projectId: string, title: string): AdvancedSaved {
   const value = row(raw);
-  require(value['tenantId'] === tenantId && value['projectId'] === projectId && value['method'] === advancedMethods[mode].method &&
+  require(value['title'] === title && value['tenantId'] === tenantId && value['projectId'] === projectId && value['method'] === advancedMethods[mode].method &&
     value['methodVersion'] === '1.0.0' && value['isNormative'] === false && isDigest(value['digest']) &&
     typeof value['id'] === 'string' && /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(value['id']) &&
     value['id'] !== '00000000-0000-0000-0000-000000000000', 'Der gespeicherte Bericht gehört nicht zum ausgewählten Betrieb, Verfahren oder Projekt.');

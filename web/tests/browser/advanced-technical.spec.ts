@@ -19,7 +19,8 @@ async function fixture(page: Page, mode: AdvancedMode = 'balance', options: Opti
     if (path === 'auth/me') return route.fulfill({ json: {
       user: { id: 'operator', email: 'operator@example.test', displayName: 'Operator' }, activeTenantId: 'tenant',
       tenants: [{ id: 'tenant', name: 'Synthetic', role: 'ManagingDirector', modules: ['core', 'technical'],
-        capabilities: options.denied ? ['projects.read'] : ['*'] }]
+        capabilities: options.denied ? ['projects.read'] : ['*'] },
+        { id: 'other', name: 'Other synthetic business', role: 'ManagingDirector', modules: ['core', 'technical'], capabilities: ['*'] }]
     } });
     if (path === 'auth/csrf') return route.fulfill({ json: {}, headers: { 'Set-Cookie': 'XSRF-TOKEN=synthetic; Path=/; SameSite=Strict' } });
     if (path === 'projects') return route.fulfill({ json: { items: [{ id: projectId, revision: 1, name: 'Synthetic roof project' }], total: 1, page: 1, pageSize: 25 } });
@@ -131,10 +132,29 @@ test('mode change discards a delayed response', async ({ page }) => {
   let started!: () => void; const pending = new Promise<void>(r => started = r);
   await page.route('**/api/v1/technical/moisture/iso13788/balance', async route => { started(); await gate; await route.fulfill({ json: fixtures.balance.result }); });
   await page.goto('/technical'); const s = await fill(page, 'balance'); await calculate(s); await pending;
-  await s.locator('#advanced-tab-boards').click(); release(); await expect(s.locator('.result-panel')).toHaveCount(0);
+  await s.locator('#advanced-tab-boards').click(); const arrived = page.waitForResponse('**/api/v1/technical/moisture/iso13788/balance'); release(); await arrived;
+  await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))); await expect(s.locator('.result-panel')).toHaveCount(0);
   await expect(s.locator('fieldset').first()).toBeEnabled();
 });
 test('missing capability hides advanced form', async ({ page }) => {
   await fixture(page, 'balance', { denied: true }); await page.goto('/technical');
-  const s = page.locator('app-advanced-technical'); await expect(s).toContainText('Berechtigung'); await expect(s.locator('form')).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Zugriff eingeschränkt', exact: true })).toBeVisible();
+  await expect(page.locator('app-advanced-technical form')).toHaveCount(0);
+});
+
+test('authorization failure clears an existing preview and project links', async ({ page }) => {
+  await fixture(page, 'boards'); await page.goto('/technical'); const s = await fill(page, 'boards'); await calculate(s);
+  await page.route('**/api/v1/technical/runs', route => route.fulfill({ status: 403, json: { title: 'forbidden', detail: 'Synthetic revoked access' } }));
+  await save(s); await expect(s.getByRole('alert')).toContainText('revoked access');
+  await expect(s.locator('.result-panel')).toHaveCount(0); await expect(s.locator('#adv-project')).toHaveCount(0);
+});
+test('changing an entered source discards preview and saved links', async ({ page }) => {
+  await fixture(page, 'boards'); await page.goto('/technical'); const s = await fill(page, 'boards'); await calculate(s); await save(s);
+  await put(s, 'ab-source', 'Changed roof survey'); await expect(s.locator('.result-panel')).toHaveCount(0);
+  await expect(s.getByRole('button', { name: 'Prüfsummenverifizierten PDF-Bericht laden', exact: true })).toHaveCount(0);
+});
+test('switching the business clears result and project bindings', async ({ page }) => {
+  await fixture(page, 'boards'); await page.goto('/technical'); const s = await fill(page, 'boards'); await calculate(s); await save(s);
+  await page.locator('#active-tenant').selectOption('other'); await expect(s.locator('.result-panel')).toHaveCount(0);
+  await expect(s.locator('#adv-project')).toHaveCount(0);
 });

@@ -1,6 +1,6 @@
 {
   "schema": "firstblick.roadmap-evidence/1.0.0",
-  "recordedAtUtc": "2026-10-22T21:35:00Z",
+  "recordedAtUtc": "2026-10-22T23:02:28.959300+00:00",
   "counts": {
     "K": 49,
     "T": 49,
@@ -17,36 +17,19 @@
     "note": "Historical 2026-10-20 inventory, retained without presenting it as the current listed-row count or a completion measurement."
   },
   "latestReassessment": {
-    "recordedOn": "2026-10-22",
+    "recordedOn": "2026-10-23",
     "tasks": [
-      "DP-11-06",
-      "DP-11-07",
-      "DP-11-08"
+      "DP-11-04",
+      "DP-11-05"
     ],
-    "scope": "Three supplied-case arithmetic tools with explicit sources, project evidence and responsive workflow; no structural, hydraulic or normative approval.",
-    "reclassifiesTasks": true,
-    "statusChangesFromPreviousInventory": [
-      {
-        "task": "DP-11-06",
-        "from": "O",
-        "to": "T"
-      },
-      {
-        "task": "DP-11-07",
-        "from": "O",
-        "to": "T"
-      },
-      {
-        "task": "DP-11-08",
-        "from": "O",
-        "to": "T"
-      }
-    ],
+    "scope": "Advanced client input/result and immutable project-preview binding, water and board consistency checks, interface maxima and independent client/browser regression paths; fixed original 46-task closeout register.",
+    "reclassifiesTasks": false,
+    "statusChangesFromPreviousInventory": [],
     "originalRoadmapCheckboxesChanged": false,
     "allOriginalAcceptanceCriteriaReviewed": false,
     "otherTaskClassificationsRemainHistorical": true,
-    "classificationNote": "49 K / 49 T / 2 O counts listed categories only; no completion percentage. The other 97 task categories remain unchanged.",
-    "verificationNote": "Tests, actual API/S3/PDF/restart checks and final commit-specific CI/Standards/Operations must be distinguished; test sources alone do not establish execution."
+    "classificationNote": "49 K / 49 T / 2 O unchanged. The original 46 partial tasks remain a fixed historical workset; software work and external acceptance remain distinct.",
+    "verificationNote": "Core-generated synthetic fixtures and controlled HTTP browser fixtures are distinct from actual API/PostgreSQL/S3/container/restore evidence. Final commit-specific runs are linked in PR #20; no normative or manufacturer approval is inferred."
   },
   "sources": {
     "discovery-live": "docs/evidence/live-discovery-checkpoint7.json",
@@ -345,7 +328,13 @@
     "roof-actions-api-tests": "tests/FirstBlick.Api.Tests/RoofActionsApiTests.cs",
     "roof-actions-client-tests": "web/tests/roof-actions.test.ts",
     "roof-actions-browser": "web/tests/browser/roof-actions.spec.ts",
-    "roof-actions-smoke": "scripts/roof_actions_smoke.py"
+    "roof-actions-smoke": "scripts/roof_actions_smoke.py",
+    "advanced-client-docs": "docs/advanced-technical-client.md",
+    "advanced-client-contract": "web/src/app/core/advanced-technical.models.ts",
+    "advanced-client-tests": "web/tests/advanced-technical.test.ts",
+    "advanced-browser-tests": "web/tests/browser/advanced-technical.spec.ts",
+    "advanced-fixture-contract": "tests/FirstBlick.Core.Tests/Technical/AdvancedClientContractTests.cs",
+    "closeout-46": "docs/roadmap-closeout.md"
   },
   "tasks": [
     {
@@ -904,15 +893,15 @@
     {
       "id": "DP-11-04",
       "status": "T",
-      "evidence": "Der [ISO-13788-Teilumfang][advanced-exchange-docs] und [Rechenkern][iso13788-core] berechnen monatliche Kondensation, Verdunstung, Wasserüberträge, Jahresrestmengen und den Austrocknungsvergleich über bis zu 120 Monate. Zwölf ausdrücklich erfasste Klimapunkte, Kennwertquellen und Anwendungsbestätigung sind erforderlich. [Corefälle][iso13788-tests] und [Fach-API-Fälle][advanced-technical-api-tests] prüfen begrenzte Eingaben und Ergebnisse; die [erweiterte Angular-Maske][advanced-technical-ui] erfasst Klima-, Material- und Verfahrensangaben; [Technical API][technical-api] speichert reproduzierbare Rechenläufe mit normalisierten Eingaben und Digest am Projekt.",
-      "remaining": "Kein vollständig abgenommener Feuchteschutznachweis nach DIN 4108-3, keine instationäre hygrothermische Simulation und keine automatische Freigabe realer Bauteile. Nationale Bauartbedingungen, Schadensgrenzen, reale Klima-/Materialdaten und unabhängige Referenzabnahme bleiben offen. Die dokumentierte Abweichung zum informativen ISO-Beispiel C.4/C.5 ist ungeklärt und darf nicht als bestandene Referenz gelten. Eigenständige Client-/Browserregressionen dieser erweiterten Maske sind hier noch nicht belegt.",
+      "evidence": "Der [ISO-13788-Teilumfang][advanced-exchange-docs] und [Rechenkern][iso13788-core] berechnen monatliche Kondensation, Verdunstung, Wasserüberträge, Jahresrestmengen und den Austrocknungsvergleich über bis zu 120 Monate. Zwölf ausdrücklich erfasste Klimapunkte, Kennwertquellen und Anwendungsbestätigung sind erforderlich. [Corefälle][iso13788-tests] und [Fach-API-Fälle][advanced-technical-api-tests] prüfen begrenzte Eingaben und Ergebnisse; die [erweiterte Angular-Maske][advanced-technical-ui] erfasst Klima-, Material- und Verfahrensangaben; [Technical API][technical-api] speichert reproduzierbare Rechenläufe mit normalisierten Eingaben und Digest am Projekt. Der [erweiterte Clientvertrag][advanced-client-contract] prüft normalisierte Eingaben, quellengebundene Ergebniswerte und die vollständige unveränderliche Vorschau bei Projektablage. [Clientfälle][advanced-client-tests], [Desktop-/Tablet-/Mobil-Fixtures][advanced-browser-tests] und der [Core-Fixturevertrag][advanced-fixture-contract] ergänzen eigenständige Regressionen; [Umfang und Prüfgrenzen][advanced-client-docs] unterscheiden Konsistenzprüfung und Fachabnahme.",
+      "remaining": "Kein vollständig abgenommener Feuchteschutznachweis nach DIN 4108-3, keine instationäre hygrothermische Simulation und keine automatische Freigabe realer Bauteile. Nationale Bauartbedingungen, Schadensgrenzen, reale Klima-/Materialdaten und unabhängige Referenzabnahme bleiben offen. Die dokumentierte Abweichung zum informativen ISO-Beispiel C.4/C.5 ist ungeklärt und darf nicht als bestandene Referenz gelten.",
       "title": "Feuchteschutz und Verfahrensgrenzen"
     },
     {
       "id": "DP-11-05",
       "status": "T",
-      "evidence": "[Gefälleplatten- und Mehrfeldplanung][advanced-exchange-docs], [Plattenlayout][tapered-board-core] und [Mehrfeldkern][tapered-assembly-core] verarbeiten ausdrücklich eingegebene Hersteller-/Produkt-/Katalogrevisionen und SKUs für rechteckige, einachsige Gefällefelder. Sie berechnen Positionen, örtliche Dicken, Zuschnitte, Verschnitt und zusammengeführte Stück-/Packmengen; Lücken, Überlappungen und Dickenunstetigkeit an gemeinsamen Feldgrenzen werden abgewiesen. [Plattenfälle][tapered-board-tests], [Mehrfeldfälle][tapered-assembly-tests] und [HTTP-/PostgreSQL-Fälle][advanced-technical-api-tests] umfassen synthetische Geometrien und die nichtnormative Projektablage; die [erweiterte Angular-Maske][advanced-technical-ui] bietet die ausdrückliche Katalog- und Feldeingabe.",
-      "remaining": "Unabhängig geprüfte, rechtssicher nutzbare Herstellerkataloge und Hersteller-/Fachplanerfreigaben fehlen. Innenliegende Abläufe, Kehlen, Öffnungen/Durchdringungen, nichtrechteckige Entwässerungsgeometrie, Zuschnittoptimierung und Wiederverwendung von Verschnitt sind nicht enthalten. Stetige Fugendicken sind kein Entwässerungsnachweis; die Ausgabe ist kein ausführungs- oder bestellverbindlicher Verlegeplan. Eigenständige Client-/Browserregressionen dieser erweiterten Maske sind hier noch nicht belegt.",
+      "evidence": "[Gefälleplatten- und Mehrfeldplanung][advanced-exchange-docs], [Plattenlayout][tapered-board-core] und [Mehrfeldkern][tapered-assembly-core] verarbeiten ausdrücklich eingegebene Hersteller-/Produkt-/Katalogrevisionen und SKUs für rechteckige, einachsige Gefällefelder. Sie berechnen Positionen, örtliche Dicken, Zuschnitte, Verschnitt und zusammengeführte Stück-/Packmengen; Lücken, Überlappungen und Dickenunstetigkeit an gemeinsamen Feldgrenzen werden abgewiesen. [Plattenfälle][tapered-board-tests], [Mehrfeldfälle][tapered-assembly-tests] und [HTTP-/PostgreSQL-Fälle][advanced-technical-api-tests] umfassen synthetische Geometrien und die nichtnormative Projektablage; die [erweiterte Angular-Maske][advanced-technical-ui] bietet die ausdrückliche Katalog- und Feldeingabe. Der [erweiterte Clientvertrag][advanced-client-contract] prüft normalisierte Eingaben, quellengebundene Ergebniswerte und die vollständige unveränderliche Vorschau bei Projektablage. [Clientfälle][advanced-client-tests], [Desktop-/Tablet-/Mobil-Fixtures][advanced-browser-tests] und der [Core-Fixturevertrag][advanced-fixture-contract] ergänzen eigenständige Regressionen; [Umfang und Prüfgrenzen][advanced-client-docs] unterscheiden Konsistenzprüfung und Fachabnahme.",
+      "remaining": "Unabhängig geprüfte, rechtssicher nutzbare Herstellerkataloge und Hersteller-/Fachplanerfreigaben fehlen. Innenliegende Abläufe, Kehlen, Öffnungen/Durchdringungen, nichtrechteckige Entwässerungsgeometrie, Zuschnittoptimierung und Wiederverwendung von Verschnitt sind nicht enthalten. Stetige Fugendicken sind kein Entwässerungsnachweis; die Ausgabe ist kein ausführungs- oder bestellverbindlicher Verlegeplan.",
       "title": "Gefälledämmung und Verlegeplanung"
     },
     {
@@ -1205,6 +1194,38 @@
       "otherTaskClassificationsRemainHistorical": true,
       "classificationNote": "DP-11-09 now has a bounded geometrical implementation; 49 K / 46 T / 5 O reflects listed classifications only, not completion.",
       "verificationNote": "Source and tests are committed; CI/standards/operations results apply only to the final merge commit."
+    },
+    {
+      "recordedOn": "2026-10-22",
+      "tasks": [
+        "DP-11-06",
+        "DP-11-07",
+        "DP-11-08"
+      ],
+      "scope": "Three supplied-case arithmetic tools with explicit sources, project evidence and responsive workflow; no structural, hydraulic or normative approval.",
+      "reclassifiesTasks": true,
+      "statusChangesFromPreviousInventory": [
+        {
+          "task": "DP-11-06",
+          "from": "O",
+          "to": "T"
+        },
+        {
+          "task": "DP-11-07",
+          "from": "O",
+          "to": "T"
+        },
+        {
+          "task": "DP-11-08",
+          "from": "O",
+          "to": "T"
+        }
+      ],
+      "originalRoadmapCheckboxesChanged": false,
+      "allOriginalAcceptanceCriteriaReviewed": false,
+      "otherTaskClassificationsRemainHistorical": true,
+      "classificationNote": "49 K / 49 T / 2 O counts listed categories only; no completion percentage. The other 97 task categories remain unchanged.",
+      "verificationNote": "Tests, actual API/S3/PDF/restart checks and final commit-specific CI/Standards/Operations must be distinguished; test sources alone do not establish execution."
     }
   ]
 }

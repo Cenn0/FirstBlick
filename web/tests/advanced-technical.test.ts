@@ -8,7 +8,7 @@ const clone = (key = 'balance'): any => structuredClone((fixtures as Record<stri
 const saved = (): any => {
   const f = clone();
   return { id: '20000000-0000-4000-8000-000000000001', tenantId: 'tenant', projectId: 'project', revision: 1,
-    method: 'moisture.iso13788.balance', methodVersion: '1.0.0',
+    title: 'Reviewed', method: 'moisture.iso13788.balance', methodVersion: '1.0.0',
     input: f.result.input, result: f.result, digest: 'b'.repeat(64), isNormative: false };
 };
 
@@ -70,6 +70,12 @@ describe('current core outputs at the advanced technical client boundary', () =>
     const f = clone('boards'); f.result.placements[0][key] = 'invalid';
     expect(() => validateAdvancedResult(f.result, f.mode, f.input)).toThrow();
   });
+  it('rejects duplicate panel grid cells and a plausible but wrong rotation', () => {
+    const f = clone('boards'); f.result.placements[1] = structuredClone(f.result.placements[0]);
+    expect(() => validateAdvancedResult(f.result, f.mode, f.input)).toThrow();
+    const r = clone('boards'); r.result.placements[0].rotationDegrees = 0;
+    expect(() => validateAdvancedResult(r.result, r.mode, r.input)).toThrow();
+  });
   it('rejects an unknown price becoming a zero', () => {
     const f = clone('unknown'); f.result.orders[0].estimatedPackCostEur = 0;
     expect(() => validateAdvancedResult(f.result, f.mode, f.input)).toThrow();
@@ -86,18 +92,18 @@ describe('current core outputs at the advanced technical client boundary', () =>
 
 describe('immutable saved preview binding', () => {
   const preview = () => clone().result as AdvancedResult;
-  it('accepts a matching saved result', () => { expect(validateAdvancedSaved(saved(), 'balance', preview(), 'tenant', 'project')).toEqual(saved()); });
-  it.each(['tenantId', 'projectId', 'method', 'methodVersion', 'digest', 'id', 'revision', 'isNormative'])('rejects changed saved %s', key => {
+  it('accepts a matching saved result', () => { expect(validateAdvancedSaved(saved(), 'balance', preview(), 'tenant', 'project', 'Reviewed')).toEqual(saved()); });
+  it.each(['title', 'tenantId', 'projectId', 'method', 'methodVersion', 'digest', 'id', 'revision', 'isNormative'])('rejects changed saved %s', key => {
     const s = saved(); s[key] = key === 'isNormative' ? true : 'invalid';
-    expect(() => validateAdvancedSaved(s, 'balance', preview(), 'tenant', 'project')).toThrow();
+    expect(() => validateAdvancedSaved(s, 'balance', preview(), 'tenant', 'project', 'Reviewed')).toThrow();
   });
   it('rejects different outer input even with an unchanged nested preview hash', () => {
     const s = saved(); s.input = { ...s.input, trialMonth: 2 };
-    expect(() => validateAdvancedSaved(s, 'balance', preview(), 'tenant', 'project')).toThrow();
+    expect(() => validateAdvancedSaved(s, 'balance', preview(), 'tenant', 'project', 'Reviewed')).toThrow();
   });
   it('rejects changed result content with a copied preview hash', () => {
     const s = saved(); s.result.provenance.limitations = ['Substituted evidence'];
-    expect(() => validateAdvancedSaved(s, 'balance', preview(), 'tenant', 'project')).toThrow('Vorschau');
+    expect(() => validateAdvancedSaved(s, 'balance', preview(), 'tenant', 'project', 'Reviewed')).toThrow('Vorschau');
   });
   it('never mutates source collections while normalizing', () => {
     const f = clone('boards'); normalizeAdvancedInput(f.input, 'boards'); expect(f).toEqual(clone('boards'));

@@ -283,7 +283,7 @@ export class AdvancedTechnicalComponent {
       const raw = object(await this.api.command<unknown>('technical/runs',
         { projectId: project, roofRevisionId: null, title, method: methods[mode].method, input: result.input }));
       if (!this.current(revision, access)) return;
-      this.saved.set(validateAdvancedSaved(raw, mode, result, tenant, project));
+      this.saved.set(validateAdvancedSaved(raw, mode, result, tenant, project, title));
       this.notice.set('Berechnung mit Quelle, Fachgrenzen und Digest im Projekt gespeichert.');
     } catch (error) { this.failed(error, revision, access); }
     finally { if (this.current(revision, access)) this.busy.set(false); }
