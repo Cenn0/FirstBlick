@@ -62,7 +62,7 @@ export async function validateOriginalSignature(blob: Blob, type: string): Promi
     throw new Error('Der Dateiinhalt passt nicht zum angegebenen PDF- oder Bildformat.');
 }
 
-export async function verifiedInspectionDownload(response: Response, document: InspectionDocument): Promise<Blob> {
+export async function verifiedInspectionDownload(response: Response, document: Pick<InspectionDocument, 'contentType' | 'sha256' | 'size'>): Promise<Blob> {
   if (response.headers.get('Content-Type')?.split(';')[0].trim() !== document.contentType
     || response.headers.get('X-Content-SHA256') !== document.sha256)
     throw new Error('Der Download bestätigt nicht das gespeicherte Dateiformat und die Prüfsumme.');

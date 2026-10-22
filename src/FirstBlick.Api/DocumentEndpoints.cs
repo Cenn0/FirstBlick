@@ -18,6 +18,7 @@ public static class DocumentEndpoints
 
     public static void Map(RouteGroupBuilder api)
     {
+        LedgerDocumentEndpoints.Map(api);
         api.MapGet("/documents", async (HttpContext http, FirstBlickDbContext db, TenantScope scope, EntityStore store, CommandExecutor commands, CancellationToken ct) =>
         {
             await commands.Authorize("documents", false, ct);
@@ -36,13 +37,15 @@ public static class DocumentEndpoints
             }
             var total = await query.CountAsync(ct);
             var rows = await query.OrderByDescending(x => x.CreatedAt).ThenBy(x => x.Id).Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(ct);
+            foreach (var row in rows.Where(x => LedgerDocumentEndpoints.Supports(x.SourceKind)))
+                await LedgerDocumentEndpoints.ValidateBinding(row, store, db, ct);
             return Results.Ok(new { items = rows.Select(View), total, page, pageSize });
         }).WithTags("documents");
 
         api.MapGet("/documents/{id:guid}", async (Guid id, HttpContext http, FirstBlickDbContext db, TenantScope scope, EntityStore store, CommandExecutor commands, CancellationToken ct) =>
         {
             await commands.Authorize("documents", false, ct);
-            var doc = await Find(db, id, ct); await EnsureVisible(doc, scope, store, ct);
+            var doc = await Find(db, id, ct); await EnsureVisible(doc, scope, store, db, ct);
             http.Response.Headers.ETag = $"\"{doc.Revision}\"";
             return Results.Ok(View(doc));
         }).WithTags("documents");
@@ -68,20 +71,26 @@ public static class DocumentEndpoints
         api.MapGet("/documents/{id:guid}/download", async (Guid id, HttpContext http, FirstBlickDbContext db, TenantScope scope, EntityStore store, IObjectStore objects, CommandExecutor commands, CancellationToken ct) =>
         {
             await commands.Authorize("documents", false, ct);
-            var doc = await Find(db, id, ct); await EnsureVisible(doc, scope, store, ct);
+            var doc = await Find(db, id, ct); await EnsureVisible(doc, scope, store, db, ct);
             Guard.Require(doc.State is "Ready" or "Archived", "document_not_ready", "The document upload has not been verified.");
             var bytes = await ReadVerified(objects, doc, ct);
+            if (LedgerDocumentEndpoints.Supports(doc.SourceKind)) ValidateContent(doc.ContentType, bytes);
             http.Response.Headers["X-Content-SHA256"] = doc.Sha256;
+            http.Response.Headers.CacheControl = "private, no-store";
             return Results.File(bytes, doc.ContentType, fileDownloadName: doc.Name, lastModified: doc.CreatedAt);
         }).WithTags("documents");
 
         api.MapPost("/documents/{id:guid}/archive", (Guid id, HttpContext http, FirstBlickDbContext db, TenantScope scope, EntityStore store, CommandExecutor commands) =>
             commands.Execute(http, "documents", "document.archive", new { id }, async ct =>
             {
-                var doc = await Find(db, id, ct); await EnsureVisible(doc, scope, store, ct); CommandExecutor.Match(http, doc.Revision);
+                var doc = await Find(db, id, ct); await EnsureVisible(doc, scope, store, db, ct); CommandExecutor.Match(http, doc.Revision);
                 Guard.Require(scope.Role is BusinessRole.ManagingDirector or BusinessRole.Office, "forbidden", "Only business administration can archive documents.");
                 Guard.Require(doc.State == "Ready", "invalid_transition", "Only a verified document can be archived.");
                 doc.State = "Archived"; doc.Revision++; Audit(db, scope, doc, "document.archive"); return View(doc);
+            }, async ct =>
+            {
+                var doc = await Find(db, id, ct); await EnsureVisible(doc, scope, store, db, ct);
+                if (LedgerDocumentEndpoints.Supports(doc.SourceKind)) await commands.Authorize(doc.SourceKind!, true, ct);
             })).WithTags("documents");
 
         api.MapPost("/quotes/{id:guid}/pdf", (Guid id, HttpContext http, FirstBlickDbContext db, TenantScope scope, EntityStore store, IObjectStore objects, CommandExecutor commands) =>
@@ -104,12 +113,13 @@ public static class DocumentEndpoints
     }
 
     internal static async Task<IResult> Upload(Guid id, HttpContext http, FirstBlickDbContext db, TenantScope scope, EntityStore store,
-        IObjectStore objects, CommandExecutor commands, Guid? inspectionId)
+        IObjectStore objects, CommandExecutor commands, EntityReference? source)
     {
-        var kind = inspectionId.HasValue ? "equipment-inspections" : "documents";
+        var kind = source?.Kind ?? "documents";
         var ct = http.RequestAborted; await commands.Authorize(kind, true, ct);
-        var initial = await Find(db, id, ct); await EnsureVisible(initial, scope, store, ct);
-        CheckUploadSource(initial, inspectionId);
+        var initial = await Find(db, id, ct); await EnsureVisible(initial, scope, store, db, ct);
+        CheckUploadSource(initial, source);
+        if (LedgerDocumentEndpoints.Supports(kind)) await LedgerDocumentEndpoints.EnsureWritable(initial, store, db, ct);
         Guard.Require(initial.UploadedBy == scope.UserId || scope.Role is BusinessRole.ManagingDirector or BusinessRole.Office, "forbidden", "You cannot complete another person's upload.");
         var limit = http.Features.Get<IHttpMaxRequestBodySizeFeature>();
         if (limit is { IsReadOnly: false }) limit.MaxRequestBodySize = MaximumBytes;
@@ -132,34 +142,38 @@ public static class DocumentEndpoints
         {
             // Reload under the same tenant lock used by all metadata mutations.
             await db.Entry(initial).ReloadAsync(token);
-            await EnsureVisible(initial, scope, store, token); CommandExecutor.Match(http, initial.Revision);
+            await EnsureVisible(initial, scope, store, db, token); CommandExecutor.Match(http, initial.Revision);
             Guard.Require(initial.UploadedBy == scope.UserId || scope.Role is BusinessRole.ManagingDirector or BusinessRole.Office, "forbidden", "Upload authority changed while the content was being transferred.");
             Guard.Require(initial.State == "Staged", "invalid_transition", "This document already has a verified version; create a new document for changed bytes.");
             buffer.Position = 0; initial.VersionId = await objects.Put(initial.ObjectKey, buffer, initial.ContentType, token);
             Guard.Require(!string.IsNullOrWhiteSpace(initial.VersionId) && initial.VersionId != "null", "storage_versioning_required", "Enable bucket versioning; an immutable version identifier is required.");
             var metadata = await objects.Head(initial.ObjectKey, initial.VersionId, token);
             Guard.Require(metadata is not null && metadata.Size == initial.Size && metadata.VersionId == initial.VersionId, "document_integrity", "The stored file could not be verified.");
-            // A successful PUT/HEAD is insufficient evidence for an inspection original:
+            // A successful PUT/HEAD is insufficient evidence for a retained original:
             // verify the exact retained version, including same-length byte corruption.
-            if (inspectionId.HasValue) _ = await ReadVerified(objects, initial, token);
+            if (source is not null) _ = await ReadVerified(objects, initial, token);
             initial.State = "Ready"; initial.Revision++; Audit(db, scope, initial, "document.ready"); return View(initial);
         }, async token =>
         {
             await db.Entry(initial).ReloadAsync(token);
-            CheckUploadSource(initial, inspectionId);
-            await EnsureVisible(initial, scope, store, token);
+            CheckUploadSource(initial, source);
+            await EnsureVisible(initial, scope, store, db, token);
+            if (LedgerDocumentEndpoints.Supports(kind)) await LedgerDocumentEndpoints.EnsureWritable(initial, store, db, token);
             Guard.Require(initial.UploadedBy == scope.UserId || scope.Role is BusinessRole.ManagingDirector or BusinessRole.Office,
                 "forbidden", "Upload authority changed while the content was being transferred.");
         });
     }
 
-    private static void CheckUploadSource(DocumentObject document, Guid? inspectionId)
+    private static void CheckUploadSource(DocumentObject document, EntityReference? source)
     {
-        if (inspectionId is { } expected)
-            Guard.Require(document.SourceKind == "equipment-inspections" && document.SourceId == expected,
-                "inspection_document_mismatch", "The original belongs to a different inspection.");
-        else Guard.Require(document.SourceKind != "equipment-inspections", "inspection_document_route",
-            "Use the inspection's original-document upload route.");
+        if (source is { } expected)
+            Guard.Require(document.SourceKind == expected.Kind && document.SourceId == expected.Id,
+                expected.Kind == "equipment-inspections" ? "inspection_document_mismatch" : "ledger_document_mismatch", "The original belongs to a different source.");
+        else
+        {
+            Guard.Require(document.SourceKind != "equipment-inspections", "inspection_document_route", "Use the inspection's original-document upload route.");
+            Guard.Require(!LedgerDocumentEndpoints.Supports(document.SourceKind), "ledger_document_route", "Use the ledger entry's original-document upload route.");
+        }
     }
 
     public static async Task<object> SaveGenerated(FirstBlickDbContext db, TenantScope scope, IObjectStore objects, byte[] bytes, string name, Guid projectId, string sourceKind, Guid sourceId, string digest, CancellationToken ct)
@@ -204,7 +218,7 @@ public static class DocumentEndpoints
     private static async Task<DocumentObject> Find(FirstBlickDbContext db, Guid id, CancellationToken ct) =>
         await db.Documents.SingleOrDefaultAsync(x => x.Id == id, ct) ?? throw new DomainException("not_found", "The document is unavailable in this business.");
 
-    private static async Task EnsureVisible(DocumentObject doc, TenantScope scope, EntityStore store, CancellationToken ct)
+    private static async Task EnsureVisible(DocumentObject doc, TenantScope scope, EntityStore store, FirstBlickDbContext db, CancellationToken ct)
     {
         if (scope.Role == BusinessRole.Worker)
         {
@@ -217,6 +231,8 @@ public static class DocumentEndpoints
             await RecordPolicy.EnsureVisible(doc.SourceKind, doc.SourceId.Value, scope, store, ct);
             if (doc.SourceKind == "equipment-inspections")
                 await EquipmentInspectionDocumentEndpoints.ValidateBinding(doc, store, ct);
+            if (LedgerDocumentEndpoints.Supports(doc.SourceKind))
+                await LedgerDocumentEndpoints.ValidateBinding(doc, store, db, ct);
         }
     }
 
@@ -231,7 +247,7 @@ public static class DocumentEndpoints
             "unsupported_file_type", "Supported attachments are PDF, PNG, JPEG, UTF-8 text and CSV.");
     }
 
-    private static void ValidateContent(string contentType, byte[] bytes)
+    internal static void ValidateContent(string contentType, byte[] bytes)
     {
         var valid = contentType switch
         {

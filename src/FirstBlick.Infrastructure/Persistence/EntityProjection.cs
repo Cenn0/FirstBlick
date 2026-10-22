@@ -8,6 +8,7 @@ public static class EntityProjection
 {
     public static string? UniqueKey(TenantEntity entity) => entity switch
     {
+        ProjectTemplateApplication a => $"project:{a.ProjectId:N}:template:{a.TemplateId:N}",
         CustomerCommunicationVoid v => $"communication:{v.CommunicationId:N}",
         VehicleLedgerReversal r => $"{r.SourceKind}:{r.SourceId:N}",
         EquipmentInspection i when i.Status == EquipmentInspectionStatus.Scheduled => $"equipment:{i.EquipmentId:N}:pending",

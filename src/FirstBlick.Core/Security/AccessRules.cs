@@ -20,7 +20,8 @@ public static class AccessRules
         _ => "core"
     };
 
-    public static bool CanRead(BusinessRole role, string kind) => kind is "customer-communications" or "customer-communication-voids" ? CanRead(role, "customers")
+    public static bool CanRead(BusinessRole role, string kind) => kind is "project-templates" or "project-template-applications" ? role is BusinessRole.ManagingDirector or BusinessRole.Office or BusinessRole.SiteManager or BusinessRole.Accounting
+        : kind is "customer-communications" or "customer-communication-voids" ? CanRead(role, "customers")
         : kind is "gaeb-exchanges" ? false
         : kind is "portal-access" ? role == BusinessRole.Partner
         : kind is "portal-shares" or "portal-feedback" ? role is BusinessRole.ManagingDirector or BusinessRole.Office : role switch
@@ -38,7 +39,9 @@ public static class AccessRules
     // Original XML evidence can only be captured by the dedicated source command,
     // authorized against its commercial/finance parent capability. Even directors
     // cannot fabricate, edit or delete these receipts through generic entity routes.
-    public static bool CanWrite(BusinessRole role, string kind) => kind is "customer-communications" or "customer-communication-voids" ? CanWrite(role, "customers")
+    public static bool CanWrite(BusinessRole role, string kind) => kind is "project-template-applications" ? false
+        : kind is "project-templates" ? role is BusinessRole.ManagingDirector or BusinessRole.Office or BusinessRole.SiteManager
+        : kind is "customer-communications" or "customer-communication-voids" ? CanWrite(role, "customers")
         : kind is "gaeb-sources" or "e-invoice-sources" or "gaeb-exchanges" ? false
         : kind is "equipment-inspections" or "vehicle-trips" or "vehicle-costs" or "vehicle-ledger-reversals" ? role is BusinessRole.ManagingDirector or BusinessRole.Office or BusinessRole.SiteManager
         : kind is "portal-access" ? role == BusinessRole.Partner

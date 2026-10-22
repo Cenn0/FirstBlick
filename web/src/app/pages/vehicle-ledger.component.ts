@@ -11,8 +11,9 @@ import { ApiError, errorMessage } from '../core/transport';
 import { VehicleCostCategory, VehicleCostItem, VehicleCostRequest, VehicleLedger, VehicleList, VehicleReverseRequest, VehicleTripItem, VehicleTripRequest,
   validCostChange, validTripChange, validVehicleLedger, validVehicleList, validVehicleMonth, vehicleCostCategories } from '../core/vehicle-ledger.models';
 import { LedgerPickerComponent } from './ledger-picker.component';
+import { LedgerOriginalsComponent } from './ledger-originals.component';
 
-@Component({ selector: 'app-vehicle-ledger', imports: [FormsModule, RouterLink, LedgerPickerComponent], templateUrl: './vehicle-ledger.component.html', styleUrl: './vehicle-ledger.component.css' })
+@Component({ selector: 'app-vehicle-ledger', imports: [FormsModule, RouterLink, LedgerPickerComponent, LedgerOriginalsComponent], templateUrl: './vehicle-ledger.component.html', styleUrl: './vehicle-ledger.component.css' })
 export class VehicleLedgerComponent {
   readonly auth = inject(AuthService); private readonly api = inject(ApiService); private readonly route = inject(ActivatedRoute);
   readonly vehicles = signal<VehicleList | null>(null); readonly ledger = signal<VehicleLedger | null>(null); readonly listLoading = signal(false); readonly loading = signal(false);

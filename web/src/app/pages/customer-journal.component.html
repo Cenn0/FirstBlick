@@ -35,6 +35,7 @@
             @if(voiding()===item.entry.id){<form class="void-form" (ngSubmit)="voidEntry(item)"><label [for]="'void-'+item.entry.id">Grund der Stornierung *</label><textarea [id]="'void-'+item.entry.id" name="voidReason" [(ngModel)]="voidReason" maxlength="2000" rows="2" required [disabled]="busy()||stale()"></textarea><div class="journal-actions"><button class="button secondary" type="submit" [disabled]="!actionAllowed()||!voidReason.trim()">Eintrag mit Grund stornieren</button><button class="text-button" type="button" (click)="cancel()" [disabled]="busy()">Stornierung abbrechen</button></div></form>}
             @else{<button class="text-button" type="button" (click)="beginVoid(item)" [disabled]="!actionAllowed()" [attr.aria-label]="item.entry.subject+' stornieren'">Eintrag stornieren</button>}
           }
+          <app-ledger-originals kind="customer-communications" [source]="item.entry" [allowUpload]="actionAllowed()&&!item.voiding" />
         </article>
       }@empty{<p class="muted">Noch keine Kommunikation dokumentiert.</p>}</div>
       <div class="journal-pager"><button class="button secondary" type="button" (click)="load(book.page-1,false)" [disabled]="book.page<=1||loading()||busy()">Neuere Kommunikation</button><span>Seite {{book.page}} · {{book.total}} Einträge</span><button class="button secondary" type="button" (click)="load(book.page+1,false)" [disabled]="book.page*book.pageSize>=book.total||loading()||busy()">Ältere Kommunikation</button></div>

@@ -51,7 +51,7 @@ public static class EquipmentInspectionDocumentEndpoints
 
         api.MapPut("/equipment-inspections/{id:guid}/documents/{documentId:guid}/content", (Guid id, Guid documentId,
             [AsParameters] BusinessCommandServices c, IObjectStore objects) =>
-            DocumentEndpoints.Upload(documentId, c.Http, c.Db, c.Scope, c.Store, objects, c.Commands, id)).WithTags("equipment-inspections");
+            DocumentEndpoints.Upload(documentId, c.Http, c.Db, c.Scope, c.Store, objects, c.Commands, new EntityReference("equipment-inspections", id))).WithTags("equipment-inspections");
 
         api.MapGet("/equipment-inspections/{id:guid}/documents/{documentId:guid}/download", async (Guid id, Guid documentId,
             [AsParameters] BusinessCommandServices c, IObjectStore objects, CancellationToken ct) =>

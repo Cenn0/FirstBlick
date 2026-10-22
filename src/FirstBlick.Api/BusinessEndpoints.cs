@@ -15,7 +15,8 @@ public static class BusinessEndpoints
         foreach (var (kind, type) in BusinessRegistry.Entities)
         {
             if (kind is "collection-cases" or "cost-forecasts" or "supplier-cost-allocations" or "gaeb-exchanges" or "maintenance-visits" or "equipment-inspections"
-                or "customer-communications" or "customer-communication-voids" or "vehicle-trips" or "vehicle-costs" or "vehicle-ledger-reversals") continue; // Dedicated, authorized commands own these immutable resources.
+                or "customer-communications" or "customer-communication-voids" or "vehicle-trips" or "vehicle-costs" or "vehicle-ledger-reversals"
+                or "project-templates" or "project-template-applications") continue; // Dedicated, authorized commands own these resources.
             typeof(BusinessEndpoints).GetMethod(nameof(MapResource), BindingFlags.NonPublic | BindingFlags.Static)!.MakeGenericMethod(type).Invoke(null, [api, kind]);
         }
         CommercialEndpoints.Map(api);
@@ -26,6 +27,7 @@ public static class BusinessEndpoints
         CustomerContactEndpoints.Map(api);
         CustomerCommunicationEndpoints.Map(api);
         VehicleLedgerEndpoints.Map(api);
+        ProjectTemplateEndpoints.Map(api);
         api.MapGet("/dashboard", Dashboard);
     }
 

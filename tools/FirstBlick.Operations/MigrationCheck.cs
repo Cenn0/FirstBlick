@@ -114,7 +114,12 @@ internal static class MigrationCheck
         foreach (var item in bundle.Documents)
         {
             Check($"document/{item.SourceId}", () => ValidateDocument(item, tenants, users));
-            try { await VerifyFile(directory, item.File, 26_214_400); }
+            try
+            {
+                await VerifyFile(directory, item.File, 26_214_400);
+                if (item.Data.SourceKind is "customer-communications" or "vehicle-costs")
+                    await VerifyLedgerOriginalContent(directory, item);
+            }
             catch (Exception ex) when (ex is OperationsException or IOException) { issues.Add(new("document_checksum", item.SourceId, ex is OperationsException ? ex.Message : ex.GetType().Name)); }
         }
         Check("document-identities", () => Require.That(bundle.Documents.Select(x => x.Data.Id).Distinct().Count() == bundle.Documents.Count
@@ -166,6 +171,22 @@ internal static class MigrationCheck
         Require.That(MigrationJson.IsHash(proof.Sha256) && proof.Size > 0 && proof.Size <= maximum, "Invalid file size or SHA-256 proof.");
         var path = BundleFiles.SafePath(directory, proof.File);
         Require.That(File.Exists(path) && new FileInfo(path).Length == proof.Size && await BundleFiles.Hash(path) == proof.Sha256, "Missing file or incorrect SHA-256/byte count.");
+    }
+    private static async Task VerifyLedgerOriginalContent(string directory, MigrationDocument item)
+    {
+        // Match the bounded signature check used before upload and on download.
+        // A valid checksum alone cannot prove the declared file format.
+        await using var input = File.OpenRead(BundleFiles.SafePath(directory, item.File.File));
+        var bytes = new byte[8];
+        var length = await input.ReadAtLeastAsync(bytes, bytes.Length, throwOnEndOfStream: false);
+        var valid = item.Data.ContentType switch
+        {
+            "application/pdf" => bytes.AsSpan(0, length).StartsWith("%PDF-"u8),
+            "image/png" => bytes.AsSpan(0, length).StartsWith(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 }),
+            "image/jpeg" => length >= 3 && bytes[0] == 255 && bytes[1] == 216 && bytes[2] == 255,
+            _ => false
+        };
+        Require.That(valid, "A ledger original must retain bytes matching its declared file format.");
     }
     private static void ValidateDocument(MigrationDocument item, HashSet<Guid> tenants, HashSet<Guid> users)
     {

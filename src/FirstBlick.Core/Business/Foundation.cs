@@ -118,7 +118,8 @@ public static class BusinessRegistry
     {
         ["customers"] = typeof(Customer), ["buildings"] = typeof(Building), ["projects"] = typeof(Project),
         ["customer-communications"] = typeof(CustomerCommunication), ["customer-communication-voids"] = typeof(CustomerCommunicationVoid),
-        ["tasks"] = typeof(TaskItem), ["catalog-items"] = typeof(CatalogItem), ["quotes"] = typeof(Quote),
+        ["tasks"] = typeof(TaskItem), ["project-templates"] = typeof(ProjectTemplate), ["project-template-applications"] = typeof(ProjectTemplateApplication),
+        ["catalog-items"] = typeof(CatalogItem), ["quotes"] = typeof(Quote),
         ["orders"] = typeof(Order), ["change-orders"] = typeof(ChangeOrder), ["invoices"] = typeof(Invoice), ["cost-forecasts"] = typeof(CostForecast),
         ["bank-transactions"] = typeof(BankTransaction), ["payment-allocations"] = typeof(PaymentAllocation),
         ["collection-cases"] = typeof(CollectionCase),

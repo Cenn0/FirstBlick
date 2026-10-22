@@ -95,7 +95,10 @@ Die Browserfälle verwenden kontrollierte HTTP-Antworten. Der Containerablauf ve
 die tatsächliche API und Datenbank. Erfolgreiche Ausführung gilt jeweils für den
 geprüften Commit und ist über dessen CI-/Operations-Ergebnisse nachzuweisen.
 
-Automatische Postfach-/Chatübernahme, Anhänge an Gesprächen, externe Kontaktsynchronisierung,
+[Originalanhänge](ledger-originals.md) ergänzen die Gesprächseinträge um versionierte
+PDF-/Bilddateien, deren Quellenbindung auch nach einer Stornierung erhalten bleibt.
+
+Automatische Postfach-/Chatübernahme, externe Kontaktsynchronisierung,
 Kundenzusammenführung, vollständige Feldänderungshistorien und eine fachliche Abnahme
 realer CRM-Abläufe bleiben offen. Der Digest belegt die interne Inhaltsbindung; er
 ist keine digitale Unterschrift oder Zusage rechtssicherer Langzeitarchivierung.

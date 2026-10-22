@@ -8,6 +8,8 @@ Active development takes place in FirstBlick. DachPlaner is retained solely as a
 
 ## Project documentation
 
+* [Project templates](docs/project-templates.md) — reviewed calendar-day task previews, atomic adoption and retained application/source evidence.
+* [Communication and vehicle-cost originals](docs/ledger-originals.md) — versioned PDF/image attachments with source-specific access and verified downloads after corrections.
 * [Customer contacts](docs/customer-contacts.md) — multiple retained people per customer, explicit primary contact, archive/restore and protected legacy fields.
 * [Customer communications](docs/customer-communications.md) — manual customer/project conversation history, frozen contact snapshots and separate reasoned corrections.
 * [Equipment inspections](docs/equipment-inspections.md) and [original reports](docs/equipment-originals.md) — frozen inspection history, availability checks and verified versioned PDF/image originals.

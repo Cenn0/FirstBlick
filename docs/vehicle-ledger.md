@@ -40,8 +40,9 @@ Wartung, Reparatur, Versicherung, Kfz-Steuer, Maut, Parken und Sonstiges.
 
 Der Betrag ist der ausdrücklich eingegebene Kostenwert. Es gibt keine automatische
 Umsatzsteuerermittlung, Verknüpfung mit einer Lieferantenrechnung, Zahlungsbuchung oder
-Übernahme in die bestehende Nachkalkulation. Die Belegreferenz ist Text; ein Upload von
-Originalrechnungen ist hier nicht enthalten. Derselbe Referenztext kann mehrfach
+Übernahme in die bestehende Nachkalkulation. Die Belegreferenz ist Text; zusätzlich
+lassen sich [Originaldateien](ledger-originals.md) als PDF, PNG oder JPEG am
+Kostenoriginal speichern und verifiziert herunterladen. Derselbe Referenztext kann mehrfach
 vorkommen; er ist keine betriebsweite Dublettenkennung.
 
 Die Monatsübersicht zählt alle aktiven Fahrten und Kosten des Monats sowie getrennt
@@ -122,5 +123,5 @@ Wiederherstellungs-, Migrations- und Neustartablauf aus. Ausführungsnachweise m
 zum jeweiligen veröffentlichten Commit gehören.
 
 Offen bleiben automatische Fahrzeug-/Telematikübernahme, steuerliche Fahrtenbuchabnahme,
-Originalrechnungsanhänge, automatische gesetzliche Prüffristen, unabhängige Kalender je
+automatische gesetzliche Prüffristen, unabhängige Kalender je
 Prüfart, umfassende Kosten-/Buchhaltungsintegration sowie reale betriebliche Abnahmen.
