@@ -64,6 +64,8 @@ public enum TaskStatus { Open, InProgress, Done, Cancelled }
 public sealed class TaskItem : TenantEntity
 {
     [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public List<Guid>? PredecessorTaskIds { get; set; }
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
     public ProjectTemplateTaskOrigin? TemplateOrigin { get; set; }
     public Guid ProjectId { get; set; }
     public Guid? AssignedEmployeeId { get; set; }
@@ -76,6 +78,7 @@ public sealed class TaskItem : TenantEntity
         ValidateCommon(); Guard.Id(ProjectId, nameof(ProjectId)); Guard.OptionalId(AssignedEmployeeId, nameof(AssignedEmployeeId));
         Guard.Text(Title, nameof(Title)); Guard.Text(Description, nameof(Description), 20_000, false);
         Guard.Require(Enum.IsDefined(Status), "invalid_status", "Task status is invalid.");
+        TaskDependencies.ValidateShape(this);
         if (TemplateOrigin is { } origin)
         {
             Guard.Id(origin.ApplicationId, "Template application"); Guard.Id(origin.TemplateId, "Template");
@@ -88,6 +91,7 @@ public sealed class TaskItem : TenantEntity
     {
         yield return BusinessRegistry.Reference<Project>(ProjectId);
         if (AssignedEmployeeId is { } id) yield return BusinessRegistry.Reference<Employee>(id);
+        foreach (var predecessorId in PredecessorTaskIds ?? []) yield return BusinessRegistry.Reference<TaskItem>(predecessorId);
         if (TemplateOrigin is { } origin) yield return BusinessRegistry.Reference<ProjectTemplateApplication>(origin.ApplicationId);
     }
 }

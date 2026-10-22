@@ -82,7 +82,7 @@ internal static partial class MigrationDrill
             { document.TenantId = foreignTenant; document.UploadedBy = foreignUploader; }),
                 issue => issue.Message.StartsWith("Missing tenant-qualified " + kind + " reference", StringComparison.Ordinal));
             await Reject("project-rebinding", document =>
-            { document.ProjectId = entities.OfType<Project>().Single().Id; document.ProjectKind = "projects"; },
+            { document.ProjectId = entities.OfType<Project>().First(x => x.Type != ProjectType.Maintenance).Id; document.ProjectKind = "projects"; },
                 "A ledger original must retain its source-specific format and cannot acquire project-based access.");
             await Reject("changed-format-marker", document => document.RendererVersion = "unverified-ledger-original",
                 "A ledger original must retain its source-specific format and cannot acquire project-based access.");

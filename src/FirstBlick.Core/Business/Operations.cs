@@ -73,6 +73,8 @@ public sealed class Acceptance : TenantEntity
 
 public sealed class MaintenanceContract : TenantEntity
 {
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public MaintenanceWorkdayPolicy? Workdays { get; set; }
     public List<MaintenanceCheckTemplate> ChecklistTemplate { get; set; } = [];
     public bool AutomaticPlanning { get; set; }
     public int PlanningLeadDays { get; set; } = 14;
@@ -91,6 +93,7 @@ public sealed class MaintenanceContract : TenantEntity
         ValidateCommon(); Guard.Id(CustomerId, nameof(CustomerId)); Guard.Id(BuildingId, nameof(BuildingId)); Guard.Text(Title, nameof(Title)); Guard.Text(Scope, nameof(Scope), 20_000);
         Guard.Require(StartDate != default && NextDueDate >= StartDate && (!EndDate.HasValue || EndDate >= StartDate), "invalid_window", "Maintenance dates are invalid.");
         MaintenanceWorkflow.ValidateTemplate(ChecklistTemplate, AutomaticPlanning);
+        MaintenanceWorkdays.Validate(Workdays);
         Guard.Require(PlanningLeadDays is >= 0 and <= 365, "invalid_lead_time", "The planning lead time must be between zero and 365 days.");
         Guard.Require(IntervalMonths is >= 1 and <= 120 && CompletedOccurrences is >= 0 and <= 10_000, "invalid_recurrence", "Maintenance recurrence is out of range.");
         DateOnly expected;

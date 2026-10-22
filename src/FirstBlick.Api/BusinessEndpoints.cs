@@ -15,7 +15,7 @@ public static class BusinessEndpoints
         foreach (var (kind, type) in BusinessRegistry.Entities)
         {
             if (kind is "collection-cases" or "cost-forecasts" or "supplier-cost-allocations" or "gaeb-exchanges" or "maintenance-visits" or "equipment-inspections"
-                or "customer-communications" or "customer-communication-voids" or "vehicle-trips" or "vehicle-costs" or "vehicle-ledger-reversals"
+                or "customer-contact-changes" or "customer-communications" or "customer-communication-voids" or "vehicle-trips" or "vehicle-costs" or "vehicle-ledger-reversals"
                 or "project-templates" or "project-template-applications") continue; // Dedicated, authorized commands own these resources.
             typeof(BusinessEndpoints).GetMethod(nameof(MapResource), BindingFlags.NonPublic | BindingFlags.Static)!.MakeGenericMethod(type).Invoke(null, [api, kind]);
         }
@@ -25,6 +25,8 @@ public static class BusinessEndpoints
         MaintenanceEndpoints.Map(api);
         EquipmentInspectionEndpoints.Map(api);
         CustomerContactEndpoints.Map(api);
+        TaskDependencyEndpoints.Map(api);
+        BusinessActivityEndpoints.Map(api);
         CustomerCommunicationEndpoints.Map(api);
         VehicleLedgerEndpoints.Map(api);
         ProjectTemplateEndpoints.Map(api);
@@ -98,7 +100,10 @@ public static class BusinessEndpoints
                 var entity = await store.Get<T>(id, ct); CommandExecutor.Match(http, entity.Revision);
                 await RecordPolicy.EnsureVisible(kind, id, scope, store, ct);
                 EditRules.EnsureArchivable(entity);
-                Guard.Require(!await db.Links.AnyAsync(x => x.TargetKind == kind && x.TargetId == id, ct), "record_in_use", "This record is referenced by other work. Retain it in the project history.");
+                // Contact history remains attached to an archived customer. It records that customer's
+                // own past values and is not active work that prevents archiving; all other links still do.
+                Guard.Require(!await db.Links.AnyAsync(x => x.TargetKind == kind && x.TargetId == id
+                    && (kind != "customers" || x.SourceKind != "customer-contact-changes"), ct), "record_in_use", "This record is referenced by other work. Retain it in the project history.");
                 Guard.Require(!await db.Documents.AnyAsync(x => (x.SourceKind == kind && x.SourceId == id) || (kind == "projects" && x.ProjectId == id), ct), "record_in_use", "Documents preserve this record in the project history.");
                 entity.Archived = true; await store.Save(entity, "archive", false, ct); return entity;
             })).WithName($"Archive_{kind}").WithTags(kind);

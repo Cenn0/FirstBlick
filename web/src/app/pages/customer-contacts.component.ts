@@ -4,6 +4,7 @@ import { ApiService, Entity } from '../core/api.service';
 import { AuthService } from '../core/auth.service';
 import { ApiError, errorMessage } from '../core/transport';
 import { CustomerContact, CustomerContactAction, CustomerContactDetails, CustomerContactsView, blankCustomerContact,
+  CustomerContactHistoryView, contactChangeLabel, contactFieldChanges, validCustomerContactHistory,
   validCustomerContactChange, validCustomerContacts } from '../core/customer-contacts.models';
 
 @Component({
@@ -15,6 +16,9 @@ export class CustomerContactsComponent {
   readonly auth = inject(AuthService); private readonly api = inject(ApiService);
   readonly book = signal<CustomerContactsView | null>(null); readonly busy = signal(false); readonly loading = signal(false); readonly error = signal('');
   readonly editing = signal<string | null>(null); readonly showArchived = signal(false); readonly search = signal('');
+  readonly history = signal<CustomerContactHistoryView | null>(null); readonly historyContact = signal<string | null>(null);
+  readonly historyLoading = signal(false); readonly historyError = signal('');
+  readonly contactChangeLabel = contactChangeLabel; readonly contactFieldChanges = contactFieldChanges;
   readonly writable = computed(() => this.auth.can('customers.write') && this.auth.hasModule('core') && !this.auth.recoveryHold());
   readonly visible = computed(() => {
     const search = this.search().trim().toLocaleLowerCase('de-DE');
@@ -22,15 +26,16 @@ export class CustomerContactsComponent {
       && (!search || [contact.name, contact.function, contact.email, contact.phone].join(' ').toLocaleLowerCase('de-DE').includes(search)))
       .sort((a, b) => Number(a.archived) - Number(b.archived) || Number(b.isPrimary) - Number(a.isPrimary) || a.name.localeCompare(b.name, 'de-DE'));
   });
-  form: CustomerContactDetails = blankCustomerContact(); private generation = 0;
+  form: CustomerContactDetails = blankCustomerContact(); private generation = 0; private historyGeneration = 0;
 
   constructor() {
     effect(() => { this.item().id; this.item().revision; this.auth.accessSignature(); untracked(() => this.reset()); });
-    inject(DestroyRef).onDestroy(() => { this.generation++; });
+    inject(DestroyRef).onDestroy(() => { this.generation++; this.historyGeneration++; });
   }
 
   private reset(): void {
     this.generation++; this.book.set(null); this.editing.set(null); this.form = blankCustomerContact(); this.error.set('');
+    this.closeHistory();
     this.search.set(''); this.showArchived.set(false); this.busy.set(false); this.loading.set(false);
     if (this.auth.can('customers.read')) void this.load();
   }
@@ -40,6 +45,7 @@ export class CustomerContactsComponent {
     const id = this.item().id, tenant = this.auth.activeTenantId(), access = this.auth.accessSignature(), generation = ++this.generation;
     const current = () => generation === this.generation && this.item().id === id && access === this.auth.accessSignature();
     this.loading.set(true); this.error.set(''); this.book.set(null); this.editing.set(null);
+    this.closeHistory();
     try {
       const result = await this.api.get<unknown>(`customers/${encodeURIComponent(id)}/contacts`);
       if (!current()) return;
@@ -69,6 +75,7 @@ export class CustomerContactsComponent {
     const generation = this.generation, access = this.auth.accessSignature();
     const current = () => generation === this.generation && access === this.auth.accessSignature() && this.item().id === before.customerId;
     this.busy.set(true); this.error.set('');
+    this.closeHistory();
     try {
       const suffix = action === 'add' ? '' : `/${encodeURIComponent(id!)}/${action}`;
       const result = await this.api.command<unknown>(`customers/${encodeURIComponent(before.customerId)}/contacts${suffix}`, details || {}, before.revision);
@@ -78,6 +85,25 @@ export class CustomerContactsComponent {
         : action === 'restore' ? 'Ansprechpartner wiederhergestellt.' : 'Ansprechpartner gespeichert.' });
     } catch (error) { if (current()) { this.error.set(errorMessage(error)); await this.refreshAccess(error); } }
     finally { if (current()) this.busy.set(false); }
+  }
+
+  closeHistory(): void {
+    this.historyGeneration++; this.history.set(null); this.historyContact.set(null); this.historyError.set(''); this.historyLoading.set(false);
+  }
+
+  async openHistory(contactId: string, page = 1): Promise<void> {
+    const book = this.book();
+    if (!book || !book.contacts.some(contact => contact.id === contactId) || !this.auth.can('customers.read') || this.busy()) return;
+    const generation = ++this.historyGeneration, access = this.auth.accessSignature();
+    const current = () => generation === this.historyGeneration && access === this.auth.accessSignature()
+      && this.book()?.revision === book.revision && this.item().id === book.customerId;
+    this.history.set(null); this.historyContact.set(contactId); this.historyLoading.set(true); this.historyError.set('');
+    try {
+      const result = await this.api.get<unknown>(`customers/${encodeURIComponent(book.customerId)}/contacts/${encodeURIComponent(contactId)}/history?page=${page}`);
+      if (!current()) return;
+      this.history.set(validCustomerContactHistory(result, book, contactId, page));
+    } catch (error) { if (current()) { this.historyError.set(errorMessage(error)); await this.refreshAccess(error); } }
+    finally { if (current()) this.historyLoading.set(false); }
   }
 
   private async refreshAccess(error: unknown): Promise<void> { if (error instanceof ApiError && [401, 403].includes(error.status)) await this.auth.refresh().catch(() => undefined); }

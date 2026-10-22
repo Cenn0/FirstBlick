@@ -21,7 +21,7 @@ public static class AccessRules
     };
 
     public static bool CanRead(BusinessRole role, string kind) => kind is "project-templates" or "project-template-applications" ? role is BusinessRole.ManagingDirector or BusinessRole.Office or BusinessRole.SiteManager or BusinessRole.Accounting
-        : kind is "customer-communications" or "customer-communication-voids" ? CanRead(role, "customers")
+        : kind is "customer-contact-changes" or "customer-communications" or "customer-communication-voids" ? CanRead(role, "customers")
         : kind is "gaeb-exchanges" ? false
         : kind is "portal-access" ? role == BusinessRole.Partner
         : kind is "portal-shares" or "portal-feedback" ? role is BusinessRole.ManagingDirector or BusinessRole.Office : role switch
@@ -41,7 +41,7 @@ public static class AccessRules
     // cannot fabricate, edit or delete these receipts through generic entity routes.
     public static bool CanWrite(BusinessRole role, string kind) => kind is "project-template-applications" ? false
         : kind is "project-templates" ? role is BusinessRole.ManagingDirector or BusinessRole.Office or BusinessRole.SiteManager
-        : kind is "customer-communications" or "customer-communication-voids" ? CanWrite(role, "customers")
+        : kind is "customer-contact-changes" or "customer-communications" or "customer-communication-voids" ? CanWrite(role, "customers")
         : kind is "gaeb-sources" or "e-invoice-sources" or "gaeb-exchanges" ? false
         : kind is "equipment-inspections" or "vehicle-trips" or "vehicle-costs" or "vehicle-ledger-reversals" ? role is BusinessRole.ManagingDirector or BusinessRole.Office or BusinessRole.SiteManager
         : kind is "portal-access" ? role == BusinessRole.Partner

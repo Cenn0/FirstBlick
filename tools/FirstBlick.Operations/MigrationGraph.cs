@@ -12,6 +12,8 @@ internal sealed class MigrationGraph
     private readonly HashSet<(Guid Tenant, Guid User)> memberships;
     private readonly Dictionary<(Guid Tenant, Type Type, string Key), int> uniqueCounts;
     private readonly Dictionary<(Guid Tenant, Type Type), object> typedLists = [];
+    private readonly Dictionary<(Guid Tenant, Guid Project), TaskItem[]> tasksByProject;
+    private readonly Dictionary<(Guid Tenant, Guid Project), DomainException?> taskGraphResults = [];
     public MigrationGraph(MigrationBundle bundle, List<TenantEntity> entities)
     {
         this.bundle = bundle; this.entities = entities;
@@ -19,6 +21,8 @@ internal sealed class MigrationGraph
         memberships = bundle.Memberships.Select(x => (x.TenantId, x.UserId)).ToHashSet();
         uniqueCounts = entities.Select(x => (x.TenantId, Type: x.GetType(), Key: EntityProjection.UniqueKey(x))).Where(x => x.Key is not null)
             .GroupBy(x => (x.TenantId, x.Type, Key: x.Key!)).ToDictionary(x => x.Key, x => x.Count());
+        tasksByProject = entities.OfType<TaskItem>().GroupBy(task => (Tenant: task.TenantId, Project: task.ProjectId))
+            .ToDictionary(group => group.Key, group => group.ToArray());
     }
     public TenantEntity RequireReference(Guid tenant, string kind, Guid id) => byId.TryGetValue((tenant, kind, id), out var value)
         ? value : throw new OperationsException($"Missing tenant-qualified {kind} reference {id}.");
@@ -28,6 +32,24 @@ internal sealed class MigrationGraph
         var key = (tenant, typeof(T));
         if (!typedLists.TryGetValue(key, out var values)) { values = entities.OfType<T>().Where(x => x.TenantId == tenant).ToList(); typedLists.Add(key, values); }
         return (List<T>)values;
+    }
+
+    private void ValidateTaskDependencyGraph(Guid tenant, Guid project)
+    {
+        var key = (tenant, project);
+        if (!taskGraphResults.TryGetValue(key, out var failure))
+        {
+            try
+            {
+                var tasks = tasksByProject[key];
+                if (tasks.Any(task => task.PredecessorTaskIds is { Count: > 0 })) TaskDependencies.ValidateGraph(tasks);
+            }
+            catch (DomainException exception) { failure = exception; }
+            // Reuse failed checks too: every related row retains its diagnostic,
+            // while the immutable imported project graph is traversed only once.
+            taskGraphResults.Add(key, failure);
+        }
+        if (failure is not null) throw failure;
     }
 
     public void Validate(TenantEntity entity)
@@ -44,6 +66,13 @@ internal sealed class MigrationGraph
                     contact.CreatedAt >= customer.CreatedAt && contact.UpdatedAt <= customer.UpdatedAt
                     && contact.UpdatedAt <= bundle.ExportedAt),
                     "Customer contact history must fit its retained customer envelope and export date.");
+                CustomerContactHistory.EnsureCompleteHistory(customer, All<CustomerContactChange>(tenant).Where(x => x.CustomerId == customer.Id).ToArray());
+                break;
+            case CustomerContactChange contactChange:
+                var contactCustomer = Get<Customer>(tenant, contactChange.CustomerId);
+                CustomerContactHistory.EnsureSource(contactCustomer, contactChange);
+                Require.That(contactChange.RecordedAt <= bundle.ExportedAt && contactChange.RecordedAt <= contactCustomer.UpdatedAt,
+                    "Contact change must fit its customer envelope and export date.");
                 break;
             case CustomerCommunication communication:
                 ValidateCustomerCommunication(communication); break;
@@ -61,8 +90,10 @@ internal sealed class MigrationGraph
                 Require.That(Get<Building>(tenant, project.BuildingId).CustomerId == project.CustomerId, "Project and building customer differ."); break;
             case ProjectTemplateApplication application:
                 ValidateProjectTemplateApplication(application); break;
-            case TaskItem task when task.TemplateOrigin is not null:
-                ValidateTemplateTask(task, Get<ProjectTemplateApplication>(tenant, task.TemplateOrigin.ApplicationId)); break;
+            case TaskItem task:
+                if (task.TemplateOrigin is not null) ValidateTemplateTask(task, Get<ProjectTemplateApplication>(tenant, task.TemplateOrigin.ApplicationId));
+                ValidateTaskDependencyGraph(tenant, task.ProjectId);
+                break;
             case Quote quote:
                 Require.That(Get<Project>(tenant, quote.ProjectId).CustomerId == quote.CustomerId, "Quote and project customer differ.");
                 foreach (var line in quote.Lines) ValidateQuantity(tenant, quote.ProjectId, line.QuantityEvidence); break;
@@ -154,6 +185,25 @@ internal sealed class MigrationGraph
             case Absence absence: PlanningRules.EnsureAbsence(absence, All<ScheduleAssignment>(tenant), All<Absence>(tenant)); break;
             case TimeEntry time when !time.Archived: PlanningRules.EnsureTimeEntry(time, All<TimeEntry>(tenant)); break;
             case MaintenanceContract maintenance: Require.That(Get<Building>(tenant, maintenance.BuildingId).CustomerId == maintenance.CustomerId, "Maintenance and building customer differ."); break;
+            case MaintenanceVisit maintenanceVisit:
+                var retainedContract = Get<MaintenanceContract>(tenant, maintenanceVisit.ContractId);
+                var retainedProject = Get<Project>(tenant, maintenanceVisit.ProjectId);
+                Require.That(retainedContract.CreatedAt <= maintenanceVisit.CreatedAt
+                    && retainedProject.CreatedAt <= maintenanceVisit.CreatedAt
+                    && maintenanceVisit.ContractRevision <= retainedContract.Revision,
+                    "A maintenance visit must retain existing source identities and compatible contract history.");
+                Require.That(retainedProject.Type == ProjectType.Maintenance
+                    && retainedProject.CustomerId == maintenanceVisit.Terms!.CustomerId && retainedProject.BuildingId == maintenanceVisit.Terms.BuildingId
+                    && retainedContract.CustomerId == maintenanceVisit.Terms.CustomerId && retainedContract.BuildingId == maintenanceVisit.Terms.BuildingId
+                    && retainedContract.StartDate == maintenanceVisit.Terms.StartDate && retainedContract.IntervalMonths == maintenanceVisit.Terms.IntervalMonths,
+                    "A maintenance visit must retain its original contract and matching maintenance project.");
+                if (maintenanceVisit.Status == MaintenanceVisitStatus.Completed)
+                    Require.That(retainedProject.Status == ProjectStatus.Completed && maintenanceVisit.CompletedAt >= maintenanceVisit.CreatedAt
+                        && maintenanceVisit.CompletedAt <= bundle.ExportedAt,
+                        "A completed maintenance visit must retain a completed project and a recorded completion within its source history.");
+                // ExecutionPlan is validated against its own immutable policy by entity.Validate().
+                // Current contract workdays and editable project dates may legitimately differ.
+                break;
             case FormSubmission submission:
                 var definition = Get<FormDefinition>(tenant, submission.FormDefinitionId);
                 Require.That(definition.Published && definition.Version == submission.DefinitionVersion && definition.PublishedDigest == submission.DefinitionDigest

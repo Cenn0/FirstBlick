@@ -65,6 +65,7 @@ public static class ProjectTemplateEndpoints
                 var preview = ProjectTemplateWorkflow.Preview(template, project, body.AnchorDate);
                 Guard.Require(preview.Digest == body.PreviewDigest, "project_template_preview_changed", "Reload and confirm a preview of the current template and project before applying it.");
                 var (application, tasks) = ProjectTemplateWorkflow.Apply(preview, c.Scope.UserId, DateTimeOffset.UtcNow);
+                await TaskDependencyEndpoints.EnsureAdditionCapacity(c.Db, project.Id, tasks.Count, ct);
                 // Saving the evidence first makes its task provenance an ordinary tenant-qualified FK.
                 // The enclosing CommandExecutor transaction commits all tasks, sources and receipt together.
                 await c.Store.Save(application, "project.template_applied", true, ct);

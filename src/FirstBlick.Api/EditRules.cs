@@ -8,8 +8,9 @@ internal static class EditRules
     {
         Guard.Require(e is not ProjectTemplate and not ProjectTemplateApplication && e is not TaskItem { TemplateOrigin: not null },
             "command_required", "Template applications and task provenance require their reviewed command.");
-        Guard.Require(e is not Order and not BankTransaction and not PaymentAllocation and not SupplierPaymentAllocation and not StockMovement and not FormSubmission and not TechnicalRecord and not PortalShare and not PortalFeedback and not MaterialDemand and not CollectionCase and not MaintenanceVisit and not EquipmentInspection and not CustomerCommunication and not CustomerCommunicationVoid and not VehicleTrip and not VehicleCost and not VehicleLedgerReversal,
+        Guard.Require(e is not Order and not BankTransaction and not PaymentAllocation and not SupplierPaymentAllocation and not StockMovement and not FormSubmission and not TechnicalRecord and not PortalShare and not PortalFeedback and not MaterialDemand and not CollectionCase and not MaintenanceVisit and not EquipmentInspection and not CustomerContactChange and not CustomerCommunication and not CustomerCommunicationVoid and not VehicleTrip and not VehicleCost and not VehicleLedgerReversal,
             "command_required", "This record can only be created through its dedicated business command.");
+        Guard.Require(e is not TaskItem { PredecessorTaskIds.Count: > 0 }, "task_dependency_command_required", "Task dependencies use their dedicated command.");
         switch (e)
         {
             case Customer customer:
@@ -33,7 +34,7 @@ internal static class EditRules
             case TimeEntry t: Guard.Require(!t.Approved, "command_required", "Create unapproved time; approval uses its dedicated command."); break;
             case TrainingRecord t: Guard.Require(t.Status == TrainingRecordStatus.Draft && t.ReviewedAt is null && t.MentorFeedback == "", "command_required", "Create a draft training record without a review."); break;
             case DiaryEntry d: Guard.Require(d.Status == DiaryStatus.Draft && d.Submission is null && d.Review is null, "command_required", "Create a draft diary report; submission and review use dedicated commands."); break;
-            case MaintenanceContract m: Guard.Require(m.CompletedOccurrences == 0, "command_required", "A new maintenance contract cannot invent completed occurrences."); break;
+            case MaintenanceContract m: Guard.Require(m.Workdays is null, "maintenance_workdays_command_required", "Configure workdays explicitly after creating the contract."); Guard.Require(m.CompletedOccurrences == 0, "command_required", "A new maintenance contract cannot invent completed occurrences."); break;
             case RoofRevision r: Guard.Require(r.Status == RoofRevisionStatus.Draft && r.Snapshot is null && r.PublishedAt is null && r.Version == 1 && r.PreviousRevisionId is null, "command_required", "Create a first draft roof; subsequent versions use the revision command."); break;
             case Measurement m: Guard.Require(m.Status == MeasurementStatus.Draft && m.Snapshot is null && m.FrozenAt is null, "command_required", "Create a draft measurement; freezing uses its dedicated command."); break;
         }
@@ -42,11 +43,12 @@ internal static class EditRules
     {
         Guard.Require(old is not ProjectTemplate and not ProjectTemplateApplication, "command_required", "Use the dedicated project-template command.");
         Guard.Require(old.GetType() == next.GetType() && !old.Archived, "record_immutable", "This record cannot be edited.");
-        Guard.Require(old is not Order and not BankTransaction and not PaymentAllocation and not SupplierPaymentAllocation and not StockMovement and not FormSubmission and not MaterialReservation and not Acceptance and not TechnicalRecord and not PortalShare and not PortalFeedback and not MaterialDemand and not CollectionCase and not MaintenanceVisit and not EquipmentInspection and not CustomerCommunication and not CustomerCommunicationVoid and not VehicleTrip and not VehicleCost and not VehicleLedgerReversal,
+        Guard.Require(old is not Order and not BankTransaction and not PaymentAllocation and not SupplierPaymentAllocation and not StockMovement and not FormSubmission and not MaterialReservation and not Acceptance and not TechnicalRecord and not PortalShare and not PortalFeedback and not MaterialDemand and not CollectionCase and not MaintenanceVisit and not EquipmentInspection and not CustomerContactChange and not CustomerCommunication and not CustomerCommunicationVoid and not VehicleTrip and not VehicleCost and not VehicleLedgerReversal,
             "command_required", "Use the dedicated auditable command for this record.");
         switch (old)
         {
             case TaskItem task:
+                TaskDependencies.PreserveGenericEdit(task, (TaskItem)next);
                 Guard.Require(((TaskItem)next).TemplateOrigin == task.TemplateOrigin,
                     "project_template_origin", "The original task provenance cannot be removed or replaced.");
                 break;
@@ -94,7 +96,11 @@ internal static class EditRules
                 Guard.Require(i.ElectronicSource == ((SupplierInvoice)next).ElectronicSource,
                     "einvoice_evidence_changed", "The original electronic invoice, validation and booking evidence cannot be removed, replaced or fabricated by a generic edit.");
                 EnsureGenericCreate(next, retainElectronicOrigin: true); break;
-            case MaintenanceContract m: Guard.Require(((MaintenanceContract)next).CompletedOccurrences == m.CompletedOccurrences && (m.CompletedOccurrences == 0 || ((MaintenanceContract)next).StartDate == m.StartDate), "command_required", "Maintenance occurrence history uses the completion command."); break;
+            case MaintenanceContract m:
+                var changedContract = (MaintenanceContract)next;
+                if (changedContract.Workdays is null) changedContract.Workdays = m.Workdays;
+                else Guard.Require(ContentDigest.Of(changedContract.Workdays) == ContentDigest.Of(m.Workdays), "maintenance_workdays_command_required", "Configure workdays through the dedicated command.");
+                Guard.Require(((MaintenanceContract)next).CompletedOccurrences == m.CompletedOccurrences && (m.CompletedOccurrences == 0 || ((MaintenanceContract)next).StartDate == m.StartDate), "command_required", "Maintenance occurrence history uses the completion command."); break;
             case RoofRevision r:
                 var nextRoof = (RoofRevision)next;
                 Guard.Require(r.Status == RoofRevisionStatus.Draft && nextRoof.Status == RoofRevisionStatus.Draft && nextRoof.Snapshot is null && nextRoof.PublishedAt is null && r.Version == nextRoof.Version && r.PreviousRevisionId == nextRoof.PreviousRevisionId,
@@ -105,7 +111,7 @@ internal static class EditRules
     public static void EnsureArchivable(TenantEntity e)
     {
         Guard.Require(e is not ProjectTemplate and not ProjectTemplateApplication, "record_immutable", "Template history is retained; change a template's availability through its dedicated command.");
-        Guard.Require(e is not Order and not Invoice and not SupplierInvoice and not PaymentAllocation and not SupplierPaymentAllocation and not BankTransaction and not StockMovement and not MaterialReservation and not FormSubmission and not Acceptance and not TechnicalRecord and not PortalShare and not PortalFeedback and not MaterialDemand and not CollectionCase and not MaintenanceVisit and not EquipmentInspection and not CustomerCommunication and not CustomerCommunicationVoid and not VehicleTrip and not VehicleCost and not VehicleLedgerReversal,
+        Guard.Require(e is not Order and not Invoice and not SupplierInvoice and not PaymentAllocation and not SupplierPaymentAllocation and not BankTransaction and not StockMovement and not MaterialReservation and not FormSubmission and not Acceptance and not TechnicalRecord and not PortalShare and not PortalFeedback and not MaterialDemand and not CollectionCase and not MaintenanceVisit and not EquipmentInspection and not CustomerContactChange and not CustomerCommunication and not CustomerCommunicationVoid and not VehicleTrip and not VehicleCost and not VehicleLedgerReversal,
             "record_immutable", "Business evidence is retained; use a correction or reversal.");
         if (e is Quote q) Guard.Require(q.Status == QuoteStatus.Draft, "quote_immutable", "Issued quote versions are retained.");
         if (e is ChangeOrder c) Guard.Require(c.Status != ChangeOrderStatus.Accepted, "change_immutable", "Accepted changes remain part of the contract and its financial history.");

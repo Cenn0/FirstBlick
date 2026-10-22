@@ -1,0 +1,34 @@
+<header class="page-heading"><div><p class="eyebrow">PROJEKTORGANISATION</p><h1>Aufgabenabhängigkeiten</h1><p>Vorgänger festlegen und Arbeitsschritte in der vereinbarten Reihenfolge abschließen.</p></div><a class="button secondary" routerLink="/tasks">Zur Aufgabenliste</a></header>
+@if (!readable()) { <p class="alert warning">Die projektweite Aufgabenübersicht ist für Ihren Zugang nicht verfügbar.</p> }
+@else {
+  <section class="panel"><app-ledger-picker kind="projects" label="Projekt" [selection]="projectChoice()" [disabled]="busy() || loading()" [required]="true" (chosen)="chooseProject($event)" /></section>
+  @if (error()) { <p class="alert error" role="alert">{{error()}}</p> }
+  @if (notice()) { <p class="alert success" role="status">{{notice()}}</p> }
+  @if (loading()) { <p role="status">Aufgaben werden geladen …</p> }
+  @if (graph(); as current) {
+    <section class="panel"><div class="panel-heading"><div><h2>{{current.projectName}}</h2><p>{{activeTasks().length}} aktive Aufgaben · höchstens 16 unmittelbare Vorgänger je Aufgabe</p></div><button class="button secondary" [disabled]="busy() || loading()" (click)="load(current.projectId, selectedId())">Projektstand neu laden</button></div><p class="small muted">Eine Aufgabe darf erst beginnen oder als erledigt markiert werden, wenn alle Vorgänger erledigt sind. Termine und Personaleinsätze werden dadurch nicht automatisch verschoben.</p></section>
+    @if (stale()) { <p class="alert warning">Der gespeicherte Stand ist unklar oder wurde geändert. Laden Sie den Projektstand vor weiteren Änderungen neu.</p> }
+    <div class="dependency-layout">
+      <section class="panel dependency-panel"><h2>Arbeitsschritte</h2>
+        @for (task of activeTasks(); track task.id) { <button class="task-choice" [class.active]="selectedId() === task.id" [disabled]="busy()" [attr.aria-label]="task.title + ' auswählen'" (click)="select(task)"><strong>{{task.title}}</strong><span>{{statuses[task.status]}} · {{task.predecessorTaskIds.length}} Vorgänger@if (blockers(task).length) { · {{blockers(task).length}} offen }</span></button> }
+        @empty { <p>Dieses Projekt hat noch keine aktiven Aufgaben. Legen Sie Aufgaben in der Aufgabenliste an oder übernehmen Sie eine Projektvorlage.</p> }
+      </section>
+      @if (selected(); as task) {
+        <section class="panel dependency-panel"><h2>{{task.title}}</h2><p class="small">{{statuses[task.status]}} · Revision {{task.revision}}</p>
+          @if (blockers(task).length) { <div class="alert warning"><strong>Noch offene Vorgänger</strong><ul>@for (blocker of blockers(task); track blocker.id) { <li>{{blocker.title}} · {{statuses[blocker.status]}}</li> }</ul></div> }
+          <h3>Unmittelbare Vorgänger</h3>
+          @if (task.status !== 'Open') { <p class="small muted">Die Vorgängerliste wird nur bei offenen Aufgaben geändert. Eine Rücknahme muss auch zu den Folgeaufgaben passen.</p> }
+          <label for="predecessor-search">Vorgänger suchen</label><input id="predecessor-search" [(ngModel)]="search" type="search" maxlength="200" [disabled]="busy()">
+          @for (candidate of candidates(); track candidate.id) {
+            <label class="predecessor-choice"><input type="checkbox" [checked]="chosenPredecessors.includes(candidate.id)" [disabled]="!writable() || busy() || stale() || task.status !== 'Open' || candidateBlocked(candidate) || (!chosenPredecessors.includes(candidate.id) && chosenPredecessors.length >= 16)" (change)="toggle(candidate.id, $any($event.target).checked)"><span>{{candidate.title}}<small>{{statuses[candidate.status]}}@if (candidateBlocked(candidate)) { · würde einen Kreis bilden }</small></span></label>
+          }
+          @empty { <p class="small muted">Keine weiteren passenden Aufgaben.</p> }
+          <p class="small">{{chosenPredecessors.length}} Vorgänger ausgewählt</p>
+          @if (writable()) { <button class="button primary" [disabled]="busy() || stale() || task.status !== 'Open'" (click)="saveDependencies()">Abhängigkeiten speichern</button>
+            <div class="form-field workflow-field"><label for="dependency-status">Aufgabenstatus</label><select id="dependency-status" [(ngModel)]="nextStatus" [disabled]="busy() || stale()">@for (status of statusKeys; track status) { <option [value]="status" [disabled]="(status === 'InProgress' || status === 'Done') && blockers(task).length > 0">{{statuses[status]}}</option> }</select></div><button class="button secondary" [disabled]="busy() || stale() || nextStatus === task.status" (click)="saveStatus()">Status speichern</button> }
+          <div class="dependency-actions"><a routerLink="/tasks" [queryParams]="{ selected: task.id }">Aufgabendetails öffnen →</a></div>
+        </section>
+      }
+    </div>
+  }
+}

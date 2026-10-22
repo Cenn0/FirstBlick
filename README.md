@@ -11,12 +11,16 @@ Active development takes place in FirstBlick. DachPlaner is retained solely as a
 * [PV module layout](docs/pv-module-layout.md) — non-normative rectangular roof-plane placement with exclusions, explicit clearance, and auditable project calculations.
 
 * [Project templates](docs/project-templates.md) — reviewed calendar-day task previews, atomic adoption and retained application/source evidence.
+* [Task dependencies](docs/task-dependencies.md) — same-project predecessor rules, cycle checks and guarded start/completion transitions.
+* [Project and task activity](docs/business-activity.md) — defined period comparisons, filtered sources and verified CSV/JSON exports.
 * [Communication and vehicle-cost originals](docs/ledger-originals.md) — versioned PDF/image attachments with source-specific access and verified downloads after corrections.
 * [Customer contacts](docs/customer-contacts.md) — multiple retained people per customer, explicit primary contact, archive/restore and protected legacy fields.
+* [Contact change history](docs/customer-contact-history.md) — retained before/after values, recorded actors and explicit primary-contact changes.
 * [Customer communications](docs/customer-communications.md) — manual customer/project conversation history, frozen contact snapshots and separate reasoned corrections.
 * [Equipment inspections](docs/equipment-inspections.md) and [original reports](docs/equipment-originals.md) — frozen inspection history, availability checks and verified versioned PDF/image originals.
 * [Vehicle trips and costs](docs/vehicle-ledger.md) — odometer/driver chronology, retained originals and reversals, and monthly operational summaries.
 * [Maintenance workflow](docs/maintenance-workflow.md) and [calendar export](docs/maintenance-calendar.md) — saved occurrences, checklists and revision-bound all-day ICS downloads.
+* [Maintenance workdays](docs/maintenance-workdays.md) — explicit weekdays and excluded dates, reviewed scheduling and retained execution-plan snapshots.
 * [Checkpoint 11](docs/checkpoint11.md) — evidenced zero-cent final settlements, strengthened cost-source integrity and verified commit-specific CI/Operations.
 * [Checkpoint 10](docs/checkpoint10.md) — bounded financial source reads and versioned, audited cost forecasts, with API and browser regression coverage.
 * [Checkpoint 9](docs/checkpoint9.md) — preceding finance/UI implementation, exact verification and remaining roadmap work.
