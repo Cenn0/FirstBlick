@@ -1,5 +1,6 @@
 """Actual API, versioned PDF storage and restart checks for supplied roof-action cases."""
 import hashlib
+import datetime
 import json
 import math
 import urllib.request
@@ -8,6 +9,19 @@ import uuid
 
 def _digest(value):
     return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+
+
+def verify_persisted_document(generated, persisted):
+    """Only the initial .NET ticks -> PostgreSQL microseconds conversion is tolerated."""
+    assert generated.keys() == persisted.keys(), "Stored PDF metadata fields changed"
+    for field, original in generated.items():
+        if field == "createdAt":
+            before = datetime.datetime.fromisoformat(original.replace("Z", "+00:00"))
+            after = datetime.datetime.fromisoformat(persisted[field].replace("Z", "+00:00"))
+            assert before.utcoffset() == after.utcoffset() == datetime.timedelta(0)
+            assert abs(before - after) <= datetime.timedelta(microseconds=1), "Stored PDF creation time changed"
+        else:
+            assert persisted[field] == original, "Stored PDF metadata changed: " + field
 
 
 def check_roof_actions(call, client, base, tenant, previous=None):
@@ -57,6 +71,11 @@ def check_roof_actions(call, client, base, tenant, previous=None):
             document = post("technical-results/" + saved["id"] + "/pdf", {}, saved["revision"])
             assert document["sourceId"] == saved["id"] and document["sourceDigest"] == saved["digest"]
             assert document["projectId"] == project_id and document["versionId"] not in (None, "", "null")
+            persisted_document = get("documents/" + document["id"])
+            verify_persisted_document(document, persisted_document)
+            # Subsequent and post-restart comparisons use the durable database value,
+            # including its exact timestamp; no tolerance is applied on later reads.
+            document = persisted_document
             records[mode] = {"id": saved["id"], "recordSha256": _digest(saved), "document": document}
 
     for mode, evidence in records.items():
