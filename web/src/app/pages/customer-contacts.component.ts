@@ -9,7 +9,13 @@ import { CustomerContact, CustomerContactAction, CustomerContactDetails, Custome
 
 @Component({
   selector: 'app-customer-contacts', imports: [FormsModule], templateUrl: './customer-contacts.component.html',
-  styles: [':host{display:block;border-top:1px solid var(--line,#ddd);margin-top:1.5rem;padding-top:1.5rem}.contacts-heading,.actions{display:flex;gap:.75rem;align-items:center;justify-content:space-between;flex-wrap:wrap}.contact-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));gap:1rem;margin:1rem 0}.contact-card{border:1px solid var(--line,#ddd);border-radius:.6rem;padding:1rem;min-width:0}.contact-card h4{margin:0 0 .5rem}.contact-card p{margin:.4rem 0;overflow-wrap:anywhere}.contact-card .notes{white-space:pre-wrap}.contact-card[data-archived=true]{background:var(--surface-alt,#f6f6f6)}.contact-editor{margin:1rem 0;padding:1rem;border:1px solid var(--line,#ddd);border-radius:.6rem}.contact-editor input,.contact-editor textarea{max-width:100%}.checkbox-label input{width:auto}.contact-editor .actions{margin-top:1rem;justify-content:flex-start}']
+  styles: [':host{display:block;border-top:1px solid var(--line,#ddd);margin-top:1.5rem;padding-top:1.5rem}.contacts-heading,.actions{display:flex;gap:.75rem;align-items:center;justify-content:space-between;flex-wrap:wrap}.contact-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));gap:1rem;margin:1rem 0}.contact-card{border:1px solid var(--line,#ddd);border-radius:.6rem;padding:1rem;min-width:0}.contact-card h4{margin:0 0 .5rem}.contact-card p{margin:.4rem 0;overflow-wrap:anywhere}.contact-card .notes{white-space:pre-wrap}.contact-card[data-archived=true]{background:var(--surface-alt,#f6f6f6)}.contact-editor{margin:1rem 0;padding:1rem;border:1px solid var(--line,#ddd);border-radius:.6rem}.contact-editor input,.contact-editor textarea{max-width:100%}.checkbox-label input{width:auto}.contact-editor .actions{margin-top:1rem;justify-content:flex-start}', `
+    @media(max-width:760px){
+      .contact-history .pagination{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem;padding:1rem 0}
+      .contact-history .pagination>span{grid-column:1/-1;grid-row:1;text-align:center}
+      .contact-history .pagination .button{min-width:0;min-height:44px;white-space:normal;overflow-wrap:anywhere}
+    }
+  `]
 })
 export class CustomerContactsComponent {
   readonly item = input.required<Entity>(); readonly completed = output<{ kind: string; id: string; message: string }>();

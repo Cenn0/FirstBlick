@@ -68,11 +68,26 @@ test('contact history pages retain their customer revision and show earlier orig
   const history = page.locator('.contact-history');
   await expect(history.getByText('22 gespeicherte Änderungen', { exact: false })).toBeVisible();
   await expect(history.locator('article')).toHaveCount(20);
-  await page.getByRole('button', { name: 'Weitere Änderungen', exact: true }).click();
+  const pagination = history.getByRole('navigation', { name: 'Seiten des Kontaktverlaufs', exact: true });
+  const bounds = await pagination.evaluate(nav => {
+    const { left, right } = nav.getBoundingClientRect();
+    return { left, right, pageWidth: document.documentElement.scrollWidth, viewport: document.documentElement.clientWidth,
+      buttons: Array.from(nav.querySelectorAll('button'), button => {
+        const { left, right } = button.getBoundingClientRect(); return { left, right };
+      }) };
+  });
+  // A mobile visual viewport may expand with overflowing content, so innerWidth
+  // alone does not catch an off-panel control or the resulting scaled hit targets.
+  expect(bounds.pageWidth).toBeLessThanOrEqual(bounds.viewport);
+  for (const button of bounds.buttons) {
+    expect(button.left).toBeGreaterThanOrEqual(bounds.left - 1);
+    expect(button.right).toBeLessThanOrEqual(bounds.right + 1);
+  }
+  await pagination.getByRole('button', { name: 'Weitere Änderungen', exact: true }).click();
   await expect(history.locator('article')).toHaveCount(2);
   await expect(history.getByText('Ursprüngliche Anlage dieses Ansprechpartners.')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Weitere Änderungen', exact: true })).toBeDisabled();
-  await page.getByRole('button', { name: 'Vorherige Änderungen', exact: true }).click();
+  await expect(pagination.getByRole('button', { name: 'Weitere Änderungen', exact: true })).toBeDisabled();
+  await pagination.getByRole('button', { name: 'Vorherige Änderungen', exact: true }).click();
   await expect(history.locator('article')).toHaveCount(20); expect(api.reads).toEqual([1, 2, 1]);
 });
 
