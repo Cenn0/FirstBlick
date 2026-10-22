@@ -67,16 +67,16 @@ public static class PvModuleLayout
 
         var normalized = input with { RoofMeasurementSource = roofSource, ModuleDataSource = moduleSource,
             Exclusions = Array.AsReadOnly(exclusions) };
-        var portrait = input.Orientation != PvModuleOrientation.Landscape
+        (List<PvModulePlacement> Placements, int Candidates, int Rejected)? portrait = input.Orientation != PvModuleOrientation.Landscape
             ? Place(roofWidth, roofHeight, moduleWidth, moduleHeight, edge, gapX, gapY, exclusionClearance, exclusions)
             : null;
-        var landscape = input.Orientation != PvModuleOrientation.Portrait
+        (List<PvModulePlacement> Placements, int Candidates, int Rejected)? landscape = input.Orientation != PvModuleOrientation.Portrait
             ? Place(roofWidth, roofHeight, moduleHeight, moduleWidth, edge, gapX, gapY, exclusionClearance, exclusions)
             : null;
         var useLandscape = input.Orientation == PvModuleOrientation.Landscape
             || input.Orientation == PvModuleOrientation.MostModules
-                && landscape!.Placements.Count > portrait!.Placements.Count;
-        var chosen = useLandscape ? landscape! : portrait!;
+                && landscape!.Value.Placements.Count > portrait!.Value.Placements.Count;
+        var chosen = useLandscape ? landscape!.Value : portrait!.Value;
         return new(normalized, useLandscape ? PvModuleOrientation.Landscape : PvModuleOrientation.Portrait,
             roofWidth * roofHeight, chosen.Candidates, chosen.Rejected, chosen.Placements.Count,
             chosen.Placements.Count * moduleWidth * moduleHeight, chosen.Placements.Count * ratedPower,
