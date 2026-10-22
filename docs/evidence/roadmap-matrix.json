@@ -886,8 +886,8 @@
     {
       "id": "DP-11-09",
       "status": "T",
-      "evidence": "[PV-Geometrie](docs/pv-module-layout.md) verbindet Core-Rechenkern, HTTP-/PostgreSQL-API, responsive Eingabe und Quellen-/SHA-Provenienz zur auf rechteckige Dachfläche begrenzten Modulpositionierung. Core-/API-/Client-Testcode prüft geometrische Grenzfälle, Berechtigungen und Projektablage; CI-Ausführung ist am finalen Commit zu verifizieren.",
-      "remaining": "Keine normative oder praktische Montage-/Elektro-/Statik-/Brandschutzfreigabe; keine Verschattung, PV-Ertrag, optimierte mehrseitige Belegung, Dach-/Standortdaten oder unabhängig geprüften Herstellerdaten.",
+      "evidence": "[PV-Geometrie](docs/pv-module-layout.md) verbindet Core-Rechenkern, HTTP-/PostgreSQL-API, responsive Eingabe und Quellen-/SHA-Provenienz zur auf rechteckige Dachfläche begrenzten Modulpositionierung. Core-/API-/Client-Testcode prüft geometrische Grenzfälle, Berechtigungen und Projektablage; CI-Ausführung ist am finalen Commit zu verifizieren. [Mehrflächige PV-Dachgruppen](docs/pv-roof-set.md) ergänzen acht separat gemessene Rechteckflächen, unabhängige Hindernisse/Provenienz, Gesamtkennzahlen, Angular-Formular und projektgebundenen Rechenlauf mit Core-/HTTP-/PostgreSQL-/Clienttestquellen; CI-Ausführung bleibt commitbezogen zu prüfen.",
+      "remaining": "Keine normative oder praktische Montage-/Elektro-/Statik-/Brandschutzfreigabe; keine Verschattung, PV-Ertrag, optimierte gemeinsame Mehrflächenbelegung, räumliche Überlappungsprüfung, standortabhängige Regeln oder unabhängig geprüfte Herstellerdaten.",
       "title": "Photovoltaik als Dachplanungsmodul"
     },
     {
