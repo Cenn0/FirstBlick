@@ -99,7 +99,11 @@ public sealed class PvModuleLayoutTests
             Sample() with { Exclusions = [new("No source", 0, 0, 1, 1), new(" ", 1, 0, 1, 1)] }
         ];
         foreach (var input in invalid)
-            Assert.ThrowsAny<ArgumentException>(() => PvModuleLayout.Calculate(input));
+            Assert.ThrowsAny<Exception>(() => PvModuleLayout.Calculate(input));
+        Assert.Equal("pv_orientation", Assert.Throws<DomainException>(() =>
+            PvModuleLayout.Calculate(Sample() with { Orientation = (PvModuleOrientation)100 })).Code);
+        Assert.Equal("pv_exclusion", Assert.Throws<DomainException>(() =>
+            PvModuleLayout.Calculate(Sample() with { Exclusions = [new("Outside", 3.5, 0, 1, 1)] })).Code);
     }
 
     [Fact]

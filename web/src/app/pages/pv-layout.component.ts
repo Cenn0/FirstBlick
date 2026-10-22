@@ -16,7 +16,7 @@ const emptyDraft = (): PvDraft => ({
 
 @Component({
   imports: [FormsModule, RouterLink],
-  template: String.raw`
+  template: `
     <header class="page-heading"><div><p class="eyebrow">DACH & BERECHNUNG · PV</p>
       <h1>Geometrische PV-Modulbelegung</h1>
       <p>Rechteckige Dachfläche, gemessene Moduldaten und explizite Hindernisse.</p></div>
@@ -108,7 +108,7 @@ const emptyDraft = (): PvDraft => ({
       }
     }
   `,
-  styles: [String.raw`
+  styles: [`
     .page-heading{display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap}
     .line-heading{display:flex;justify-content:space-between;gap:1rem;align-items:center;flex-wrap:wrap}
     .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:1rem}

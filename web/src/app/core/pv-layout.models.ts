@@ -70,7 +70,12 @@ export function validPvResult(raw: unknown, requested: PvInput): PvResult {
   if (!record(raw) || !record(raw['input']) || !record(raw['provenance']))
     throw new Error('Die PV-Antwort ist unvollständig.');
   const input = validPvInput(raw['input']);
-  if (JSON.stringify(input) !== JSON.stringify(requested))
+  // Do not rely on object property ordering in JSON responses.
+  const fields: (keyof PvInput)[] = ['roofPlaneWidthM', 'roofPlaneHeightM', 'moduleWidthM', 'moduleHeightM',
+    'moduleRatedPowerWp', 'edgeClearanceM', 'moduleGapXM', 'moduleGapYM', 'exclusionClearanceM',
+    'orientation', 'roofMeasurementSource', 'moduleDataSource'];
+  if (fields.some(field => input[field] !== requested[field]) ||
+      JSON.stringify(input.exclusions) !== JSON.stringify(requested.exclusions))
     throw new Error('Die PV-Antwort enthält andere Eingaben als der bestätigte Entwurf.');
   const orientation = raw['selectedOrientation'];
   if ((orientation !== 'Portrait' && orientation !== 'Landscape') ||
