@@ -124,12 +124,16 @@ test('late journal writes cannot replace the new business screen', async ({ page
 
 test('nonexistent business-local DST time is rejected before submitting a journal entry', async ({ page }) => {
   const api = await fixture(page); await open(page); await fill(page); await page.getByLabel('Datum und Uhrzeit der Kommunikation', { exact: true }).fill('2026-03-29T02:30');
+  // Editing the time clears the previous confirmation; wait for that state before confirming again.
+  await expect(page.getByLabel('Angaben geprüft; der Eintrag wird unveränderlich dokumentiert.', { exact: true })).not.toBeChecked();
   await page.getByLabel('Angaben geprüft; der Eintrag wird unveränderlich dokumentiert.', { exact: true }).check(); await page.getByRole('button', { name: 'Kommunikation speichern', exact: true }).click();
   await expect(page.getByRole('alert').filter({ hasText: 'existiert in der Betriebszeitzone nicht' })).toBeVisible(); expect(api.calls).toHaveLength(0);
 });
 
 test('repeated business-local DST time requires and retains the explicit occurrence', async ({ page }) => {
   const api = await fixture(page); await open(page); await fill(page); await page.getByLabel('Datum und Uhrzeit der Kommunikation', { exact: true }).fill('2025-10-26T02:30');
+  // Editing the time clears the previous confirmation; wait for that state before confirming again.
+  await expect(page.getByLabel('Angaben geprüft; der Eintrag wird unveränderlich dokumentiert.', { exact: true })).not.toBeChecked();
   await expect(page.getByLabel('Zeitversatz der Kommunikation', { exact: true })).toBeVisible(); await page.getByLabel('Zeitversatz der Kommunikation', { exact: true }).selectOption('+01:00');
   await page.getByLabel('Angaben geprüft; der Eintrag wird unveränderlich dokumentiert.', { exact: true }).check(); await page.getByRole('button', { name: 'Kommunikation speichern', exact: true }).click();
   await expect(page.locator('.journal-entry')).toContainText('Dachtermin'); expect(api.calls[0].body.occurredAt).toBe('2025-10-26T01:30:00.000Z');
