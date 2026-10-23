@@ -21,14 +21,14 @@
     "tasks": [
       "DP-02-06"
     ],
-    "scope": "Selective SQL record-policy inputs and shared scoped EntitySources materialization budget; four actual attachment byte/PE inventories. No task reclassification or overall acceptance.",
+    "scope": "Single-statement and shared scoped source budgets; selective record-policy and financial inputs; scoped GraphRules project/resource checks. Current-run attachment verification covers two files; PR #22 metadata is retained separately as a reported inventory.",
     "reclassifiesTasks": false,
     "statusChangesFromPreviousInventory": [],
     "originalRoadmapCheckboxesChanged": false,
     "allOriginalAcceptanceCriteriaReviewed": false,
     "otherTaskClassificationsRemainHistorical": true,
     "classificationNote": "49 K / 49 T / 2 O unchanged; DP-02-06 remains partial.",
-    "verificationNote": "601 core and 20 database-independent API cases pass locally; 318 PostgreSQL cases skipped locally and require final-commit CI evidence. 486 client unit tests and production build pass."
+    "verificationNote": "PR #21 has successful commit-specific CI, PostgreSQL, 915 browser cases and Operations evidence. The combined policy/graph changes require new final-commit evidence in PR #23; local skips are not passes."
   },
   "sources": {
     "discovery-live": "docs/evidence/live-discovery-checkpoint7.json",
@@ -341,7 +341,8 @@
     "bounded-sources": "docs/bounded-business-sources.md",
     "entity-sources": "src/FirstBlick.Infrastructure/Persistence/EntitySources.cs",
     "entity-source-tests": "tests/FirstBlick.Api.Tests/EntitySourcesApiTests.cs",
-    "policy-selection-tests": "tests/FirstBlick.Api.Tests/RecordPolicySelectionApiTests.cs"
+    "policy-selection-tests": "tests/FirstBlick.Api.Tests/RecordPolicySelectionApiTests.cs",
+    "scoped-graph-tests": "tests/FirstBlick.Api.Tests/ScopedGraphApiTests.cs"
   },
   "tasks": [
     {
@@ -473,7 +474,7 @@
     {
       "id": "DP-02-06",
       "status": "T",
-      "evidence": "[SQL-paginierte Suche][discovery-api], [zentrale Datensatzrechte][discovery-access] und [Angular-Kontextschutz][ui-nine] bündeln begrenzte, mandantengefilterte Lesezugriffe. Rechte-/Betriebswechsel entwerten alte Listen, Details und Downloads; die [aktuellen Fixture-/Live-Nachweise][checkpoint-nine] trennen Fehlerfälle und echte Datenzugriffe. [FinancialSources][financial-sources] begrenzt verknüpfte Rechnungs-/Korrekturhistorien mandanten- und auftragsbezogen; [Checkpoint 11][checkpoint-eleven] sichert Projektkosten-Quellmetadaten und Referenzen zusätzlich ab. [Quellenbudgets][bounded-sources] begrenzen EntityStore, Wartungsbeziehungen und Finanzquellen vor der JSON-Übertragung auf 10.000 Datensätze/12 MiB je Abfrage. Zahlungs-, Rücklastschrift- und Importpfade wählen explizite Beleg-/Bankbeziehungen oder Importschlüssel statt der gesamten Mandantenhistorie. PostgreSQL-Selektoren grenzen Mitarbeiter-, Ausbildungs-, Termin- und Projektbeziehungen vor Budgetierung ein; alle EntitySources-Aufrufe teilen ein DbContext-Budget. [Policy-/Budgetregressionen][policy-selection-tests] prüfen große fremde Mengen, Widerruf, Mandantengrenzen und kumulative Ablehnung.",
+      "evidence": "[SQL-paginierte Suche][discovery-api], [zentrale Datensatzrechte][discovery-access] und [Angular-Kontextschutz][ui-nine] bündeln begrenzte, mandantengefilterte Lesezugriffe. Rechte-/Betriebswechsel entwerten alte Listen, Details und Downloads; die [aktuellen Fixture-/Live-Nachweise][checkpoint-nine] trennen Fehlerfälle und echte Datenzugriffe. [FinancialSources][financial-sources] begrenzt verknüpfte Rechnungs-/Korrekturhistorien mandanten- und auftragsbezogen; [Checkpoint 11][checkpoint-eleven] sichert Projektkosten-Quellmetadaten und Referenzen zusätzlich ab. [Quellenbudgets][bounded-sources] begrenzen EntityStore, Wartungsbeziehungen und Finanzquellen vor der JSON-Übertragung auf 10.000 Datensätze/12 MiB je Abfrage. Zahlungs-, Rücklastschrift- und Importpfade wählen explizite Beleg-/Bankbeziehungen oder Importschlüssel statt der gesamten Mandantenhistorie. PostgreSQL-Selektoren grenzen Mitarbeiter-, Ausbildungs-, Termin- und Projektbeziehungen vor Budgetierung ein; alle EntitySources-Aufrufe teilen ein DbContext-Budget. [Policy-/Budgetregressionen][policy-selection-tests] prüfen große fremde Mengen, Widerruf, Mandantengrenzen und kumulative Ablehnung. GraphRules wählt zusätzlich Projekt-, Mitarbeiter-, Ressourcen-, Material- und Bestellbeziehungen vor der Quellenbegrenzung; Konfliktregeln bleiben erhalten.",
       "remaining": "Repräsentative Index-, Größen- und Latenzmessungen, ein vollständiger globaler Suchindex und gemeinsame Ressourcenbudgets für verbleibende direkte SQL-, Einzelbeleg-, Dokument- und Exportpfade bleiben offen.",
       "title": "API-Abfragen und Angular-Datenzugriff konsolidieren"
     },
