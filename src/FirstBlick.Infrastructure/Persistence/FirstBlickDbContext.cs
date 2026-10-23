@@ -15,6 +15,8 @@ public sealed class TenantScope
 public sealed class FirstBlickDbContext(DbContextOptions<FirstBlickDbContext> options, TenantScope scope)
     : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>(options), IDataProtectionKeyContext
 {
+    public EntitySourceBudget SourceBudget { get; } = new();
+
     public DbSet<BusinessTenant> Tenants => Set<BusinessTenant>();
     public DbSet<Membership> Memberships => Set<Membership>();
     public DbSet<StoredEntity> Entities => Set<StoredEntity>();

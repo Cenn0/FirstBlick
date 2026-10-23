@@ -9,25 +9,29 @@ internal static class RecordPolicy
 {
     public static async Task<Guid[]?> VisibleIds(string kind, TenantScope scope, EntityStore store, CancellationToken ct)
     {
-        if (kind == "notification-preferences") return (await store.All<NotificationPreference>(ct)).Where(x => x.UserId == scope.UserId).Select(x => x.Id).ToArray();
+        if (kind == "notification-preferences") return Ids(await store.Selected<NotificationPreference>(new(EntitySelectionMode.UserPreference, [], [], scope.UserId), ct));
         if (scope.Role is not BusinessRole.Worker and not BusinessRole.Trainer) return null;
-        var employees = await store.All<Employee>(ct);
-        var own = employees.Where(x => x.UserId == scope.UserId && x.Active).Select(x => x.Id).ToHashSet();
-        if (kind == "employees") return employees.Where(x => own.Contains(x.Id) || (scope.Role == BusinessRole.Trainer && x.MentorEmployeeId.HasValue && own.Contains(x.MentorEmployeeId.Value))).Select(x => x.Id).ToArray();
-        if (kind == "training-records") return (await store.All<TrainingRecord>(ct)).Where(x => own.Contains(x.ApprenticeEmployeeId) || own.Contains(x.MentorEmployeeId)).Select(x => x.Id).ToArray();
-        if (kind == "time-entries") return (await store.All<TimeEntry>(ct)).Where(x => own.Contains(x.EmployeeId)).Select(x => x.Id).ToArray();
-        if (kind == "diary-entries") return (await store.All<DiaryEntry>(ct)).Where(x => own.Contains(x.EmployeeId)).Select(x => x.Id).ToArray();
-        if (kind == "form-submissions") return (await store.All<FormSubmission>(ct)).Where(x => x.SubmittedBy == scope.UserId).Select(x => x.Id).ToArray();
-        var assignments = (await store.All<ScheduleAssignment>(ct)).Where(x => own.Contains(x.EmployeeId) && !x.Cancelled).ToList();
-        var projectIds = assignments.Select(x => x.ProjectId).ToHashSet();
-        if (kind == "schedule-assignments") return assignments.Select(x => x.Id).ToArray();
-        if (kind == "projects") return projectIds.ToArray();
-        if (kind == "maintenance-visits") return (await store.All<MaintenanceVisit>(ct)).Where(x => projectIds.Contains(x.ProjectId)).Select(x => x.Id).ToArray();
-        if (kind == "buildings") return (await store.All<Project>(ct)).Where(x => projectIds.Contains(x.Id)).Select(x => x.BuildingId).ToArray();
-        if (kind == "tasks") return (await store.All<TaskItem>(ct)).Where(x => projectIds.Contains(x.ProjectId) || (x.AssignedEmployeeId.HasValue && own.Contains(x.AssignedEmployeeId.Value))).Select(x => x.Id).ToArray();
-        if (kind == "defects") return (await store.All<Defect>(ct)).Where(x => projectIds.Contains(x.ProjectId)).Select(x => x.Id).ToArray();
-        return kind is "materials" or "equipment" or "form-definitions" ? null : [];
+        if (kind is "materials" or "equipment" or "form-definitions") return null;
+        if (kind == "form-submissions") return Ids(await store.Selected<FormSubmission>(new(EntitySelectionMode.SubmittedForms, [], [], scope.UserId), ct));
+        if (kind is not ("employees" or "training-records" or "time-entries" or "diary-entries" or "schedule-assignments"
+            or "projects" or "maintenance-visits" or "buildings" or "tasks" or "defects")) return [];
+        var own = Ids(await store.Selected<Employee>(new(EntitySelectionMode.OwnEmployee, [], [], scope.UserId), ct));
+        if (kind == "employees") return scope.Role == BusinessRole.Trainer
+            ? Ids(await store.Selected<Employee>(new(EntitySelectionMode.Employees, own, []), ct)) : own;
+        if (kind == "training-records") return Ids(await store.Selected<TrainingRecord>(new(EntitySelectionMode.Training, own, []), ct));
+        if (kind == "time-entries") return Ids(await store.Selected<TimeEntry>(new(EntitySelectionMode.EmployeeWork, own, []), ct));
+        if (kind == "diary-entries") return Ids(await store.Selected<DiaryEntry>(new(EntitySelectionMode.EmployeeWork, own, []), ct));
+        var assignments = await store.Selected<ScheduleAssignment>(new(EntitySelectionMode.Assignments, own, []), ct);
+        var projects = assignments.Select(x => x.ProjectId).Distinct().ToArray();
+        if (kind == "schedule-assignments") return Ids(assignments);
+        if (kind == "projects") return projects;
+        if (kind == "maintenance-visits") return Ids(await store.Selected<MaintenanceVisit>(new(EntitySelectionMode.ProjectWork, [], projects), ct));
+        if (kind == "buildings") return (await store.Selected<Project>(new(EntitySelectionMode.Ids, projects, []), ct)).Select(x => x.BuildingId).Distinct().ToArray();
+        if (kind == "tasks") return Ids(await store.Selected<TaskItem>(new(EntitySelectionMode.Tasks, own, projects), ct));
+        return Ids(await store.Selected<Defect>(new(EntitySelectionMode.ProjectWork, [], projects), ct));
     }
+
+    private static Guid[] Ids<T>(IEnumerable<T> entities) where T : TenantEntity => entities.Select(x => x.Id).ToArray();
 
     public static async Task EnsureVisible(string kind, Guid id, TenantScope scope, EntityStore store, CancellationToken ct)
     {
@@ -65,7 +69,7 @@ internal static class RecordPolicy
             TrainingRules.EnsurePeople(record, apprentice, mentor);
         }
         if (scope.Role != BusinessRole.Worker) return;
-        var employee = (await store.All<Employee>(ct)).SingleOrDefault(x => x.UserId == scope.UserId && x.Active);
+        var employee = (await store.Selected<Employee>(new(EntitySelectionMode.OwnEmployee, [], [], scope.UserId), ct)).SingleOrDefault();
         Guard.Require(employee is not null, "forbidden", "An active staff record is required for field work.");
         var employeeId = entity switch { TimeEntry t => t.EmployeeId, DiaryEntry d => d.EmployeeId, _ => employee!.Id };
         Guard.Require(employeeId == employee!.Id, "forbidden", "Field workers may record only their own work.");
