@@ -29,12 +29,8 @@ public sealed class EntityStore(FirstBlickDbContext db, TenantScope scope)
     public async Task<T> Get<T>(Guid id, CancellationToken ct = default) where T : TenantEntity =>
         AppJson.Read<T>((await Find(BusinessRegistry.KindOf<T>(), id, ct)).Data);
 
-    public async Task<List<T>> All<T>(CancellationToken ct = default) where T : TenantEntity
-    {
-        var kind = BusinessRegistry.KindOf<T>();
-        var values = await db.Entities.Where(x => x.Kind == kind && !x.Archived).Select(x => x.Data).ToListAsync(ct);
-        return values.Select(AppJson.Read<T>).ToList();
-    }
+    public Task<List<T>> All<T>(CancellationToken ct = default) where T : TenantEntity =>
+        EntitySources.Read<T>(db, scope.TenantId, ct);
 
     public async Task<StoredEntity> Save(TenantEntity entity, string action, bool isNew, CancellationToken ct = default)
     {

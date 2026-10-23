@@ -131,11 +131,11 @@ internal static class GraphRules
                     """, new Npgsql.NpgsqlParameter("tenant", scope.TenantId), new Npgsql.NpgsqlParameter("project", project.Id),
                     new Npgsql.NpgsqlParameter("customer", project.CustomerId.ToString("D"))).SingleAsync(ct);
                 Guard.Require(!communicationCustomerMismatch, "communication_project", "Recorded customer conversations preserve this project's customer association.");
-                var maintenanceProjectLinks = db.Links.Where(x => x.SourceKind == "maintenance-visits" && x.TargetKind == "projects" && x.TargetId == project.Id);
-                var maintenanceProjectRows = await db.Entities.Where(x => x.Kind == "maintenance-visits" && maintenanceProjectLinks.Any(l => l.SourceId == x.Id)).Select(x => x.Data).ToListAsync(ct);
-                foreach (var row in maintenanceProjectRows)
+                var maintenanceProjectRows = await EntitySources.Read<MaintenanceVisit>(db, scope.TenantId, ct,
+                    [BusinessRegistry.Reference<Project>(project.Id)], includeArchived: true);
+                foreach (var visit in maintenanceProjectRows)
                 {
-                    var visit = AppJson.Read<MaintenanceVisit>(row); visit.Validate();
+                    visit.Validate();
                     Guard.Require(project.Type == ProjectType.Maintenance && project.CustomerId == visit.Terms!.CustomerId && project.BuildingId == visit.Terms.BuildingId
                         && (visit.Status != MaintenanceVisitStatus.Completed || project.Status == ProjectStatus.Completed),
                         "maintenance_project_mismatch", "Maintenance projects retain the original occurrence and completed history.");
@@ -212,11 +212,11 @@ internal static class GraphRules
                 OperationsRules.EnsureAcceptance(acceptance, await store.All<Defect>(ct)); break;
             case MaintenanceContract contract:
                 Guard.Require((await store.Get<Building>(contract.BuildingId, ct)).CustomerId == contract.CustomerId, "customer_mismatch", "Maintenance customer and building must match.");
-                var contractLinks = db.Links.Where(x => x.SourceKind == "maintenance-visits" && x.TargetKind == "maintenance-contracts" && x.TargetId == contract.Id);
-                var contractRows = await db.Entities.Where(x => x.Kind == "maintenance-visits" && contractLinks.Any(l => l.SourceId == x.Id)).Select(x => x.Data).ToListAsync(ct);
-                foreach (var row in contractRows)
+                var contractRows = await EntitySources.Read<MaintenanceVisit>(db, scope.TenantId, ct,
+                    [BusinessRegistry.Reference<MaintenanceContract>(contract.Id)], includeArchived: true);
+                foreach (var visit in contractRows)
                 {
-                    var visit = AppJson.Read<MaintenanceVisit>(row); visit.Validate();
+                    visit.Validate();
                     Guard.Require(contract.CustomerId == visit.Terms!.CustomerId && contract.BuildingId == visit.Terms.BuildingId
                         && contract.StartDate == visit.Terms.StartDate && contract.IntervalMonths == visit.Terms.IntervalMonths,
                         "maintenance_recurrence_in_use", "Planned maintenance retains its customer, building and recurrence anchor. Create a new contract for changed terms.");
