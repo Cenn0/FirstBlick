@@ -73,7 +73,11 @@ builder.Services.AddRateLimiter(o =>
     o.RejectionStatusCode = 429;
     o.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
     {
-        var path = context.Request.Path.Value?.TrimEnd('/');
+        var path = context.Request.Path.Value;
+        // Endpoint routing accepts one trailing slash, but not an arbitrary
+        // suffix of slashes. Match that alias without reserving permits for
+        // otherwise unmatched paths.
+        if (path?.EndsWith('/') == true) path = path[..^1];
         return (string.Equals(path, "/openapi/v1.json", StringComparison.OrdinalIgnoreCase)
             || string.Equals(path, "/openapi/wire-v1.json", StringComparison.OrdinalIgnoreCase))
             ? RateLimitPartition.GetConcurrencyLimiter("openapi-documents", _ => new ConcurrencyLimiterOptions
