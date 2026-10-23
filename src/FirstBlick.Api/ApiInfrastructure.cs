@@ -78,7 +78,7 @@ public sealed class ErrorMiddleware(RequestDelegate next, ILogger<ErrorMiddlewar
         context.Response.Headers["X-Content-Type-Options"] = "nosniff";
         context.Response.Headers["X-Frame-Options"] = "SAMEORIGIN";
         return Results.Problem(statusCode: status, title: code, detail: detail,
-            extensions: new Dictionary<string, object?> { ["code"] = code, ["traceId"] = context.TraceIdentifier }).ExecuteAsync(context);
+            extensions: new Dictionary<string, object?> { ["code"] = code, ["requestId"] = context.TraceIdentifier }).ExecuteAsync(context);
     }
 }
 

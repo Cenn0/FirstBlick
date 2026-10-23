@@ -2,6 +2,10 @@
 
 Letzte begrenzte Fortschreibung: **23.10.2026** für **DP-02-06**: begrenzte Quellenleser, selektive Finanz-/Berechtigungsquellen und ein gemeinsames Quellenbudget. Die früheren Ergänzungen bleiben unten erhalten. Kategorien und ursprüngliche Abnahmekriterien bleiben unverändert; keine Gesamtabnahme wird behauptet.
 
+## Fachliche P0-Gates (23.10.2026)
+
+Die [synthetischen unabhängigen Zahlenorakel](evidence/domain-acceptance-cases.md) prüfen ausdrücklich begrenzte Dachlast-, Entwässerungs-, Wärmedurchgangs- und Rechnungsketten, einschließlich einer Gutschrift und ihrer Cent-Gesamtbilanz. Die Suite hat einen separat sichtbaren CI-Schritt im Serverjob. Ergebnisse gelten nur für den Commit mit erfolgreich ausgeführtem Workflow; es findet **keine** neue Klassifikation der 100 Aufgaben oder fachliche Freigabe statt.
+
 ## Technische API-Verträge und echte Dezimal-Ausgaben (23.10.2026)
 
 **DP-02-02/DP-12-04 bleiben T.** [18 technische Rechenvorschauen](api-calculation-contracts.md) erhalten explizite OpenAPI-Ergebnis-/Fehlerschemas und einen HTTP-geprüften versionierten Mindestvertrag. Fehlerhafte Minimal-API-Bindung verwendet jetzt auch außerhalb der Entwicklung den vorhandenen generischen Problem-Details-Pfad. Dies ersetzt keine vollständige API-Kompatibilitätsprüfung oder Webhookzustellung.

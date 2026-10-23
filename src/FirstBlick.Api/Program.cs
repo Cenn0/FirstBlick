@@ -87,6 +87,8 @@ app.Use(async (context, next) =>
 {
     context.Response.OnStarting(() =>
     {
+        // Server-generated identifier; never reflect an untrusted request header.
+        context.Response.Headers["X-Request-Id"] = context.TraceIdentifier;
         context.Response.Headers["X-Content-Type-Options"] = "nosniff";
         context.Response.Headers["X-Frame-Options"] = "SAMEORIGIN";
         context.Response.Headers["Referrer-Policy"] = "no-referrer";
