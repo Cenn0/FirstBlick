@@ -28,7 +28,7 @@
     "allOriginalAcceptanceCriteriaReviewed": false,
     "otherTaskClassificationsRemainHistorical": true,
     "classificationNote": "49 K / 49 T / 2 O unchanged; DP-02-06 remains partial.",
-    "verificationNote": "601 core and 20 database-independent API cases pass locally; 323 PostgreSQL cases skipped locally and require final-commit CI evidence. 486 client unit tests and production build pass."
+    "verificationNote": "601 core and 20 database-independent API cases pass locally; 327 PostgreSQL cases skipped locally and require final-commit CI evidence. 486 client unit tests and production build pass."
   },
   "sources": {
     "discovery-live": "docs/evidence/live-discovery-checkpoint7.json",
@@ -342,7 +342,8 @@
     "entity-sources": "src/FirstBlick.Infrastructure/Persistence/EntitySources.cs",
     "entity-source-tests": "tests/FirstBlick.Api.Tests/EntitySourcesApiTests.cs",
     "policy-selection-tests": "tests/FirstBlick.Api.Tests/RecordPolicySelectionApiTests.cs",
-    "graph-source-tests": "tests/FirstBlick.Api.Tests/GraphSourceSelectionApiTests.cs"
+    "graph-source-tests": "tests/FirstBlick.Api.Tests/GraphSourceSelectionApiTests.cs",
+    "scoped-graph-tests": "tests/FirstBlick.Api.Tests/ScopedGraphApiTests.cs"
   },
   "tasks": [
     {

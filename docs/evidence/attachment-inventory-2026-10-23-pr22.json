@@ -1,0 +1,63 @@
+{
+  "schema": "firstblick.attachment-inventory/1.0.0",
+  "checkedOn": "2026-10-23",
+  "scope": "Metadata reported in PR #22 at commit e29640900ea3430554fd08305832f09a8e80ce8d. Imported for provenance, not a claim that the combining run read all four original files.",
+  "available": [
+    {
+      "attachment": "daemmdemo.exe",
+      "bytes": 277900706,
+      "sha256": "d415a91a1b7f1ee5febac9dea5c719a9c709178d28f457a2d30fe4baec8ab9cb",
+      "peSignature": "50450000",
+      "machine": "0x14c",
+      "optionalHeaderMagic": "0x10b",
+      "sections": 5,
+      "bytesBeyondLastRawSection": 274041762,
+      "executed": false
+    },
+    {
+      "attachment": "handwerkdemo.exe",
+      "bytes": 362714168,
+      "sha256": "aa33eb1877c1b28347b56b00b74a52ca9481d44605e313c53fd33e5daefbf6bc",
+      "peSignature": "50450000",
+      "machine": "0x14c",
+      "optionalHeaderMagic": "0x10b",
+      "sections": 5,
+      "bytesBeyondLastRawSection": 358855224,
+      "executed": false
+    },
+    {
+      "attachment": "dachdemo.exe",
+      "bytes": 361445499,
+      "sha256": "a83535bbcf3936bec0588f2149cf66c9e3822c60b4a52d730a6afd8888f97bce",
+      "peSignature": "50450000",
+      "machine": "0x14c",
+      "optionalHeaderMagic": "0x10b",
+      "sections": 5,
+      "bytesBeyondLastRawSection": 357586555,
+      "executed": false
+    },
+    {
+      "attachment": "bauphysik-demo.exe",
+      "bytes": 278520040,
+      "sha256": "ac2e91b32925f1a380a73191c7670f2d569a4f8b6e355ab53ca10657cba44500",
+      "peSignature": "50450000",
+      "machine": "0x14c",
+      "optionalHeaderMagic": "0x10b",
+      "sections": 5,
+      "bytesBeyondLastRawSection": 274661096,
+      "executed": false
+    }
+  ],
+  "unavailableThisTurn": [
+    "flachdach-demo.exe",
+    "drain-demo.exe",
+    "dd-demo.exe",
+    "steildach-demo.exe"
+  ],
+  "sourcePullRequest": "https://github.com/Cenn0/FirstBlick/pull/22",
+  "sourceCommit": "e29640900ea3430554fd08305832f09a8e80ce8d",
+  "reverifiedInCombiningRun": [
+    "daemmdemo.exe",
+    "dachdemo.exe"
+  ]
+}
