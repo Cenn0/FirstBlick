@@ -10,38 +10,13 @@ namespace FirstBlick.Api;
 internal sealed class DiscoveryAccess(FirstBlickDbContext db, TenantScope scope, EntityStore store)
 {
     private readonly Dictionary<string, Guid[]?> visible = new(StringComparer.Ordinal);
-    private readonly HashSet<string> policySources = new(StringComparer.Ordinal);
 
     public async Task<Guid[]?> Visible(string kind, CancellationToken ct)
     {
         if (visible.TryGetValue(kind, out var cached)) return cached;
         if (!AccessRules.CanRead(scope.Role, kind)) return visible[kind] = [];
-        // Discovery additionally bounds the combined dependency budget before invoking the policy.
-        // EntityStore independently bounds each actual read in a single-statement snapshot.
-        var dependencies = new List<string>();
-        if (kind == "notification-preferences") dependencies.Add(kind);
-        else if (scope.Role is BusinessRole.Worker or BusinessRole.Trainer)
-        {
-            dependencies.Add("employees");
-            if (kind is "training-records" or "time-entries" or "diary-entries" or "form-submissions") dependencies.Add(kind);
-            else if (kind != "employees")
-            {
-                dependencies.Add("schedule-assignments");
-                if (kind == "buildings") dependencies.Add("projects");
-                if (kind is "tasks" or "defects") dependencies.Add(kind);
-            }
-        }
-        if (dependencies.Any(x => !policySources.Contains(x)))
-        {
-            policySources.UnionWith(dependencies);
-            var sql = new DiscoverySql(); var tenant = sql.Add(scope.TenantId); var kinds = sql.Add(policySources.ToArray());
-            var budget = (await sql.Read<DiscoveryBudget>(db, $"""
-                SELECT count(*)::bigint AS "Records",COALESCE(sum(octet_length("Data"::text)),0)::bigint AS "Bytes"
-                FROM "Entities" WHERE "TenantId"={tenant} AND NOT "Archived" AND "Kind"=ANY({kinds})
-                """, ct)).Single();
-            Guard.Require(budget.Records <= 10_000 && budget.Bytes <= 12 * 1024 * 1024,
-                "discovery_policy_budget", "The current record-policy inputs exceed 10,000 records or 12 MiB. This request cannot safely return a partial authorization view.");
-        }
+        // Policy reads select their actual owner/project scope and consume the same scoped source budget
+        // as direct lists, details and commands. Unrelated tenant history does not consume that budget.
         return visible[kind] = await RecordPolicy.VisibleIds(kind, scope, store, ct);
     }
 
