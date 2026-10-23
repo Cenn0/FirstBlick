@@ -80,7 +80,7 @@ export ConnectionStrings__Database='Host=localhost;Database=firstblick;Username=
 dotnet run --project src/FirstBlick.Api -- --migrate
 ```
 
-For the first personal managing-director account, set `Bootstrap__Email`, `Bootstrap__Password`, `Bootstrap__DisplayName` and `Bootstrap__TenantName`, then run `dotnet run --project src/FirstBlick.Api -- --bootstrap`. The password must satisfy the server's password rules. Remove the bootstrap password afterward. The bootstrap command refuses a database that already contains a business. Once signed in, that managing director can create further empty, isolated businesses in **Settings → Add another business**; the [onboarding contract](docs/business-onboarding.md) describes its access and operational limits.
+For the first personal managing-director account, set `Bootstrap__Email`, `Bootstrap__Password`, `Bootstrap__DisplayName` and `Bootstrap__TenantName`, then run `dotnet run --project src/FirstBlick.Api -- --bootstrap`. The password must satisfy the server's password rules. Remove the bootstrap password afterward. The bootstrap command refuses a database that already contains a business and grants its first account the platform-operator claim. Once signed in, that operator can create further empty, isolated businesses in **Settings → Add another business**. Existing installations grant the claim once using the protected host-only `--grant-platform-operator` command; the [onboarding contract](docs/business-onboarding.md) describes its access and operational limits.
 
 ```bash
 dotnet run --project src/FirstBlick.Api --urls http://localhost:5080

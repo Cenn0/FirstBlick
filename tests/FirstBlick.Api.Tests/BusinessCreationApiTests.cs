@@ -1,8 +1,12 @@
 using System.Net;
+using System.Security.Claims;
 using System.Text.Json;
+using FirstBlick.Core.Business;
 using FirstBlick.Core.Security;
 using FirstBlick.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using static FirstBlick.Api.Tests.PostgresApiFixture;
 
@@ -16,6 +20,7 @@ public sealed class BusinessCreationApiTests(PostgresApiFixture fixture) : IClas
         var original = await fixture.CreateTenant("Original synthetic business");
         var owner = await fixture.CreateUser(original.Id);
         var otherDirector = await fixture.CreateUser(original.Id);
+        await GrantOperator(owner);
         var client = await fixture.Login(owner);
         var key = Guid.NewGuid().ToString("N");
         var body = new { name = "Second synthetic business", timeZone = "Europe/Berlin" };
@@ -49,6 +54,9 @@ public sealed class BusinessCreationApiTests(PostgresApiFixture fixture) : IClas
         Assert.Equal(0, state.OtherMembers);
         Assert.Equal(1, state.Audit);
 
+        var nonOperator = await fixture.Login(otherDirector);
+        Assert.Equal(HttpStatusCode.Forbidden, (await Send(nonOperator, HttpMethod.Post, "/api/v1/businesses", body)).StatusCode);
+
         client.DefaultRequestHeaders.Remove("X-Tenant-Id");
         client.DefaultRequestHeaders.Add("X-Tenant-Id", created.ToString());
         var settings = await client.GetAsync("/api/v1/settings");
@@ -73,10 +81,61 @@ public sealed class BusinessCreationApiTests(PostgresApiFixture fixture) : IClas
 
         var director = await fixture.CreateUser(original.Id);
         var directorClient = await fixture.Login(director);
+        Assert.Equal(HttpStatusCode.Forbidden, (await Send(directorClient, HttpMethod.Post, "/api/v1/businesses", new { name = "Denied without operator role", timeZone = "UTC" })).StatusCode);
+        await GrantOperator(director);
         var invalid = await Send(directorClient, HttpMethod.Post, "/api/v1/businesses", new { name = " ", timeZone = "UTC" });
         Assert.Equal(HttpStatusCode.BadRequest, invalid.StatusCode);
         var invalidZone = await Send(directorClient, HttpMethod.Post, "/api/v1/businesses", new { name = "Synthetic business", timeZone = "Invalid/Zone" });
         Assert.Equal(HttpStatusCode.BadRequest, invalidZone.StatusCode);
         Assert.Equal(1, await fixture.InScope(async services => await services.GetRequiredService<FirstBlickDbContext>().Tenants.CountAsync()));
     }
+
+    [PostgresApiFact]
+    public async Task Revoked_platform_permission_cannot_replay_an_earlier_creation()
+    {
+        var original = await fixture.CreateTenant();
+        var owner = await fixture.CreateUser(original.Id);
+        await GrantOperator(owner);
+        var client = await fixture.Login(owner);
+        var key = Guid.NewGuid().ToString("N");
+        var body = new { name = "Revocation synthetic business", timeZone = "UTC" };
+        Assert.Equal(HttpStatusCode.OK, (await Send(client, HttpMethod.Post, "/api/v1/businesses", body, key: key)).StatusCode);
+
+        await fixture.InScope(async services =>
+        {
+            var manager = services.GetRequiredService<UserManager<ApplicationUser>>();
+            var account = (await manager.FindByIdAsync(owner.UserId.ToString()))!;
+            Assert.True((await manager.RemoveClaimAsync(account, new Claim(Bootstrap.OperatorClaimType, Bootstrap.OperatorClaimValue))).Succeeded);
+        });
+        var replay = await Send(client, HttpMethod.Post, "/api/v1/businesses", body, key: key);
+        Assert.Equal(HttpStatusCode.Forbidden, replay.StatusCode);
+        Assert.False(replay.Headers.Contains("Idempotency-Replayed"));
+    }
+
+    [PostgresApiFact]
+    public async Task Existing_confirmed_director_can_receive_the_operator_role_through_the_host_command()
+    {
+        var tenant = await fixture.CreateTenant();
+        var director = await fixture.CreateUser(tenant.Id);
+        var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+            { ["Platform:GrantEmail"] = director.Email }).Build();
+        await fixture.InScope(services => Bootstrap.GrantOperator(services, config));
+        await fixture.InScope(services => Bootstrap.GrantOperator(services, config));
+        Assert.Equal(1, await fixture.InScope(async services =>
+            await services.GetRequiredService<FirstBlickDbContext>().UserClaims.CountAsync(x => x.UserId == director.UserId
+                && x.ClaimType == Bootstrap.OperatorClaimType && x.ClaimValue == Bootstrap.OperatorClaimValue)));
+
+        var office = await fixture.CreateUser(tenant.Id, BusinessRole.Office);
+        var deniedConfig = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+            { ["Platform:GrantEmail"] = office.Email }).Build();
+        var denied = await Assert.ThrowsAsync<DomainException>(() => fixture.InScope(services => Bootstrap.GrantOperator(services, deniedConfig)));
+        Assert.Equal("operator_grant_denied", denied.Code);
+    }
+
+    private Task GrantOperator(ApiTestUser actor) => fixture.InScope(async services =>
+    {
+        var manager = services.GetRequiredService<UserManager<ApplicationUser>>();
+        var account = (await manager.FindByIdAsync(actor.UserId.ToString()))!;
+        Assert.True((await manager.AddClaimAsync(account, new Claim(Bootstrap.OperatorClaimType, Bootstrap.OperatorClaimValue))).Succeeded);
+    });
 }

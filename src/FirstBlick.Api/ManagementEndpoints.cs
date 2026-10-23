@@ -38,7 +38,7 @@ public static class ManagementEndpoints
                     Revision = 1, ContentDigest = ContentDigest.Of(new { tenant.Name, tenant.TimeZone }) });
                 Audit(db, scope, "business.create", "settings", scope.TenantId, 1, new { tenant.Id });
                 return new { tenant.Id, tenant.Name, tenant.TimeZone, tenant.Modules };
-            }));
+            }, async ct => Guard.Require(await Bootstrap.IsOperator(db, scope.UserId, ct), "forbidden", "A platform operator must create a business.")));
         api.MapGet("/settings", async (FirstBlickDbContext db, TenantScope scope, CancellationToken ct) => Results.Ok(await db.Tenants.AsNoTracking().SingleAsync(x => x.Id == scope.TenantId, ct)));
         api.MapPut("/settings", (SettingsRequest body, HttpContext http, FirstBlickDbContext db, TenantScope scope, CommandExecutor commands, ApprovalService approvals) =>
             commands.Execute(http, "settings", "settings.change", body, async ct =>

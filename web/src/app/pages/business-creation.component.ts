@@ -35,7 +35,7 @@ export class BusinessCreationComponent {
   readonly error=signal('');
   readonly createdId=signal('');
   readonly uncertain=signal(false);
-  readonly canCreate=computed(()=>this.auth.tenant()?.role==='ManagingDirector'&&!this.auth.recoveryHold()&&!this.auth.offlineSession());
+  readonly canCreate=computed(()=>this.auth.session()?.canCreateBusiness===true&&this.auth.tenant()?.role==='ManagingDirector'&&!this.auth.recoveryHold()&&!this.auth.offlineSession());
   name='';timeZone='Europe/Berlin';
 
   async create():Promise<void>{

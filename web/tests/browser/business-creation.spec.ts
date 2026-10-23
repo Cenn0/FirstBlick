@@ -2,13 +2,13 @@ import { expect, Page, test } from '@playwright/test';
 
 const createdId='22222222-2222-4222-8222-222222222222';
 
-async function fixture(page:Page, role='ManagingDirector'){
+async function fixture(page:Page, role='ManagingDirector', operator=role==='ManagingDirector'){
   let created=false;
   let submitted:unknown;
   let headers:Record<string,string>|undefined;
   await page.route('**/api/v1/**',async route=>{
     const request=route.request(),path=new URL(request.url()).pathname.slice('/api/v1/'.length);
-    if(path==='auth/me')return route.fulfill({json:{user:{id:'synthetic-person',email:'synthetic@example.test',displayName:'Synthetic person'},activeTenantId:'tenant-a',tenants:[
+    if(path==='auth/me')return route.fulfill({json:{user:{id:'synthetic-person',email:'synthetic@example.test',displayName:'Synthetic person'},activeTenantId:'tenant-a',canCreateBusiness:operator,tenants:[
       {id:'tenant-a',name:'Existing business',role,modules:['core','maintenance'],capabilities:role==='ManagingDirector'?['*']:['projects.read']},
       ...(created?[{id:createdId,name:'New synthetic business',role:'ManagingDirector',modules:['core','maintenance'],capabilities:['*']}]:[])]}});
     if(path==='auth/csrf')return route.fulfill({json:{ready:true},headers:{'Set-Cookie':'XSRF-TOKEN=synthetic-token; Path=/; SameSite=Strict'}});
@@ -42,6 +42,14 @@ test('a non-director cannot use the business creation form',async({page})=>{
   await page.goto('/businesses/new');
   await expect(page.getByLabel('Name des Betriebs')).toHaveCount(0);
   await expect(page.getByText('Für die Anlage benötigen Sie',{exact:false})).toBeVisible();
+});
+
+test('a managing director without platform permission cannot see or use business creation',async({page})=>{
+  await fixture(page,'ManagingDirector',false);
+  await page.goto('/settings');
+  await expect(page.getByRole('link',{name:'Weiteren Betrieb anlegen'})).toHaveCount(0);
+  await page.goto('/businesses/new');
+  await expect(page.getByLabel('Name des Betriebs')).toHaveCount(0);
 });
 
 test('an unbound success receipt blocks another creation attempt',async({page})=>{

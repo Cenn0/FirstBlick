@@ -92,12 +92,13 @@ builder.Services.AddRateLimiter(o =>
         _ => new FixedWindowRateLimiterOptions { PermitLimit = 6, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
 });
 var app = builder.Build();
-if (args.Contains("--migrate") || args.Contains("--bootstrap"))
+if (args.Contains("--migrate") || args.Contains("--bootstrap") || args.Contains("--grant-platform-operator"))
 {
     await using var serviceScope = app.Services.CreateAsyncScope();
     var db = serviceScope.ServiceProvider.GetRequiredService<FirstBlickDbContext>();
     await db.Database.MigrateAsync();
     if (args.Contains("--bootstrap")) await Bootstrap.Run(serviceScope.ServiceProvider, builder.Configuration);
+    if (args.Contains("--grant-platform-operator")) await Bootstrap.GrantOperator(serviceScope.ServiceProvider, builder.Configuration);
     return;
 }
 app.UseMiddleware<ErrorMiddleware>();
