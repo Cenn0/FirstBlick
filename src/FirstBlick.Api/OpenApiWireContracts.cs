@@ -12,10 +12,10 @@ public static class OpenApiWireContracts
         services.AddOpenApi("v1");
         return services.AddOpenApi("wire-v1", options =>
         {
-            // A shared component cannot represent both accepted numeric inputs
-            // and string-only outputs of the same CLR type. Inline this separate
-            // wire document; preserve the existing v1 component identities.
-            options.CreateSchemaReferenceId = info => info.Type.IsEnum ? OpenApiOptions.CreateDefaultSchemaReferenceId(info) : null;
+            // Only models that contain decimals need separate input and output
+            // instances. Other models retain references for recursive schemas.
+            options.CreateSchemaReferenceId = info => ContainsDecimal(info.Type, [], 0)
+                ? null : OpenApiOptions.CreateDefaultSchemaReferenceId(info);
             Configure(options);
         });
     }
@@ -56,5 +56,21 @@ public static class OpenApiWireContracts
         schema.Description = input
             ? "Invariant decimal string or JSON number; the server validates .NET decimal range and precision. Strings have no grouping or exponent notation."
             : "Exact .NET decimal serialized as an invariant JSON string, never a binary floating-point JSON number.";
+    }
+
+    private static bool ContainsDecimal(Type type, HashSet<Type> seen, int depth)
+    {
+        if ((Nullable.GetUnderlyingType(type) ?? type) == typeof(decimal)) return true;
+        if (depth >= 16 || !seen.Add(type)) return false;
+        try
+        {
+            if (type.IsArray) return ContainsDecimal(type.GetElementType()!, seen, depth + 1);
+            if (type.IsGenericType && type.GetGenericArguments().Any(arg => ContainsDecimal(arg, seen, depth + 1))) return true;
+            if (type.Namespace?.StartsWith("FirstBlick.", StringComparison.Ordinal) != true) return false;
+            return type.GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance)
+                .Where(property => property.GetIndexParameters().Length == 0)
+                .Any(property => ContainsDecimal(property.PropertyType, seen, depth + 1));
+        }
+        finally { seen.Remove(type); }
     }
 }

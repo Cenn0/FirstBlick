@@ -4,7 +4,7 @@ DP-02-02/DP-12-04 erhalten einen begrenzten, maschinengeprüften Vertrag für **
 
 ## Bereitstellung und Fehler
 
-Zusätzlich zu `GET /openapi/v1.json` steht das authentifizierte `GET /openapi/wire-v1.json` für dieselben Endpunkte bereit. Es beschreibt den vorhandenen Dezimal-Converter: Eingaben akzeptieren invariante Dezimalstrings oder JSON-Zahlen, typisierte HTTP-Ausgaben liefern Dezimalstrings. Nullwerte, Listen, Dictionaries und verschachtelte Arrays sind berücksichtigt. Das gesonderte Dokument bettet Schemas ein, damit ein DTO in Eingabe und Ausgabe verschiedene Dezimalformen erhalten kann; das bestehende `v1` behält seine Komponentenidentitäten. Daraus entsteht keine `/api/v2`-Route. Echte PostgreSQL-/Identity-Tests prüfen Operationsmenge, Referenzen und Dokumentgröße.
+Zusätzlich zu `GET /openapi/v1.json` steht das authentifizierte `GET /openapi/wire-v1.json` für dieselben Endpunkte bereit. Es beschreibt den vorhandenen Dezimal-Converter: Eingaben akzeptieren invariante Dezimalstrings oder JSON-Zahlen, typisierte HTTP-Ausgaben liefern Dezimalstrings. Nullwerte, Listen, Dictionaries und verschachtelte Arrays sind berücksichtigt. Das gesonderte Dokument bettet dezimalhaltige Schemas ein, damit ein DTO in Eingabe und Ausgabe verschiedene Dezimalformen erhalten kann. Andere Schemas behalten Referenzen, einschließlich rekursiver Typen; das bestehende `v1` behält seine Komponentenidentitäten. Daraus entsteht keine `/api/v2`-Route. Echte PostgreSQL-/Identity-Tests prüfen Operationsmenge, Referenzen und Dokumentgröße.
 
 Die technischen Problem-Details dokumentieren nun zusätzlich `requestId`. Es entspricht bei `ErrorMiddleware` dem serverseitigen `X-Request-Id`-Header; das vorhandene W3C-fähige `traceId` kann abweichen.
 
