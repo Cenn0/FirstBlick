@@ -7,6 +7,7 @@ import os
 import pathlib
 import time
 import urllib.parse
+import urllib.error
 import urllib.request
 import uuid
 from production_assets import check_production_assets
@@ -17,6 +18,7 @@ from customer_vehicle_ledgers_smoke import check_customer_vehicle_ledgers
 from project_templates_originals_smoke import check_project_templates_originals
 from roadmap_activity_smoke import check_roadmap_activity
 from roof_actions_smoke import check_roof_actions
+from smoke_tenant import choose_tenant
 
 root = pathlib.Path(__file__).resolve().parent.parent
 config = {}
@@ -60,16 +62,27 @@ while True:
             raise RuntimeError("API did not become ready within 120 seconds") from None
         time.sleep(2)
 assets = check_production_assets(base)
-call("GET", "/api/v1/auth/csrf")
-assert call("POST", "/api/v1/auth/login", {"email": config["Bootstrap__Email"], "password": config["Bootstrap__Password"]})["authenticated"]
-identity = call("GET", "/api/v1/auth/me")
-assert len(identity["tenants"]) == 1
-tenant = identity["activeTenantId"]
-call("GET", "/api/v1/auth/csrf")
 folder = root / "artifacts" / "operations"
 folder.mkdir(parents=True, exist_ok=True)
 previous_path = folder / "container-smoke.json"
 previous = json.loads(previous_path.read_text()) if previous_path.exists() else {}
+call("GET", "/api/v1/auth/csrf")
+assert call("POST", "/api/v1/auth/login", {"email": config["Bootstrap__Email"], "password": config["Bootstrap__Password"]})["authenticated"]
+identity = call("GET", "/api/v1/auth/me")
+
+
+def owns_customer(candidate, customer_id):
+    try:
+        call("GET", "/api/v1/customers/" + customer_id, tenant=candidate)
+        return True
+    except urllib.error.HTTPError as error:
+        if error.code not in (403, 404):
+            raise
+        return False
+
+
+tenant = choose_tenant(identity, previous, config["Bootstrap__TenantName"], owns_customer)
+call("GET", "/api/v1/auth/csrf")
 if previous.get("customerId"):
     customer = call("GET", "/api/v1/customers/" + previous["customerId"], tenant=tenant)
 else:
@@ -84,7 +97,7 @@ project_templates_originals = check_project_templates_originals(call, client, ba
 roadmap_activity = check_roadmap_activity(call, client, base, tenant, previous.get("roadmapActivity"))
 roof_actions = check_roof_actions(call, client, base, tenant, previous.get("roofActions"))
 call("POST", "/api/v1/auth/logout", {})
-report = {"status": "passed", "completedAt": datetime.datetime.now(datetime.timezone.utc).isoformat(), "customerId": customer["id"], "previousCustomerPreservedAcrossRestart": bool(previous), "productionAssets": assets, "originalSources": originals, "equipmentAndInventory": equipment_inventory, "contactsCalendarOriginals": contacts_calendar_originals, "customerVehicleLedgers": customer_vehicle_ledgers, "checks": ["database readiness", "production HTML/CSP/screen stylesheet", "CSRF", "bootstrap login", "tenant membership", "authenticated create/read", "original XML persistence, versioned S3 and byte-exact download", "equipment inspection, failed dispatch block, documented reassessment and retained history", "two-hop warehouse chain, supplier return and preserved stock balances", "structured customer contacts, persisted maintenance calendar and original inspection PNG across restart", "retained customer journal, vehicle journeys and costs with independent immutable corrections across restart", "logout"]}
+report = {"status": "passed", "completedAt": datetime.datetime.now(datetime.timezone.utc).isoformat(), "tenantId": tenant, "customerId": customer["id"], "previousCustomerPreservedAcrossRestart": bool(previous), "productionAssets": assets, "originalSources": originals, "equipmentAndInventory": equipment_inventory, "contactsCalendarOriginals": contacts_calendar_originals, "customerVehicleLedgers": customer_vehicle_ledgers, "checks": ["database readiness", "production HTML/CSP/screen stylesheet", "CSRF", "bootstrap login", "tenant membership", "authenticated create/read", "original XML persistence, versioned S3 and byte-exact download", "equipment inspection, failed dispatch block, documented reassessment and retained history", "two-hop warehouse chain, supplier return and preserved stock balances", "structured customer contacts, persisted maintenance calendar and original inspection PNG across restart", "retained customer journal, vehicle journeys and costs with independent immutable corrections across restart", "logout"]}
 report["projectTemplatesOriginals"] = project_templates_originals
 report["checks"].append("reviewed project templates with original task provenance and versioned communication/cost originals across restart")
 report["roadmapActivity"] = roadmap_activity
