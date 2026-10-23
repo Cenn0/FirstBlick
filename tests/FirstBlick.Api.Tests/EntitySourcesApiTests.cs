@@ -51,17 +51,17 @@ public sealed class EntitySourcesApiTests(PostgresApiFixture fixture) : IClassFi
     }
 
     [PostgresApiFact]
-    public async Task Worker_policy_rejects_an_oversized_dependency_instead_of_exposing_a_partial_list()
+    public async Task Worker_without_an_own_staff_record_ignores_unrelated_oversized_dependencies()
     {
         var tenant = await fixture.CreateTenant();
         var worker = await fixture.CreateUser(tenant.Id, BusinessRole.Worker);
         await Seed(tenant.Id, EntitySources.RecordLimit + 1, "{}", kind: "employees");
         var client = await fixture.Login(worker);
         using var response = await client.GetAsync("/api/v1/projects");
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        using var problem = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        Assert.Equal("source_budget", problem.RootElement.GetProperty("code").GetString());
-        Assert.False(problem.RootElement.TryGetProperty("items", out _));
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        using var result = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal(0, result.RootElement.GetProperty("total").GetInt32());
+        Assert.Empty(result.RootElement.GetProperty("items").EnumerateArray());
     }
 
     [PostgresApiFact]

@@ -25,11 +25,11 @@ Buchstaben kennzeichnen Abhängigkeitspakete, keine Prioritäts- oder Fertigstel
 | ID | Paket | Nächster Implementierungs-/Prüfschritt | Externe Grundlage für vollständigen Abschluss |
 | --- | --- | --- | --- |
 | DP-00-01 | A | Gehosteten Altstand gegen den Quellstand vergleichen | Tatsächlicher gehosteter Quell-/Versionsstand |
-| DP-00-02 | A | Daten-/Objektinventar gegen reale Exporte und verfügbare Originalbytes prüfen | D1-/R2-Export; sechs im aktuellen Upload fehlende Demos |
+| DP-00-02 | A | Daten-/Objektinventar gegen reale Exporte und verfügbare Originalbytes prüfen | D1-/R2-Export; vier im aktuellen Upload fehlende Demos |
 | DP-00-03 | A | Individuelle Kriterien und Prioritäten den 100 IDs zuordnen | Bestätigung der fachlich verantwortlichen Personen |
 | DP-00-04 | G | Reparatur-/Wartungsketten als echte Browserabläufe ergänzen | Drei reale Betriebsfälle mit Ausnahmen und Fachabnahme |
 | DP-02-02 | B | Vollständige Erfolgs-/Fehlerschemas und automatischen Vertragsvergleich ergänzen | Verbindliche Kompatibilitätspolitik für externe Verbraucher |
-| DP-02-06 | B | Selektive RecordPolicy-Abfragen, Request-Gesamtbudget und realistische Lastprüfung nach den Quellenbudgets ergänzen | Repräsentative Datenmengen und Latenzziele |
+| DP-02-06 | B | Repräsentative Last-/Indexprüfung und Ressourcenbudgets für verbleibende direkte SQL-/Exportpfade ergänzen | Repräsentative Datenmengen und Latenzziele |
 | DP-02-07 | B | Metrikexport, Tracing, Alarmierung und Rotationspfade vervollständigen | Betriebsplattform, Empfänger, SLOs und reale Rotation |
 | DP-03-03 | B | Befristete, feingranulare Vollmachten mit Widerruf und Regressionen implementieren | Bestätigte Delegationsregeln |
 | DP-04-01 | C | Stammdatenhistorie, bewusste Zusammenführung und externe Kontaktsynchronisierung ergänzen | Freigegebene Postfach-/Kontaktanbieter und reale CRM-Fälle |
@@ -85,4 +85,8 @@ Zusätzlich erhalten **DP-02-02/DP-12-04** einen [HTTP-geprüften Mindestvertrag
 
 ## Anhänge des aktuellen Auftrags
 
-Aktuell sind ausschließlich `daemmdemo.exe` und `dachdemo.exe` zugänglich. Das [neue Byte-/PE-Inventar](evidence/attachment-inventory-2026-10-23.json) dokumentiert Größe, SHA-256 und PE-Metadaten. `handwerkdemo.exe`, `flachdach-demo.exe`, `bauphysik-demo.exe`, `drain-demo.exe`, `dd-demo.exe` und `steildach-demo.exe` wurden nicht zugestellt und in diesem Auftrag nicht gelesen. Frühere Inventare gelten ausschließlich für ihren damaligen Quellenstand. Keine EXE wurde ausgeführt; PE-Metadaten und Hashgleichheit belegen keine Berechnungsverfahren, Anwendungsabläufe oder Normkonformität. Proprietäre Programme und Herstellerdaten werden nicht ins Repository kopiert.
+Aktuell sind `daemmdemo.exe`, `handwerkdemo.exe`, `dachdemo.exe` und `bauphysik-demo.exe` zugänglich. Das [Byte-/PE-Inventar](evidence/attachment-inventory-2026-10-23.json) enthält Größe, SHA-256 und PE-Metadaten für diese vier tatsächlich gelesenen Dateien. `flachdach-demo.exe`, `drain-demo.exe`, `dd-demo.exe` und `steildach-demo.exe` wurden nicht zugestellt und in diesem Auftrag nicht gelesen. Keine EXE wurde ausgeführt; Metadaten und Hashgleichheit belegen keine Berechnungsverfahren, Anwendungsabläufe oder Normkonformität. Proprietäre Programme und Herstellerdaten werden nicht ins Repository kopiert.
+
+## Selektive Datensatzrechte und gemeinsames Quellenbudget
+
+Die [Fortsetzung von DP-02-06](bounded-business-sources.md#remaining-limits-and-operations) ersetzt vollständige Policy-Sammlungen durch PostgreSQL-Selektoren für eigene Mitarbeiter-, Ausbildungs-, Termin- und Projektbeziehungen. Alle Aufrufe des Quellenlesers teilen im DbContext ein Budget; fremde Historien werden vor Materialisierung ausgeschlossen. Gezielte PostgreSQL-/HTTP-Regressionen prüfen Sichtbarkeit, Widerruf und Budgetablehnung. Direkte SQL-/Exportpfade und repräsentative Last bleiben offen; die Aufgabe bleibt T.

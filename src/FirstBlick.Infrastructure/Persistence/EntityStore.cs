@@ -32,6 +32,9 @@ public sealed class EntityStore(FirstBlickDbContext db, TenantScope scope)
     public Task<List<T>> All<T>(CancellationToken ct = default) where T : TenantEntity =>
         EntitySources.Read<T>(db, scope.TenantId, ct);
 
+    public Task<List<T>> Selected<T>(EntitySourceSelection selection, CancellationToken ct = default) where T : TenantEntity =>
+        EntitySources.Read<T>(db, scope.TenantId, ct, selection: selection);
+
     public async Task<StoredEntity> Save(TenantEntity entity, string action, bool isNew, CancellationToken ct = default)
     {
         Guard.Require(entity.TenantId == scope.TenantId, "forbidden", "The record belongs to a different business.");
