@@ -56,3 +56,21 @@ Die UI besitzt zusätzlich kontrollierte Browser-Fixtures für Desktop, Tablet u
 - [API-Tests](../tests/FirstBlick.Api.Tests/OperationsApiTests.cs), [Metriktests](../tests/FirstBlick.Api.Tests/TelemetryTests.cs).
 - Microsoft, [Creating metrics](https://learn.microsoft.com/en-us/dotnet/core/diagnostics/metrics-instrumentation): Meter-Lebensdauer über `IMeterFactory`, Instrumente und Dimensionen.
 - Microsoft, [ASP.NET Core metrics](https://learn.microsoft.com/en-us/aspnet/core/metrics/overview?view=aspnetcore-10.0): Hostinstrumentierung und getrennte Erfassung.
+
+## HTTP-Anfragekorrelation (23.10.2026)
+
+API-, Gesundheits- und Fehlerantworten tragen den vom ASP.NET-Core-Host vergebenen
+`X-Request-Id`-Header. Für durch `ErrorMiddleware` erzeugte Problem-Details
+entspricht der Header dem JSON-Feld `traceId`. Ein vom Client gesetzter
+`X-Request-Id` wird **nicht** übernommen; damit kann niemand über den Header
+fremde Kennungen in der Antwort vortäuschen. Die Kennung enthält weder
+Mandanten- noch Benutzeridentität oder Anfrageinhalt. Der Header erleichtert
+die Zuordnung eines beobachteten Fehlers zu einem serverseitigen Logeintrag.
+
+Dies ist **keine** W3C-`traceparent`-Weitergabe an Worker oder Provider,
+kein OTLP-/Prometheus-Export, keine persistierte Messhistorie und kein Nachweis
+übergreifender Ende-zu-Ende-Traces. `DP-02-07` bleibt Teilumfang. Der neue
+`CorrelationApiTests`-Fall prüft am realen HTTP-/PostgreSQL-Testhost Erfolg,
+Fehler, serverseitige Kennung und Ablehnung einer klientenseitig vorgegebenen
+Kennung. Erst ein erfolgreiches CI-Ergebnis auf dem betreffenden Commit ist
+ein Ausführungsnachweis.
