@@ -81,7 +81,7 @@ Zusätzlich erhalten **DP-02-02/DP-12-04** einen [HTTP-geprüften Mindestvertrag
 
 ## Quellenbudgets vom 23.10.2026
 
-[PR #21](https://github.com/Cenn0/FirstBlick/pull/21) ergänzt **DP-02-06** um [begrenzte ganze Quellenmengen](bounded-business-sources.md), mandanten- und belegbezogene Zahlungs-/Rücklastschriftquellen und gezielte Bankimport-Schlüssel. Die Aufgabe bleibt T; eine Begrenzung ersetzt keine selektive Berechtigungsabfrage oder Lastabnahme.
+[PR #21](https://github.com/Cenn0/FirstBlick/pull/21) ergänzt **DP-02-06** um [begrenzte ganze Quellenmengen](bounded-business-sources.md), mandanten- und belegbezogene Zahlungs-/Rücklastschriftquellen und gezielte Bankimport-Schlüssel. Die Aufgabe bleibt T; eine Begrenzung ersetzt keine selektive Berechtigungsabfrage oder Lastabnahme. Die anschließenden GraphRules-Abfragen begrenzen Projekt-, Mitarbeiter-, Geräte-, Material- und Bestellquellen bereits auf ihre Beziehungen; RecordPolicy bleibt ein separater Restumfang.
 
 ## Anhänge des aktuellen Auftrags
 

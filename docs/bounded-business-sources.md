@@ -25,6 +25,14 @@ These domain errors use the existing HTTP 400 problem-details path. The existing
 
 Invoice credits and supplier credits are selected through the corresponding original-invoice link. Reversals consult both customer and supplier allocations on the selected return transaction. Ordinary bank imports only read the requested external identifiers for the specified account. Repeating an import preserves its source digest check; unrelated history is not deserialized.
 
+## Project and resource sources
+
+The follow-up `GraphRules` reads use the same bounded reader for a building's projects, a project's quotes, roof revisions, measurements, technical results and assignments, a purchase order's converted demands, an employee's time and absence history, a material's stock/reservations and a project's defects. Core validation predicates and business error codes are retained.
+
+Dispatch reads the union of assignments for the employee and all selected equipment, deduplicated by assignment ID. Separate bounded reads support the existing maximum of 100 equipment IDs without exceeding the reader's 100-target limit. An assignment using another employee but the same tool still conflicts; half-open adjacent windows remain permissible. Approving absence still checks existing assignments in the reverse direction.
+
+[ScopedGraphApiTests](../tests/FirstBlick.Api.Tests/ScopedGraphApiTests.cs) supplies more than 10,000 unrelated rows per tested kind and verifies successful scoped changes plus rejection of linked project-window, shared-equipment, absence, time-overlap and acceptance defects. Deliberately invalid unrelated bodies establish that those records are not deserialized; this synthetic fixture is not a representative production load benchmark. RecordPolicy authorization collections and other field-work command collections remain separately bounded whole-kind reads.
+
 ## Verification
 
 [`EntitySourcesApiTests`](../tests/FirstBlick.Api.Tests/EntitySourcesApiTests.cs) covers exact/over record limits, byte overflow before invalid-body deserialization, tenant/archive isolation, metadata disagreement, worker-policy rejection, selective bank-import replay/conflict, empty targets, target-union deduplication and stale selected links. [`CommercialApiTests`](../tests/FirstBlick.Api.Tests/CommercialApiTests.cs) adds over-budget balance/allocation rejection with no posted receipt or audit; its existing cases exercise concurrent customer/supplier bank capacity, credits, retention, refund and chargeback. [`InvoiceRoundingApiTests`](../tests/FirstBlick.Api.Tests/InvoiceRoundingApiTests.cs) retains its financial metadata/atomic issuance regression.

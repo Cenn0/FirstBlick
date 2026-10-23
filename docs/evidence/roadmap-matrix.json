@@ -21,7 +21,7 @@
     "tasks": [
       "DP-02-06"
     ],
-    "scope": "Single-statement record/byte budgets and metadata checks for shared source reads; scoped complete financial relationships and requested bank import keys; current two-attachment byte inventory.",
+    "scope": "Single-statement record/byte budgets and metadata checks for shared source reads; scoped complete financial relationships and requested bank import keys; current two-attachment byte inventory. Follow-up scoped GraphRules selects only relevant project, employee, equipment, material and purchase relationships, retaining conflict rules.",
     "reclassifiesTasks": false,
     "statusChangesFromPreviousInventory": [],
     "originalRoadmapCheckboxesChanged": false,
@@ -340,7 +340,8 @@
     "advanced-wire-tests": "tests/FirstBlick.Api.Tests/AdvancedTechnicalWireApiTests.cs",
     "bounded-sources": "docs/bounded-business-sources.md",
     "entity-sources": "src/FirstBlick.Infrastructure/Persistence/EntitySources.cs",
-    "entity-source-tests": "tests/FirstBlick.Api.Tests/EntitySourcesApiTests.cs"
+    "entity-source-tests": "tests/FirstBlick.Api.Tests/EntitySourcesApiTests.cs",
+    "scoped-graph-tests": "tests/FirstBlick.Api.Tests/ScopedGraphApiTests.cs"
   },
   "tasks": [
     {
@@ -472,7 +473,7 @@
     {
       "id": "DP-02-06",
       "status": "T",
-      "evidence": "[SQL-paginierte Suche][discovery-api], [zentrale Datensatzrechte][discovery-access] und [Angular-Kontextschutz][ui-nine] bündeln begrenzte, mandantengefilterte Lesezugriffe. Rechte-/Betriebswechsel entwerten alte Listen, Details und Downloads; die [aktuellen Fixture-/Live-Nachweise][checkpoint-nine] trennen Fehlerfälle und echte Datenzugriffe. [FinancialSources][financial-sources] begrenzt verknüpfte Rechnungs-/Korrekturhistorien mandanten- und auftragsbezogen; [Checkpoint 11][checkpoint-eleven] sichert Projektkosten-Quellmetadaten und Referenzen zusätzlich ab. [Quellenbudgets][bounded-sources] begrenzen EntityStore, Wartungsbeziehungen und Finanzquellen vor der JSON-Übertragung auf 10.000 Datensätze/12 MiB je Abfrage. Zahlungs-, Rücklastschrift- und Importpfade wählen explizite Beleg-/Bankbeziehungen oder Importschlüssel statt der gesamten Mandantenhistorie.",
+      "evidence": "[SQL-paginierte Suche][discovery-api], [zentrale Datensatzrechte][discovery-access] und [Angular-Kontextschutz][ui-nine] bündeln begrenzte, mandantengefilterte Lesezugriffe. Rechte-/Betriebswechsel entwerten alte Listen, Details und Downloads; die [aktuellen Fixture-/Live-Nachweise][checkpoint-nine] trennen Fehlerfälle und echte Datenzugriffe. [FinancialSources][financial-sources] begrenzt verknüpfte Rechnungs-/Korrekturhistorien mandanten- und auftragsbezogen; [Checkpoint 11][checkpoint-eleven] sichert Projektkosten-Quellmetadaten und Referenzen zusätzlich ab. [Quellenbudgets][bounded-sources] begrenzen EntityStore, Wartungsbeziehungen und Finanzquellen vor der JSON-Übertragung auf 10.000 Datensätze/12 MiB je Abfrage. Zahlungs-, Rücklastschrift- und Importpfade wählen explizite Beleg-/Bankbeziehungen oder Importschlüssel statt der gesamten Mandantenhistorie. GraphRules wählt zusätzlich Projekt-, Mitarbeiter-, Ressourcen-, Material- und Bestellbeziehungen vor der Quellenbegrenzung; Konfliktregeln bleiben erhalten.",
       "remaining": "RecordPolicy kann weiterhin ganze Arten eines Mandanten lesen, jetzt mit expliziter Ablehnung über dem Quellenbudget. Selektive Berechtigungsabfragen, ein Request-Gesamtbudget, ein vollständiger globaler Suchindex sowie repräsentative Index-, Größen- und Latenzmessungen bleiben offen.",
       "title": "API-Abfragen und Angular-Datenzugriff konsolidieren"
     },
