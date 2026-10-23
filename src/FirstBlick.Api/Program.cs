@@ -72,7 +72,8 @@ builder.Services.AddRateLimiter(o =>
 {
     o.RejectionStatusCode = 429;
     o.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
-        context.Request.Path.StartsWithSegments("/openapi")
+        (string.Equals(context.Request.Path.Value, "/openapi/v1.json", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(context.Request.Path.Value, "/openapi/wire-v1.json", StringComparison.OrdinalIgnoreCase))
             ? RateLimitPartition.GetConcurrencyLimiter("openapi-documents", _ => new ConcurrencyLimiterOptions
                 { PermitLimit = 2, QueueLimit = 0 })
             : RateLimitPartition.GetNoLimiter("other"));
