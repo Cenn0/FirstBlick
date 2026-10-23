@@ -54,6 +54,8 @@ async function fill(page: Page) {
   await page.getByLabel('Betreff der Kommunikation', { exact: false }).fill('Dachtermin');
   await page.getByLabel('Inhalt und Vereinbarungen', { exact: false }).fill('Termin für Mittwoch abgestimmt.');
   await page.getByLabel('Angaben geprüft; der Eintrag wird unveränderlich dokumentiert.', { exact: true }).check();
+  // Observe the confirmed Angular form state before a caller immediately edits it again.
+  await expect(page.getByRole('button', { name: 'Kommunikation speichern', exact: true })).toBeEnabled();
 }
 
 test('records customer communication with selected contacts and projects and keeps the original after voiding', async ({ page }) => {
