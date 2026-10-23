@@ -7,6 +7,20 @@ namespace FirstBlick.Api.Tests;
 public sealed class WireDocumentApiTests(PostgresApiFixture fixture) : IClassFixture<PostgresApiFixture>
 {
     [PostgresApiFact]
+    public async Task One_person_can_request_at_most_six_openapi_documents_per_minute()
+    {
+        var tenant = await fixture.CreateTenant();
+        using var client = await fixture.Login(await fixture.CreateUser(tenant.Id));
+        for (var attempt = 0; attempt < 6; attempt++)
+        {
+            using var allowed = await client.GetAsync(attempt % 2 == 0 ? "/openapi/v1.json" : "/openapi/wire-v1.json");
+            Assert.Equal(HttpStatusCode.OK, allowed.StatusCode);
+        }
+        using var limited = await client.GetAsync("/openapi/wire-v1.json");
+        Assert.Equal(HttpStatusCode.TooManyRequests, limited.StatusCode);
+    }
+
+    [PostgresApiFact]
     public async Task Both_documents_are_authenticated_and_wire_document_preserves_all_operations_and_resolvable_refs()
     {
         using var anonymous = fixture.Client();

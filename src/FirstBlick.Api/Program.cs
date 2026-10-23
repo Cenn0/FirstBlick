@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
@@ -70,9 +71,17 @@ builder.Services.AddSingleton<StandardsRuntime>();
 builder.Services.AddRateLimiter(o =>
 {
     o.RejectionStatusCode = 429;
+    o.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+        context.Request.Path.StartsWithSegments("/openapi")
+            ? RateLimitPartition.GetConcurrencyLimiter("openapi-documents", _ => new ConcurrencyLimiterOptions
+                { PermitLimit = 2, QueueLimit = 0 })
+            : RateLimitPartition.GetNoLimiter("other"));
     var permits = Math.Clamp(builder.Configuration.GetValue("Authentication:RequestsPerMinute", 20), 1, 1000);
     o.AddPolicy("authentication", context => RateLimitPartition.GetFixedWindowLimiter(context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
         _ => new FixedWindowRateLimiterOptions { PermitLimit = permits, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
+    o.AddPolicy("openapi", context => RateLimitPartition.GetFixedWindowLimiter(
+        context.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = 6, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
 });
 var app = builder.Build();
 if (args.Contains("--migrate") || args.Contains("--bootstrap"))
@@ -136,7 +145,7 @@ SupplierCostAllocationEndpoints.Map(api);
 DiscoveryEndpoints.Map(api);
 OperationsEndpoints.Map(api);
 CollectionEndpoints.Map(api);
-app.MapOpenApi().RequireAuthorization();
+app.MapOpenApi().RequireAuthorization().RequireRateLimiting("openapi");
 app.UseDefaultFiles();
 app.UseStaticFiles();
 app.MapFallbackToFile("index.html");

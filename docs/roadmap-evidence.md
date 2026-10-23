@@ -4,7 +4,7 @@ Letzte begrenzte Fortschreibung: **23.10.2026** für **DP-02-06**: begrenzte Que
 
 ## Dezimal-Wire-Dokument und Anfragekennung (23.10.2026)
 
-`DP-02-02/DP-12-04/DP-02-07` erhalten [authentifizierte OpenAPI-Wire-Schemas](api-calculation-contracts.md) für Dezimalwerte und `requestId`, dazu die [Angular-Fehlerdiagnose](observability.md) mit begrenzter Kennung. TestServer prüft Zahl-/Stringeingaben, Stringausgaben, Nullwerte, Listen, Dictionaries, Matrizen und wiederverwendete DTOs. Ein echter PostgreSQL-/Identity-Fall prüft Operationsmenge, Referenzen und die Dokumentgröße **nach** Erzeugung auf höchstens 8 MiB. Dies ist eine CI-Prüfung, keine Laufzeitgrenze für Erzeugungsaufwand oder Antwortgröße. Bis zum finalen CI-Lauf sind dies Quell- und lokale Testbelege. Alle drei Aufgaben bleiben T; 49 K / 49 T / 2 O bleibt unverändert.
+`DP-02-02/DP-12-04/DP-02-07` erhalten [authentifizierte OpenAPI-Wire-Schemas](api-calculation-contracts.md) für Dezimalwerte und `requestId`, dazu die [Angular-Fehlerdiagnose](observability.md) mit begrenzter Kennung. TestServer prüft Zahl-/Stringeingaben, Stringausgaben, Nullwerte, Listen, Dictionaries, Matrizen und wiederverwendete DTOs. Ein echter PostgreSQL-/Identity-Fall prüft Operationsmenge, Referenzen, sechs Abrufe pro Person/Minute und die Dokumentgröße **nach** Erzeugung auf höchstens 8 MiB. Die Größe ist eine CI-Prüfung, keine Laufzeitgrenze für Antwortbytes oder CPU-Zeit. Die Laufzeit begrenzt zusätzlich auf zwei gleichzeitige Dokumenterzeugungen ohne Warteschlange. Bis zum finalen CI-Lauf sind dies Quell- und lokale Testbelege. Alle drei Aufgaben bleiben T; 49 K / 49 T / 2 O bleibt unverändert.
 
 ## HTTPS-Hostingvoraussetzung DP-02-07 / DP-13-05 (23.10.2026)
 
