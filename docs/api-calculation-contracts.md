@@ -4,6 +4,10 @@ DP-02-02/DP-12-04 erhalten einen begrenzten, maschinengeprüften Vertrag für **
 
 ## Bereitstellung und Fehler
 
+Zusätzlich zu `GET /openapi/v1.json` steht das authentifizierte `GET /openapi/wire-v1.json` für dieselben Endpunkte bereit. Es beschreibt den vorhandenen Dezimal-Converter: Eingaben akzeptieren invariante Dezimalstrings oder JSON-Zahlen, typisierte HTTP-Ausgaben liefern Dezimalstrings. Nullwerte, Listen, Dictionaries und verschachtelte Arrays sind berücksichtigt. Das gesonderte Dokument bettet Schemas ein, damit ein DTO in Eingabe und Ausgabe verschiedene Dezimalformen erhalten kann; das bestehende `v1` behält seine Komponentenidentitäten. Daraus entsteht keine `/api/v2`-Route. Echte PostgreSQL-/Identity-Tests prüfen Operationsmenge, Referenzen und Dokumentgröße.
+
+Die technischen Problem-Details dokumentieren nun zusätzlich `requestId`. Es entspricht bei `ErrorMiddleware` dem serverseitigen `X-Request-Id`-Header; das vorhandene W3C-fähige `traceId` kann abweichen.
+
 `GET /openapi/v1.json` benötigt weiterhin persönliche Authentifizierung. Jeder erfasste POST enthält ein erforderliches JSON-Eingabeschema, einen stabilen Operationsnamen und sein konkretes JSON-Ergebnisschema. Die geschützten Rechenendpunkte benötigen zusätzlich die aktuelle Betriebsmitgliedschaft, `X-Tenant-Id`, CSRF und `technical-results.write`.
 
 Die Metadaten beschreiben 400, 403, 413, 415, 423 und 500 als Problem-Details mit `code` und `traceId`. 401 kann ohne Antwortkörper zurückgegeben werden. `RouteHandlerOptions.ThrowOnBadRequest = true` wird per `PostConfigure` gesetzt und hält fehlerhafte Minimal-API-JSON-Bindung auch außerhalb Development auf dem bestehenden ErrorMiddleware-Pfad. Ein leerer Status 415 aus der vorgeschalteten Medientyp-/Endpunktauswahl wird innerhalb `/api` gesondert mit demselben Problemvertrag ergänzt. Bereits gestartete Antworten, vorhandene Fehlerkörper und andere URL-Bereiche werden dabei erhalten. Status und generischer Problemtext bleiben erhalten; rohe Eingaben und innere Parserdetails werden nicht ausgegeben. Eine vor der Anwendung abgewiesene Proxy-/Serveranfrage kann weiterhin eine andere Fehlerform haben.

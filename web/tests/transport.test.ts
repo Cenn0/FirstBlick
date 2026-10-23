@@ -1,5 +1,5 @@
 import {afterEach,expect,test,vi} from 'vitest';
-import {ApiError,requestResponse} from '../src/app/core/transport';
+import {ApiError,errorMessage,requestResponse} from '../src/app/core/transport';
 
 afterEach(()=>vi.unstubAllGlobals());
 
@@ -22,4 +22,24 @@ test('CSRF bootstrap and the following mutation both bypass service workers',asy
 test('an actual server 401 remains distinguishable from a network failure',async()=>{
   vi.stubGlobal('document',{cookie:''});vi.stubGlobal('fetch',vi.fn().mockResolvedValue(new Response('{"status":401,"code":"unauthorized"}',{status:401,headers:{'Content-Type':'application/problem+json'}})));
   await expect(requestResponse('/api/v1/auth/me')).rejects.toMatchObject({status:401,problem:{code:'unauthorized'}} satisfies Partial<ApiError>);
+});
+
+test('server request correlation is shown without treating W3C traceId as a request ID',async()=>{
+  vi.stubGlobal('document',{cookie:''});
+  const fetch=vi.fn().mockResolvedValue(new Response(JSON.stringify({status:503,code:'server_error',detail:'Bitte später erneut versuchen.',requestId:'body-id',traceId:'activity-id'}),{status:503,headers:{'Content-Type':'application/problem+json','X-Request-Id':'server-id:0001'}}));
+  vi.stubGlobal('fetch',fetch);
+  let failure:unknown;try{await requestResponse('/api/v1/projects');}catch(error){failure=error;}
+  expect(failure).toBeInstanceOf(ApiError);
+  expect((failure as ApiError).requestId).toBe('server-id:0001');
+  expect(errorMessage(failure)).toBe('Bitte später erneut versuchen. Anfragekennung: server-id:0001.');
+  expect(errorMessage(failure)).not.toContain('activity-id');
+});
+
+test('invalid correlation and malformed problem shapes cannot become a displayed diagnostic',async()=>{
+  vi.stubGlobal('document',{cookie:''});
+  vi.stubGlobal('fetch',vi.fn().mockResolvedValue(new Response('null',{status:500,headers:{'X-Request-Id':'<forged>'}})));
+  let failure:unknown;try{await requestResponse('/api/v1/projects');}catch(error){failure=error;}
+  expect(failure).toBeInstanceOf(ApiError);
+  expect((failure as ApiError).requestId).toBeUndefined();
+  expect(errorMessage(failure)).toBe('Anfrage fehlgeschlagen (500).');
 });
