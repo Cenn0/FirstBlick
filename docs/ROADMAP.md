@@ -2,6 +2,12 @@
 
 > Übernommen aus der Projektanalyse „DachPlaner Rework Roadmap“, 19.10.2026 (34 Seiten). Der Originalbericht umfasst 100 Aufgaben in 15 Epics. Diese Fassung erhält alle Aufgabenkennungen und ursprünglichen Abnahmekriterien. Ein implementierter Teilablauf bedeutet nicht automatisch, dass das gesamte Epic abgeschlossen ist.
 
+## Selbst gehostete Mehrmandantenanlage und fachliche Demo-Referenzen (23.10.2026)
+
+Eine angemeldete Geschäftsführung kann nach dem einmaligen Bootstrap einen weiteren [leeren, getrennten Betrieb](business-onboarding.md) mit eigener Mitgliedschaft anlegen und anschließend in ihn wechseln. Der neue HTTP-/Identity-/PostgreSQL-Fall und die responsive Bedienprüfung müssen am endgültigen Commit erfolgreich ausgeführt werden. **DP-03-01 bleibt K**, weil reale Kontoübernahme, Plattformverwaltung und betriebliche Gesamtfreigabe fehlen; die 100 ursprünglichen Kriterien bleiben offen.
+
+Alle acht benannten MF-Demos wurden lesend an Größe, Hash und allgemeinen Produktmetadaten gebunden. Die [fachliche Referenzmatrix](vendor-functional-reference.md) ordnet ausschließlich öffentlich vom Hersteller beschriebene Funktionen den vorhandenen FirstBlick-Teilmodellen und Restarbeiten zu. Die Installer wurden nicht gestartet oder ausgeschlachtet. Herstellerbeschreibungen ersetzen weder vollständige lizenzierte ISO-/DIN-Verfahren noch unabhängige Fachabnahme. Die Klassifikation **49 K / 49 T / 2 O** ändert sich dadurch nicht.
+
 ## Dezimal-Drahtvertrag und Angular-Fehlerdiagnose (23.10.2026)
 
 **DP-02-02/DP-12-04/DP-02-07 bleiben T.** Ein [zusätzliches authentifiziertes OpenAPI-Drahtdokument](api-calculation-contracts.md) beschreibt tatsächlich ausgegebene Dezimalstrings und akzeptierte Eingaben. Der Fehlervertrag nennt `requestId`; Angular zeigt eine begrenzte serverseitige Anfragekennung. Die ursprünglichen Abnahmekriterien, Kategorien und Gesamtzählung bleiben erhalten. Ausgeführte End-to-End- und CI-Nachweise sind am endgültigen Commit zu prüfen.

@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace FirstBlick.Api;
 
 public sealed record SettingsRequest(string Name, string TimeZone, string[] Modules, string[] ApprovalActions, long PolicyRevision);
+public sealed record BusinessCreationRequest(string Name, string TimeZone);
 public sealed record MembershipRequest(BusinessRole Role, bool Active, long Revision);
 public sealed record InvitationRequest(string Email, BusinessRole Role);
 public sealed record ApprovalBody(string Action, string Kind, Guid EntityId, long Revision, JsonElement? Payload);
@@ -17,6 +18,27 @@ public static class ManagementEndpoints
     private static void Director(TenantScope scope) => Guard.Require(scope.Role == BusinessRole.ManagingDirector, "forbidden", "This action requires a managing director.");
     public static void Map(RouteGroupBuilder api)
     {
+        api.MapPost("/businesses", (BusinessCreationRequest body, HttpContext http, FirstBlickDbContext db, TenantScope scope, CommandExecutor commands) =>
+            commands.Execute(http, "settings", "business.create", body, async ct =>
+            {
+                Director(scope);
+                Guard.Text(body.Name, "Name", 200);
+                Guard.Text(body.TimeZone, "TimeZone", 100);
+                Guard.Require(TimeZoneInfo.TryFindSystemTimeZoneById(body.TimeZone, out _), "invalid_timezone", "The timezone is unknown.");
+                // An account can be a director in several businesses. Serialize its creation
+                // requests even when they originate from different existing businesses.
+                var ownerLock = "business.create:" + scope.UserId;
+                await db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock(hashtextextended({ownerLock}, 0))", ct);
+                Guard.Require(await db.Memberships.CountAsync(x => x.UserId == scope.UserId && x.Active && x.Role == BusinessRole.ManagingDirector, ct) < 20,
+                    "business_limit", "This account already manages the maximum number of businesses.");
+                var tenant = new BusinessTenant { Name = body.Name.Trim(), TimeZone = body.TimeZone };
+                db.Tenants.Add(tenant);
+                db.Memberships.Add(new Membership { TenantId = tenant.Id, UserId = scope.UserId, Role = BusinessRole.ManagingDirector });
+                db.Audit.Add(new AuditEntry { TenantId = tenant.Id, ActorId = scope.UserId, Action = "business.created", Kind = "settings", EntityId = tenant.Id,
+                    Revision = 1, ContentDigest = ContentDigest.Of(new { tenant.Name, tenant.TimeZone }) });
+                Audit(db, scope, "business.create", "settings", scope.TenantId, 1, new { tenant.Id });
+                return new { tenant.Id, tenant.Name, tenant.TimeZone, tenant.Modules };
+            }));
         api.MapGet("/settings", async (FirstBlickDbContext db, TenantScope scope, CancellationToken ct) => Results.Ok(await db.Tenants.AsNoTracking().SingleAsync(x => x.Id == scope.TenantId, ct)));
         api.MapPut("/settings", (SettingsRequest body, HttpContext http, FirstBlickDbContext db, TenantScope scope, CommandExecutor commands, ApprovalService approvals) =>
             commands.Execute(http, "settings", "settings.change", body, async ct =>

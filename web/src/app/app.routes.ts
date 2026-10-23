@@ -41,6 +41,7 @@ export const routes: Routes = [
   { path: 'technical/pv', canActivate: [authenticated], loadComponent: () => import('./pages/pv-layout.component').then(m => m.PvLayoutComponent) },
   { path: 'technical', canActivate: [authenticated], loadComponent: () => import('./pages/technical.component').then(m => m.TechnicalComponent) },
   { path: 'management', canActivate: [authenticated], loadComponent: () => import('./pages/management.component').then(m => m.ManagementComponent) },
+  { path: 'businesses/new', canActivate: [authenticated], loadComponent: () => import('./pages/business-creation.component').then(m => m.BusinessCreationComponent) },
   { path: 'operations', canActivate: [authenticated], loadComponent: () => import('./pages/operations.component').then(m => m.OperationsComponent) },
   { path: 'settings', canActivate: [authenticated], loadComponent: () => import('./pages/settings.component').then(m => m.SettingsComponent) },
   { path: 'offline', canActivate: [authenticated], loadComponent: () => import('./pages/offline.component').then(m => m.OfflineComponent) },

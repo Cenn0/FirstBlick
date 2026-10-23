@@ -8,6 +8,8 @@ Active development takes place in FirstBlick. DachPlaner is retained solely as a
 
 ## Project documentation
 
+* [Additional business creation](docs/business-onboarding.md) — a signed-in managing director can create an isolated business and switch after current server authorization.
+* [Eight MF demo functional references](docs/vendor-functional-reference.md) — manufacturer-described workflows mapped to bounded FirstBlick capabilities and remaining technical work; no installer execution or copied vendor assets.
 * [Exact decimal wire document](docs/api-calculation-contracts.md) — authenticated OpenAPI view for real decimal strings and bounded problem/request correlation.
 
 * [Explicit HTTPS proxy hosting](docs/proxy-hosting.md) — individual trusted peers, bounded forwarded headers, production-cookie requirements and an explicit verified HTTPS smoke origin.
@@ -78,7 +80,7 @@ export ConnectionStrings__Database='Host=localhost;Database=firstblick;Username=
 dotnet run --project src/FirstBlick.Api -- --migrate
 ```
 
-For the first personal managing-director account, set `Bootstrap__Email`, `Bootstrap__Password`, `Bootstrap__DisplayName` and `Bootstrap__TenantName`, then run `dotnet run --project src/FirstBlick.Api -- --bootstrap`. The password must satisfy the server's password rules. Remove the bootstrap password afterward. The bootstrap command refuses a database that already contains a business.
+For the first personal managing-director account, set `Bootstrap__Email`, `Bootstrap__Password`, `Bootstrap__DisplayName` and `Bootstrap__TenantName`, then run `dotnet run --project src/FirstBlick.Api -- --bootstrap`. The password must satisfy the server's password rules. Remove the bootstrap password afterward. The bootstrap command refuses a database that already contains a business. Once signed in, that managing director can create further empty, isolated businesses in **Settings → Add another business**; the [onboarding contract](docs/business-onboarding.md) describes its access and operational limits.
 
 ```bash
 dotnet run --project src/FirstBlick.Api --urls http://localhost:5080
