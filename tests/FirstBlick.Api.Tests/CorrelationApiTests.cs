@@ -31,7 +31,7 @@ public sealed class CorrelationApiTests(PostgresApiFixture fixture) : IClassFixt
         using var error = JsonDocument.Parse(await rejected.Content.ReadAsStringAsync());
         Assert.Equal("tenant_required", error.RootElement.GetProperty("code").GetString());
         Assert.Equal(errorId, error.RootElement.GetProperty("traceId").GetString());
-        Assert.Equal("no-store", rejected.Headers.CacheControl?.ToString());
+        Assert.True(rejected.Headers.CacheControl?.NoStore);
     }
 
     private static string RequestId(HttpResponseMessage response)
