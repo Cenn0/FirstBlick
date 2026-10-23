@@ -33,6 +33,13 @@ keine fremden Material-/Klimadaten und verwendet ausschließlich synthetische
 Eingaben. Der vollständige Build und die Suite müssen auf demselben Commit
 erfolgreich sein; bloß vorhandene Testdateien sind kein Ausführungsnachweis.
 
+`scripts/verify-domain-gate.py` prüft anschließend die tatsächliche TRX-Datei:
+mindestens elf unterschiedliche ausgeführte Fälle der benannten Klasse,
+ausschließlich `Passed`, konsistente Ergebniszähler und keine übersprungenen
+oder unvollständigen Ergebnisse. Fehlende Dateien und eine leere oder versehentlich
+falsch gefilterte Suite blockieren damit ebenfalls den Job. Sechs synthetische
+Negativ-/Positivtests prüfen diese Prüfung vor dem tatsächlichen Testlauf.
+
 Diese Orakel prüfen die beschriebene Teilrechnung und Rechnungsarithmetik,
 nicht: normative Wind-/Schneezonenwahl, Statik oder Befestigung,
 hydraulische Rohr-/Notentwässerungsdimensionierung, die nationale

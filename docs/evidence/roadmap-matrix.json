@@ -31,6 +31,10 @@
     "verificationNote": "601 core and 20 database-independent API cases pass locally; 327 PostgreSQL cases skipped locally and require final-commit CI evidence. 486 client unit tests and production build pass."
   },
   "sources": {
+    "proxy-hosting": "docs/proxy-hosting.md",
+    "proxy-hosting-model": "src/FirstBlick.Api/ProxyHosting.cs",
+    "proxy-hosting-tests": "tests/FirstBlick.Api.Tests/ProxyHostingTests.cs",
+    "domain-gate-check": "scripts/verify-domain-gate.py",
     "discovery-live": "docs/evidence/live-discovery-checkpoint7.json",
     "discovery-ui-docs": "docs/discovery-ui.md",
     "backend-seven": "docs/evidence/checkpoint7.json",

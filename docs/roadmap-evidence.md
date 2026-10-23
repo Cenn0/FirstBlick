@@ -2,6 +2,10 @@
 
 Letzte begrenzte Fortschreibung: **23.10.2026** für **DP-02-06**: begrenzte Quellenleser, selektive Finanz-/Berechtigungsquellen und ein gemeinsames Quellenbudget. Die früheren Ergänzungen bleiben unten erhalten. Kategorien und ursprüngliche Abnahmekriterien bleiben unverändert; keine Gesamtabnahme wird behauptet.
 
+## HTTPS-Hostingvoraussetzung DP-02-07 / DP-13-05 (23.10.2026)
+
+Das [explizite Proxyhosting](proxy-hosting.md) ergänzt einzeln gewählte Proxyadressen, genau einen symmetrischen Forwarded-Header-Hop und echte Middleware-Negativfälle für unbekannte Gegenstellen, fehlende Headerpaare und gefälschte Host-/Präfixwerte. Ein ausdrücklich gewählter verifizierter HTTPS-Ursprung erweitert den vorhandenen synthetischen Containerablauf. Beide Aufgaben bleiben T; externe Grundlagen und reale Umschaltung bleiben offen. Lokale Proxy-Regression: 13 bestanden, 0 übersprungen; gesamthafte Linux-/PostgreSQL-/Containerprüfung folgt am finalen Commit.
+
 ## Fachliche P0-Gates (23.10.2026)
 
 Die [synthetischen unabhängigen Zahlenorakel](evidence/domain-acceptance-cases.md) prüfen ausdrücklich begrenzte Dachlast-, Entwässerungs-, Wärmedurchgangs- und Rechnungsketten, einschließlich einer Gutschrift und ihrer Cent-Gesamtbilanz. Die Suite hat einen separat sichtbaren CI-Schritt im Serverjob. Ergebnisse gelten nur für den Commit mit erfolgreich ausgeführtem Workflow; es findet **keine** neue Klassifikation der 100 Aufgaben oder fachliche Freigabe statt.

@@ -3,6 +3,7 @@
 import datetime
 import http.cookiejar
 import json
+import os
 import pathlib
 import time
 import urllib.parse
@@ -23,7 +24,12 @@ for line in root.joinpath(".env").read_text().splitlines():
     if line and not line.startswith("#"):
         key, _, value = line.partition("=")
         config[key] = value.strip("'\"")
-base = "http://127.0.0.1:" + config.get("API_PORT", "8080")
+base = os.environ.get("FIRSTBLICK_SMOKE_BASE_URL", "http://127.0.0.1:" + config.get("API_PORT", "8080")).rstrip("/")
+target = urllib.parse.urlsplit(base)
+if target.username or target.password or target.query or target.fragment or target.path or not target.hostname:
+    raise ValueError("Smoke origin must be an explicit origin without credentials, path, query or fragment")
+if target.scheme != "https" and not (target.scheme == "http" and target.hostname in {"localhost", "127.0.0.1", "::1"}):
+    raise ValueError("Non-loopback smoke origins require verified HTTPS")
 cookies = http.cookiejar.CookieJar()
 client = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cookies))
 

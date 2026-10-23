@@ -51,7 +51,10 @@ jobs:
       - run: dotnet restore FirstBlick.slnx --locked-mode
       - run: dotnet test FirstBlick.slnx -c Release --no-restore --logger trx --results-directory TestResults
       - name: Independent domain acceptance references (P0)
-        run: dotnet test tests/FirstBlick.Core.Tests/FirstBlick.Core.Tests.csproj -c Release --no-restore --no-build --filter FullyQualifiedName~DomainAcceptanceGateTests --logger "trx;LogFileName=domain-acceptance.trx" --results-directory TestResults
+        run: |
+          python3 -m unittest discover -s scripts -p 'test_verify_domain_gate.py' -v
+          dotnet test tests/FirstBlick.Core.Tests/FirstBlick.Core.Tests.csproj -c Release --no-restore --no-build --filter FullyQualifiedName~DomainAcceptanceGateTests --logger "trx;LogFileName=domain-acceptance.trx" --results-directory TestResults
+          python3 scripts/verify-domain-gate.py TestResults/domain-acceptance.trx
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         if: always()
         with:
