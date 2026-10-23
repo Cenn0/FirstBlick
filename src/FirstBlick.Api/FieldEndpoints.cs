@@ -144,7 +144,9 @@ public static class FieldEndpoints
                 await c.Current<Material>(id, ct); await c.Current<Project>(body.ProjectId, ct, false);
                 var reservation = new MaterialReservation { TenantId = c.Scope.TenantId, MaterialId = id, ProjectId = body.ProjectId,
                     Quantity = body.Quantity, Location = body.Location, RequiredOn = body.RequiredOn };
-                InventoryRules.Reserve(reservation, await c.Store.All<StockMovement>(ct), await c.Store.All<MaterialReservation>(ct));
+                InventoryRules.Reserve(reservation,
+                    await c.Store.Related<StockMovement>(BusinessRegistry.Reference<Material>(id), ct),
+                    await c.Store.Related<MaterialReservation>(BusinessRegistry.Reference<Material>(id), ct));
                 return await c.SaveNew(reservation, "material.reserve", ct);
             })).Produces<MaterialReservation>();
         api.MapPost("/material-reservations/{id:guid}/consume", (Guid id, MaterialConsumeRequest body, [AsParameters] BusinessCommandServices c) =>

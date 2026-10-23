@@ -124,7 +124,7 @@ internal static class GraphRules
                 }
                 break;
             case Building building:
-                Guard.Require((await Related<Project>(db, scope, "buildings", building.Id, ct)).All(p => p.BuildingId != building.Id || p.CustomerId == building.CustomerId), "customer_mismatch", "Existing projects prevent changing this building to another customer."); break;
+                Guard.Require((await store.Related<Project>(BusinessRegistry.Reference<Building>(building.Id), ct)).All(p => p.BuildingId != building.Id || p.CustomerId == building.CustomerId), "customer_mismatch", "Existing projects prevent changing this building to another customer."); break;
             case Project project:
                 var communicationCustomerMismatch = await db.Database.SqlQueryRaw<bool>("""
                     SELECT EXISTS (SELECT 1 FROM "Entities" e
@@ -146,12 +146,12 @@ internal static class GraphRules
                 }
                 var projectBuilding = await store.Get<Building>(project.BuildingId, ct);
                 Guard.Require(projectBuilding.CustomerId == project.CustomerId, "customer_mismatch", "The project customer must own its building record.");
-                Guard.Require((await Related<Quote>(db, scope, "projects", project.Id, ct)).All(q => q.ProjectId != project.Id || q.CustomerId == project.CustomerId), "customer_mismatch", "Existing quotes prevent this customer change.");
-                Guard.Require((await Related<RoofRevision>(db, scope, "projects", project.Id, ct)).All(r => r.ProjectId != project.Id || r.BuildingId == project.BuildingId), "project_roof_mismatch", "Existing roof revisions prevent moving this project to another building.");
-                foreach (var existingMeasurement in (await Related<Measurement>(db, scope, "projects", project.Id, ct)).Where(m => m.ProjectId == project.Id))
+                Guard.Require((await store.Related<Quote>(BusinessRegistry.Reference<Project>(project.Id), ct)).All(q => q.ProjectId != project.Id || q.CustomerId == project.CustomerId), "customer_mismatch", "Existing quotes prevent this customer change.");
+                Guard.Require((await store.Related<RoofRevision>(BusinessRegistry.Reference<Project>(project.Id), ct)).All(r => r.ProjectId != project.Id || r.BuildingId == project.BuildingId), "project_roof_mismatch", "Existing roof revisions prevent moving this project to another building.");
+                foreach (var existingMeasurement in (await store.Related<Measurement>(BusinessRegistry.Reference<Project>(project.Id), ct)).Where(m => m.ProjectId == project.Id))
                     Guard.Require((await store.Get<RoofRevision>(existingMeasurement.RoofRevisionId, ct)).BuildingId == project.BuildingId, "project_roof_mismatch", "Existing measurements preserve this project's building context.");
-                Guard.Require((await Related<TechnicalRecord>(db, scope, "projects", project.Id, ct)).All(c => c.ProjectId != project.Id || c.BuildingId == project.BuildingId), "project_roof_mismatch", "Stored technical results preserve this project's building context.");
-                foreach (var assignment in (await Related<ScheduleAssignment>(db, scope, "projects", project.Id, ct)).Where(x => x.ProjectId == project.Id && !x.Cancelled))
+                Guard.Require((await store.Related<TechnicalRecord>(BusinessRegistry.Reference<Project>(project.Id), ct)).All(c => c.ProjectId != project.Id || c.BuildingId == project.BuildingId), "project_roof_mismatch", "Stored technical results preserve this project's building context.");
+                foreach (var assignment in (await store.Related<ScheduleAssignment>(BusinessRegistry.Reference<Project>(project.Id), ct)).Where(x => x.ProjectId == project.Id && !x.Cancelled))
                     await ValidateWindow(project, assignment, db, scope, ct);
                 break;
             case Quote quote:
@@ -182,7 +182,7 @@ internal static class GraphRules
                         && linked.ProjectId == purchase.ProjectId && linked.MaterialId == purchaseLine.MaterialId && linked.Evidence == purchaseLine.QuantityEvidence,
                         "purchase_demand_changed", "The purchase line must retain its reviewed demand, project, material and quantity evidence.");
                 }
-                foreach (var linked in (await Related<MaterialDemand>(db, scope, "purchase-orders", purchase.Id, ct)).Where(x => x.PurchaseOrderId == purchase.Id))
+                foreach (var linked in (await store.Related<MaterialDemand>(BusinessRegistry.Reference<PurchaseOrder>(purchase.Id), ct)).Where(x => x.PurchaseOrderId == purchase.Id))
                     Guard.Require(purchase.Lines.Any(x => x.Id == linked.PurchaseLineId && x.MaterialDemandId == linked.Id),
                         "purchase_demand_changed", "A converted demand cannot be removed silently from its purchase draft.");
                 break;
@@ -202,23 +202,32 @@ internal static class GraphRules
                         EquipmentInspectionWorkflow.EnsureAssignable(await store.Get<Equipment>(equipmentId, ct), assignment.Start, assignment.End, equipmentZone);
                 }
                 await ValidateWindow(await store.Get<Project>(assignment.ProjectId, ct), assignment, db, scope, ct);
-                var employeeAssignments = await Related<ScheduleAssignment>(db, scope, "employees", assignment.EmployeeId, ct);
-                var equipmentAssignments = await EntitySources.Read<ScheduleAssignment>(db, scope.TenantId, ct,
-                    assignment.EquipmentIds.Select(BusinessRegistry.Reference<Equipment>).ToArray());
-                PlanningRules.EnsureAssignment(assignment, employeeAssignments.Concat(equipmentAssignments).DistinctBy(x => x.Id),
-                    await Related<Absence>(db, scope, "employees", assignment.EmployeeId, ct)); break;
+                if (!assignment.Cancelled && !assignment.Archived)
+                {
+                    var employeeTarget = BusinessRegistry.Reference<Employee>(assignment.EmployeeId);
+                    var employeeAssignments = await store.Related<ScheduleAssignment>(employeeTarget, ct);
+                    var equipmentAssignments = await store.Related<ScheduleAssignment>(assignment.EquipmentIds.Select(BusinessRegistry.Reference<Equipment>).ToArray(), ct);
+                    PlanningRules.EnsureAssignment(assignment, employeeAssignments.Concat(equipmentAssignments).DistinctBy(x => x.Id),
+                        await store.Related<Absence>(employeeTarget, ct));
+                }
+                break;
             case Absence absence:
-                PlanningRules.EnsureAbsence(absence, await Related<ScheduleAssignment>(db, scope, "employees", absence.EmployeeId, ct),
-                    await Related<Absence>(db, scope, "employees", absence.EmployeeId, ct)); break;
+                if (absence.Status == AbsenceStatus.Approved && !absence.Archived)
+                    PlanningRules.EnsureAbsence(absence,
+                        await store.Related<ScheduleAssignment>(BusinessRegistry.Reference<Employee>(absence.EmployeeId), ct),
+                        await store.Related<Absence>(BusinessRegistry.Reference<Employee>(absence.EmployeeId), ct));
+                break;
             case DiaryEntry diary:
                 Guard.Require((await store.Get<Employee>(diary.EmployeeId, ct)).Active, "inactive_employee", "An inactive employee cannot record new diary work."); break;
             case TimeEntry entry:
                 Guard.Require((await store.Get<Employee>(entry.EmployeeId, ct)).Active, "inactive_employee", "An inactive employee cannot record new time.");
-                PlanningRules.EnsureTimeEntry(entry, await Related<TimeEntry>(db, scope, "employees", entry.EmployeeId, ct)); break;
+                PlanningRules.EnsureTimeEntry(entry, await store.Related<TimeEntry>(BusinessRegistry.Reference<Employee>(entry.EmployeeId), ct)); break;
             case MaterialReservation reservation:
-                InventoryRules.Reserve(reservation, await Related<StockMovement>(db, scope, "materials", reservation.MaterialId, ct), await Related<MaterialReservation>(db, scope, "materials", reservation.MaterialId, ct)); break;
+                InventoryRules.Reserve(reservation,
+                    await store.Related<StockMovement>(BusinessRegistry.Reference<Material>(reservation.MaterialId), ct),
+                    await store.Related<MaterialReservation>(BusinessRegistry.Reference<Material>(reservation.MaterialId), ct)); break;
             case Acceptance acceptance:
-                OperationsRules.EnsureAcceptance(acceptance, await Related<Defect>(db, scope, "projects", acceptance.ProjectId, ct)); break;
+                OperationsRules.EnsureAcceptance(acceptance, await store.Related<Defect>(BusinessRegistry.Reference<Project>(acceptance.ProjectId), ct)); break;
             case MaintenanceContract contract:
                 Guard.Require((await store.Get<Building>(contract.BuildingId, ct)).CustomerId == contract.CustomerId, "customer_mismatch", "Maintenance customer and building must match.");
                 var contractRows = await EntitySources.Read<MaintenanceVisit>(db, scope.TenantId, ct,
@@ -233,9 +242,6 @@ internal static class GraphRules
                 break;
         }
     }
-
-    private static Task<List<T>> Related<T>(FirstBlickDbContext db, TenantScope scope, string kind, Guid id, CancellationToken ct)
-        where T : TenantEntity => EntitySources.Read<T>(db, scope.TenantId, ct, [new(kind, id)]);
 
     private static async Task ValidateWindow(Project project, ScheduleAssignment assignment, FirstBlickDbContext db, TenantScope scope, CancellationToken ct)
     {

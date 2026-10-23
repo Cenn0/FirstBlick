@@ -1,0 +1,21 @@
+# Source selection review, 23 October 2026
+
+Baseline: PR #21 head `8dfe10a82ca2abb3258f8dd63a3722a53d964cab`. First package: PR #22 head `e29640900ea3430554fd08305832f09a8e80ce8d`. The second package extends its scoped mutation sources. This is a manual code and dependency review, not an exhaustive Codex Security scan, independent professional audit or production acceptance.
+
+## Reviewed behavior
+
+- `RecordPolicy`, `DiscoveryAccess`, `EntitySourceSelection`, `EntitySources`, `EntityStore` and `FirstBlickDbContext`: role branches, caller/tenant ownership, direct mentor relationships, current assignments, project-derived access, archived/cancelled state, source metadata, budget projection and aggregate accounting. Selectors are finite internal modes; HTTP identifiers are parameters, never SQL fragments. A personally assigned task does not grant its entire project. No persistent authorization cache was introduced; command tenant locks and current membership/revision checks remain in place.
+- `GraphRules` in `RecordPolicy` and the material-reserve command in `FieldEndpoints`: selected target relationships, employee plus equipment conflict union, absence and cancellation early exits, project/customer commitments, material stock/reservation completeness, acceptance defects and command rollback. Reviewed supporting domain rules in `Planning`, `Inventory`, `Operations`, quantity links and the transactional `EntityStore.Save`/`CommandExecutor` paths.
+- Tests and docs: synthetic data only, no binary redistribution, four actual attachment hashes, locally skipped PostgreSQL cases labelled as such, no task reclassification, no altered acceptance criteria, disabled checks or expanded branch privileges.
+
+## Findings and limits
+
+No new confirmed exploitable vulnerability was identified in this scoped manual review. This is not a claim that the repository is vulnerability-free. Database JSON predicate evaluation and whole matching-set aggregates remain unbounded in database CPU/I/O; the implemented bounds concern application source materialization. Single-record/raw SQL/export/specialized stock workflows are outside the common budget. Relationship readers rely on complete persisted links; metadata checks detect selected stale links, not absent links. The current tenant serialization lock prevents concurrent writes while mutation sources are evaluated; ordinary reads do not provide a multi-statement repeatable-read snapshot. Large valid relevant histories can explicitly exhaust the budget. External normative, legal, provider and production requirements remain unaccepted.
+
+## Verification
+
+The local .NET 10.0.402 build has zero warnings/errors. Final local package run: 601 core and 20 database-independent API tests pass; 327 PostgreSQL tests are skipped locally and require the CI server job. The unchanged client has 486 passing tests and a passing production build. Missing standards-path configuration caused an intermediate local rerun to fail; with the existing pinned local standards path restored, the independent tests pass. This environment cannot start a PostgreSQL child under a separate UID, and provides no local Docker runtime. Real PostgreSQL, Chromium, image build, S3 and PostgreSQL backup/restore, migration and restart evidence must come from the final PR's mandatory CI/Operations/standards jobs. The PR head and run URLs are the authoritative result, not this local summary.
+
+## Integration review
+
+Compared PR #23's `RecordPolicy` against both packages: its typed-independent relationship helper selects the same tenant-qualified sources. The integrated implementation preserves those selections, both employee/equipment conflict dimensions and four added tests, using EntityStore helpers. It additionally avoids conflict reads on cancellation/nonapproved absence and scopes the dedicated material-reserve command. The merge retains both remote parents; source inventories are preserved as dated session evidence while the current inventory records four actually available files.
