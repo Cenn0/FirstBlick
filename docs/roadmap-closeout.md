@@ -90,3 +90,5 @@ Aktuell sind `daemmdemo.exe`, `handwerkdemo.exe`, `dachdemo.exe` und `bauphysik-
 ## Selektive Datensatzrechte und gemeinsames Quellenbudget
 
 Die [Fortsetzung von DP-02-06](bounded-business-sources.md#remaining-limits-and-operations) ersetzt vollständige Policy-Sammlungen durch PostgreSQL-Selektoren für eigene Mitarbeiter-, Ausbildungs-, Termin- und Projektbeziehungen. Alle Aufrufe des Quellenlesers teilen im DbContext ein Budget; fremde Historien werden vor Materialisierung ausgeschlossen. Gezielte PostgreSQL-/HTTP-Regressionen prüfen Sichtbarkeit, Widerruf und Budgetablehnung. Direkte SQL-/Exportpfade und repräsentative Last bleiben offen; die Aufgabe bleibt T.
+
+Die anschließenden [Mutationsprüfungen](bounded-business-sources.md#scoped-mutation-invariants) begrenzen fachliche Quellen auf tatsächlich betroffene Projekte, Mitarbeiter/Geräte und Materialien. Konflikte, Lagerverfügbarkeit und Mängelvorbehalte bleiben vollständig über die zugehörigen Quellen geprüft. Weitere spezialisierte Direktabfragen, Lastabnahme und die externen Grundlagen im Register bleiben offen.
