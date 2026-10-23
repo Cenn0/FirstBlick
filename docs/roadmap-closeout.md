@@ -6,6 +6,8 @@ Die folgenden nächsten Schritte sind aus den Restlücken der [aktuellen Nachwei
 
 ## Abhängige Arbeitspakete
 
+Fortsetzung Paket B, 23.10.2026: [explizites HTTPS-Proxyhosting](proxy-hosting.md) ergänzt die Softwarevoraussetzung für TLS-Terminierung mit begrenzter Proxyvertrauensliste und HTTPS-Smoke-Ursprung. DP-02-07 und DP-13-05 bleiben T. Das fachliche CI-Gate prüft zusätzlich die tatsächliche nichtleere, vollständig erfolgreiche TRX-Inventarliste; Softwaretests ersetzen weiterhin keine fehlenden Altquellen, Provider- oder Fachfreigaben. Der Nutzer hat bestätigt, diese externen Grundlagen später zu liefern; unabhängig umsetzbare Softwarearbeit bleibt in der Abhängigkeitsfolge offen.
+
 | Paket | Inhalt | Abhängigkeit für Gesamtabnahme |
 | --- | --- | --- |
 | A | Tatsächliche Quellen, Anforderungen, Norm-/Datenrechte | Voraussetzung für verbindliche Baseline und fachliche Referenzabnahme; unabhängige Softwarearbeit kann beginnen |

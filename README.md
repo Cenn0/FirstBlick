@@ -8,6 +8,8 @@ Active development takes place in FirstBlick. DachPlaner is retained solely as a
 
 ## Project documentation
 
+* [Explicit HTTPS proxy hosting](docs/proxy-hosting.md) — individual trusted peers, bounded forwarded headers, production-cookie requirements and an explicit verified HTTPS smoke origin.
+
 * [Bounded business sources](docs/bounded-business-sources.md) — whole-set and scoped aggregate budgets, selective record policies, metadata checks and scoped payment, return and bank-import reads.
 
 * [Technical OpenAPI minimum](docs/api-calculation-contracts.md) — 18 explicit calculation contracts, non-development binding errors and actual preview/project JSON comparisons.

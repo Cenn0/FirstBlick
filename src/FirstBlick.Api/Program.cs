@@ -11,6 +11,7 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 var local = builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("Testing");
+var proxyHeaders = ProxyHosting.Configure(builder.Configuration);
 builder.WebHost.ConfigureKestrel(o => o.Limits.MaxRequestBodySize = 2_097_152);
 builder.Services.AddFirstBlickStorage(builder.Configuration);
 builder.Services.AddIdentity<ApplicationUser, IdentityRole<Guid>>(o =>
@@ -83,6 +84,7 @@ if (args.Contains("--migrate") || args.Contains("--bootstrap"))
     return;
 }
 app.UseMiddleware<ErrorMiddleware>();
+app.UseForwardedHeaders(proxyHeaders);
 app.Use(async (context, next) =>
 {
     context.Response.OnStarting(() =>
