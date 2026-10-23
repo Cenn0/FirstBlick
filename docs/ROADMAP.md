@@ -8,7 +8,7 @@ Ein zusätzlicher [fachlicher P0-Regressionsblock](evidence/domain-acceptance-ca
 
 ## Anfragekorrelation DP-02-07 (23.10.2026)
 
-Die HTTP-Antworten geben eine ausschließlich serverseitig erzeugte `X-Request-Id` zurück; Problem-Details-`traceId` entspricht derselben Kennung. Die [Betriebsbeobachtbarkeit](observability.md) dokumentiert Grenzen und die echte HTTP-/PostgreSQL-Regression. **DP-02-07 bleibt T:** Metrikexport, verteilte Traces, Alarmierung, SLOs und Secret-Rotation sind dadurch nicht umgesetzt. Die Zählung der 100 Aufgaben wird nicht geändert.
+Die HTTP-Antworten geben eine ausschließlich serverseitig erzeugte `X-Request-Id` zurück; Problem-Details enthalten dieselbe Kennung im gesonderten Feld `requestId`. Das bestehende W3C-fähige `traceId`-Feld kann abweichen. Die [Betriebsbeobachtbarkeit](observability.md) dokumentiert Grenzen und die echte HTTP-/PostgreSQL-Regression. **DP-02-07 bleibt T:** Metrikexport, verteilte Traces, Alarmierung, SLOs und Secret-Rotation sind dadurch nicht umgesetzt. Die Zählung der 100 Aufgaben wird nicht geändert.
 
 ## Begrenzte Quellen und selektive Finanzhistorien (23.10.2026)
 

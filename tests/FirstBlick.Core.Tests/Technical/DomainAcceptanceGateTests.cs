@@ -125,8 +125,8 @@ public sealed class DomainAcceptanceGateTests
             (first.Snapshot.Net + second.Snapshot.Net - credit.Snapshot.Net + final.Snapshot.Net,
              first.Snapshot.Tax + second.Snapshot.Tax - credit.Snapshot.Tax + final.Snapshot.Tax,
              first.Snapshot.Gross + second.Snapshot.Gross - credit.Snapshot.Gross + final.Snapshot.Gross));
-        Assert.Equal(order.Contract!.Net, .21m);
-        Assert.Equal(order.Contract.Tax, .04m);
+        Assert.Equal(.21m, order.Contract!.Net);
+        Assert.Equal(.04m, order.Contract.Tax);
         Assert.Equal(originalDigest, first.IssuedDigest);
         Assert.Equal(originalDigest, credit.Calculation!.Sources.Single().DocumentDigest);
         first.Validate(); second.Validate(); credit.Validate(); final.Validate();

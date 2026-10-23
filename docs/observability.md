@@ -61,7 +61,9 @@ Die UI besitzt zusätzlich kontrollierte Browser-Fixtures für Desktop, Tablet u
 
 API-, Gesundheits- und Fehlerantworten tragen den vom ASP.NET-Core-Host vergebenen
 `X-Request-Id`-Header. Für durch `ErrorMiddleware` erzeugte Problem-Details
-entspricht der Header dem JSON-Feld `traceId`. Ein vom Client gesetzter
+entspricht der Header dem ergänzten JSON-Feld `requestId`. Das bereits
+existierende `traceId` kann stattdessen eine W3C-Activity-Kennung enthalten
+und muss deshalb nicht mit `requestId` übereinstimmen. Ein vom Client gesetzter
 `X-Request-Id` wird **nicht** übernommen; damit kann niemand über den Header
 fremde Kennungen in der Antwort vortäuschen. Die Kennung enthält weder
 Mandanten- noch Benutzeridentität oder Anfrageinhalt. Der Header erleichtert
