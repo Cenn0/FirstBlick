@@ -19,19 +19,16 @@
   "latestReassessment": {
     "recordedOn": "2026-10-23",
     "tasks": [
-      "DP-02-02",
-      "DP-12-04",
-      "DP-11-04",
-      "DP-11-05"
+      "DP-02-06"
     ],
-    "scope": "Advanced client input/result and immutable project-preview binding, water and board consistency checks, interface maxima and independent client/browser regression paths; fixed original 46-task closeout register. Explicit result/problem schemas and versioned HTTP OpenAPI minimum for 18 calculation previews; generic non-development binding errors; actual preview/project-JSON parity, preserving decimal-string and embedded numeric money semantics.",
+    "scope": "Single-statement record/byte budgets and metadata checks for shared source reads; scoped complete financial relationships and requested bank import keys; current two-attachment byte inventory.",
     "reclassifiesTasks": false,
     "statusChangesFromPreviousInventory": [],
     "originalRoadmapCheckboxesChanged": false,
     "allOriginalAcceptanceCriteriaReviewed": false,
     "otherTaskClassificationsRemainHistorical": true,
-    "classificationNote": "49 K / 49 T / 2 O unchanged. The original 46 partial tasks remain a fixed historical workset; software work and external acceptance remain distinct.",
-    "verificationNote": "Core-generated synthetic fixtures and controlled HTTP browser fixtures are distinct from actual API/PostgreSQL/S3/container/restore evidence. Final commit-specific runs are linked in PR #20; no normative or manufacturer approval is inferred."
+    "classificationNote": "49 K / 49 T / 2 O unchanged; DP-02-06 remains partial.",
+    "verificationNote": "Final commit-specific PostgreSQL, browser, standards and operations evidence is linked by PR #21. Local database/browser limitations are explicit in bounded-business-sources.md."
   },
   "sources": {
     "discovery-live": "docs/evidence/live-discovery-checkpoint7.json",
@@ -340,7 +337,10 @@
     "technical-contract-docs": "docs/api-calculation-contracts.md",
     "technical-openapi-minimum": "docs/contracts/technical-calculations-v1.json",
     "technical-openapi-tests": "tests/FirstBlick.Api.Tests/TechnicalOpenApiTests.cs",
-    "advanced-wire-tests": "tests/FirstBlick.Api.Tests/AdvancedTechnicalWireApiTests.cs"
+    "advanced-wire-tests": "tests/FirstBlick.Api.Tests/AdvancedTechnicalWireApiTests.cs",
+    "bounded-sources": "docs/bounded-business-sources.md",
+    "entity-sources": "src/FirstBlick.Infrastructure/Persistence/EntitySources.cs",
+    "entity-source-tests": "tests/FirstBlick.Api.Tests/EntitySourcesApiTests.cs"
   },
   "tasks": [
     {
@@ -472,8 +472,8 @@
     {
       "id": "DP-02-06",
       "status": "T",
-      "evidence": "[SQL-paginierte Suche][discovery-api], [zentrale Datensatzrechte][discovery-access] und [Angular-Kontextschutz][ui-nine] bündeln begrenzte, mandantengefilterte Lesezugriffe. Rechte-/Betriebswechsel entwerten alte Listen, Details und Downloads; die [aktuellen Fixture-/Live-Nachweise][checkpoint-nine] trennen Fehlerfälle und echte Datenzugriffe. [FinancialSources][financial-sources] begrenzt verknüpfte Rechnungs-/Korrekturhistorien mandanten- und auftragsbezogen; [Checkpoint 11][checkpoint-eleven] sichert Projektkosten-Quellmetadaten und Referenzen zusätzlich ab.",
-      "remaining": "Kein repräsentativer Lastnachweis oder vollständiger globaler Suchindex. Abhängige Sammlungen der RecordPolicy und weitere Finanzendpunkte können noch ganze Mandantenhistorien lesen. Index-, Größen- und Latenzmessungen unter realistischer Last sind nicht erbracht.",
+      "evidence": "[SQL-paginierte Suche][discovery-api], [zentrale Datensatzrechte][discovery-access] und [Angular-Kontextschutz][ui-nine] bündeln begrenzte, mandantengefilterte Lesezugriffe. Rechte-/Betriebswechsel entwerten alte Listen, Details und Downloads; die [aktuellen Fixture-/Live-Nachweise][checkpoint-nine] trennen Fehlerfälle und echte Datenzugriffe. [FinancialSources][financial-sources] begrenzt verknüpfte Rechnungs-/Korrekturhistorien mandanten- und auftragsbezogen; [Checkpoint 11][checkpoint-eleven] sichert Projektkosten-Quellmetadaten und Referenzen zusätzlich ab. [Quellenbudgets][bounded-sources] begrenzen EntityStore, Wartungsbeziehungen und Finanzquellen vor der JSON-Übertragung auf 10.000 Datensätze/12 MiB je Abfrage. Zahlungs-, Rücklastschrift- und Importpfade wählen explizite Beleg-/Bankbeziehungen oder Importschlüssel statt der gesamten Mandantenhistorie.",
+      "remaining": "RecordPolicy kann weiterhin ganze Arten eines Mandanten lesen, jetzt mit expliziter Ablehnung über dem Quellenbudget. Selektive Berechtigungsabfragen, ein Request-Gesamtbudget, ein vollständiger globaler Suchindex sowie repräsentative Index-, Größen- und Latenzmessungen bleiben offen.",
       "title": "API-Abfragen und Angular-Datenzugriff konsolidieren"
     },
     {
@@ -1116,6 +1116,23 @@
     }
   ],
   "reassessmentHistory": [
+    {
+      "recordedOn": "2026-10-23",
+      "tasks": [
+        "DP-02-02",
+        "DP-12-04",
+        "DP-11-04",
+        "DP-11-05"
+      ],
+      "scope": "Advanced client input/result and immutable project-preview binding, water and board consistency checks, interface maxima and independent client/browser regression paths; fixed original 46-task closeout register. Explicit result/problem schemas and versioned HTTP OpenAPI minimum for 18 calculation previews; generic non-development binding errors; actual preview/project-JSON parity, preserving decimal-string and embedded numeric money semantics.",
+      "reclassifiesTasks": false,
+      "statusChangesFromPreviousInventory": [],
+      "originalRoadmapCheckboxesChanged": false,
+      "allOriginalAcceptanceCriteriaReviewed": false,
+      "otherTaskClassificationsRemainHistorical": true,
+      "classificationNote": "49 K / 49 T / 2 O unchanged. The original 46 partial tasks remain a fixed historical workset; software work and external acceptance remain distinct.",
+      "verificationNote": "Core-generated synthetic fixtures and controlled HTTP browser fixtures are distinct from actual API/PostgreSQL/S3/container/restore evidence. Final commit-specific runs are linked in PR #20; no normative or manufacturer approval is inferred."
+    },
     {
       "recordedOn": "2026-10-21",
       "tasks": [

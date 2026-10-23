@@ -16,8 +16,8 @@ internal sealed class DiscoveryAccess(FirstBlickDbContext db, TenantScope scope,
     {
         if (visible.TryGetValue(kind, out var cached)) return cached;
         if (!AccessRules.CanRead(scope.Role, kind)) return visible[kind] = [];
-        // RecordPolicy currently materializes its dependency collections. Bound that work before calling it;
-        // never silently truncate the policy inputs, which could change an authorization decision.
+        // Discovery additionally bounds the combined dependency budget before invoking the policy.
+        // EntityStore independently bounds each actual read in a single-statement snapshot.
         var dependencies = new List<string>();
         if (kind == "notification-preferences") dependencies.Add(kind);
         else if (scope.Role is BusinessRole.Worker or BusinessRole.Trainer)

@@ -25,11 +25,11 @@ Buchstaben kennzeichnen Abhängigkeitspakete, keine Prioritäts- oder Fertigstel
 | ID | Paket | Nächster Implementierungs-/Prüfschritt | Externe Grundlage für vollständigen Abschluss |
 | --- | --- | --- | --- |
 | DP-00-01 | A | Gehosteten Altstand gegen den Quellstand vergleichen | Tatsächlicher gehosteter Quell-/Versionsstand |
-| DP-00-02 | A | Daten-/Objektinventar gegen reale Exporte und verfügbare Originalbytes prüfen | D1-/R2-Export; vier im aktuellen Upload fehlende Demos |
+| DP-00-02 | A | Daten-/Objektinventar gegen reale Exporte und verfügbare Originalbytes prüfen | D1-/R2-Export; sechs im aktuellen Upload fehlende Demos |
 | DP-00-03 | A | Individuelle Kriterien und Prioritäten den 100 IDs zuordnen | Bestätigung der fachlich verantwortlichen Personen |
 | DP-00-04 | G | Reparatur-/Wartungsketten als echte Browserabläufe ergänzen | Drei reale Betriebsfälle mit Ausnahmen und Fachabnahme |
 | DP-02-02 | B | Vollständige Erfolgs-/Fehlerschemas und automatischen Vertragsvergleich ergänzen | Verbindliche Kompatibilitätspolitik für externe Verbraucher |
-| DP-02-06 | B | Verbleibende unbeschränkte Mandantenhistorien in RecordPolicy/Finanzpfaden begrenzen | Repräsentative Datenmengen und Latenzziele |
+| DP-02-06 | B | Selektive RecordPolicy-Abfragen, Request-Gesamtbudget und realistische Lastprüfung nach den Quellenbudgets ergänzen | Repräsentative Datenmengen und Latenzziele |
 | DP-02-07 | B | Metrikexport, Tracing, Alarmierung und Rotationspfade vervollständigen | Betriebsplattform, Empfänger, SLOs und reale Rotation |
 | DP-03-03 | B | Befristete, feingranulare Vollmachten mit Widerruf und Regressionen implementieren | Bestätigte Delegationsregeln |
 | DP-04-01 | C | Stammdatenhistorie, bewusste Zusammenführung und externe Kontaktsynchronisierung ergänzen | Freigegebene Postfach-/Kontaktanbieter und reale CRM-Fälle |
@@ -79,6 +79,10 @@ Eine weitere Fortschreibung muss zu jeder betroffenen ID konkrete Implementierun
 
 Zusätzlich erhalten **DP-02-02/DP-12-04** einen [HTTP-geprüften Mindestvertrag für 18 Rechenvorschauen](api-calculation-contracts.md). Er beseitigt nicht die restlichen API-/Webhooklücken. Der echte Vergleich von Vorschau und Projektakten ergänzt DP-11-04/05 um den Decimal-Wire-Vertrag.
 
+## Quellenbudgets vom 23.10.2026
+
+[PR #21](https://github.com/Cenn0/FirstBlick/pull/21) ergänzt **DP-02-06** um [begrenzte ganze Quellenmengen](bounded-business-sources.md), mandanten- und belegbezogene Zahlungs-/Rücklastschriftquellen und gezielte Bankimport-Schlüssel. Die Aufgabe bleibt T; eine Begrenzung ersetzt keine selektive Berechtigungsabfrage oder Lastabnahme.
+
 ## Anhänge des aktuellen Auftrags
 
-`daemmdemo.exe`, `handwerkdemo.exe`, `dachdemo.exe` und `bauphysik-demo.exe` wurden für diesen Auftrag bereitgestellt. `flachdach-demo.exe`, `drain-demo.exe`, `dd-demo.exe` und `steildach-demo.exe` konnten nicht zugestellt werden. Diese Fortschreibung enthält keine neue Byte-/Methodenanalyse dieser Dateien und behauptet keinen vollständigen Originalbestand. Proprietäre Programme und Herstellerdaten werden nicht ins Repository kopiert.
+Aktuell sind ausschließlich `daemmdemo.exe` und `dachdemo.exe` zugänglich. Das [neue Byte-/PE-Inventar](evidence/attachment-inventory-2026-10-23.json) dokumentiert Größe, SHA-256 und PE-Metadaten. `handwerkdemo.exe`, `flachdach-demo.exe`, `bauphysik-demo.exe`, `drain-demo.exe`, `dd-demo.exe` und `steildach-demo.exe` wurden nicht zugestellt und in diesem Auftrag nicht gelesen. Frühere Inventare gelten ausschließlich für ihren damaligen Quellenstand. Keine EXE wurde ausgeführt; PE-Metadaten und Hashgleichheit belegen keine Berechnungsverfahren, Anwendungsabläufe oder Normkonformität. Proprietäre Programme und Herstellerdaten werden nicht ins Repository kopiert.

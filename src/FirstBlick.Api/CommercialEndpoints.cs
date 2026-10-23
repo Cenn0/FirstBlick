@@ -182,7 +182,8 @@ public static class CommercialEndpoints
             c.Execute("bank-transactions", "bank.readonly_import", body, async ct =>
             {
                 Guard.Text(body.AccountReference, "AccountReference", 120); Guard.Items(body.Transactions, "Transactions", 500, 1);
-                var existing = (await c.Store.All<BankTransaction>(ct)).Where(x => x.AccountReference == body.AccountReference).ToDictionary(x => x.ExternalId, StringComparer.Ordinal);
+                var existing = (await FinancialSources.ImportedBankRows(c, body.AccountReference, body.Transactions.Select(x => x.ExternalId), ct))
+                    .ToDictionary(x => x.ExternalId, StringComparer.Ordinal);
                 var imported = new List<BankTransaction>(); var reused = 0;
                 foreach (var line in body.Transactions)
                 {
@@ -201,23 +202,23 @@ public static class CommercialEndpoints
         api.MapGet("/bank-transactions/{id:guid}/balance", async (Guid id, [AsParameters] BusinessCommandServices c, CancellationToken ct) =>
         {
             await c.Commands.Authorize("bank-transactions", false, ct); var bank = await c.Current<BankTransaction>(id, ct, false); bank.Validate();
-            var used = PaymentWorkflow.UsedBankAmount(bank, await c.Store.All<PaymentAllocation>(ct), await c.Store.All<SupplierPaymentAllocation>(ct));
+            var used = PaymentWorkflow.UsedBankAmount(bank, await FinancialSources.CustomerBankSources(c, bank.Id, ct), await FinancialSources.SupplierBankSources(c, bank.Id, ct));
             return Results.Ok(new { bank.Id, bank.Amount, bank.Currency, allocated = used, unallocated = Math.Abs(bank.Amount) - used, mode = "read-only" });
         });
         api.MapPost("/payments/allocate", (PaymentAllocationRequest body, [AsParameters] BusinessCommandServices c) =>
             c.Execute("payment-allocations", "payment.allocate", body, async ct =>
             {
                 var bank = await c.Current<BankTransaction>(body.BankTransactionId, ct); var invoice = await c.Store.Get<Invoice>(body.InvoiceId, ct);
-                var result = PaymentWorkflow.Allocate(invoice, bank, await c.Store.All<PaymentAllocation>(ct), await c.Store.All<Invoice>(ct),
-                    body.Amount, body.DiscountAmount, body.RetainedAmount, body.Reason, c.Scope.UserId, DateTimeOffset.UtcNow, await c.Store.All<SupplierPaymentAllocation>(ct));
+                var result = PaymentWorkflow.Allocate(invoice, bank, await FinancialSources.CustomerBankSources(c, bank.Id, ct, body.InvoiceId), await FinancialSources.ForOriginalInvoice(c, body.InvoiceId, ct),
+                    body.Amount, body.DiscountAmount, body.RetainedAmount, body.Reason, c.Scope.UserId, DateTimeOffset.UtcNow, await FinancialSources.SupplierBankSources(c, bank.Id, ct));
                 return await c.SaveNew(result, "payment.allocate", ct);
             })).Produces<PaymentAllocation>();
         api.MapPost("/payments/refund", (RefundRequest body, [AsParameters] BusinessCommandServices c) =>
             c.Execute("payment-allocations", "payment.refund_reconcile", body, async ct =>
             {
                 var bank = await c.Current<BankTransaction>(body.BankTransactionId, ct);
-                var result = PaymentWorkflow.AllocateRefund(await c.Store.Get<Invoice>(body.InvoiceId, ct), bank, await c.Store.All<PaymentAllocation>(ct), await c.Store.All<Invoice>(ct),
-                    body.Amount, body.Reason, c.Scope.UserId, DateTimeOffset.UtcNow, await c.Store.All<SupplierPaymentAllocation>(ct));
+                var result = PaymentWorkflow.AllocateRefund(await c.Store.Get<Invoice>(body.InvoiceId, ct), bank, await FinancialSources.CustomerBankSources(c, bank.Id, ct, body.InvoiceId), await FinancialSources.ForOriginalInvoice(c, body.InvoiceId, ct),
+                    body.Amount, body.Reason, c.Scope.UserId, DateTimeOffset.UtcNow, await FinancialSources.SupplierBankSources(c, bank.Id, ct));
                 return await c.SaveNew(result, "payment.refund_reconcile", ct);
             })).Produces<PaymentAllocation>();
         api.MapPost("/payments/{id:guid}/reverse", (Guid id, ReversePaymentRequest body, [AsParameters] BusinessCommandServices c) =>
@@ -225,8 +226,8 @@ public static class CommercialEndpoints
             {
                 var allocation = await c.Current<PaymentAllocation>(id, ct);
                 if (body.ReturnBankTransactionId is { } bankId)
-                    PaymentWorkflow.ReverseForReturn(allocation, await c.Store.Get<BankTransaction>(bankId, ct), await c.Store.All<PaymentAllocation>(ct), body.Reason,
-                        c.Scope.UserId, DateTimeOffset.UtcNow, await c.Store.All<SupplierPaymentAllocation>(ct));
+                    PaymentWorkflow.ReverseForReturn(allocation, await c.Store.Get<BankTransaction>(bankId, ct), await FinancialSources.CustomerBankSources(c, bankId, ct), body.Reason,
+                        c.Scope.UserId, DateTimeOffset.UtcNow, await FinancialSources.SupplierBankSources(c, bankId, ct));
                 else PaymentWorkflow.Reverse(allocation, body.Reason, c.Scope.UserId, DateTimeOffset.UtcNow);
                 await c.Store.Save(allocation, "payment.reverse", false, ct); return allocation;
             })).Produces<PaymentAllocation>();
@@ -250,7 +251,7 @@ public static class CommercialEndpoints
                 var creator = await c.Db.Audit.Where(x => x.Kind == "supplier-invoices" && x.EntityId == id).OrderBy(x => x.Id).Select(x => x.ActorId).FirstOrDefaultAsync(ct);
                 if (invoice.Kind == SupplierInvoiceKind.CreditNote)
                     PayablesWorkflow.ApproveCredit(invoice, await c.Store.Get<SupplierInvoice>(invoice.OriginalInvoiceId!.Value, ct), supplier,
-                        await c.Store.All<SupplierInvoice>(ct), creator, c.Scope.UserId, DateTimeOffset.UtcNow, false);
+                        await FinancialSources.CreditsForSupplierInvoice(c, invoice.OriginalInvoiceId!.Value, ct), creator, c.Scope.UserId, DateTimeOffset.UtcNow, false);
                 else PayablesWorkflow.Approve(invoice, supplier, creator, c.Scope.UserId, DateTimeOffset.UtcNow, false);
                 await c.Store.Save(invoice, "supplier-invoice.approve", false, ct); return invoice;
             })).Produces<SupplierInvoice>();
@@ -264,15 +265,15 @@ public static class CommercialEndpoints
         api.MapGet("/supplier-invoices/{id:guid}/balance", async (Guid id, [AsParameters] BusinessCommandServices c, CancellationToken ct) =>
         {
             await c.Commands.Authorize("supplier-invoices", false, ct);
-            return Results.Ok(PayablesWorkflow.Balance(await c.Current<SupplierInvoice>(id, ct, false), await c.Store.All<SupplierPaymentAllocation>(ct),
-                await c.Store.All<SupplierInvoice>(ct), await c.BusinessDate(ct)));
+            return Results.Ok(PayablesWorkflow.Balance(await c.Current<SupplierInvoice>(id, ct, false), await FinancialSources.AllocationsForSupplierInvoice(c, id, ct),
+                await FinancialSources.CreditsForSupplierInvoice(c, id, ct), await c.BusinessDate(ct)));
         });
         api.MapPost("/supplier-payments/allocate", (SupplierPaymentRequest body, [AsParameters] BusinessCommandServices c) =>
             c.Execute("supplier-payment-allocations", "supplier-payment.reconcile", body, async ct =>
             {
                 var bank = await c.Current<BankTransaction>(body.BankTransactionId, ct);
-                var result = PayablesWorkflow.Allocate(await c.Store.Get<SupplierInvoice>(body.SupplierInvoiceId, ct), bank, await c.Store.All<SupplierPaymentAllocation>(ct),
-                    await c.Store.All<PaymentAllocation>(ct), await c.Store.All<SupplierInvoice>(ct), body.Amount, body.DiscountAmount, body.Reason, body.Direction, c.Scope.UserId, DateTimeOffset.UtcNow);
+                var result = PayablesWorkflow.Allocate(await c.Store.Get<SupplierInvoice>(body.SupplierInvoiceId, ct), bank, await FinancialSources.SupplierBankSources(c, bank.Id, ct, body.SupplierInvoiceId),
+                    await FinancialSources.CustomerBankSources(c, bank.Id, ct), await FinancialSources.CreditsForSupplierInvoice(c, body.SupplierInvoiceId, ct), body.Amount, body.DiscountAmount, body.Reason, body.Direction, c.Scope.UserId, DateTimeOffset.UtcNow);
                 return await c.SaveNew(result, "supplier-payment.reconcile", ct);
             })).Produces<SupplierPaymentAllocation>();
         api.MapPost("/supplier-payments/{id:guid}/reverse", (Guid id, ReversePaymentRequest body, [AsParameters] BusinessCommandServices c) =>
@@ -280,8 +281,8 @@ public static class CommercialEndpoints
             {
                 var allocation = await c.Current<SupplierPaymentAllocation>(id, ct);
                 if (body.ReturnBankTransactionId is { } bankId)
-                    PayablesWorkflow.ReverseForReturn(allocation, await c.Store.Get<BankTransaction>(bankId, ct), await c.Store.All<SupplierPaymentAllocation>(ct),
-                        await c.Store.All<PaymentAllocation>(ct), body.Reason, c.Scope.UserId, DateTimeOffset.UtcNow);
+                    PayablesWorkflow.ReverseForReturn(allocation, await c.Store.Get<BankTransaction>(bankId, ct), await FinancialSources.SupplierBankSources(c, bankId, ct),
+                        await FinancialSources.CustomerBankSources(c, bankId, ct), body.Reason, c.Scope.UserId, DateTimeOffset.UtcNow);
                 else PayablesWorkflow.Reverse(allocation, body.Reason, c.Scope.UserId, DateTimeOffset.UtcNow);
                 await c.Store.Save(allocation, "supplier-payment.reverse", false, ct); return allocation;
             })).Produces<SupplierPaymentAllocation>();

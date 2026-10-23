@@ -400,6 +400,38 @@ public sealed class CommercialApiTests(PostgresApiFixture fixture) : IClassFixtu
         });
     }
 
+    [PostgresApiFact]
+    public async Task Oversized_linked_payment_history_rejects_balance_and_allocation_without_posting_a_receipt()
+    {
+        var (person, client) = await Session(); var graph = await ProjectGraph(client);
+        var invoice = await InvoiceFor(client, graph); var bank = await Import(client, 119m);
+        await fixture.InScope(async services =>
+        {
+            var db = services.GetRequiredService<FirstBlickDbContext>();
+            await db.Database.ExecuteSqlInterpolatedAsync($"""
+                WITH added AS (
+                    INSERT INTO "Entities" ("TenantId","Kind","Id","Revision","Data","SearchText","Archived","CreatedAt","UpdatedAt")
+                    SELECT {person.TenantId},'payment-allocations',gen_random_uuid(),1,jsonb_build_object(),'',false,now(),now()
+                    FROM generate_series(1,{EntitySources.RecordLimit + 1})
+                    RETURNING "TenantId","Kind","Id"
+                )
+                INSERT INTO "Links" ("TenantId","SourceKind","SourceId","TargetKind","TargetId")
+                SELECT "TenantId","Kind","Id",'invoices',{invoice.Id} FROM added
+                """);
+        });
+        await Error(client.GetAsync($"/api/v1/invoices/{invoice.Id}/balance"), HttpStatusCode.BadRequest, "financial_source_budget");
+        var key = Guid.NewGuid().ToString("N");
+        await Error(Send(client, HttpMethod.Post, "/api/v1/payments/allocate",
+            new { invoiceId = invoice.Id, bankTransactionId = bank.Id, amount = 1m }, bank.Revision, key),
+            HttpStatusCode.BadRequest, "financial_source_budget");
+        await fixture.InScope(async services =>
+        {
+            var db = services.GetRequiredService<FirstBlickDbContext>();
+            Assert.False(await db.Receipts.IgnoreQueryFilters().AnyAsync(x => x.TenantId == person.TenantId && x.Key == key));
+            Assert.False(await db.Audit.IgnoreQueryFilters().AnyAsync(x => x.TenantId == person.TenantId && x.Action == "payment.allocate"));
+        });
+    }
+
     private async Task<(ApiTestUser Person, HttpClient Client)> Session()
     {
         var tenant = await fixture.CreateTenant(); var person = await fixture.CreateUser(tenant.Id); return (person, await fixture.Login(person));

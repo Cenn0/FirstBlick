@@ -8,6 +8,8 @@ Active development takes place in FirstBlick. DachPlaner is retained solely as a
 
 ## Project documentation
 
+* [Bounded business sources](docs/bounded-business-sources.md) — whole-set record/byte budgets, metadata checks and scoped payment, return and bank-import reads.
+
 * [Technical OpenAPI minimum](docs/api-calculation-contracts.md) — 18 explicit calculation contracts, non-development binding errors and actual preview/project JSON comparisons.
 
 * [Original 46 partial-task closeout register](docs/roadmap-closeout.md) — fixed scope, remaining implementation, dependencies and external acceptance inputs.
