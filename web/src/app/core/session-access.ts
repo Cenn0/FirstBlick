@@ -1,6 +1,6 @@
 export interface AccessBaseline {role:string;capabilities:string[];modules:string[];employeeId?:string}
 export interface TenantAccess extends AccessBaseline {id:string;name:string;recoveryHold?:boolean;recoveryAccess?:AccessBaseline}
-export interface Session {user:{id:string;email:string;displayName:string};tenants:TenantAccess[];activeTenantId?:string}
+export interface Session {user:{id:string;email:string;displayName:string};tenants:TenantAccess[];activeTenantId?:string;canCreateBusiness?:boolean}
 
 /** A temporary recovery hold cannot authorize work. Its prior access is retained only to detect a later revocation. */
 export function rememberRecoveryAccess(previous:Session|null,next:Session):Session{

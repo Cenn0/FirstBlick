@@ -87,7 +87,7 @@ Zusätzlich erhalten **DP-02-02/DP-12-04** einen [HTTP-geprüften Mindestvertrag
 
 ## Anhänge des aktuellen Auftrags
 
-Aktuell sind `daemmdemo.exe`, `handwerkdemo.exe`, `dachdemo.exe` und `bauphysik-demo.exe` zugänglich. Das [Byte-/PE-Inventar](evidence/attachment-inventory-2026-10-23.json) enthält Größe, SHA-256 und PE-Metadaten für diese vier tatsächlich gelesenen Dateien. `flachdach-demo.exe`, `drain-demo.exe`, `dd-demo.exe` und `steildach-demo.exe` wurden nicht zugestellt und in diesem Auftrag nicht gelesen. Keine EXE wurde ausgeführt; Metadaten und Hashgleichheit belegen keine Berechnungsverfahren, Anwendungsabläufe oder Normkonformität. Proprietäre Programme und Herstellerdaten werden nicht ins Repository kopiert.
+Die frühere Vier-Dateien-Teilprüfung bleibt im [damaligen Byte-/PE-Inventar](evidence/attachment-inventory-2026-10-23.json) erhalten. Inzwischen wurden alle acht vom Nutzer benannten Demos einschließlich `flachdach-demo.exe`, `drain-demo.exe`, `dd-demo.exe` und `steildach-demo.exe` lesend auf Größe, SHA-256 und gemeinsame PE-Produktmetadaten geprüft; das [neue Inventar](evidence/attachment-inventory-2026-10-23-eight.json) bindet den vollständigen Satz. Keine EXE wurde ausgeführt oder entpackt. Die [fachliche Herstellerreferenz](vendor-functional-reference.md) vergleicht öffentlich beschriebene Abläufe mit FirstBlick, ohne den Funktionsumfang exakt dieser Builds oder Normkonformität zu behaupten. Proprietäre Programme und Herstellerdaten werden nicht ins Repository kopiert.
 
 ## Selektive Datensatzrechte und gemeinsames Quellenbudget
 

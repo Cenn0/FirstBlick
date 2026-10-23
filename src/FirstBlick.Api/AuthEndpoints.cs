@@ -47,6 +47,7 @@ public static class AuthEndpoints
         {
             var user = await users.GetUserAsync(http.User);
             if (user is null) return Results.Unauthorized();
+            var canCreateBusiness = await Bootstrap.IsOperator(db, user.Id, ct);
             var memberships = await db.Memberships.AsNoTracking().Where(x => x.UserId == user.Id && x.Active).ToListAsync(ct);
             var ids = memberships.Select(x => x.TenantId).ToList();
             var tenants = await db.Tenants.AsNoTracking().Where(x => ids.Contains(x.Id)).ToListAsync(ct);
@@ -58,7 +59,7 @@ public static class AuthEndpoints
             var selected = Guid.TryParse(http.Request.Headers["X-Tenant-Id"], out var requested) && ids.Contains(requested) ? requested : ids.FirstOrDefault();
             return Results.Ok(new
             {
-                user = new { user.Id, user.Email, user.DisplayName }, activeTenantId = selected,
+                user = new { user.Id, user.Email, user.DisplayName }, activeTenantId = selected, canCreateBusiness,
                 tenants = tenants.Select(t =>
                 {
                     var role = memberships.Single(m => m.TenantId == t.Id).Role;
