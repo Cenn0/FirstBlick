@@ -2,6 +2,10 @@
 
 Letzte begrenzte Fortschreibung: **23.10.2026** für **DP-02-06**: begrenzte Quellenleser, selektive Finanz-/Berechtigungsquellen und ein gemeinsames Quellenbudget. Die früheren Ergänzungen bleiben unten erhalten. Kategorien und ursprüngliche Abnahmekriterien bleiben unverändert; keine Gesamtabnahme wird behauptet.
 
+## Dezimal-Wire-Dokument und Anfragekennung (23.10.2026)
+
+`DP-02-02/DP-12-04/DP-02-07` erhalten [authentifizierte OpenAPI-Wire-Schemas](api-calculation-contracts.md) für Dezimalwerte und `requestId`, dazu die [Angular-Fehlerdiagnose](observability.md) mit begrenzter Kennung. TestServer prüft Zahl-/Stringeingaben, Stringausgaben, Nullwerte, Listen, Dictionaries, Matrizen und wiederverwendete DTOs. Ein echter PostgreSQL-/Identity-Fall prüft Operationsmenge, Referenzen, sechs Abrufe pro Person/Minute und die Dokumentgröße **nach** Erzeugung auf höchstens 8 MiB. Die Größe ist eine CI-Prüfung, keine Laufzeitgrenze für Antwortbytes oder CPU-Zeit. Die Laufzeit begrenzt zusätzlich auf zwei gleichzeitige Dokumenterzeugungen ohne Warteschlange. Bis zum finalen CI-Lauf sind dies Quell- und lokale Testbelege. Alle drei Aufgaben bleiben T; 49 K / 49 T / 2 O bleibt unverändert.
+
 ## HTTPS-Hostingvoraussetzung DP-02-07 / DP-13-05 (23.10.2026)
 
 Das [explizite Proxyhosting](proxy-hosting.md) ergänzt einzeln gewählte Proxyadressen, genau einen symmetrischen Forwarded-Header-Hop und echte Middleware-Negativfälle für unbekannte Gegenstellen, fehlende Headerpaare und gefälschte Host-/Präfixwerte. Ein ausdrücklich gewählter verifizierter HTTPS-Ursprung erweitert den vorhandenen synthetischen Containerablauf. Beide Aufgaben bleiben T; externe Grundlagen und reale Umschaltung bleiben offen. Lokale Proxy-Regression: 13 bestanden, 0 übersprungen; gesamthafte Linux-/PostgreSQL-/Containerprüfung folgt am finalen Commit.

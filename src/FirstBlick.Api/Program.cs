@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
@@ -54,7 +55,7 @@ builder.Services.AddAuthorization();
 builder.Services.AddProblemDetails();
 // Keep malformed Minimal API requests on the same bounded problem-details path in every environment.
 builder.Services.PostConfigure<Microsoft.AspNetCore.Routing.RouteHandlerOptions>(o => o.ThrowOnBadRequest = true);
-builder.Services.AddOpenApi("v1");
+builder.Services.AddFirstBlickOpenApi();
 builder.Services.ConfigureHttpJsonOptions(o =>
 {
     o.SerializerOptions.Converters.Add(new JsonStringEnumConverter(allowIntegerValues: false));
@@ -70,9 +71,25 @@ builder.Services.AddSingleton<StandardsRuntime>();
 builder.Services.AddRateLimiter(o =>
 {
     o.RejectionStatusCode = 429;
+    o.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+    {
+        var path = context.Request.Path.Value;
+        // Endpoint routing accepts one trailing slash, but not an arbitrary
+        // suffix of slashes. Match that alias without reserving permits for
+        // otherwise unmatched paths.
+        if (path?.EndsWith('/') == true) path = path[..^1];
+        return (string.Equals(path, "/openapi/v1.json", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(path, "/openapi/wire-v1.json", StringComparison.OrdinalIgnoreCase))
+            ? RateLimitPartition.GetConcurrencyLimiter("openapi-documents", _ => new ConcurrencyLimiterOptions
+                { PermitLimit = 2, QueueLimit = 0 })
+            : RateLimitPartition.GetNoLimiter("other");
+    });
     var permits = Math.Clamp(builder.Configuration.GetValue("Authentication:RequestsPerMinute", 20), 1, 1000);
     o.AddPolicy("authentication", context => RateLimitPartition.GetFixedWindowLimiter(context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
         _ => new FixedWindowRateLimiterOptions { PermitLimit = permits, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
+    o.AddPolicy("openapi", context => RateLimitPartition.GetFixedWindowLimiter(
+        context.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = 6, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
 });
 var app = builder.Build();
 if (args.Contains("--migrate") || args.Contains("--bootstrap"))
@@ -136,7 +153,7 @@ SupplierCostAllocationEndpoints.Map(api);
 DiscoveryEndpoints.Map(api);
 OperationsEndpoints.Map(api);
 CollectionEndpoints.Map(api);
-app.MapOpenApi().RequireAuthorization();
+app.MapOpenApi().RequireAuthorization().RequireRateLimiting("openapi");
 app.UseDefaultFiles();
 app.UseStaticFiles();
 app.MapFallbackToFile("index.html");

@@ -59,6 +59,8 @@ Die UI besitzt zusätzlich kontrollierte Browser-Fixtures für Desktop, Tablet u
 
 ## HTTP-Anfragekorrelation (23.10.2026)
 
+Angular zeigt eine syntaktisch begrenzte Anfragekennung von höchstens 128 Zeichen aus dem Antwortheader an; nur wenn er fehlt, kann das `requestId`-Problemfeld einspringen. Ein vorhandener ungültiger Header wird verworfen. `traceId` dient nicht als Ersatz. Unbekannte oder fehlerhafte Problem-JSON-Daten werden vor der Anzeige auf bekannte Felder und begrenzte Texte reduziert. Die Kennung erscheint im vorhandenen Fehlertext und wird nicht an einen weiteren Dienst gesendet.
+
 API-, Gesundheits- und Fehlerantworten tragen den vom ASP.NET-Core-Host vergebenen
 `X-Request-Id`-Header. Für durch `ErrorMiddleware` erzeugte Problem-Details
 entspricht der Header dem ergänzten JSON-Feld `requestId`. Das bereits

@@ -133,6 +133,7 @@ public static class TechnicalEndpoints
     {
         public required string Code { get; init; }
         public required string TraceId { get; init; }
+        public required string RequestId { get; init; }
     }
 
     private static IEnumerable<string> Flatten(JsonElement value, string path = "")

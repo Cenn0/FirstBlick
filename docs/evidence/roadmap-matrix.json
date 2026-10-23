@@ -31,6 +31,10 @@
     "verificationNote": "601 core and 20 database-independent API cases pass locally; 327 PostgreSQL cases skipped locally and require final-commit CI evidence. 486 client unit tests and production build pass."
   },
   "sources": {
+    "openapi-wire-model": "src/FirstBlick.Api/OpenApiWireContracts.cs",
+    "openapi-wire-http-tests": "tests/FirstBlick.Api.Tests/OpenApiWireContractTests.cs",
+    "openapi-wire-live-document-tests": "tests/FirstBlick.Api.Tests/WireDocumentApiTests.cs",
+    "angular-request-correlation": "web/src/app/core/transport.ts",
     "proxy-hosting": "docs/proxy-hosting.md",
     "proxy-hosting-model": "src/FirstBlick.Api/ProxyHosting.cs",
     "proxy-hosting-tests": "tests/FirstBlick.Api.Tests/ProxyHostingTests.cs",

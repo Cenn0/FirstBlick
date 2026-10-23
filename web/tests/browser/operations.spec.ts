@@ -25,7 +25,7 @@ async function fixture(page: Page, role = 'ManagingDirector') {
     if (path === 'operations/snapshot') {
       const tenant = request.headers()['x-tenant-id']; requests.push(tenant);
       if (state.holdAlpha && tenant === 'tenant-a') await new Promise<void>(resolve => { releaseAlpha = resolve; });
-      if (state.status !== 200) return route.fulfill({ status: state.status, json: { code: state.status === 403 ? 'forbidden' : 'server_error', detail: 'Der Betriebszustand konnte nicht ermittelt werden.' } });
+      if (state.status !== 200) return route.fulfill({ status: state.status, headers: { 'X-Request-Id': 'server-test:0001' }, json: { code: state.status === 403 ? 'forbidden' : 'server_error', detail: 'Der Betriebszustand konnte nicht ermittelt werden.' } });
       return route.fulfill({ json: state.malformed ? { ...snapshot(), queue: {} } : snapshot(tenant === 'tenant-b' ? 52 : 7) });
     }
     return route.fulfill({ json: { items: [], total: 0, page: 1, pageSize: 25 } });
@@ -63,6 +63,7 @@ test('refresh removes stale values and displays an unavailable result without in
   const context = await fixture(page); await page.goto('/operations'); await expect(pendingCount(page)).toHaveText('7');
   context.state.status = 503; await page.getByRole('button', { name: 'Aktualisieren', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('konnte nicht ermittelt werden');
+  await expect(page.getByRole('alert')).toContainText('Anfragekennung: server-test:0001');
   await expect(pendingCount(page)).toHaveCount(0);
   await expect(page.getByText('überschreiten aktuell keine', { exact: false })).toHaveCount(0);
   context.state.status = 403; await page.getByRole('button', { name: 'Aktualisieren', exact: true }).click();

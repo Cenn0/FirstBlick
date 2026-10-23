@@ -2,6 +2,10 @@
 
 > Übernommen aus der Projektanalyse „DachPlaner Rework Roadmap“, 19.10.2026 (34 Seiten). Der Originalbericht umfasst 100 Aufgaben in 15 Epics. Diese Fassung erhält alle Aufgabenkennungen und ursprünglichen Abnahmekriterien. Ein implementierter Teilablauf bedeutet nicht automatisch, dass das gesamte Epic abgeschlossen ist.
 
+## Dezimal-Drahtvertrag und Angular-Fehlerdiagnose (23.10.2026)
+
+**DP-02-02/DP-12-04/DP-02-07 bleiben T.** Ein [zusätzliches authentifiziertes OpenAPI-Drahtdokument](api-calculation-contracts.md) beschreibt tatsächlich ausgegebene Dezimalstrings und akzeptierte Eingaben. Der Fehlervertrag nennt `requestId`; Angular zeigt eine begrenzte serverseitige Anfragekennung. Die ursprünglichen Abnahmekriterien, Kategorien und Gesamtzählung bleiben erhalten. Ausgeführte End-to-End- und CI-Nachweise sind am endgültigen Commit zu prüfen.
+
 ## Explizites HTTPS-Proxyhosting (23.10.2026)
 
 **DP-02-07 / DP-13-05 bleiben T.** [Proxyhosting](proxy-hosting.md) ergänzt einzeln konfigurierte vertrauenswürdige Proxyadressen, einen begrenzten Forwarded-Header-Hop, Negativprüfungen und einen ausdrücklich gewählten HTTPS-Ursprung für den bestehenden synthetischen Containerablauf. Ohne konfigurierte Gegenstelle werden keine Forwarded-Header vertraut. Ausgeführte CI-/Testhostnachweise müssen zum endgültigen Commit gehören; reale Umschaltung und fehlende externe Grundlagen bleiben offen.

@@ -54,7 +54,7 @@ public sealed class TechnicalOpenApiTests(PostgresApiFixture fixture) : IClassFi
             foreach (var status in new[] { "400", "403", "413", "415", "423", "500" })
             {
                 var errors = Properties(document, ContentSchema(operation, status, "application/problem+json"));
-                foreach (var field in new[] { "title", "detail", "status", "code", "traceId" }) Assert.Contains(field, errors);
+                foreach (var field in new[] { "title", "detail", "status", "code", "traceId", "requestId" }) Assert.Contains(field, errors);
             }
             Assert.True(operation.GetProperty("responses").TryGetProperty("401", out _));
         }
@@ -80,6 +80,7 @@ public sealed class TechnicalOpenApiTests(PostgresApiFixture fixture) : IClassFi
             Assert.Equal((int)status, problem.GetProperty("status").GetInt32());
             Assert.Equal("invalid_request", problem.GetProperty("code").GetString());
             Assert.False(string.IsNullOrWhiteSpace(problem.GetProperty("traceId").GetString()));
+            Assert.Equal(Assert.Single(response.Headers.GetValues("X-Request-Id")), problem.GetProperty("requestId").GetString());
             Assert.True(response.Headers.CacheControl?.NoStore);
         }
     }
