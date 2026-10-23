@@ -2,6 +2,10 @@
 
 > Übernommen aus der Projektanalyse „DachPlaner Rework Roadmap“, 19.10.2026 (34 Seiten). Der Originalbericht umfasst 100 Aufgaben in 15 Epics. Diese Fassung erhält alle Aufgabenkennungen und ursprünglichen Abnahmekriterien. Ein implementierter Teilablauf bedeutet nicht automatisch, dass das gesamte Epic abgeschlossen ist.
 
+## Fachliche CI-Akzeptanzfälle (23.10.2026)
+
+Ein zusätzlicher [fachlicher P0-Regressionsblock](evidence/domain-acceptance-cases.md) prüft mit eigenständigen Zahlenorakeln Wind, Schnee, Entwässerung, Wärmeleitwiderstand sowie Teil-/Schlussrechnungen einschließlich einer referenzierten Gutschrift. Die CI führt ihn als eigens benannten, fehlerschließenden Schritt nach dem allgemeinen Serverlauf aus. **Die zugehörigen Roadmap-Einträge bleiben im bisherigen K/T/O-Status; Normen-, Steuer-, Statik- oder Realfallabnahmen sind dadurch nicht erfüllt.**
+
 ## Anfragekorrelation DP-02-07 (23.10.2026)
 
 Die HTTP-Antworten geben eine ausschließlich serverseitig erzeugte `X-Request-Id` zurück; Problem-Details-`traceId` entspricht derselben Kennung. Die [Betriebsbeobachtbarkeit](observability.md) dokumentiert Grenzen und die echte HTTP-/PostgreSQL-Regression. **DP-02-07 bleibt T:** Metrikexport, verteilte Traces, Alarmierung, SLOs und Secret-Rotation sind dadurch nicht umgesetzt. Die Zählung der 100 Aufgaben wird nicht geändert.
