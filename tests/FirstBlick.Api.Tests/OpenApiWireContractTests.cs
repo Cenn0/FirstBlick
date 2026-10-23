@@ -31,6 +31,9 @@ public sealed class OpenApiWireContractTests
         app.MapPost("/api/echo", (Input input) => TypedResults.Ok(input));
         await app.StartAsync();
         using var client = app.GetTestClient();
+        using var trailing = await client.GetAsync("/openapi/wire-v1.json/");
+        // MapOpenApi accepts this alias; production limiters must cover it too.
+        Assert.Equal(HttpStatusCode.OK, trailing.StatusCode);
         using var document = JsonDocument.Parse(await client.GetStringAsync("/openapi/wire-v1.json"));
         var root = document.RootElement;
         var operation = root.GetProperty("paths").GetProperty("/api/decimal").GetProperty("post");

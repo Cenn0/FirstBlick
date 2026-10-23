@@ -72,11 +72,14 @@ builder.Services.AddRateLimiter(o =>
 {
     o.RejectionStatusCode = 429;
     o.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
-        (string.Equals(context.Request.Path.Value, "/openapi/v1.json", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(context.Request.Path.Value, "/openapi/wire-v1.json", StringComparison.OrdinalIgnoreCase))
+    {
+        var path = context.Request.Path.Value?.TrimEnd('/');
+        return (string.Equals(path, "/openapi/v1.json", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(path, "/openapi/wire-v1.json", StringComparison.OrdinalIgnoreCase))
             ? RateLimitPartition.GetConcurrencyLimiter("openapi-documents", _ => new ConcurrencyLimiterOptions
                 { PermitLimit = 2, QueueLimit = 0 })
-            : RateLimitPartition.GetNoLimiter("other"));
+            : RateLimitPartition.GetNoLimiter("other");
+    });
     var permits = Math.Clamp(builder.Configuration.GetValue("Authentication:RequestsPerMinute", 20), 1, 1000);
     o.AddPolicy("authentication", context => RateLimitPartition.GetFixedWindowLimiter(context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
         _ => new FixedWindowRateLimiterOptions { PermitLimit = permits, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
