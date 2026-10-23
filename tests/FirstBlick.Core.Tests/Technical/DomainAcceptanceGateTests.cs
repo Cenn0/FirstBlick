@@ -41,7 +41,9 @@ public sealed class DomainAcceptanceGateTests
             [new("Roof A", 50, 1, "Synthetic plan projection"),
              new("Roof B", 25, .5, "Synthetic plan projection"),
              new("Roof C", 10, 0, "Synthetic plan projection")]));
-        Assert.Equal(new[] { 72d, 18d, 0d }, result.Zones.Select(z => z.VerticalForceKN).ToArray());
+        Assert.Equal(72d, result.Zones[0].VerticalForceKN, 10);
+        Assert.Equal(18d, result.Zones[1].VerticalForceKN, 10);
+        Assert.Equal(0d, result.Zones[2].VerticalForceKN, 10);
         Assert.Equal(90d, result.TotalVerticalForceKN, 10);
         Assert.False(result.StructuralDesignApproved);
         Assert.False(result.Provenance.IsNormative);
@@ -133,7 +135,7 @@ public sealed class DomainAcceptanceGateTests
     [Fact]
     public void Missing_sources_or_duplicate_zone_names_fail_closed_before_any_approval()
     {
-        Assert.ThrowsAny<ArgumentException>(() => RoofWind.Calculate(new("Synthetic wind", [
+        Assert.Throws<DomainException>(() => RoofWind.Calculate(new("Synthetic wind", [
             new("Same", 1, 1, 1, 1, 1, "A"),
             new(" same ", 1, 1, 1, 1, 1, "B")
         ])));
