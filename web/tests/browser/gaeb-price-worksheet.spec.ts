@@ -36,7 +36,7 @@ async function fixture(page: Page) {
       const body = request.headers()['content-type']?.includes('application/json') ? request.postDataJSON() as Record<string, unknown> : null;
       posts.push({ path, body });
       if (path === 'integrations/v1/gaeb/preview') return route.fulfill({ json: source() });
-      const rule = { sourceSha256: sha, phase: 'X83', schemaEdition: '2021-05', schemaBundleSha256: 'd'.repeat(64), valid: state.schemaValid, issues: [] };
+      const rule = { sourceSha256: sha, phase: 'X83', schemaEdition: '2021-05', schemaBundleSha256: 'd'.repeat(64), valid: state.schemaValid, issues: state.schemaValid ? [] : [{ code: 'GAEB-XSD', severity: 'error', message: 'The element is invalid according to its schema.' }] };
       if (path === 'integrations/v2/gaeb/validate') return route.fulfill({ json: { validation: rule, readyForBid: state.schemaValid, originalBytesRetained: false } });
       if (path === 'integrations/v2/gaeb/bid-preview') {
         const mapping = body!['mapping'] as { prices: { positionKey: string; unitPrice: string | null; notOffered: boolean }[] };
@@ -168,6 +168,12 @@ test('worksheet controls do not bypass failed original-schema validation', async
   await panel(page).locator('#gb-original').setInputFiles({ name: 'invalid.x83', mimeType: 'application/xml', buffer: original });
   await panel(page).getByRole('button', { name: 'Originaldatei strukturell und gegen offizielle XSD prüfen', exact: true }).click();
   await expect(panel(page).getByText('Nicht bestanden', { exact: true })).toBeVisible();
+  await expect(panel(page).getByRole('alert')).toContainText('Bitte kontrollieren Sie den Export');
+  const issue = panel(page).locator('details.review-issue');
+  await expect(issue.locator('summary')).toHaveText('Formatfehler 1 – Einzelheiten anzeigen');
+  await expect(issue.locator('p')).not.toBeVisible();
+  await issue.locator('summary').click();
+  await expect(issue.locator('p')).toContainText('GAEB-XSD');
   await expect(panel(page).locator('#gb-worksheet')).toHaveCount(0);
   expect(f.posts).toHaveLength(2); expect(f.errors).toEqual([]);
 });
