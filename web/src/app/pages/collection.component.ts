@@ -6,7 +6,7 @@ import { combineLatest } from 'rxjs';
 import { ApiService, Entity, Page } from '../core/api.service';
 import { AuthService } from '../core/auth.service';
 import { Field, ModuleDefinition, labelFor, moduleByKind, modules } from '../core/modules';
-import { ApiError, errorMessage } from '../core/transport';
+import { ApiError, ApiNetworkError, errorMessage } from '../core/transport';
 import { decimalInput } from '../core/decimal-input';
 import { instantOffset, localDateTime, localTimeChoices, resolveLocalTime } from '../core/local-time';
 import { WorkflowPanelComponent } from './workflow-panel.component';
@@ -191,7 +191,7 @@ export class CollectionComponent {
     const current=()=>scope===this.auth.scope()&&access===this.auth.accessSignature()&&config.kind===this.config()?.kind&&version===this.viewVersion&&listVersion===this.loadVersion;
     this.error.set('');
     try{const full=await this.api.get<Entity>(`${config.kind}/${item.id}`);if(!current())return;this.selected.set(full);}
-    catch(error){if(!current()||this.denied(error))return;if(config.offline&&error instanceof TypeError)this.selected.set(item);else this.error.set(errorMessage(error));}
+    catch(error){if(!current()||this.denied(error))return;if(config.offline&&error instanceof ApiNetworkError)this.selected.set(item);else this.error.set(errorMessage(error));}
     setTimeout(()=>{if(current())document.getElementById('detail-title')?.scrollIntoView({behavior:'smooth',block:'center'});});
   }
   create():void{if(!this.config()||this.config()!.readonly||!this.allowed()||!this.writable())return;this.editing.set(null);this.timeOffsets={};this.form={};for(const field of this.editorFields())this.form[field.key]=field.default??(field.type==='checkbox'?false:field.type==='number'?0:field.type==='relations'?[]:'');this.syncPersonalFields();this.quoteLines=[this.newLine()];this.breaks=[];this.purchaseLines=[];if(this.config()!.kind==='purchase-orders')this.addPurchase();this.formError.set('');this.editor?.nativeElement.showModal();void this.loadRelations(this.config()!.kind==='purchase-orders'?['materials']:[]);}
