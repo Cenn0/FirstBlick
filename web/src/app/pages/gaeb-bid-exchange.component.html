@@ -20,7 +20,15 @@
       <div class="alert information">Original-GAEB-XSD {{schema.validation.schemaEdition}}:
         <strong>{{schema.validation.valid ? 'Bestanden' : 'Nicht bestanden'}}</strong>.
         Die Prüfvorschau allein archiviert keine Originalbytes.</div>
-      @for (issue of schema.validation.issues; track $index) {<p class="review-issue">{{issue.severity}} / {{issue.code}}: {{issue.message}}</p>}
+      @if (!schema.validation.valid) {
+        <div class="alert warning" role="alert">Die GAEB-Datei weicht vom geprüften Format ab. Bitte kontrollieren Sie den Export in Ihrem Ausschreibungsprogramm und laden Sie die korrigierte Datei erneut hoch. Die technischen Prüfhinweise können Sie unten einzeln öffnen.</div>
+      }
+      @for (issue of schema.validation.issues; track $index) {
+        <details class="review-issue">
+          <summary>{{issue.severity === 'error' ? 'Formatfehler' : 'Prüfhinweis'}} {{ $index + 1 }} – Einzelheiten anzeigen</summary>
+          <p>Prüfregel {{issue.code}}: {{issue.message}}</p>
+        </details>
+      }
     }
     @if (structural(); as tender) {
       <p><strong>LV:</strong> {{tender.scheduleName}} · {{tender.exchangePhase}} · {{tender.items.length}} Positionen · Original-SHA-256:
