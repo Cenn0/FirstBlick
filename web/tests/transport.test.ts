@@ -31,7 +31,8 @@ test('server request correlation is shown without treating W3C traceId as a requ
   let failure:unknown;try{await requestResponse('/api/v1/projects');}catch(error){failure=error;}
   expect(failure).toBeInstanceOf(ApiError);
   expect((failure as ApiError).requestId).toBe('server-id:0001');
-  expect(errorMessage(failure)).toBe('Bitte später erneut versuchen. Anfragekennung: server-id:0001.');
+  expect(errorMessage(failure)).toBe('Ein technischer Fehler ist aufgetreten. Ob der Vorgang ausgeführt wurde, ist nicht bestätigt. Prüfen Sie den aktuellen Stand, bevor Sie es erneut versuchen. Anfragekennung: server-id:0001.');
+  expect(errorMessage(failure)).not.toContain('Bitte später erneut versuchen.');
   expect(errorMessage(failure)).not.toContain('activity-id');
 });
 
